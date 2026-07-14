@@ -5,7 +5,7 @@
     height: 70px;
     padding: 0 24px;
     background-color: #18181b;
-    border-bottom: 2px solid #009639;
+    border-bottom: 2px solid #00b846;
     position: sticky;
     top: 0;
     z-index: 100;
@@ -23,7 +23,7 @@
     cursor: pointer;
     padding: 8px;
     display: flex;
-    color: #009639;
+    color: #00b846;
 }
 
 .icon-btn i {
@@ -39,7 +39,7 @@
 }
 
 .logo span {
-    color: #009639;
+    color: #00b846;
 }
 
 .sidebar {

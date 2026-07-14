@@ -50,12 +50,12 @@
 }
 
 #ean-input:focus {
-    border-color: #009639;
+    border-color: #00b846;
 }
 
 .btn-search {
     padding: 16px;
-    background-color: #009639;
+    background-color: #00b846;
     border: none;
     border-radius: 8px;
     color: #ffffff;
@@ -66,6 +66,6 @@
 }
 
 .btn-search:hover {
-    background-color: #00732c;
+    background-color: #009137;
 }
 
