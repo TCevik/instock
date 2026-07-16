@@ -1,0 +1,123 @@
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 60px);
+    padding: 20px;
+}
+
+.login-card {
+    padding: 40px 30px;
+    width: 100%;
+    max-width: 400px;
+    transition: transform 0.3s ease;
+}
+
+.login-card h2 {
+    margin-bottom: 24px;
+    font-size: 1.8rem;
+    text-align: center;
+    color: #ffffff;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    color: #cccccc;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px 16px;
+    background-color: #242424;
+    border: 1px solid #383838;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+.form-group input:focus {
+    border-color: #75a821;
+    background-color: #2a2a2a;
+}
+
+.btn-primary {
+    width: 100%;
+    padding: 12px;
+    background-color: #75a821;
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.btn-primary:hover {
+    background-color: #85be25;
+}
+
+.btn-primary:active {
+    transform: scale(0.98);
+}
+
+.btn-primary:disabled {
+    background-color: #55751d;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.card-footer {
+    margin-top: 24px;
+    text-align: center;
+    font-size: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.card-footer a {
+    color: #75a821;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.card-footer a:hover {
+    color: #85be25;
+    text-decoration: underline;
+}
+
+.message-box {
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+    display: none;
+}
+
+.message-box.error {
+    display: block;
+    background-color: rgba(220, 53, 69, 0.15);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    color: #ff6b6b;
+}
+
+.message-box.success {
+    display: block;
+    background-color: rgba(40, 167, 69, 0.15);
+    border: 1px solid rgba(40, 167, 69, 0.3);
+    color: #51cf66;
+}
+
+.hidden {
+    display: none !important;
+}

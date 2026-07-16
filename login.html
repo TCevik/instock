@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Inloggen - InStock</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/login.css">
+    <script src="scripts/main.js"></script>
+    <script src="scripts/login.js"></script>
+</head>
+<body>
+
+    <div class="login-container">
+        <div id="login-view" class="login-card">
+            <h2>Inloggen</h2>
+            <div id="login-msg" class="message-box"></div>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">E-mailadres</label>
+                    <input type="email" id="login-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Wachtwoord</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <button type="submit" class="btn-primary">Inloggen</button>
+            </form>
+            <div class="card-footer">
+                <a href="#" id="show-forgot">Wachtwoord vergeten?</a>
+                <span>Nog geen account? <a href="#" id="show-register">Registreren</a></span>
+            </div>
+        </div>
+
+        <div id="register-view" class="login-card hidden">
+            <h2>Registreren</h2>
+            <div id="register-msg" class="message-box"></div>
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="register-email">E-mailadres</label>
+                    <input type="email" id="register-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Wachtwoord</label>
+                    <input type="password" id="register-password" required>
+                </div>
+                <button type="submit" class="btn-primary">Registreren</button>
+            </form>
+            <div class="card-footer">
+                <span>Heb je al een account? <a href="#" id="show-login">Inloggen</a></span>
+            </div>
+        </div>
+
+        <div id="forgot-view" class="login-card hidden">
+            <h2>Wachtwoord vergeten</h2>
+            <div id="forgot-msg" class="message-box"></div>
+            <form id="forgot-form">
+                <div class="form-group">
+                    <label for="forgot-email">E-mailadres</label>
+                    <input type="email" id="forgot-email" required>
+                </div>
+                <button type="submit" class="btn-primary">Wachtwoord herstellen</button>
+            </form>
+            <div class="card-footer">
+                <a href="#" id="back-to-login">Terug naar inloggen</a>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

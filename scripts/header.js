@@ -17,5 +17,14 @@ document.addEventListener("DOMContentLoaded", () => {
             menuBtn.addEventListener("click", toggleMenu);
             closeBtn.addEventListener("click", toggleMenu);
             overlay.addEventListener("click", toggleMenu);
+
+            const logoutBtn = document.getElementById("logout-btn");
+            if (logoutBtn) {
+                logoutBtn.addEventListener("click", async () => {
+                    if (window.supabaseClient) {
+                        await window.supabaseClient.auth.signOut();
+                    }
+                });
+            }
         });
 });
