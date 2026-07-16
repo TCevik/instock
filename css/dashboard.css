@@ -1,0 +1,64 @@
+.dashboard-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 20px 20px 40px 20px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.dashboard-title {
+    font-size: 2.2rem;
+    margin-bottom: 40px;
+    color: #ffffff;
+    text-align: left;
+    font-weight: 600;
+    width: 100%;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 24px;
+    width: 100%;
+}
+
+.dashboard-card {
+    background-color: #181818;
+    border: 1px solid #282828;
+    border-radius: 16px;
+    padding: 35px 25px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: #ffffff;
+    transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+    cursor: pointer;
+}
+
+.dashboard-card .material-icons {
+    font-size: 3.5rem;
+    color: #75a821;
+    margin-bottom: 16px;
+    transition: transform 0.2s ease;
+}
+
+@media (hover: hover) {
+    .dashboard-card:hover {
+        transform: translateY(-5px);
+        border-color: #75a821;
+        background-color: #1c2412;
+    }
+    .dashboard-card:hover .material-icons {
+        transform: scale(1.1);
+    }
+}
+
+.dashboard-card span {
+    font-size: 1.2rem;
+    font-weight: 500;
+    text-align: center;
+}

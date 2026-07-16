@@ -18,6 +18,15 @@ document.addEventListener("DOMContentLoaded", () => {
             closeBtn.addEventListener("click", toggleMenu);
             overlay.addEventListener("click", toggleMenu);
 
+            const currentPath = window.location.pathname;
+            const links = sideMenu.querySelectorAll(".side-menu-nav a");
+            links.forEach(link => {
+                const href = link.getAttribute("href");
+                if (href && (currentPath.endsWith("/" + href) || (href === "index.html" && currentPath.endsWith("/")))) {
+                    link.classList.add("active");
+                }
+            });
+
             const logoutBtn = document.getElementById("logout-btn");
             if (logoutBtn) {
                 logoutBtn.addEventListener("click", async () => {

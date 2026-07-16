@@ -61,8 +61,10 @@
     transition: background-color 0.2s, transform 0.1s;
 }
 
-.btn-primary:hover {
-    background-color: #85be25;
+@media (hover: hover) {
+    .btn-primary:hover {
+        background-color: #85be25;
+    }
 }
 
 .btn-primary:active {
@@ -91,9 +93,11 @@
     transition: color 0.2s;
 }
 
-.card-footer a:hover {
-    color: #85be25;
-    text-decoration: underline;
+@media (hover: hover) {
+    .card-footer a:hover {
+        color: #85be25;
+        text-decoration: underline;
+    }
 }
 
 .message-box {
