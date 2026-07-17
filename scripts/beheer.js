@@ -5,23 +5,17 @@ document.addEventListener("DOMContentLoaded", () => {
     
     const urlParams = new URLSearchParams(window.location.search);
     const productId = urlParams.get("id");
-
+    const fromPage = urlParams.get("from") || (productId ? "product-checker.html" : "index.html");
+ 
     cancelBtn.addEventListener("click", () => {
-        if (productId) {
-            window.location.href = "product-checker.html";
-        } else {
-            window.location.href = "index.html";
-        }
+        window.location.href = fromPage;
     });
 
-    const checkSupabase = setInterval(() => {
-        if (window.supabaseClient) {
-            clearInterval(checkSupabase);
-            if (productId) {
-                loadProduct(productId);
-            }
+    window.getSupabase().then(() => {
+        if (productId) {
+            loadProduct(productId);
         }
-    }, 100);
+    });
 
     async function loadProduct(id) {
         pageTitle.textContent = "Product Bewerken";
@@ -80,7 +74,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error(result.error);
             alert("Er is een fout opgetreden bij het opslaan van het product.");
         } else {
-            window.location.href = "product-checker.html";
+            window.location.href = fromPage;
         }
     });
 });

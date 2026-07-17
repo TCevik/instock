@@ -9,6 +9,76 @@ document.head.appendChild(supabaseScript);
 
 window.formatPrice = (prijs) => prijs !== null ? `€${parseFloat(prijs).toFixed(2).replace(".", ",")}` : "-";
 window.formatDate = (dateStr) => dateStr ? new Date(dateStr).toLocaleDateString("nl-NL") : "-";
+window.formatISODate = (date) => {
+    const d = new Date(date);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+window.getSupabase = () => {
+    return new Promise((resolve) => {
+        if (window.supabaseClient) {
+            resolve(window.supabaseClient);
+            return;
+        }
+        const interval = setInterval(() => {
+            if (window.supabaseClient) {
+                clearInterval(interval);
+                resolve(window.supabaseClient);
+            }
+        }, 100);
+    });
+};
+
+window.isEanCode = (str) => /^\d{8,}$/.test(str);
+
+window.initProductSearch = (onSingleEan, onResults, onEmptyQuery) => {
+    const input = document.getElementById("product-input");
+    const button = document.getElementById("check-btn");
+    if (!input) return;
+
+    input.focus();
+
+    const triggerSearch = async () => {
+        const query = input.value.trim();
+        if (query.length >= 3) {
+            const client = await window.getSupabase();
+            const { data, error } = await client
+                .from("producten")
+                .select("*")
+                .or(`naam.ilike.%${query}%,ean.eq.${query}`);
+
+            if (error) {
+                console.error(error);
+                return;
+            }
+
+            if (window.isEanCode(query) && data && data.length === 1) {
+                onSingleEan(data[0]);
+            } else {
+                onResults(data || []);
+            }
+        } else {
+            onEmptyQuery();
+        }
+    };
+
+    button.addEventListener("click", triggerSearch);
+
+    input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            triggerSearch();
+        }
+    });
+
+    input.addEventListener("paste", (e) => {
+        const pastedData = (e.clipboardData || window.clipboardData).getData("text").trim();
+        if (window.isEanCode(pastedData)) {
+            setTimeout(() => {
+                triggerSearch();
+            }, 0);
+        }
+    });
+};
 
 const materialIcons = document.createElement("link");
 materialIcons.rel = "stylesheet";
@@ -95,7 +165,8 @@ window.renderProductDetailsCard = (product, onBack) => {
     
     card.querySelector("#back-btn").addEventListener("click", onBack);
     card.querySelector("#edit-btn").addEventListener("click", () => {
-        window.location.href = `beheer.html?id=${product.id}`;
+        const fromPage = window.location.pathname.split("/").pop() || "index.html";
+        window.location.href = `beheer.html?id=${product.id}&from=${encodeURIComponent(fromPage)}`;
     });
     return card;
 };

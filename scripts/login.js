@@ -44,20 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
         switchView([registerView, forgotView], loginView);
     });
 
-    const getSupabase = () => {
-        return new Promise((resolve) => {
-            if (window.supabaseClient) {
-                resolve(window.supabaseClient);
-                return;
-            }
-            const interval = setInterval(() => {
-                if (window.supabaseClient) {
-                    clearInterval(interval);
-                    resolve(window.supabaseClient);
-                }
-            }, 100);
-        });
-    };
+
 
     loginForm.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -69,7 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
         loginMsg.className = "message-box";
 
         try {
-            const client = await getSupabase();
+            const client = await window.getSupabase();
             const { data, error } = await client.auth.signInWithPassword({ email, password });
             if (error) throw error;
             window.location.href = "index.html";
@@ -90,7 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
         registerMsg.className = "message-box";
 
         try {
-            const client = await getSupabase();
+            const client = await window.getSupabase();
             const { data, error } = await client.auth.signUp({ email, password });
             if (error) throw error;
             registerMsg.textContent = "Registratie succesvol! Controleer je e-mail voor de verificatielink.";
@@ -113,7 +100,7 @@ document.addEventListener("DOMContentLoaded", () => {
         forgotMsg.className = "message-box";
 
         try {
-            const client = await getSupabase();
+            const client = await window.getSupabase();
             const { data, error } = await client.auth.resetPasswordForEmail(email, {
                 redirectTo: window.location.origin + "/login.html"
             });

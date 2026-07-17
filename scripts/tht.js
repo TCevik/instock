@@ -2,31 +2,32 @@ let currentProducts = [];
 let currentControleIndex = -1;
 
 async function fetchTHTProducts() {
-    if (!window.supabaseClient) {
-        setTimeout(fetchTHTProducts, 100);
-        return;
+    const client = await window.getSupabase();
+    const { data: { session } } = await client.auth.getSession();
+    if (!session) return;
+
+    const dateInput = document.getElementById("tht-target-date");
+    let dateString = "";
+    if (dateInput) {
+        if (!dateInput.value) {
+            const targetDate = new Date();
+            targetDate.setDate(targetDate.getDate() + 2);
+            dateInput.value = window.formatISODate(targetDate);
+        }
+        dateString = dateInput.value;
+    } else {
+        const targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() + 2);
+        dateString = window.formatISODate(targetDate);
     }
-    const { data: { session } } = await window.supabaseClient.auth.getSession();
-    if (!session) {
-        setTimeout(fetchTHTProducts, 100);
-        return;
-    }
-    const targetDate = new Date();
-    targetDate.setDate(targetDate.getDate() + 2);
-    const yyyy = targetDate.getFullYear();
-    const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
-    const dd = String(targetDate.getDate()).padStart(2, '0');
-    const dateString = `${yyyy}-${mm}-${dd}`;
 
     const title = document.getElementById("tht-title");
     if (title) title.style.display = "block";
-    const dateLabel = document.getElementById("tht-date-label");
-    if (dateLabel) {
-        dateLabel.style.display = "block";
-        dateLabel.textContent = `Producten die verlopen tot en met: ${targetDate.toLocaleDateString("nl-NL")}`;
-    }
+    const datepickerContainer = document.getElementById("tht-datepicker-container");
+    if (datepickerContainer) datepickerContainer.style.display = "flex";
 
-    const { data, error } = await window.supabaseClient
+
+    const { data, error } = await client
         .from("producten")
         .select("*")
         .lte("tht_datum", dateString)
@@ -49,7 +50,7 @@ function displayResults(products) {
     container.innerHTML = "";
     
     if (!products || products.length === 0) {
-        container.innerHTML = '<div class="no-results">Geen producten die binnen 2 dagen verlopen</div>';
+        container.innerHTML = '<div class="no-results">Geen producten die tot en met deze datum verlopen</div>';
         return;
     }
 
@@ -73,8 +74,9 @@ function displayResults(products) {
 function showControleStep() {
     const title = document.getElementById("tht-title");
     if (title) title.style.display = "none";
-    const dateLabel = document.getElementById("tht-date-label");
-    if (dateLabel) dateLabel.style.display = "none";
+    const datepickerContainer = document.getElementById("tht-datepicker-container");
+    if (datepickerContainer) datepickerContainer.style.display = "none";
+
 
     const actionContainer = document.getElementById("controle-action-container");
     actionContainer.innerHTML = "";
@@ -175,7 +177,8 @@ function showControleStep() {
             return;
         }
 
-        const { error } = await window.supabaseClient
+        const client = await window.getSupabase();
+        const { error } = await client
             .from("producten")
             .update({ tht_datum: newDate })
             .eq("id", product.id);
@@ -206,8 +209,9 @@ function showProductDetails(product) {
     actionContainer.innerHTML = "";
     const title = document.getElementById("tht-title");
     if (title) title.style.display = "none";
-    const dateLabel = document.getElementById("tht-date-label");
-    if (dateLabel) dateLabel.style.display = "none";
+    const datepickerContainer = document.getElementById("tht-datepicker-container");
+    if (datepickerContainer) datepickerContainer.style.display = "none";
+
     
     const container = document.getElementById("product-results");
     container.innerHTML = "";
@@ -220,5 +224,12 @@ function showProductDetails(product) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+    const dateInput = document.getElementById("tht-target-date");
+    if (dateInput) {
+        const targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() + 2);
+        dateInput.value = window.formatISODate(targetDate);
+        dateInput.addEventListener("change", fetchTHTProducts);
+    }
     fetchTHTProducts();
 });
