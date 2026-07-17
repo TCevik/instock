@@ -40,12 +40,19 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (error) throw error;
 
-            if (!employees || employees.length === 0) {
+            const filteredEmployees = employees.filter(emp => {
+                if (emp.is_hoofdbeheerder === true && emp.id !== myUserId) {
+                    return false;
+                }
+                return true;
+            });
+
+            if (!filteredEmployees || filteredEmployees.length === 0) {
                 usersList.innerHTML = '<div class="empty-state">Geen medewerkers gevonden.</div>';
                 return;
             }
 
-            employees.forEach(emp => {
+            filteredEmployees.forEach(emp => {
                 const item = document.createElement("div");
                 item.className = "user-item";
 
@@ -73,6 +80,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     document.getElementById("edit-user-id").value = emp.id;
                     document.getElementById("edit-medewerker-naam").value = emp.volledige_naam || "";
                     document.getElementById("edit-medewerker-nummer").value = emp.personeelsnummer || "";
+                    document.getElementById("edit-medewerker-rol").value = emp.rol || "medewerker";
                     document.getElementById("edit-medewerker-password").value = "";
                     editMsg.className = "message-box";
                     editModal.classList.remove("hidden");
@@ -84,10 +92,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                 deleteBtn.addEventListener("click", async () => {
                     if (confirm(`Weet u zeker dat u ${emp.volledige_naam || "deze medewerker"} wilt verwijderen?`)) {
                         try {
-                            const { error: deleteError } = await client
-                                .from("profielen")
-                                .delete()
-                                .eq("id", emp.id);
+                            const { error: deleteError } = await client.rpc("delete_medewerker", {
+                                target_user_id: emp.id
+                            });
 
                             if (deleteError) throw deleteError;
 
@@ -128,6 +135,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         e.preventDefault();
         const naam = document.getElementById("medewerker-naam").value.trim();
         const personeelsnummer = document.getElementById("medewerker-nummer").value.trim();
+        const rol = document.getElementById("medewerker-rol").value;
         const password = document.getElementById("medewerker-password").value;
         const btn = createUserForm.querySelector("button");
 
@@ -156,7 +164,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                         winkel_id: myWinkelId,
                         full_name: naam,
                         personeelsnummer: parseInt(personeelsnummer, 10),
-                        rol: 'medewerker'
+                        rol: rol
                     }
                 }
             });
@@ -180,6 +188,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const userId = document.getElementById("edit-user-id").value;
         const naam = document.getElementById("edit-medewerker-naam").value.trim();
         const personeelsnummer = document.getElementById("edit-medewerker-nummer").value.trim();
+        const rol = document.getElementById("edit-medewerker-rol").value;
         const password = document.getElementById("edit-medewerker-password").value;
         const btn = editForm.querySelector("button[type='submit']");
 
@@ -191,7 +200,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 target_user_id: userId,
                 nieuwe_naam: naam,
                 nieuw_personeelsnummer: parseInt(personeelsnummer, 10),
-                nieuw_wachtwoord: password || null
+                nieuw_wachtwoord: password || null,
+                nieuwe_rol: rol
             });
 
             if (error) throw error;

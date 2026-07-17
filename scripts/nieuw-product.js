@@ -155,9 +155,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 .update(payload)
                 .eq("id", productId);
         } else {
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+            const { data: profile } = await window.supabaseClient
+                .from("profielen")
+                .select("winkel_id")
+                .eq("id", user.id)
+                .single();
+
+            const insertPayload = {
+                ...payload,
+                winkel_id: profile.winkel_id
+            };
+
             result = await window.supabaseClient
                 .from("producten")
-                .insert([payload]);
+                .insert([insertPayload]);
         }
 
         if (result.error) {
