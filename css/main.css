@@ -220,3 +220,7 @@ body {
     color: #ff5252;
     margin: 0;
 }
+
+.hidden {
+    display: none !important;
+}

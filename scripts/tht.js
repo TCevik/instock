@@ -22,11 +22,11 @@ async function fetchTHTProducts() {
     }
 
     const title = document.getElementById("tht-title");
-    if (title) title.style.display = "block";
+    if (title) title.classList.remove("hidden");
     const datepickerContainer = document.getElementById("tht-datepicker-container");
-    if (datepickerContainer) datepickerContainer.style.display = "flex";
+    if (datepickerContainer) datepickerContainer.classList.remove("hidden");
     const afdelingContainer = document.getElementById("tht-afdeling-container");
-    if (afdelingContainer) afdelingContainer.style.display = "flex";
+    if (afdelingContainer) afdelingContainer.classList.remove("hidden");
 
     const afdelingSelect = document.getElementById("tht-afdeling-select");
     const selectedAfdeling = afdelingSelect ? afdelingSelect.value : "";
@@ -82,11 +82,11 @@ function displayResults(products) {
 
 function showControleStep() {
     const title = document.getElementById("tht-title");
-    if (title) title.style.display = "none";
+    if (title) title.classList.add("hidden");
     const datepickerContainer = document.getElementById("tht-datepicker-container");
-    if (datepickerContainer) datepickerContainer.style.display = "none";
+    if (datepickerContainer) datepickerContainer.classList.add("hidden");
     const afdelingContainer = document.getElementById("tht-afdeling-container");
-    if (afdelingContainer) afdelingContainer.style.display = "none";
+    if (afdelingContainer) afdelingContainer.classList.add("hidden");
 
 
     const actionContainer = document.getElementById("controle-action-container");
@@ -107,24 +107,24 @@ function showControleStep() {
     const thtDate = product.tht_datum ? new Date(product.tht_datum) : null;
     if (thtDate) thtDate.setHours(0, 0, 0, 0);
     const isExpired = thtDate && thtDate < today;
-    const thtColor = isExpired ? "#ff5252" : "#ffffff";
+    const thtClass = isExpired ? "expired" : "";
 
     const stepCard = document.createElement("div");
     stepCard.className = "product-details-view";
 
     stepCard.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 12px;">
-            <button id="stop-controle-btn" class="back-btn" style="padding: 6px 12px; font-size: 0.85rem; border-radius: 8px;">&larr; Stoppen</button>
-            <span style="font-weight: 600; font-size: 0.9rem; color: #666666;">Product ${currentControleIndex + 1} / ${currentProducts.length}</span>
+        <div class="controle-header">
+            <button id="stop-controle-btn" class="back-btn controle-stop-btn">&larr; Stoppen</button>
+            <span class="controle-progress">Product ${currentControleIndex + 1} / ${currentProducts.length}</span>
         </div>
         
-        <div class="product-details-header" style="margin-top: 8px;">
+        <div class="product-details-header controle-details-header">
             <span class="product-brand-text">${product.merk || "Merkloos"}</span>
-            <h2 class="product-title-flat" style="margin: 4px 0 8px 0;">${product.naam || "Onbekend product"}</h2>
-            <span style="font-size: 0.9rem; color: #888888; display: block; margin-bottom: 16px;">Inhoud: ${product.inhoud || "-"} | EAN: ${product.ean || "-"}</span>
+            <h2 class="product-title-flat controle-title">${product.naam || "Onbekend product"}</h2>
+            <span class="controle-meta">Inhoud: ${product.inhoud || "-"} | EAN: ${product.ean || "-"}</span>
         </div>
         
-        <div class="product-details-list-flat" style="margin-bottom: 16px;">
+        <div class="product-details-list-flat controle-details-list">
             <div class="detail-item-flat">
                 <div class="detail-header-flat">
                     <span class="material-icons detail-icon-flat">place</span>
@@ -151,17 +151,17 @@ function showControleStep() {
                     <span class="material-icons detail-icon-flat">calendar_today</span>
                     <span class="detail-label-flat">Huidige THT-datum</span>
                 </div>
-                <span class="detail-value-flat" style="color: ${thtColor};">${tht}</span>
+                <span class="detail-value-flat tht-date-val ${thtClass}">${tht}</span>
             </div>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 8px;">
-            <label style="font-weight: 600; font-size: 0.9rem; color: #888888;">Nieuwe THT-datum:</label>
-            <input type="date" id="new-tht-input" class="checker-input" value="${product.tht_datum || ''}" style="padding: 12px 16px; border-radius: 10px;">
+        <div class="controle-input-group">
+            <label class="controle-input-label">Nieuwe THT-datum:</label>
+            <input type="date" id="new-tht-input" class="checker-input controle-date-input" value="${product.tht_datum || ''}">
         </div>
 
-        <div style="display: flex; width: 100%; margin-top: 16px;">
-            <button id="save-btn" class="checker-btn" style="width: 100%; font-size: 1rem; padding: 14px; border-radius: 10px;">${currentControleIndex === currentProducts.length - 1 ? "Opslaan & Voltooien" : "Opslaan & Volgende"}</button>
+        <div class="controle-save-container">
+            <button id="save-btn" class="checker-btn controle-save-btn">${currentControleIndex === currentProducts.length - 1 ? "Opslaan & Voltooien" : "Opslaan & Volgende"}</button>
         </div>
     `;
 
@@ -243,11 +243,11 @@ function showProductDetails(product) {
     const actionContainer = document.getElementById("controle-action-container");
     actionContainer.innerHTML = "";
     const title = document.getElementById("tht-title");
-    if (title) title.style.display = "none";
+    if (title) title.classList.add("hidden");
     const datepickerContainer = document.getElementById("tht-datepicker-container");
-    if (datepickerContainer) datepickerContainer.style.display = "none";
+    if (datepickerContainer) datepickerContainer.classList.add("hidden");
     const afdelingContainer = document.getElementById("tht-afdeling-container");
-    if (afdelingContainer) afdelingContainer.style.display = "none";
+    if (afdelingContainer) afdelingContainer.classList.add("hidden");
 
     const container = document.getElementById("product-results");
     container.innerHTML = "";

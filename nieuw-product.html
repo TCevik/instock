@@ -5,57 +5,10 @@
     <title>Nieuw Product</title>
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/product-checker.css">
+    <link rel="stylesheet" href="css/nieuw-product.css">
     <script src="scripts/main.js"></script>
     <script src="scripts/header.js"></script>
     <script src="scripts/nieuw-product.js"></script>
-    <style>
-        .form-section {
-            background-color: #1a1a1a;
-            border: 1px solid #2d2d2d;
-            border-radius: 14px;
-            padding: 20px;
-            margin-bottom: 20px;
-            width: 100%;
-        }
-        .form-section-title {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #75a821;
-            margin-bottom: 16px;
-            border-bottom: 1px solid #2d2d2d;
-            padding-bottom: 8px;
-        }
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-        }
-        @media (max-width: 480px) {
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .form-group.full-width {
-            grid-column: span 2;
-        }
-        @media (max-width: 480px) {
-            .form-group.full-width {
-                grid-column: span 1;
-            }
-        }
-        .form-label {
-            font-weight: 600;
-            font-size: 0.85rem;
-            color: #888888;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-    </style>
 </head>
 <body>
     <div class="product-checker-container">
@@ -67,7 +20,7 @@
             <h1 id="page-title" class="page-title-inline">Nieuw Product</h1>
         </div>
 
-        <form id="product-form" style="width: 100%;">
+        <form id="product-form">
             <div class="form-section">
                 <div class="form-section-title">Productinformatie</div>
                 <div class="form-grid">
@@ -124,12 +77,12 @@
 
             <div class="form-actions">
                 <button type="submit" id="submit-btn" class="checker-btn">Product Opslaan</button>
-                <button type="button" id="delete-btn" class="checker-btn delete-btn" style="display: none;">Verwijderen</button>
+                <button type="button" id="delete-btn" class="checker-btn delete-btn">Verwijderen</button>
             </div>
         </form>
     </div>
 
-    <div id="delete-modal" class="modal-backdrop" style="display: none;">
+    <div id="delete-modal" class="modal-backdrop">
         <div class="modal-content">
             <h3 class="modal-title">Product Verwijderen</h3>
             <p class="modal-message">Weet je zeker dat je dit product wilt verwijderen? Type de productnaam en EAN ter bevestiging.</p>
@@ -137,17 +90,17 @@
                 <div>Product: <span id="delete-confirm-name" class="confirm-info-val"></span></div>
                 <div>EAN: <span id="delete-confirm-ean" class="confirm-info-ean"></span></div>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div class="confirm-input-group">
                 <input type="text" id="confirm-naam-input" class="checker-input" placeholder="Type productnaam...">
                 <input type="text" id="confirm-ean-input" class="checker-input" placeholder="Type EAN...">
             </div>
             <div class="modal-actions">
                 <button type="button" id="modal-cancel-btn" class="checker-btn">Annuleren</button>
-                <button type="button" id="modal-confirm-btn" class="checker-btn delete-btn" disabled style="opacity: 0.5; cursor: not-allowed;">Verwijderen</button>
+                <button type="button" id="modal-confirm-btn" class="checker-btn delete-btn" disabled>Verwijderen</button>
             </div>
         </div>
     </div>
-    <div id="delete-confirm-modal" class="modal-backdrop" style="display: none;">
+    <div id="delete-confirm-modal" class="modal-backdrop">
         <div class="modal-content">
             <h3 class="modal-title-alert">Héél Zeker?</h3>
             <p class="modal-message">Weet je dit ECHT heel zeker? Dit kan absoluut niet ongedaan worden gemaakt en het product zal permanent worden gewist.</p>
