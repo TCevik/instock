@@ -293,20 +293,54 @@ supabaseScript.onload = async () => {
         "sb_publishable_BFeKHHjqJmwvlU_GZ2CKZA_sidiX_Ov"
     );
 
-    const { data: { session } } = await window.supabaseClient.auth.getSession();
     const isLoginPage = window.location.pathname.endsWith("login.html");
 
-    if (isLoginPage && session) {
-        window.location.href = "index.html";
-    } else if (!isLoginPage && !session) {
+    const checkUserStatus = async (currentSession) => {
+        if (!currentSession) return false;
+        try {
+            const { data: profile, error } = await window.supabaseClient
+                .from("profielen")
+                .select("id")
+                .eq("id", currentSession.user.id)
+                .maybeSingle();
+            if (error || !profile) {
+                await window.supabaseClient.auth.signOut();
+                const msgEl = document.getElementById("login-msg");
+                if (msgEl) {
+                    msgEl.textContent = "Uw profiel kon niet geladen worden.";
+                    msgEl.className = "message-box error";
+                }
+                if (!window.location.href.includes("login.html")) {
+                    window.location.href = "login.html";
+                }
+                return true;
+            }
+        } catch (e) {
+            console.error(e);
+        }
+        return false;
+    };
+
+    const { data: { session } } = await window.supabaseClient.auth.getSession();
+
+    if (session) {
+        const isPending = await checkUserStatus(session);
+        if (!isPending && isLoginPage) {
+            window.location.href = "index.html";
+        }
+    } else if (!isLoginPage && !window.location.href.includes("login.html")) {
         window.location.href = "login.html";
     }
 
-    window.supabaseClient.auth.onAuthStateChange((event, currentSession) => {
-        const onLogin = window.location.pathname.endsWith("login.html");
-        if (onLogin && currentSession) {
-            window.location.href = "index.html";
-        } else if (!onLogin && !currentSession) {
+    window.supabaseClient.auth.onAuthStateChange(async (event, currentSession) => {
+        const onLogin = window.location.pathname.endsWith("login.html") || window.location.href.includes("login.html");
+        if (currentSession) {
+            const isPending = await checkUserStatus(currentSession);
+            if (isPending) return;
+            if (onLogin) {
+                window.location.href = "index.html";
+            }
+        } else if (!onLogin && !window.location.href.includes("login.html")) {
             window.location.href = "login.html";
         }
     });

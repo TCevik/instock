@@ -35,5 +35,27 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 });
             }
+
+            (async () => {
+                const client = await window.getSupabase();
+                const { data: { session } } = await client.auth.getSession();
+                const beheerLink = document.getElementById("menu-beheer");
+                if (beheerLink) {
+                    if (session) {
+                        const { data: profile } = await client
+                            .from("profielen")
+                            .select("rol")
+                            .eq("id", session.user.id)
+                            .maybeSingle();
+                        if (profile && profile.rol === "beheerder") {
+                            beheerLink.classList.remove("hidden");
+                        } else {
+                            beheerLink.classList.add("hidden");
+                        }
+                    } else {
+                        beheerLink.classList.add("hidden");
+                    }
+                }
+            })();
         });
 });

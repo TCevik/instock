@@ -16,8 +16,14 @@
             <div id="login-msg" class="message-box"></div>
             <form id="login-form">
                 <div class="form-group">
-                    <label for="login-email">E-mailadres</label>
-                    <input type="email" id="login-email" required>
+                    <label for="login-winkel">Winkel</label>
+                    <select id="login-winkel" required>
+                        <option value="" disabled selected>Selecteer een winkel</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="login-personeelsnummer">Personeelsnummer</label>
+                    <input type="number" id="login-personeelsnummer" required>
                 </div>
                 <div class="form-group">
                     <label for="login-password">Wachtwoord</label>
@@ -27,42 +33,15 @@
             </form>
             <div class="card-footer">
                 <a href="#" id="show-forgot">Wachtwoord vergeten?</a>
-                <span>Nog geen account? <a href="#" id="show-register">Registreren</a></span>
             </div>
         </div>
+    </div>
 
-        <div id="register-view" class="login-card hidden">
-            <h2>Registreren</h2>
-            <div id="register-msg" class="message-box"></div>
-            <form id="register-form">
-                <div class="form-group">
-                    <label for="register-email">E-mailadres</label>
-                    <input type="email" id="register-email" required>
-                </div>
-                <div class="form-group">
-                    <label for="register-password">Wachtwoord</label>
-                    <input type="password" id="register-password" required>
-                </div>
-                <button type="submit" class="btn-primary">Registreren</button>
-            </form>
-            <div class="card-footer">
-                <span>Heb je al een account? <a href="#" id="show-login">Inloggen</a></span>
-            </div>
-        </div>
-
-        <div id="forgot-view" class="login-card hidden">
-            <h2>Wachtwoord vergeten</h2>
-            <div id="forgot-msg" class="message-box"></div>
-            <form id="forgot-form">
-                <div class="form-group">
-                    <label for="forgot-email">E-mailadres</label>
-                    <input type="email" id="forgot-email" required>
-                </div>
-                <button type="submit" class="btn-primary">Wachtwoord herstellen</button>
-            </form>
-            <div class="card-footer">
-                <a href="#" id="back-to-login">Terug naar inloggen</a>
-            </div>
+    <div id="forgot-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Wachtwoord vergeten</h3>
+            <p>Neem contact op met je manager of beheerder om je wachtwoord te laten resetten.</p>
+            <button id="close-modal-btn" class="btn-primary">Sluiten</button>
         </div>
     </div>
 
