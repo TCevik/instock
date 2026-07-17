@@ -25,20 +25,8 @@ document.addEventListener("DOMContentLoaded", () => {
             .single();
 
         if (profile && profile.rol !== "beheerder") {
-            if (productId) {
-                window.location.href = "index.html";
-                return;
-            }
-            const disabledFields = ["naam", "merk", "inhoud", "ean", "afdeling", "schaplocatie", "prijs"];
-            disabledFields.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.disabled = true;
-                }
-            });
-            if (deleteBtn) {
-                deleteBtn.style.display = "none";
-            }
+            window.location.href = "index.html";
+            return;
         }
 
         if (productId) {

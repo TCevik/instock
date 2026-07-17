@@ -89,7 +89,7 @@ async function fetchHistory() {
             .from("product_historie")
             .select("*, profielen(volledige_naam)")
             .order("uitgevoerd_at", { ascending: false })
-            .limit(100);
+            .limit(10000);
 
         if (selectedId) {
             query = query.eq("gebruiker_id", selectedId);
@@ -100,7 +100,12 @@ async function fetchHistory() {
         if (error) throw error;
 
         allHistoryItems = data || [];
-        renderHistoryList(allHistoryItems);
+        const searchInput = document.getElementById("historie-search");
+        if (searchInput && searchInput.value.trim() !== "") {
+            searchInput.dispatchEvent(new Event("input"));
+        } else {
+            renderHistoryList(allHistoryItems);
+        }
     } catch (err) {
         if (errorMsg) {
             errorMsg.textContent = "Fout bij laden historie: " + err.message;
@@ -183,6 +188,7 @@ function renderHistoryList(items) {
 
 document.addEventListener("DOMContentLoaded", () => {
     checkAdminAndInit();
+    setInterval(fetchHistory, 3000);
 
     const searchInput = document.getElementById("historie-search");
     if (searchInput) {

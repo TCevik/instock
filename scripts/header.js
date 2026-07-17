@@ -40,21 +40,41 @@ document.addEventListener("DOMContentLoaded", () => {
                 const client = await window.getSupabase();
                 const { data: { session } } = await client.auth.getSession();
                 const beheerLink = document.getElementById("menu-beheer");
-                if (beheerLink) {
-                    if (session) {
-                        const { data: profile } = await client
-                            .from("profielen")
-                            .select("rol")
-                            .eq("id", session.user.id)
-                            .maybeSingle();
-                        if (profile && profile.rol === "beheerder") {
-                            beheerLink.classList.remove("hidden");
-                        } else {
-                            beheerLink.classList.add("hidden");
+                const historieLink = document.getElementById("menu-historie");
+                const nieuwProductLink = document.getElementById("menu-nieuw-product");
+                const dashHistorie = document.getElementById("dash-historie");
+                const dashNieuwProduct = document.getElementById("dash-nieuw-product");
+                const welcomeTitle = document.getElementById("welcome-title");
+                if (session) {
+                    const { data: profile } = await client
+                        .from("profielen")
+                        .select("rol, volledige_naam")
+                        .eq("id", session.user.id)
+                        .maybeSingle();
+                    if (profile) {
+                        if (welcomeTitle && profile.volledige_naam) {
+                            welcomeTitle.textContent = `Welkom terug, ${profile.volledige_naam}`;
                         }
-                    } else {
-                        beheerLink.classList.add("hidden");
+                        if (profile.rol === "beheerder") {
+                            if (beheerLink) beheerLink.classList.remove("hidden");
+                            if (historieLink) historieLink.classList.remove("hidden");
+                            if (nieuwProductLink) nieuwProductLink.classList.remove("hidden");
+                            if (dashHistorie) dashHistorie.classList.remove("hidden");
+                            if (dashNieuwProduct) dashNieuwProduct.classList.remove("hidden");
+                        } else {
+                            if (beheerLink) beheerLink.classList.add("hidden");
+                            if (historieLink) historieLink.classList.add("hidden");
+                            if (nieuwProductLink) nieuwProductLink.classList.add("hidden");
+                            if (dashHistorie) dashHistorie.classList.add("hidden");
+                            if (dashNieuwProduct) dashNieuwProduct.classList.add("hidden");
+                        }
                     }
+                } else {
+                    if (beheerLink) beheerLink.classList.add("hidden");
+                    if (historieLink) historieLink.classList.add("hidden");
+                    if (nieuwProductLink) nieuwProductLink.classList.add("hidden");
+                    if (dashHistorie) dashHistorie.classList.add("hidden");
+                    if (dashNieuwProduct) dashNieuwProduct.classList.add("hidden");
                 }
             })();
         });
