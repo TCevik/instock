@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Productbeheer</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/product-checker.css">
+    <script src="scripts/main.js"></script>
+    <script src="scripts/header.js"></script>
+    <script src="scripts/beheer.js"></script>
+    <style>
+        .form-section {
+            background-color: #1a1a1a;
+            border: 1px solid #2d2d2d;
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        .form-section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #75a821;
+            margin-bottom: 16px;
+            border-bottom: 1px solid #2d2d2d;
+            padding-bottom: 8px;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        @media (max-width: 480px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .form-group.full-width {
+            grid-column: span 2;
+        }
+        @media (max-width: 480px) {
+            .form-group.full-width {
+                grid-column: span 1;
+            }
+        }
+        .form-label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #888888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="product-checker-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 8px;">
+            <button id="cancel-btn" class="back-btn">
+                <span class="material-icons">arrow_back</span>
+                <span>Annuleren</span>
+            </button>
+            <h1 id="page-title" style="font-size: 1.5rem; font-weight: 800; margin: 0;">Nieuw Product</h1>
+        </div>
+
+        <form id="product-form" style="width: 100%;">
+            <div class="form-section">
+                <div class="form-section-title">Productinformatie</div>
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label class="form-label">Productnaam</label>
+                        <input type="text" id="naam" class="checker-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Merk</label>
+                        <input type="text" id="merk" class="checker-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Inhoud</label>
+                        <input type="text" id="inhoud" class="checker-input" placeholder="bijv. 500g, 1L">
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="form-label">EAN Barcode</label>
+                        <input type="text" id="ean" class="checker-input" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-title">Plaatsing & Categorie</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Afdeling</label>
+                        <input type="text" id="afdeling" class="checker-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Schaplocatie</label>
+                        <input type="text" id="schaplocatie" class="checker-input">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-title">Status & Voorraad</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Prijs (€)</label>
+                        <input type="number" step="0.01" id="prijs" class="checker-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Aantal / Voorraad</label>
+                        <input type="number" id="aantal" class="checker-input" required>
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="form-label">THT-datum</label>
+                        <input type="date" id="tht_datum" class="checker-input">
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" id="submit-btn" class="checker-btn" style="margin-top: 8px;">Product Opslaan</button>
+        </form>
+    </div>
+</body>
+</html>

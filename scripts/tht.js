@@ -100,29 +100,45 @@ function showControleStep() {
     stepCard.className = "product-details-view";
 
     stepCard.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 12px;">
             <button id="stop-controle-btn" class="back-btn" style="padding: 6px 12px; font-size: 0.85rem; border-radius: 8px;">&larr; Stoppen</button>
             <span style="font-weight: 600; font-size: 0.9rem; color: #666666;">Product ${currentControleIndex + 1} / ${currentProducts.length}</span>
         </div>
         
-        <div style="margin-top: 8px;">
-            <span style="font-size: 0.85rem; font-weight: 700; color: #75a821; text-transform: uppercase; letter-spacing: 1px;">${product.merk || "Merkloos"}</span>
-            <h2 style="font-size: 1.6rem; font-weight: 700; margin: 4px 0 8px 0; color: #ffffff; line-height: 1.2;">${product.naam || "Onbekend product"}</h2>
+        <div class="product-details-header" style="margin-top: 8px;">
+            <span class="product-brand-text">${product.merk || "Merkloos"}</span>
+            <h2 class="product-title-flat" style="margin: 4px 0 8px 0;">${product.naam || "Onbekend product"}</h2>
             <span style="font-size: 0.9rem; color: #888888; display: block; margin-bottom: 16px;">Inhoud: ${product.inhoud || "-"} | EAN: ${product.ean || "-"}</span>
         </div>
         
-        <div style="background-color: #1a1a1a; border: 1px solid #2d2d2d; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 8px;">
-            <div style="display: flex; justify-content: space-between; font-size: 0.95rem;">
-                <span style="color: #888888;">Schaplocatie</span>
-                <span style="font-weight: 600; color: #ffffff;">${product.schaplocatie || "-"}</span>
+        <div class="product-details-list-flat" style="margin-bottom: 16px;">
+            <div class="detail-item-flat">
+                <div class="detail-header-flat">
+                    <span class="material-icons detail-icon-flat">place</span>
+                    <span class="detail-label-flat">Schaplocatie</span>
+                </div>
+                <span class="detail-value-flat">${product.schaplocatie || "-"}</span>
             </div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.95rem; border-top: 1px solid #2d2d2d; padding-top: 12px;">
-                <span style="color: #888888;">Huidige voorraad</span>
-                <span style="font-weight: 600; color: #ffffff;">${product.aantal} stuks</span>
+            <div class="detail-item-flat">
+                <div class="detail-header-flat">
+                    <span class="material-icons detail-icon-flat">category</span>
+                    <span class="detail-label-flat">Afdeling</span>
+                </div>
+                <span class="detail-value-flat">${product.afdeling || "-"}</span>
             </div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.95rem; border-top: 1px solid #2d2d2d; padding-top: 12px;">
-                <span style="color: #888888;">Huidige THT-datum</span>
-                <span style="font-weight: 600; color: ${thtColor};">${tht}</span>
+            <div class="detail-item-flat">
+                <div class="detail-header-flat">
+                    <span class="material-icons detail-icon-flat">inventory_2</span>
+                    <span class="detail-label-flat">Huidige voorraad</span>
+                </div>
+                <span class="detail-value-flat">${product.aantal} stuks</span>
+            </div>
+            <div class="detail-item-flat">
+                <div class="detail-header-flat">
+                    <span class="material-icons detail-icon-flat">calendar_today</span>
+                    <span class="detail-label-flat">Huidige THT-datum</span>
+                </div>
+                <span class="detail-value-flat" style="color: ${thtColor};">${tht}</span>
             </div>
         </div>
 

@@ -10,6 +10,11 @@ document.head.appendChild(supabaseScript);
 window.formatPrice = (prijs) => prijs !== null ? `€${parseFloat(prijs).toFixed(2).replace(".", ",")}` : "-";
 window.formatDate = (dateStr) => dateStr ? new Date(dateStr).toLocaleDateString("nl-NL") : "-";
 
+const materialIcons = document.createElement("link");
+materialIcons.rel = "stylesheet";
+materialIcons.href = "https://fonts.googleapis.com/icon?family=Material+Icons";
+document.head.appendChild(materialIcons);
+
 window.renderProductDetailsCard = (product, onBack) => {
     const card = document.createElement("div");
     card.className = "product-details-view";
@@ -17,79 +22,81 @@ window.renderProductDetailsCard = (product, onBack) => {
     const tht = window.formatDate(product.tht_datum);
     
     card.innerHTML = `
-        <button id="back-btn" class="back-btn">
-            <span class="material-icons">arrow_back</span>
-            <span>Terug</span>
-        </button>
-        
-        <div class="product-details-hero">
-            <div class="hero-header">
-                <span class="product-brand-badge">${product.merk || "Merkloos"}</span>
-            </div>
-            <h2 class="product-title-large">${product.naam || "Onbekend product"}</h2>
-            
-            <div class="hero-stats">
-                <div class="hero-stat-item">
-                    <div class="stat-icon-wrapper">
-                        <span class="material-icons">payments</span>
-                    </div>
-                    <div class="stat-info">
-                        <span class="stat-label">Prijs</span>
-                        <span class="stat-val price-val">${price}</span>
-                    </div>
-                </div>
-                <div class="hero-stat-item">
-                    <div class="stat-icon-wrapper">
-                        <span class="material-icons">inventory_2</span>
-                    </div>
-                    <div class="stat-info">
-                        <span class="stat-label">Voorraad</span>
-                        <span class="stat-val stock-val">${product.aantal} stuks</span>
-                    </div>
-                </div>
-            </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <button id="back-btn" class="back-btn">
+                <span class="material-icons">arrow_back</span>
+                <span>Terug</span>
+            </button>
+            <button id="edit-btn" class="back-btn">
+                <span class="material-icons">edit</span>
+                <span>Aanpassen</span>
+            </button>
         </div>
         
-        <div class="product-details-list">
-            <div class="detail-row">
-                <div class="detail-left">
-                    <span class="material-icons detail-icon">place</span>
-                    <span class="detail-label">Schaplocatie</span>
-                </div>
-                <span class="detail-value">${product.schaplocatie || "-"}</span>
+        <div class="product-details-flat">
+            <div class="product-details-header">
+                <span class="product-brand-text">${product.merk || "Merkloos"}</span>
+                <h2 class="product-title-flat">${product.naam || "Onbekend product"}</h2>
             </div>
-            <div class="detail-row">
-                <div class="detail-left">
-                    <span class="material-icons detail-icon">calendar_today</span>
-                    <span class="detail-label">THT-Datum</span>
+            
+            <div class="product-details-list-flat">
+                <div class="detail-item-flat">
+                    <div class="detail-header-flat">
+                        <span class="material-icons detail-icon-flat">payments</span>
+                        <span class="detail-label-flat">Prijs</span>
+                    </div>
+                    <span class="detail-value-flat price-val">${price}</span>
                 </div>
-                <span class="detail-value">${tht}</span>
-            </div>
-            <div class="detail-row">
-                <div class="detail-left">
-                    <span class="material-icons detail-icon">inventory</span>
-                    <span class="detail-label">Inhoud</span>
+                <div class="detail-item-flat">
+                    <div class="detail-header-flat">
+                        <span class="material-icons detail-icon-flat">inventory_2</span>
+                        <span class="detail-label-flat">Voorraad</span>
+                    </div>
+                    <span class="detail-value-flat">${product.aantal} stuks</span>
                 </div>
-                <span class="detail-value">${product.inhoud || "-"}</span>
-            </div>
-            <div class="detail-row">
-                <div class="detail-left">
-                    <span class="material-icons detail-icon">category</span>
-                    <span class="detail-label">Afdeling</span>
+                <div class="detail-item-flat">
+                    <div class="detail-header-flat">
+                        <span class="material-icons detail-icon-flat">place</span>
+                        <span class="detail-label-flat">Schaplocatie</span>
+                    </div>
+                    <span class="detail-value-flat">${product.schaplocatie || "-"}</span>
                 </div>
-                <span class="detail-value">${product.afdeling || "-"}</span>
-            </div>
-            <div class="detail-row">
-                <div class="detail-left">
-                    <span class="material-icons detail-icon">qr_code</span>
-                    <span class="detail-label">EAN</span>
+                <div class="detail-item-flat">
+                    <div class="detail-header-flat">
+                        <span class="material-icons detail-icon-flat">calendar_today</span>
+                        <span class="detail-label-flat">THT-Datum</span>
+                    </div>
+                    <span class="detail-value-flat">${tht}</span>
                 </div>
-                <span class="detail-value highlight-ean">${product.ean || "-"}</span>
+                <div class="detail-item-flat">
+                    <div class="detail-header-flat">
+                        <span class="material-icons detail-icon-flat">inventory</span>
+                        <span class="detail-label-flat">Inhoud</span>
+                    </div>
+                    <span class="detail-value-flat">${product.inhoud || "-"}</span>
+                </div>
+                <div class="detail-item-flat">
+                    <div class="detail-header-flat">
+                        <span class="material-icons detail-icon-flat">category</span>
+                        <span class="detail-label-flat">Afdeling</span>
+                    </div>
+                    <span class="detail-value-flat">${product.afdeling || "-"}</span>
+                </div>
+                <div class="detail-item-flat" style="grid-column: span 2;">
+                    <div class="detail-header-flat">
+                        <span class="material-icons detail-icon-flat">qr_code</span>
+                        <span class="detail-label-flat">EAN</span>
+                    </div>
+                    <span class="detail-value-flat highlight-ean">${product.ean || "-"}</span>
+                </div>
             </div>
         </div>
     `;
     
     card.querySelector("#back-btn").addEventListener("click", onBack);
+    card.querySelector("#edit-btn").addEventListener("click", () => {
+        window.location.href = `beheer.html?id=${product.id}`;
+    });
     return card;
 };
 

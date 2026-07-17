@@ -153,155 +153,88 @@
     transition: transform 0.3s ease;
 }
 
-.product-details-hero {
-    background: linear-gradient(145deg, #1a2211 0%, #121212 100%);
-    border: 1px solid rgba(117, 168, 33, 0.15);
-    border-radius: 20px;
-    padding: 24px;
+.product-details-flat {
+    width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    gap: 24px;
 }
 
-.product-details-hero::before {
-    content: "";
-    position: absolute;
-    top: -50%;
-    right: -50%;
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(circle, rgba(117, 168, 33, 0.08) 0%, rgba(0,0,0,0) 70%);
-    pointer-events: none;
-}
-
-.hero-header {
+.product-details-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    gap: 6px;
+    border-left: 3px solid #75a821;
+    padding-left: 16px;
 }
 
-.product-brand-badge {
-    background-color: rgba(117, 168, 33, 0.15);
-    color: #8cc427;
-    font-size: 0.8rem;
+.product-brand-text {
+    color: #75a821;
+    font-size: 0.85rem;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 1.5px;
-    padding: 6px 14px;
-    border-radius: 30px;
-    border: 1px solid rgba(117, 168, 33, 0.3);
 }
 
-.product-title-large {
+.product-title-flat {
     font-size: 1.8rem;
     font-weight: 800;
     color: #ffffff;
     line-height: 1.25;
-    letter-spacing: -0.5px;
 }
 
-.hero-stats {
+.product-details-list-flat {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 12px;
-    margin-top: 8px;
+    width: 100%;
 }
 
-.hero-stat-item {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 16px;
-    padding: 14px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    backdrop-filter: blur(10px);
+@media (max-width: 480px) {
+    .product-details-list-flat {
+        grid-template-columns: 1fr;
+    }
+    .product-details-list-flat > div {
+        grid-column: span 1 !important;
+    }
 }
 
-.stat-icon-wrapper {
-    background: rgba(117, 168, 33, 0.15);
-    color: #8cc427;
-    border-radius: 12px;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.stat-icon-wrapper .material-icons {
-    font-size: 1.3rem;
-}
-
-.stat-info {
+.detail-item-flat {
     display: flex;
     flex-direction: column;
+    gap: 6px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.stat-label {
-    font-size: 0.75rem;
-    color: #888888;
-    text-transform: uppercase;
-    font-weight: 700;
-    letter-spacing: 0.5px;
+.detail-header-flat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.stat-val {
+.detail-icon-flat {
     font-size: 1.15rem;
-    font-weight: 700;
-    color: #ffffff;
-}
-
-.price-val {
-    color: #8cc427;
-    text-shadow: 0 0 10px rgba(117, 168, 33, 0.2);
-}
-
-.product-details-list {
-    background: rgba(26, 26, 26, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 20px;
-    padding: 8px 20px;
-    backdrop-filter: blur(10px);
-}
-
-.detail-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.detail-row:last-child {
-    border-bottom: none;
-}
-
-.detail-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.detail-icon {
-    font-size: 1.25rem;
     color: #8cc427;
     opacity: 0.85;
 }
 
-.detail-label {
-    color: #aaaaaa;
-    font-size: 0.95rem;
-    font-weight: 500;
+.detail-label-flat {
+    color: #888888;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.detail-value {
+.detail-value-flat {
     color: #ffffff;
-    font-size: 1.05rem;
-    font-weight: 600;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.price-val {
+    color: #8cc427;
 }
 
 .highlight-ean {
