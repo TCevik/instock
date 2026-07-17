@@ -185,7 +185,7 @@ window.renderProductDetailsCard = (product, onBack) => {
     card.querySelector("#back-btn").addEventListener("click", onBack);
     card.querySelector("#edit-btn").addEventListener("click", () => {
         const fromPage = window.location.pathname.split("/").pop() || "index.html";
-        window.location.href = `beheer.html?id=${product.id}&from=${encodeURIComponent(fromPage)}`;
+        window.location.href = `nieuw-product.html?id=${product.id}&from=${encodeURIComponent(fromPage)}`;
     });
 
     (async () => {
