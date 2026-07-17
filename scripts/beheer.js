@@ -6,7 +6,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const urlParams = new URLSearchParams(window.location.search);
     const productId = urlParams.get("id");
     const fromPage = urlParams.get("from") || (productId ? "product-checker.html" : "index.html");
+    let loadedNaam = "";
+    let loadedEan = "";
  
+    const deleteBtn = document.getElementById("delete-btn");
+
     cancelBtn.addEventListener("click", () => {
         window.location.href = fromPage;
     });
@@ -14,8 +18,92 @@ document.addEventListener("DOMContentLoaded", () => {
     window.getSupabase().then(() => {
         if (productId) {
             loadProduct(productId);
+            if (deleteBtn) {
+                deleteBtn.style.display = "block";
+            }
         }
     });
+
+    const deleteModal = document.getElementById("delete-modal");
+    const modalCancelBtn = document.getElementById("modal-cancel-btn");
+    const modalConfirmBtn = document.getElementById("modal-confirm-btn");
+    const confirmNaamInput = document.getElementById("confirm-naam-input");
+    const confirmEanInput = document.getElementById("confirm-ean-input");
+
+    function validateConfirmation() {
+        const matchesNaam = (confirmNaamInput ? confirmNaamInput.value.trim() : "") === loadedNaam.trim();
+        const matchesEan = (confirmEanInput ? confirmEanInput.value.trim() : "") === loadedEan.trim();
+
+        if (matchesNaam && matchesEan) {
+            modalConfirmBtn.disabled = false;
+            modalConfirmBtn.style.opacity = "1";
+            modalConfirmBtn.style.cursor = "pointer";
+        } else {
+            modalConfirmBtn.disabled = true;
+            modalConfirmBtn.style.opacity = "0.5";
+            modalConfirmBtn.style.cursor = "not-allowed";
+        }
+    }
+
+    if (confirmNaamInput) {
+        confirmNaamInput.addEventListener("input", validateConfirmation);
+    }
+    if (confirmEanInput) {
+        confirmEanInput.addEventListener("input", validateConfirmation);
+    }
+
+    if (deleteBtn && deleteModal) {
+        deleteBtn.addEventListener("click", () => {
+            const confirmNameLabel = document.getElementById("delete-confirm-name");
+            const confirmEanLabel = document.getElementById("delete-confirm-ean");
+            if (confirmNameLabel) confirmNameLabel.textContent = loadedNaam;
+            if (confirmEanLabel) confirmEanLabel.textContent = loadedEan;
+
+            if (confirmNaamInput) confirmNaamInput.value = "";
+            if (confirmEanInput) confirmEanInput.value = "";
+            validateConfirmation();
+            deleteModal.style.display = "flex";
+        });
+    }
+
+    if (modalCancelBtn && deleteModal) {
+        modalCancelBtn.addEventListener("click", () => {
+            deleteModal.style.display = "none";
+        });
+    }
+
+    const deleteConfirmModal = document.getElementById("delete-confirm-modal");
+    const modalFinalCancelBtn = document.getElementById("modal-final-cancel-btn");
+    const modalFinalConfirmBtn = document.getElementById("modal-final-confirm-btn");
+
+    if (modalConfirmBtn && deleteConfirmModal && deleteModal) {
+        modalConfirmBtn.addEventListener("click", () => {
+            deleteModal.style.display = "none";
+            deleteConfirmModal.style.display = "flex";
+        });
+    }
+
+    if (modalFinalCancelBtn && deleteConfirmModal) {
+        modalFinalCancelBtn.addEventListener("click", () => {
+            deleteConfirmModal.style.display = "none";
+        });
+    }
+
+    if (modalFinalConfirmBtn) {
+        modalFinalConfirmBtn.addEventListener("click", async () => {
+            const { error } = await window.supabaseClient
+                .from("producten")
+                .delete()
+                .eq("id", productId);
+
+            if (error) {
+                console.error(error);
+                alert("Er is een fout opgetreden bij het verwijderen van het product.");
+            } else {
+                window.location.href = fromPage;
+            }
+        });
+    }
 
     async function loadProduct(id) {
         pageTitle.textContent = "Product Bewerken";
@@ -31,6 +119,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (data) {
+            loadedNaam = data.naam || "";
+            loadedEan = data.ean || "";
             document.getElementById("naam").value = data.naam || "";
             document.getElementById("merk").value = data.merk || "";
             document.getElementById("ean").value = data.ean || "";

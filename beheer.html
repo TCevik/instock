@@ -59,12 +59,12 @@
 </head>
 <body>
     <div class="product-checker-container">
-        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 8px;">
+        <div class="card-header-actions">
             <button id="cancel-btn" class="back-btn">
                 <span class="material-icons">arrow_back</span>
                 <span>Annuleren</span>
             </button>
-            <h1 id="page-title" style="font-size: 1.5rem; font-weight: 800; margin: 0;">Nieuw Product</h1>
+            <h1 id="page-title" class="page-title-inline">Nieuw Product</h1>
         </div>
 
         <form id="product-form" style="width: 100%;">
@@ -122,8 +122,40 @@
                 </div>
             </div>
 
-            <button type="submit" id="submit-btn" class="checker-btn" style="margin-top: 8px;">Product Opslaan</button>
+            <div class="form-actions">
+                <button type="submit" id="submit-btn" class="checker-btn">Product Opslaan</button>
+                <button type="button" id="delete-btn" class="checker-btn delete-btn" style="display: none;">Verwijderen</button>
+            </div>
         </form>
+    </div>
+
+    <div id="delete-modal" class="modal-backdrop" style="display: none;">
+        <div class="modal-content">
+            <h3 class="modal-title">Product Verwijderen</h3>
+            <p class="modal-message">Weet je zeker dat je dit product wilt verwijderen? Type de productnaam en EAN ter bevestiging.</p>
+            <div class="confirm-info-box">
+                <div>Product: <span id="delete-confirm-name" class="confirm-info-val"></span></div>
+                <div>EAN: <span id="delete-confirm-ean" class="confirm-info-ean"></span></div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <input type="text" id="confirm-naam-input" class="checker-input" placeholder="Type productnaam...">
+                <input type="text" id="confirm-ean-input" class="checker-input" placeholder="Type EAN...">
+            </div>
+            <div class="modal-actions">
+                <button type="button" id="modal-cancel-btn" class="checker-btn">Annuleren</button>
+                <button type="button" id="modal-confirm-btn" class="checker-btn delete-btn" disabled style="opacity: 0.5; cursor: not-allowed;">Verwijderen</button>
+            </div>
+        </div>
+    </div>
+    <div id="delete-confirm-modal" class="modal-backdrop" style="display: none;">
+        <div class="modal-content">
+            <h3 class="modal-title-alert">Héél Zeker?</h3>
+            <p class="modal-message">Weet je dit ECHT heel zeker? Dit kan absoluut niet ongedaan worden gemaakt en het product zal permanent worden gewist.</p>
+            <div class="modal-actions">
+                <button type="button" id="modal-final-cancel-btn" class="checker-btn">Nee, Annuleer</button>
+                <button type="button" id="modal-final-confirm-btn" class="checker-btn delete-btn">Ja, Verwijder Definitief</button>
+            </div>
+        </div>
     </div>
 </body>
 </html>

@@ -80,6 +80,17 @@ window.initProductSearch = (onSingleEan, onResults, onEmptyQuery) => {
     });
 };
 
+window.closeSearchView = (displayResultsCallback) => {
+    document.getElementById("search-section").style.display = "flex";
+    if (window.lastSearchResults && window.lastSearchResults.length > 0) {
+        displayResultsCallback(window.lastSearchResults);
+    } else {
+        document.getElementById("product-results").innerHTML = "";
+        document.getElementById("product-input").value = "";
+        document.getElementById("product-input").focus();
+    }
+};
+
 const materialIcons = document.createElement("link");
 materialIcons.rel = "stylesheet";
 materialIcons.href = "https://fonts.googleapis.com/icon?family=Material+Icons";
@@ -92,7 +103,7 @@ window.renderProductDetailsCard = (product, onBack) => {
     const tht = window.formatDate(product.tht_datum);
     
     card.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <div class="card-header-actions">
             <button id="back-btn" class="back-btn">
                 <span class="material-icons">arrow_back</span>
                 <span>Terug</span>
@@ -152,7 +163,7 @@ window.renderProductDetailsCard = (product, onBack) => {
                     </div>
                     <span class="detail-value-flat">${product.afdeling || "-"}</span>
                 </div>
-                <div class="detail-item-flat" style="grid-column: span 2;">
+                <div class="detail-item-flat grid-span-2">
                     <div class="detail-header-flat">
                         <span class="material-icons detail-icon-flat">qr_code</span>
                         <span class="detail-label-flat">EAN</span>
@@ -161,12 +172,12 @@ window.renderProductDetailsCard = (product, onBack) => {
                 </div>
             </div>
 
-            <div id="history-section" style="display: none; margin-top: 24px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 24px;">
-                <h3 style="font-size: 1.15rem; font-weight: 700; color: #ffffff; margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
-                    <span class="material-icons" style="color: #8cc427; font-size: 1.3rem;">history</span>
+            <div id="history-section" class="history-section">
+                <h3 class="history-title">
+                    <span class="material-icons history-title-icon">history</span>
                     <span>Productgeschiedenis</span>
                 </h3>
-                <div id="history-list" style="display: flex; flex-direction: column; gap: 12px; width: 100%;"></div>
+                <div id="history-list" class="history-list"></div>
             </div>
         </div>
     `;
@@ -200,14 +211,14 @@ window.renderProductDetailsCard = (product, onBack) => {
             const userDisplay = isCurrentUser ? (currentUserEmail || "Jij") : `Gebruiker (${item.gebruiker_id.substring(0, 8)})`;
             
             const historyItem = document.createElement("div");
-            historyItem.style.cssText = "background-color: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06); padding: 12px 16px; border-radius: 10px; display: flex; flex-direction: column; gap: 6px;";
+            historyItem.className = "history-item";
             
             const header = document.createElement("div");
-            header.style.cssText = "display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;";
-            header.innerHTML = `<span style="font-weight: 700; color: #8cc427;">${userDisplay}</span><span style="color: #888888;">${date}</span>`;
+            header.className = "history-item-header";
+            header.innerHTML = `<span class="history-user">${userDisplay}</span><span class="history-date">${date}</span>`;
             
             const actionText = document.createElement("div");
-            actionText.style.cssText = "font-size: 0.95rem; color: #ffffff; font-weight: 600;";
+            actionText.className = "history-action";
             actionText.textContent = item.actie;
 
             historyItem.appendChild(header);
@@ -238,12 +249,12 @@ window.renderProductDetailsCard = (product, onBack) => {
                     const oldVal = item.oude_waarde[key];
                     const newVal = item.nieuwe_waarde[key];
                     if (oldVal !== newVal) {
-                        changes.push(`<div><span style="color: #888888;">${friendlyFields[key]}:</span> <span style="color: #ff5252; text-decoration: line-through;">${formatVal(key, oldVal)}</span> <span style="color: #8cc427;">→</span> <span style="color: #8cc427;">${formatVal(key, newVal)}</span></div>`);
+                        changes.push(`<div><span class="change-label">${friendlyFields[key]}:</span> <span class="change-old">${formatVal(key, oldVal)}</span> <span class="change-arrow">→</span> <span class="change-new">${formatVal(key, newVal)}</span></div>`);
                     }
                 }
                 if (changes.length > 0) {
                     const changesContainer = document.createElement("div");
-                    changesContainer.style.cssText = "font-size: 0.85rem; display: flex; flex-direction: column; gap: 4px; padding-top: 4px; border-top: 1px dashed rgba(255, 255, 255, 0.08); margin-top: 4px;";
+                    changesContainer.className = "history-changes";
                     changesContainer.innerHTML = changes.join("");
                     historyItem.appendChild(changesContainer);
                 }

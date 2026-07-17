@@ -15,7 +15,19 @@ function displayResults(products) {
     });
 }
 
+function updateURLParams(productId = "") {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (productId) {
+        urlParams.set("id", productId);
+    } else {
+        urlParams.delete("id");
+    }
+    const newURL = `${window.location.pathname}?${urlParams.toString()}`;
+    window.history.replaceState({}, '', newURL);
+}
+
 function showMutationForm(product) {
+    updateURLParams(product.id);
     document.getElementById("search-section").style.display = "none";
     const container = document.getElementById("product-results");
     container.innerHTML = "";
@@ -24,10 +36,9 @@ function showMutationForm(product) {
     card.className = "mutation-card";
 
     let mutationType = "sub";
-    let selectedReason = "Correctie";
 
     card.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <div class="card-header-actions">
             <button id="back-btn" class="back-btn">
                 <span class="material-icons">arrow_back</span>
                 <span>Terug</span>
@@ -68,19 +79,10 @@ function showMutationForm(product) {
             </div>
         </div>
 
-        <div class="mutation-form-section">
-            <span class="mutation-form-label">Reden</span>
-            <div class="reason-grid" id="reason-container">
-                <button type="button" class="reason-btn active" data-reason="Correctie">Correctie</button>
-                <button type="button" class="reason-btn" data-reason="Breuk">Breuk</button>
-                <button type="button" class="reason-btn" data-reason="Diefstal">Diefstal</button>
-                <button type="button" class="reason-btn" data-reason="Levering">Levering</button>
-                <button type="button" class="reason-btn" data-reason="Overig">Overig</button>
-            </div>
-        </div>
 
-        <div style="margin-top: 10px;">
-            <button id="submit-mutation" class="checker-btn" style="width: 100%;">Mutatie verwerken</button>
+
+        <div class="submit-btn-wrapper">
+            <button id="submit-mutation" class="checker-btn">Mutatie verwerken</button>
         </div>
         <div id="feedback-message" style="display: none;"></div>
     `;
@@ -92,7 +94,6 @@ function showMutationForm(product) {
     const plusBtn = card.querySelector("#qty-plus");
     const submitBtn = card.querySelector("#submit-mutation");
     const feedback = card.querySelector("#feedback-message");
-    const reasonButtons = card.querySelectorAll(".reason-btn");
 
     subBtn.addEventListener("click", () => {
         mutationType = "sub";
@@ -116,23 +117,11 @@ function showMutationForm(product) {
         qtyInput.value = val + 1;
     });
 
-    reasonButtons.forEach(btn => {
-        btn.addEventListener("click", () => {
-            reasonButtons.forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
-            selectedReason = btn.getAttribute("data-reason");
-        });
-    });
+
 
     card.querySelector("#back-btn").addEventListener("click", () => {
-        document.getElementById("search-section").style.display = "flex";
-        if (window.lastSearchResults.length > 0) {
-            displayResults(window.lastSearchResults);
-        } else {
-            container.innerHTML = "";
-            document.getElementById("product-input").value = "";
-            document.getElementById("product-input").focus();
-        }
+        updateURLParams("");
+        window.closeSearchView(displayResults);
     });
 
     submitBtn.addEventListener("click", async () => {
@@ -172,7 +161,7 @@ function showMutationForm(product) {
         qtyInput.value = "1";
 
         feedback.className = "success-message";
-        feedback.textContent = `Succesvol gemuteerd (${mutationType === "add" ? "+" : "-"}${qty}). Reden: ${selectedReason}.`;
+        feedback.textContent = `Succesvol gemuteerd (${mutationType === "add" ? "+" : "-"}${qty}).`;
         feedback.style.display = "block";
 
         setTimeout(() => {
@@ -183,7 +172,7 @@ function showMutationForm(product) {
     container.appendChild(card);
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     window.initProductSearch(
         (product) => {
             window.lastSearchResults = [];
@@ -197,4 +186,18 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("product-results").innerHTML = "";
         }
     );
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const idParam = urlParams.get("id");
+    if (idParam) {
+        const client = await window.getSupabase();
+        const { data, error } = await client
+            .from("producten")
+            .select("*")
+            .eq("id", idParam)
+            .single();
+        if (data && !error) {
+            showMutationForm(data);
+        }
+    }
 });

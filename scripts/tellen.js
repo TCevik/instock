@@ -15,7 +15,19 @@ function displayResults(products) {
     });
 }
 
+function updateURLParams(productId = "") {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (productId) {
+        urlParams.set("id", productId);
+    } else {
+        urlParams.delete("id");
+    }
+    const newURL = `${window.location.pathname}?${urlParams.toString()}`;
+    window.history.replaceState({}, '', newURL);
+}
+
 function showCountForm(product) {
+    updateURLParams(product.id);
     document.getElementById("search-section").style.display = "none";
     const container = document.getElementById("product-results");
     container.innerHTML = "";
@@ -24,7 +36,7 @@ function showCountForm(product) {
     card.className = "count-card";
 
     card.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <div class="card-header-actions">
             <button id="back-btn" class="back-btn">
                 <span class="material-icons">arrow_back</span>
                 <span>Terug</span>
@@ -46,8 +58,8 @@ function showCountForm(product) {
             </div>
         </div>
 
-        <div style="margin-top: 10px;">
-            <button id="submit-count" class="checker-btn" style="width: 100%;">Telling opslaan</button>
+        <div class="submit-btn-wrapper">
+            <button id="submit-count" class="checker-btn">Telling opslaan</button>
         </div>
         <div id="feedback-message" style="display: none;"></div>
     `;
@@ -69,14 +81,8 @@ function showCountForm(product) {
     });
 
     card.querySelector("#back-btn").addEventListener("click", () => {
-        document.getElementById("search-section").style.display = "flex";
-        if (window.lastSearchResults.length > 0) {
-            displayResults(window.lastSearchResults);
-        } else {
-            container.innerHTML = "";
-            document.getElementById("product-input").value = "";
-            document.getElementById("product-input").focus();
-        }
+        updateURLParams("");
+        window.closeSearchView(displayResults);
     });
 
     submitBtn.addEventListener("click", async () => {
@@ -114,7 +120,7 @@ function showCountForm(product) {
     qtyInput.select();
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     window.initProductSearch(
         (product) => {
             window.lastSearchResults = [];
@@ -128,4 +134,18 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("product-results").innerHTML = "";
         }
     );
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const idParam = urlParams.get("id");
+    if (idParam) {
+        const client = await window.getSupabase();
+        const { data, error } = await client
+            .from("producten")
+            .select("*")
+            .eq("id", idParam)
+            .single();
+        if (data && !error) {
+            showCountForm(data);
+        }
+    }
 });

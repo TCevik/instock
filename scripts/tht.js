@@ -11,13 +11,13 @@ async function fetchTHTProducts() {
     if (dateInput) {
         if (!dateInput.value) {
             const targetDate = new Date();
-            targetDate.setDate(targetDate.getDate() + 2);
+            targetDate.setDate(targetDate.getDate() + 1);
             dateInput.value = window.formatISODate(targetDate);
         }
         dateString = dateInput.value;
     } else {
         const targetDate = new Date();
-        targetDate.setDate(targetDate.getDate() + 2);
+        targetDate.setDate(targetDate.getDate() + 1);
         dateString = window.formatISODate(targetDate);
     }
 
@@ -25,13 +25,22 @@ async function fetchTHTProducts() {
     if (title) title.style.display = "block";
     const datepickerContainer = document.getElementById("tht-datepicker-container");
     if (datepickerContainer) datepickerContainer.style.display = "flex";
+    const afdelingContainer = document.getElementById("tht-afdeling-container");
+    if (afdelingContainer) afdelingContainer.style.display = "flex";
 
+    const afdelingSelect = document.getElementById("tht-afdeling-select");
+    const selectedAfdeling = afdelingSelect ? afdelingSelect.value : "";
 
-    const { data, error } = await client
+    let queryBuilder = client
         .from("producten")
         .select("*")
-        .lte("tht_datum", dateString)
-        .order("tht_datum", { ascending: true });
+        .lte("tht_datum", dateString);
+
+    if (selectedAfdeling) {
+        queryBuilder = queryBuilder.eq("afdeling", selectedAfdeling);
+    }
+
+    const { data, error } = await queryBuilder.order("tht_datum", { ascending: true });
 
     if (error) {
         console.error(error);
@@ -76,6 +85,8 @@ function showControleStep() {
     if (title) title.style.display = "none";
     const datepickerContainer = document.getElementById("tht-datepicker-container");
     if (datepickerContainer) datepickerContainer.style.display = "none";
+    const afdelingContainer = document.getElementById("tht-afdeling-container");
+    if (afdelingContainer) afdelingContainer.style.display = "none";
 
 
     const actionContainer = document.getElementById("controle-action-container");
@@ -204,32 +215,110 @@ function showControleStep() {
     if (inputEl) inputEl.focus();
 }
 
+function updateURLParams(productId = "") {
+    const urlParams = new URLSearchParams(window.location.search);
+    const dateInput = document.getElementById("tht-target-date");
+    const afdelingSelect = document.getElementById("tht-afdeling-select");
+    
+    if (dateInput && dateInput.value) {
+        urlParams.set("date", dateInput.value);
+    }
+    if (afdelingSelect && afdelingSelect.value) {
+        urlParams.set("afdeling", afdelingSelect.value);
+    } else {
+        urlParams.delete("afdeling");
+    }
+    if (productId) {
+        urlParams.set("id", productId);
+    } else {
+        urlParams.delete("id");
+    }
+    
+    const newURL = `${window.location.pathname}?${urlParams.toString()}`;
+    window.history.replaceState({}, '', newURL);
+}
+
 function showProductDetails(product) {
+    updateURLParams(product.id);
     const actionContainer = document.getElementById("controle-action-container");
     actionContainer.innerHTML = "";
     const title = document.getElementById("tht-title");
     if (title) title.style.display = "none";
     const datepickerContainer = document.getElementById("tht-datepicker-container");
     if (datepickerContainer) datepickerContainer.style.display = "none";
+    const afdelingContainer = document.getElementById("tht-afdeling-container");
+    if (afdelingContainer) afdelingContainer.style.display = "none";
 
-    
     const container = document.getElementById("product-results");
     container.innerHTML = "";
     
     const card = window.renderProductDetailsCard(product, () => {
+        updateURLParams("");
         fetchTHTProducts();
     });
     
     container.appendChild(card);
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+async function populateAfdelingen() {
+    const client = await window.getSupabase();
+    const { data, error } = await client
+        .from("producten")
+        .select("afdeling");
+    if (error || !data) return;
+    
+    const select = document.getElementById("tht-afdeling-select");
+    if (!select) return;
+    
+    const uniqueAfdelingen = [...new Set(data.map(p => p.afdeling).filter(Boolean))].sort();
+    select.innerHTML = '<option value="">Alle afdelingen</option>';
+    uniqueAfdelingen.forEach(afdeling => {
+        const opt = document.createElement("option");
+        opt.value = afdeling;
+        opt.textContent = afdeling;
+        select.appendChild(opt);
+    });
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const dateParam = urlParams.get("date");
+    const afdelingParam = urlParams.get("afdeling");
+    const idParam = urlParams.get("id");
+
     const dateInput = document.getElementById("tht-target-date");
     if (dateInput) {
-        const targetDate = new Date();
-        targetDate.setDate(targetDate.getDate() + 2);
-        dateInput.value = window.formatISODate(targetDate);
-        dateInput.addEventListener("change", fetchTHTProducts);
+        if (dateParam) {
+            dateInput.value = dateParam;
+        } else {
+            const targetDate = new Date();
+            targetDate.setDate(targetDate.getDate() + 1);
+            dateInput.value = window.formatISODate(targetDate);
+        }
+        dateInput.addEventListener("change", () => {
+            updateURLParams();
+            fetchTHTProducts();
+        });
     }
-    fetchTHTProducts();
+
+    const afdelingSelect = document.getElementById("tht-afdeling-select");
+    await populateAfdelingen();
+    if (afdelingSelect) {
+        if (afdelingParam) {
+            afdelingSelect.value = afdelingParam;
+        }
+        afdelingSelect.addEventListener("change", () => {
+            updateURLParams();
+            fetchTHTProducts();
+        });
+    }
+
+    await fetchTHTProducts();
+
+    if (idParam) {
+        const found = currentProducts.find(p => String(p.id) === String(idParam));
+        if (found) {
+            showProductDetails(found);
+        }
+    }
 });
