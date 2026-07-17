@@ -28,19 +28,7 @@ function displayResults(products) {
         return;
     }
     products.forEach(product => {
-        const item = document.createElement("div");
-        item.className = "product-list-item";
-        const price = product.prijs !== null ? `€${parseFloat(product.prijs).toFixed(2).replace(".", ",")}` : "-";
-        
-        item.innerHTML = `
-            <div class="product-item-info">
-                <span class="product-item-title">${product.naam || "Onbekend product"}</span>
-                <span class="product-item-sub">${product.merk || ""} - ${product.inhoud || ""}</span>
-            </div>
-            <div class="product-item-price">${price}</div>
-        `;
-        
-        item.addEventListener("click", () => {
+        const item = window.renderProductListItem(product, "", () => {
             showProductDetails(product);
         });
         container.appendChild(item);
@@ -52,42 +40,7 @@ function showProductDetails(product) {
     const container = document.getElementById("product-results");
     container.innerHTML = "";
     
-    const card = document.createElement("div");
-    card.className = "product-details-view";
-    const price = product.prijs !== null ? `€${parseFloat(product.prijs).toFixed(2).replace(".", ",")}` : "-";
-    const tht = product.tht_datum ? new Date(product.tht_datum).toLocaleDateString("nl-NL") : "-";
-    
-    card.innerHTML = `
-        <button id="back-btn" class="back-btn">← Terug naar lijst</button>
-        <div class="product-brand-badge">${product.merk || "Merkloos"}</div>
-        <h2 class="product-title-large">${product.naam || "Onbekend product"}</h2>
-        
-        <div class="product-info-grid">
-            <div class="info-card">
-                <span class="info-title">Prijs</span>
-                <span class="info-value price-highlight">${price}</span>
-            </div>
-            <div class="info-card">
-                <span class="info-title">Voorraad</span>
-                <span class="info-value">${product.aantal} stuks</span>
-            </div>
-            <div class="info-card">
-                <span class="info-title">Schaplocatie</span>
-                <span class="info-value">${product.schaplocatie || "-"}</span>
-            </div>
-            <div class="info-card">
-                <span class="info-title">THT-Datum</span>
-                <span class="info-value">${tht}</span>
-            </div>
-        </div>
-
-        <div class="product-footer-meta">
-            <div class="meta-badge">EAN: ${product.ean || "-"}</div>
-            <div class="meta-badge">Inhoud: ${product.inhoud || "-"}</div>
-        </div>
-    `;
-    
-    card.querySelector("#back-btn").addEventListener("click", () => {
+    const card = window.renderProductDetailsCard(product, () => {
         document.getElementById("search-section").style.display = "flex";
         if (window.lastSearchResults && window.lastSearchResults.length > 0) {
             displayResults(window.lastSearchResults);
