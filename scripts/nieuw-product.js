@@ -15,10 +15,35 @@ document.addEventListener("DOMContentLoaded", () => {
         window.location.href = fromPage;
     });
 
-    window.getSupabase().then(() => {
+    window.getSupabase().then(async () => {
+        const client = window.supabaseClient;
+        const { data: { user } } = await client.auth.getUser();
+        const { data: profile } = await client
+            .from("profielen")
+            .select("rol")
+            .eq("id", user.id)
+            .single();
+
+        if (profile && profile.rol !== "beheerder") {
+            if (productId) {
+                window.location.href = "index.html";
+                return;
+            }
+            const disabledFields = ["naam", "merk", "inhoud", "ean", "afdeling", "schaplocatie", "prijs"];
+            disabledFields.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.disabled = true;
+                }
+            });
+            if (deleteBtn) {
+                deleteBtn.style.display = "none";
+            }
+        }
+
         if (productId) {
             loadProduct(productId);
-            if (deleteBtn) {
+            if (deleteBtn && profile && profile.rol === "beheerder") {
                 deleteBtn.style.display = "block";
             }
         }

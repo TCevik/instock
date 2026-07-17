@@ -190,6 +190,21 @@ window.renderProductDetailsCard = (product, onBack) => {
 
     (async () => {
         const client = await window.getSupabase();
+        const { data: { session } } = await client.auth.getSession();
+        if (session) {
+            const { data: profile } = await client
+                .from("profielen")
+                .select("rol")
+                .eq("id", session.user.id)
+                .maybeSingle();
+            if (profile && profile.rol !== "beheerder") {
+                const editBtn = card.querySelector("#edit-btn");
+                if (editBtn) {
+                    editBtn.style.display = "none";
+                }
+            }
+        }
+
         const { data: historyData, error: historyError } = await client
             .from("product_historie")
             .select("*")
@@ -198,7 +213,6 @@ window.renderProductDetailsCard = (product, onBack) => {
 
         if (historyError || !historyData || historyData.length === 0) return;
 
-        const { data: { session } } = await client.auth.getSession();
         const currentUserId = session?.user?.id;
         const currentUserEmail = session?.user?.email;
 
