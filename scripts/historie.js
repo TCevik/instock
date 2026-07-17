@@ -2,27 +2,111 @@ let allHistoryItems = [];
 let currentUserId = null;
 let currentUserEmail = null;
 
+async function checkAdminAndInit() {
+    const errorMsg = document.getElementById("historie-error-msg");
+    try {
+        const client = await window.getSupabase();
+        const { data: { session } } = await client.auth.getSession();
+        if (!session) {
+            window.location.href = "login.html";
+            return;
+        }
+
+        currentUserId = session.user.id;
+        currentUserEmail = session.user.email;
+
+        const { data: profile, error: profileError } = await client
+            .from("profielen")
+            .select("rol")
+            .eq("id", currentUserId)
+            .maybeSingle();
+
+        if (profileError) throw profileError;
+
+        if (!profile || profile.rol !== "beheerder") {
+            window.location.href = "index.html";
+            return;
+        }
+
+        await loadEmployeesFilter();
+        await fetchHistory();
+
+        const userFilter = document.getElementById("user-filter");
+        if (userFilter) {
+            userFilter.addEventListener("change", () => {
+                fetchHistory();
+            });
+        }
+    } catch (err) {
+        if (errorMsg) {
+            errorMsg.textContent = err.message || "Toegang geweigerd of fout bij laden gegevens.";
+            errorMsg.className = "message-box error";
+        }
+    }
+}
+
+async function loadEmployeesFilter() {
+    const errorMsg = document.getElementById("historie-error-msg");
+    try {
+        const client = await window.getSupabase();
+        const { data: employees, error } = await client
+            .from("profielen")
+            .select("id, volledige_naam")
+            .order("volledige_naam");
+
+        if (error) throw error;
+
+        const select = document.getElementById("user-filter");
+        if (select) {
+            select.innerHTML = '<option value="">Alle medewerkers</option>';
+            employees.forEach(emp => {
+                const opt = document.createElement("option");
+                opt.value = emp.id;
+                opt.textContent = emp.volledige_naam || "Naamloze medewerker";
+                select.appendChild(opt);
+            });
+        }
+    } catch (err) {
+        if (errorMsg) {
+            errorMsg.textContent = "Fout bij laden medewerkers: " + err.message;
+            errorMsg.className = "message-box error";
+        }
+    }
+}
+
 async function fetchHistory() {
-    const client = await window.getSupabase();
-    const { data: { session } } = await client.auth.getSession();
-    if (!session) return;
-
-    currentUserId = session?.user?.id;
-    currentUserEmail = session?.user?.email;
-
-    const { data, error } = await client
-        .from("product_historie")
-        .select("*, profielen(volledige_naam)")
-        .order("uitgevoerd_at", { ascending: false })
-        .limit(100);
-
-    if (error) {
-        console.error(error);
-        return;
+    const errorMsg = document.getElementById("historie-error-msg");
+    if (errorMsg) {
+        errorMsg.className = "message-box";
     }
 
-    allHistoryItems = data || [];
-    renderHistoryList(allHistoryItems);
+    try {
+        const client = await window.getSupabase();
+        const userFilter = document.getElementById("user-filter");
+        const selectedId = userFilter ? userFilter.value : "";
+
+        let query = client
+            .from("product_historie")
+            .select("*, profielen(volledige_naam)")
+            .order("uitgevoerd_at", { ascending: false })
+            .limit(100);
+
+        if (selectedId) {
+            query = query.eq("gebruiker_id", selectedId);
+        }
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+
+        allHistoryItems = data || [];
+        renderHistoryList(allHistoryItems);
+    } catch (err) {
+        if (errorMsg) {
+            errorMsg.textContent = "Fout bij laden historie: " + err.message;
+            errorMsg.className = "message-box error";
+        }
+    }
 }
 
 function renderHistoryList(items) {
@@ -30,7 +114,7 @@ function renderHistoryList(items) {
     container.innerHTML = "";
 
     if (!items || items.length === 0) {
-        container.innerHTML = '<div class="no-results">Geen historie gevonden</div>';
+        container.innerHTML = '<div class="no-results" style="color: #666666; text-align: center; padding: 20px;">Geen historie gevonden</div>';
         return;
     }
 
@@ -98,7 +182,7 @@ function renderHistoryList(items) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    fetchHistory();
+    checkAdminAndInit();
 
     const searchInput = document.getElementById("historie-search");
     if (searchInput) {

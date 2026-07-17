@@ -12,10 +12,14 @@
 <body>
     <div class="product-checker-container">
         <h1 class="page-title">Centrale Mutatie-historie</h1>
-        <div class="search-section">
-            <input type="text" id="historie-search" class="checker-input" placeholder="Filter op productnaam of EAN...">
+        <div id="historie-error-msg" class="message-box"></div>
+        <div class="search-section" style="display: flex; gap: 15px;">
+            <input type="text" id="historie-search" class="checker-input" placeholder="Filter op productnaam of EAN..." style="flex: 2;">
+            <select id="user-filter" class="checker-input" style="flex: 1; padding: 12px 16px; background-color: #242424; border: 1px solid #383838; border-radius: 8px; color: #ffffff;">
+                <option value="">Alle medewerkers</option>
+            </select>
         </div>
-        <div id="history-results" class="history-list" style="display: flex; margin-top: 10px;"></div>
+        <div id="history-results" class="history-list" style="display: flex; margin-top: 20px; flex-direction: column; gap: 12px;"></div>
     </div>
 </body>
 </html>
