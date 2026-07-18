@@ -1,0 +1,151 @@
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    height: 70px;
+    background-color: var(--accent-color);
+    border-bottom: 1px solid var(--accent-color);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.menu-btn {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    cursor: pointer;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+}
+
+.menu-btn:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.logo {
+    font-size: 20px;
+    font-weight: 700;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+header .logo {
+    color: var(--text-color);
+}
+
+.nav-drawer {
+    position: fixed;
+    top: 0;
+    left: -300px;
+    width: 300px;
+    height: 100vh;
+    background-color: #18181b;
+    border-right: 1px solid var(--border-color);
+    z-index: 200;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.nav-drawer.open {
+    left: 0;
+}
+
+.drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 30px;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    cursor: pointer;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+}
+
+.close-btn:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.drawer-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.drawer-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 15px;
+    color: var(--text-color);
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.drawer-item i {
+    font-size: 20px;
+    color: var(--text-color-muted);
+}
+
+.drawer-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--accent-color-sidemenu);
+}
+
+.drawer-item:hover i {
+    color: var(--accent-color-sidemenu);
+}
+
+.drawer-item.active {
+    background-color: rgba(67, 186, 59, 0.1);
+    color: var(--accent-color-sidemenu);
+}
+
+.drawer-item.active i {
+    color: var(--accent-color-sidemenu);
+}
+
+.drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 150;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s;
+}
+
+.drawer-overlay.open {
+    opacity: 1;
+    visibility: visible;
+}

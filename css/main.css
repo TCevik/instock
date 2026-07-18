@@ -14,12 +14,13 @@
 }
 
 :root {
-    --accent-color: #8cc427;
     --danger-color: #ff5252;
     --background-color: #121212;
     --text-color: #ffffff;
     --text-color-muted: #888888;
     --border-color: #27272a;
+    --accent-color-sidemenu: #80bd1d;
+    --accent-color: #658d24;
 }
 
 body {
