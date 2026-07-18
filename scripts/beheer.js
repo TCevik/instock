@@ -59,15 +59,26 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const info = document.createElement("div");
                 info.className = "user-info";
 
+                const nameContainer = document.createElement("div");
+                nameContainer.className = "user-name-container";
+
                 const name = document.createElement("span");
                 name.className = "user-name";
                 name.textContent = emp.volledige_naam || "Naamloze medewerker";
+                nameContainer.appendChild(name);
+
+                if (emp.rol === "beheerder") {
+                    const badge = document.createElement("span");
+                    badge.className = "user-badge admin-badge";
+                    badge.textContent = "Beheerder";
+                    nameContainer.appendChild(badge);
+                }
 
                 const number = document.createElement("span");
                 number.className = "user-number";
                 number.textContent = `Personeelsnummer: ${emp.personeelsnummer || "-"}`;
 
-                info.appendChild(name);
+                info.appendChild(nameContainer);
                 info.appendChild(number);
 
                 const actions = document.createElement("div");
