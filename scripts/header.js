@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
+function init() {
     const link = document.createElement("link");
     link.rel = "stylesheet";
     link.href = "css/header.css";
@@ -28,4 +28,10 @@ document.addEventListener("DOMContentLoaded", () => {
             menuCloseBtn.addEventListener("click", toggleDrawer);
             drawerOverlay.addEventListener("click", toggleDrawer);
         });
-});
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+} else {
+    init();
+}
