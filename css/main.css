@@ -192,6 +192,27 @@ body {
     gap: 12px;
 }
 
+.checker-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #75a821 0%, #5d8717 100%);
+    border: none;
+    border-radius: 14px;
+    color: #ffffff;
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.1s, filter 0.2s;
+}
+
+.checker-btn:hover {
+    filter: brightness(1.1);
+}
+
+.checker-btn:active {
+    transform: scale(0.98);
+}
+
 .confirm-info-box {
     font-size: 0.9rem;
     color: #8cc427;
