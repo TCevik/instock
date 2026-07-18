@@ -3,12 +3,58 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Login</title>
+    <title>Inloggen - InStock</title>
     <script src="scripts/main.js"></script>
 </head>
 
 <body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="logo">
+                    <i class="material-icons">inventory_2</i>
+                    <span>INSTOCK</span>
+                </div>
+                <p>Log in om toegang te krijgen tot uw winkel</p>
+            </div>
 
+            <div class="error-message" id="error-message">
+                <i class="material-icons" style="font-size: 18px;">error_outline</i>
+                <span id="error-text"></span>
+            </div>
+
+            <form id="login-form" novalidate>
+                <div class="form-group">
+                    <label for="store-code">Winkelcode</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="store-code" placeholder="bijv. AMS01" autocomplete="off" required>
+                        <i class="material-icons">store</i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="employee-id">Personeelsnummer</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="employee-id" placeholder="bijv. 12345" autocomplete="off" required>
+                        <i class="material-icons">badge</i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Wachtwoord</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="password" placeholder="••••••••" required>
+                        <i class="material-icons">lock</i>
+                    </div>
+                </div>
+
+                <button type="submit" class="login-btn">
+                    <span>Inloggen</span>
+                    <i class="material-icons">login</i>
+                </button>
+            </form>
+        </div>
+    </div>
 </body>
 
 </html>

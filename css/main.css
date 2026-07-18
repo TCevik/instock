@@ -21,6 +21,8 @@
     --border-color: #27272a;
     --accent-color: #658d24;
     --accent-color-sidemenu: #80bd1d;
+    --card-bg: #18181b;
+    --input-bg: #202023;
 }
 
 body {
