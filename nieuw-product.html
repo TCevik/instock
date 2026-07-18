@@ -26,19 +26,19 @@
                 <div class="form-grid">
                     <div class="form-group full-width">
                         <label class="form-label">Productnaam</label>
-                        <input type="text" id="naam" class="checker-input" required>
+                        <input type="text" id="naam" class="checker-input" required autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Merk</label>
-                        <input type="text" id="merk" class="checker-input">
+                        <input type="text" id="merk" class="checker-input" autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Inhoud</label>
-                        <input type="text" id="inhoud" class="checker-input" placeholder="bijv. 500g, 1L">
+                        <input type="text" id="inhoud" class="checker-input" placeholder="bijv. 500g, 1L" autocomplete="off">
                     </div>
                     <div class="form-group full-width">
                         <label class="form-label">EAN Barcode</label>
-                        <input type="text" id="ean" class="checker-input" required>
+                        <input type="text" id="ean" class="checker-input" required autocomplete="off">
                     </div>
                 </div>
             </div>
@@ -48,11 +48,11 @@
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="form-label">Afdeling</label>
-                        <input type="text" id="afdeling" class="checker-input">
+                        <input type="text" id="afdeling" class="checker-input" autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Schaplocatie</label>
-                        <input type="text" id="schaplocatie" class="checker-input">
+                        <input type="text" id="schaplocatie" class="checker-input" autocomplete="off">
                     </div>
                 </div>
             </div>
@@ -62,15 +62,15 @@
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="form-label">Prijs (€)</label>
-                        <input type="number" step="0.01" id="prijs" class="checker-input" required>
+                        <input type="number" step="0.01" id="prijs" class="checker-input" required autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Aantal / Voorraad</label>
-                        <input type="number" id="aantal" class="checker-input" required>
+                        <input type="number" id="aantal" class="checker-input" required autocomplete="off">
                     </div>
                     <div class="form-group full-width">
                         <label class="form-label">THT-datum</label>
-                        <input type="date" id="tht_datum" class="checker-input">
+                        <input type="date" id="tht_datum" class="checker-input" autocomplete="off">
                     </div>
                 </div>
             </div>
@@ -91,8 +91,8 @@
                 <div>EAN: <span id="delete-confirm-ean" class="confirm-info-ean"></span></div>
             </div>
             <div class="confirm-input-group">
-                <input type="text" id="confirm-naam-input" class="checker-input" placeholder="Type productnaam...">
-                <input type="text" id="confirm-ean-input" class="checker-input" placeholder="Type EAN...">
+                <input type="text" id="confirm-naam-input" class="checker-input" placeholder="Type productnaam..." autocomplete="off">
+                <input type="text" id="confirm-ean-input" class="checker-input" placeholder="Type EAN..." autocomplete="off">
             </div>
             <div class="modal-actions">
                 <button type="button" id="modal-cancel-btn" class="checker-btn">Annuleren</button>

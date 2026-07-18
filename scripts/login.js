@@ -22,10 +22,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     loginForm.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const winkelId = document.getElementById("login-winkel").value;
+        const winkelCode = document.getElementById("login-winkel-code").value.trim().toLowerCase();
         const personeelsnummer = document.getElementById("login-personeelsnummer").value;
         const password = document.getElementById("login-password").value;
-        const email = `${personeelsnummer}@${winkelId}.instock.local`;
         const btn = loginForm.querySelector("button");
 
         btn.disabled = true;
@@ -33,6 +32,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             const client = await window.getSupabase();
+            const { data: winkelData, error: winkelError } = await client
+                .from("winkels")
+                .select("id")
+                .eq("winkel_code", winkelCode)
+                .maybeSingle();
+
+            if (winkelError) throw winkelError;
+            if (!winkelData) {
+                throw new Error("Winkelcode is onjuist of bestaat niet.");
+            }
+
+            const email = `${personeelsnummer}@${winkelData.id}.instock.local`;
             const { error } = await client.auth.signInWithPassword({ email, password });
             if (error) throw error;
             window.location.href = "index.html";
@@ -42,25 +53,4 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.disabled = false;
         }
     });
-
-    const loadWinkels = async () => {
-        try {
-            const client = await window.getSupabase();
-            const { data, error } = await client
-                .from("winkels")
-                .select("id, naam")
-                .order("naam");
-            if (error) throw error;
-            const select = document.getElementById("login-winkel");
-            data.forEach(winkel => {
-                const opt = document.createElement("option");
-                opt.value = winkel.id;
-                opt.textContent = winkel.naam;
-                select.appendChild(opt);
-            });
-        } catch (err) {
-            console.error(err);
-        }
-    };
-    loadWinkels();
 });

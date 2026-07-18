@@ -151,13 +151,32 @@ document.addEventListener("DOMContentLoaded", async () => {
         btn.disabled = true;
 
         try {
+            const numVal = parseInt(personeelsnummer, 10);
+            const { data: existingUser, error: checkError } = await client
+                .from("profielen")
+                .select("id")
+                .eq("personeelsnummer", numVal)
+                .eq("winkel_id", myWinkelId)
+                .maybeSingle();
+
+            if (checkError) throw checkError;
+            if (existingUser) {
+                throw new Error("Dit personeelsnummer is al in gebruik binnen deze winkel.");
+            }
+
             const authClient = supabase.createClient(
                 "https://geabdfhcbzfgmetuaocl.supabase.co",
                 "sb_publishable_BFeKHHjqJmwvlU_GZ2CKZA_sidiX_Ov",
                 {
                     auth: {
                         persistSession: false,
-                        autoRefreshToken: false
+                        autoRefreshToken: false,
+                        detectSessionInUrl: false,
+                        storage: {
+                            getItem: () => null,
+                            setItem: () => { },
+                            removeItem: () => { }
+                        }
                     }
                 }
             );
@@ -171,7 +190,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     data: {
                         winkel_id: myWinkelId,
                         full_name: naam,
-                        personeelsnummer: parseInt(personeelsnummer, 10),
+                        personeelsnummer: numVal,
                         rol: rol
                     }
                 }
