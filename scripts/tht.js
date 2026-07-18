@@ -174,7 +174,7 @@ function showControleStep() {
         const input = document.getElementById("new-tht-input");
         const newDate = input.value;
         if (!newDate) {
-            alert("Voer een geldige datum in.");
+            window.showToast("Voer een geldige datum in.", "error");
             return;
         }
 
@@ -184,7 +184,7 @@ function showControleStep() {
         enteredDate.setHours(0, 0, 0, 0);
 
         if (enteredDate < today) {
-            alert("De nieuwe THT-datum moet vandaag of in de toekomst liggen.");
+            window.showToast("De nieuwe THT-datum moet vandaag of in de toekomst liggen.", "error");
             return;
         }
 
@@ -196,10 +196,11 @@ function showControleStep() {
 
         if (error) {
             console.error(error);
-            alert("Fout bij opslaan.");
+            window.showToast("Fout bij opslaan.", "error");
             return;
         }
 
+        window.showToast("THT-datum succesvol opgeslagen!", "success");
         currentControleIndex++;
         showControleStep();
     });
@@ -280,6 +281,115 @@ async function populateAfdelingen() {
     });
 }
 
+function displaySearchResults(products) {
+    const container = document.getElementById("product-results");
+    container.innerHTML = "";
+    if (!products || products.length === 0) {
+        container.innerHTML = '<div class="no-results">Geen producten gevonden</div>';
+        return;
+    }
+    products.forEach(product => {
+        const item = window.renderProductListItem(product, product.tht_datum ? ` - THT: ${window.formatDate(product.tht_datum)}` : " - Geen THT datum", () => {
+            showRegistrationForm(product);
+        });
+        container.appendChild(item);
+    });
+}
+
+function showRegistrationForm(product) {
+    const container = document.getElementById("product-results");
+    container.innerHTML = "";
+    document.getElementById("search-section").style.display = "none";
+
+    const card = document.createElement("div");
+    card.className = "count-card";
+
+    const thtDate = product.tht_datum ? window.formatISODate(product.tht_datum) : "";
+
+    card.innerHTML = `
+        <div class="card-header-actions">
+            <button id="back-btn" class="back-btn">
+                <span class="material-icons">arrow_back</span>
+                <span>Terug</span>
+            </button>
+        </div>
+        
+        <div class="count-header">
+            <span class="product-brand-text">${product.merk || "Merkloos"}</span>
+            <h2 class="count-product-name">${product.naam || "Onbekend product"}</h2>
+            <span class="count-product-info">EAN: ${product.ean || "-"} | Locatie: ${product.schaplocatie || "-"}</span>
+        </div>
+
+        <div class="count-form-section" style="margin-top: 20px;">
+            <span class="count-form-label">THT-Datum</span>
+            <input type="date" id="new-tht-input" class="checker-input" value="${thtDate}" style="margin-top: 8px;">
+        </div>
+
+        <div class="submit-btn-wrapper" style="margin-top: 20px;">
+            <button id="submit-tht" class="checker-btn">THT Opslaan</button>
+        </div>
+    `;
+
+    card.querySelector("#back-btn").addEventListener("click", () => {
+        document.getElementById("search-section").style.display = "flex";
+        if (window.lastSearchResults && window.lastSearchResults.length > 0) {
+            displaySearchResults(window.lastSearchResults);
+        } else {
+            container.innerHTML = "";
+        }
+    });
+
+    card.querySelector("#submit-tht").addEventListener("click", async () => {
+        const input = card.querySelector("#new-tht-input");
+        const newDate = input.value;
+        if (!newDate) {
+            window.showToast("Voer een geldige datum in.", "error");
+            return;
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const enteredDate = new Date(newDate);
+        enteredDate.setHours(0, 0, 0, 0);
+
+        if (enteredDate < today) {
+            window.showToast("De nieuwe THT-datum moet vandaag of in de toekomst liggen.", "error");
+            return;
+        }
+
+        const client = await window.getSupabase();
+        const { error } = await client
+            .from("producten")
+            .update({ tht_datum: newDate })
+            .eq("id", product.id);
+
+        if (error) {
+            console.error(error);
+            window.showToast("Fout bij opslaan.", "error");
+            return;
+        }
+
+        window.showToast("THT-datum succesvol opgeslagen!", "success");
+        
+        document.getElementById("search-section").style.display = "flex";
+        container.innerHTML = "";
+        document.getElementById("product-input").value = "";
+        document.getElementById("product-input").focus();
+    });
+
+    card.querySelector("#new-tht-input").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            card.querySelector("#submit-tht").click();
+        }
+    });
+
+    container.appendChild(card);
+    const dateInput = card.querySelector("#new-tht-input");
+    if (dateInput) {
+        dateInput.focus();
+    }
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const dateParam = urlParams.get("date");
@@ -320,5 +430,50 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (found) {
             showProductDetails(found);
         }
+    }
+
+    const regBtn = document.getElementById("tht-registration-btn");
+    const cancelRegBtn = document.getElementById("cancel-registration-btn");
+    const searchSection = document.getElementById("search-section");
+    const dateContainer = document.getElementById("tht-datepicker-container");
+    const afdelingContainer = document.getElementById("tht-afdeling-container");
+    const actionContainer = document.getElementById("controle-action-container");
+
+    if (regBtn) {
+        regBtn.addEventListener("click", () => {
+            regBtn.style.display = "none";
+            dateContainer.style.display = "none";
+            afdelingContainer.style.display = "none";
+            actionContainer.style.display = "none";
+            searchSection.style.display = "flex";
+            document.getElementById("product-results").innerHTML = "";
+            document.getElementById("product-input").value = "";
+            document.getElementById("product-input").focus();
+
+            window.initProductSearch(
+                (product) => {
+                    window.lastSearchResults = [];
+                    showRegistrationForm(product);
+                },
+                (products) => {
+                    window.lastSearchResults = products;
+                    displaySearchResults(products);
+                },
+                () => {
+                    document.getElementById("product-results").innerHTML = "";
+                }
+            );
+        });
+    }
+
+    if (cancelRegBtn) {
+        cancelRegBtn.addEventListener("click", () => {
+            regBtn.style.display = "block";
+            dateContainer.style.display = "block";
+            afdelingContainer.style.display = "block";
+            actionContainer.style.display = "flex";
+            searchSection.style.display = "none";
+            fetchTHTProducts();
+        });
     }
 });

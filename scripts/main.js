@@ -301,6 +301,78 @@ window.renderProductListItem = (product, subTextSuffix, onClick) => {
     return item;
 };
 
+window.showToast = (message, type = "success") => {
+    let container = document.getElementById("toast-container");
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "toast-container";
+        document.body.appendChild(container);
+    }
+
+    const activeToasts = Array.from(container.getElementsByClassName("toast")).filter(t => !t.classList.contains("dismissing"));
+    if (activeToasts.length >= 4) {
+        const oldest = activeToasts[0];
+        oldest.classList.add("dismissing");
+        setTimeout(() => {
+            oldest.classList.remove("show");
+            setTimeout(() => {
+                oldest.remove();
+            }, 300);
+        }, 300);
+    }
+
+    const toast = document.createElement("div");
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+
+    container.appendChild(toast);
+
+    void toast.offsetHeight;
+
+    toast.classList.add("show");
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+    }, 3000);
+};
+
+window.showConfirm = (message) => {
+    return new Promise((resolve) => {
+        const backdrop = document.createElement("div");
+        backdrop.className = "modal-backdrop";
+        backdrop.innerHTML = `
+            <div class="modal-content">
+                <h3 class="modal-title">Bevestigen</h3>
+                <p class="modal-message">${message}</p>
+                <div class="modal-actions">
+                    <button type="button" id="confirm-cancel-btn" class="checker-btn" style="background: #2d2d2d;">Annuleren</button>
+                    <button type="button" id="confirm-ok-btn" class="checker-btn">Bevestigen</button>
+                </div>
+            </div>
+        `;
+
+        const cancelBtn = backdrop.querySelector("#confirm-cancel-btn");
+        const okBtn = backdrop.querySelector("#confirm-ok-btn");
+
+        const cleanup = (value) => {
+            backdrop.remove();
+            resolve(value);
+        };
+
+        cancelBtn.addEventListener("click", () => cleanup(false));
+        okBtn.addEventListener("click", () => cleanup(true));
+
+        backdrop.addEventListener("click", (e) => {
+            if (e.target === backdrop) cleanup(false);
+        });
+
+        document.body.appendChild(backdrop);
+    });
+};
+
 supabaseScript.onload = async () => {
     window.supabaseClient = supabase.createClient(
         "https://geabdfhcbzfgmetuaocl.supabase.co",

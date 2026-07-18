@@ -84,7 +84,6 @@ function showMutationForm(product) {
         <div class="submit-btn-wrapper">
             <button id="submit-mutation" class="checker-btn">Mutatie verwerken</button>
         </div>
-        <div id="feedback-message" style="display: none;"></div>
     `;
 
     const qtyInput = card.querySelector("#mutation-qty");
@@ -93,7 +92,6 @@ function showMutationForm(product) {
     const minusBtn = card.querySelector("#qty-minus");
     const plusBtn = card.querySelector("#qty-plus");
     const submitBtn = card.querySelector("#submit-mutation");
-    const feedback = card.querySelector("#feedback-message");
 
     subBtn.addEventListener("click", () => {
         mutationType = "sub";
@@ -118,7 +116,6 @@ function showMutationForm(product) {
     });
 
 
-
     card.querySelector("#back-btn").addEventListener("click", () => {
         updateURLParams("");
         window.closeSearchView(displayResults);
@@ -127,7 +124,7 @@ function showMutationForm(product) {
     submitBtn.addEventListener("click", async () => {
         const qty = parseInt(qtyInput.value, 10);
         if (isNaN(qty) || qty <= 0) {
-            alert("Voer een geldig aantal in.");
+            window.showToast("Voer een geldig aantal in.", "error");
             return;
         }
 
@@ -139,7 +136,8 @@ function showMutationForm(product) {
         }
 
         if (newStock < 0) {
-            if (!confirm("De voorraad wordt negatief. Weet u zeker dat u dit wilt doorvoeren?")) {
+            const confirmed = await window.showConfirm("De voorraad wordt negatief. Weet u zeker dat u dit wilt doorvoeren?");
+            if (!confirmed) {
                 return;
             }
         }
@@ -152,7 +150,7 @@ function showMutationForm(product) {
 
         if (error) {
             console.error(error);
-            alert("Fout bij het verwerken van de mutatie.");
+            window.showToast("Fout bij het verwerken van de mutatie.", "error");
             return;
         }
 
@@ -160,13 +158,7 @@ function showMutationForm(product) {
         card.querySelector("#current-stock").textContent = `${newStock} stuks`;
         qtyInput.value = "1";
 
-        feedback.className = "success-message";
-        feedback.textContent = `Succesvol gemuteerd (${mutationType === "add" ? "+" : "-"}${qty}).`;
-        feedback.style.display = "block";
-
-        setTimeout(() => {
-            feedback.style.display = "none";
-        }, 4000);
+        window.showToast(`Succesvol gemuteerd (${mutationType === "add" ? "+" : "-"}${qty}).`, "success");
     });
 
     container.appendChild(card);

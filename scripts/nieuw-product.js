@@ -111,7 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (error) {
                 console.error(error);
-                alert("Er is een fout opgetreden bij het verwijderen van het product.");
+                window.showToast("Er is een fout opgetreden bij het verwijderen van het product.", "error");
             } else {
                 window.location.href = fromPage;
             }
@@ -187,7 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (result.error) {
             console.error(result.error);
-            alert("Er is een fout opgetreden bij het opslaan van het product.");
+            window.showToast("Er is een fout opgetreden bij het opslaan van het product.", "error");
         } else {
             window.location.href = fromPage;
         }

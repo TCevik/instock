@@ -90,7 +90,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 deleteBtn.className = "btn-delete";
                 deleteBtn.textContent = "Verwijderen";
                 deleteBtn.addEventListener("click", async () => {
-                    if (confirm(`Weet u zeker dat u ${emp.volledige_naam || "deze medewerker"} wilt verwijderen?`)) {
+                    const confirmed = await window.showConfirm(`Weet u zeker dat u ${emp.volledige_naam || "deze medewerker"} wilt verwijderen?`);
+                    if (confirmed) {
                         try {
                             const { error: deleteError } = await client.rpc("delete_medewerker", {
                                 target_user_id: emp.id
@@ -98,12 +99,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                             if (deleteError) throw deleteError;
 
-                            beheerMsg.textContent = "Medewerker succesvol verwijderd.";
-                            beheerMsg.className = "message-box success";
+                            window.showToast("Medewerker succesvol verwijderd.", "success");
                             loadEmployees();
                         } catch (err) {
-                            beheerMsg.textContent = err.message;
-                            beheerMsg.className = "message-box error";
+                            window.showToast(err.message, "error");
                         }
                     }
                 });
@@ -116,8 +115,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 usersList.appendChild(item);
             });
         } catch (err) {
-            beheerMsg.textContent = err.message;
-            beheerMsg.className = "message-box error";
+            window.showToast(err.message, "error");
         }
     };
 
@@ -140,7 +138,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         const btn = createUserForm.querySelector("button");
 
         btn.disabled = true;
-        beheerMsg.className = "message-box";
 
         try {
             const authClient = supabase.createClient(
@@ -171,13 +168,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (signUpError) throw signUpError;
 
-            beheerMsg.textContent = "Medewerker succesvol aangemaakt!";
-            beheerMsg.className = "message-box success";
+            window.showToast("Medewerker succesvol aangemaakt!", "success");
             createUserForm.reset();
             loadEmployees();
         } catch (err) {
-            beheerMsg.textContent = err.message;
-            beheerMsg.className = "message-box error";
+            window.showToast(err.message, "error");
         } finally {
             btn.disabled = false;
         }
@@ -193,7 +188,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         const btn = editForm.querySelector("button[type='submit']");
 
         btn.disabled = true;
-        editMsg.className = "message-box";
 
         try {
             const { error } = await client.rpc("update_medewerker", {
@@ -206,14 +200,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (error) throw error;
 
-            beheerMsg.textContent = "Medewerker succesvol aangepast!";
-            beheerMsg.className = "message-box success";
+            window.showToast("Medewerker succesvol aangepast!", "success");
 
             editModal.classList.add("hidden");
             loadEmployees();
         } catch (err) {
-            editMsg.textContent = err.message;
-            editMsg.className = "message-box error";
+            window.showToast(err.message, "error");
         } finally {
             btn.disabled = false;
         }

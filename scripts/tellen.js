@@ -61,14 +61,12 @@ function showCountForm(product) {
         <div class="submit-btn-wrapper">
             <button id="submit-count" class="checker-btn">Telling opslaan</button>
         </div>
-        <div id="feedback-message" style="display: none;"></div>
     `;
 
     const qtyInput = card.querySelector("#count-qty");
     const minusBtn = card.querySelector("#count-minus");
     const plusBtn = card.querySelector("#count-plus");
     const submitBtn = card.querySelector("#submit-count");
-    const feedback = card.querySelector("#feedback-message");
 
     minusBtn.addEventListener("click", () => {
         let val = parseInt(qtyInput.value, 10) || 0;
@@ -88,7 +86,7 @@ function showCountForm(product) {
     submitBtn.addEventListener("click", async () => {
         const qty = parseInt(qtyInput.value, 10);
         if (isNaN(qty) || qty < 0) {
-            alert("Voer een geldig aantal in.");
+            window.showToast("Voer een geldig aantal in.", "error");
             return;
         }
 
@@ -100,19 +98,13 @@ function showCountForm(product) {
 
         if (error) {
             console.error(error);
-            alert("Fout bij het opslaan van de telling.");
+            window.showToast("Fout bij het opslaan van de telling.", "error");
             return;
         }
 
         product.aantal = qty;
 
-        feedback.className = "success-message";
-        feedback.textContent = `Succesvol opgeslagen! Nieuw aantal: ${qty}.`;
-        feedback.style.display = "block";
-
-        setTimeout(() => {
-            feedback.style.display = "none";
-        }, 4000);
+        window.showToast(`Succesvol opgeslagen! Nieuw aantal: ${qty}.`, "success");
     });
 
     container.appendChild(card);
