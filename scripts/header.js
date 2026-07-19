@@ -22,6 +22,16 @@ function init() {
             menuToggleBtn.addEventListener("click", toggleDrawer);
             menuCloseBtn.addEventListener("click", toggleDrawer);
             drawerOverlay.addEventListener("click", toggleDrawer);
+
+            const logoutBtn = document.getElementById("logoutBtn");
+            if (logoutBtn) {
+                logoutBtn.addEventListener("click", async () => {
+                    if (window.supabase) {
+                        await window.supabase.auth.signOut();
+                        window.location.href = 'login.html';
+                    }
+                });
+            }
         });
 }
 
