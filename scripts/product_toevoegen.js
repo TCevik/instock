@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
             voorraad: voorraadInput.value === '' ? null : parseInt(voorraadInput.value, 10),
             minimale_voorraad: minimaleVoorraadInput.value === '' ? null : parseInt(minimaleVoorraadInput.value, 10),
             prijs: prijsInput.value === '' ? null : parseFloat(prijsInput.value),
-            inkopprijs: inkoopprijsInput.value === '' ? null : parseFloat(inkopprijsInput.value),
+            inkoopprijs: inkoopprijsInput.value === '' ? null : parseFloat(inkoopprijsInput.value),
             tht: thtInput.value || null,
             locatiecode: locatiecodeInput.value.trim() || null,
             afbeelding: afbeeldingInput.value.trim() || null

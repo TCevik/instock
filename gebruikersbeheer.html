@@ -14,12 +14,20 @@
 </head>
 <body>
     <main class="dashboard-container">
-        <div class="page-header">
-            <h1>Gebruikersbeheer</h1>
-            <button class="add-user-btn" id="openModalBtn">
-                <i class="material-icons">person_add</i>
-                <span>Nieuwe gebruiker</span>
-            </button>
+        <div class="page-header" style="flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom: 28px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 16px;">
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="material-icons" style="color: var(--accent-color-sidemenu); font-size: 30px;">people</i>
+                        <h1 style="font-size: 26px; font-weight: 700; color: var(--text-color); margin: 0;">Gebruikersbeheer</h1>
+                    </div>
+                    <p style="font-size: 13px; color: var(--text-color-muted); font-weight: 400; margin: 0;">Beheer systeemgebruikers en hun rechten</p>
+                </div>
+                <button class="add-user-btn" id="openModalBtn">
+                    <i class="material-icons">person_add</i>
+                    <span>Nieuwe gebruiker</span>
+                </button>
+            </div>
         </div>
         <div class="modal-overlay" id="userModal">
             <div class="management-card">
@@ -33,18 +41,18 @@
                     <i class="material-icons" id="message-icon"></i>
                     <span id="message-text"></span>
                 </div>
-                <form id="create-user-form" novalidate>
+                <form id="create-user-form" autocomplete="off" novalidate>
                     <div class="form-group">
                         <label for="full-name">Volledige naam</label>
                         <div class="input-wrapper">
-                            <input type="text" id="full-name" required placeholder="bijv. Jan Jansen">
+                            <input type="text" id="full-name" required placeholder="bijv. Jan Jansen" autocomplete="off">
                             <i class="material-icons">person</i>
                         </div>
                     </div>
                     <div class="form-group">
                         <label for="personeelsnummer">Personeelsnummer</label>
                         <div class="input-wrapper">
-                            <input type="text" id="personeelsnummer" required placeholder="bijv. 12345">
+                            <input type="text" id="personeelsnummer" required placeholder="bijv. 12345" autocomplete="off">
                             <i class="material-icons">badge</i>
                         </div>
                     </div>
@@ -62,7 +70,7 @@
                     <div class="form-group">
                         <label for="password">Wachtwoord</label>
                         <div class="input-wrapper">
-                            <input type="password" id="password" required placeholder="••••••••">
+                            <input type="password" id="password" required placeholder="••••••••" autocomplete="off">
                             <i class="material-icons">lock</i>
                         </div>
                     </div>
