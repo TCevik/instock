@@ -32,6 +32,39 @@ function init() {
                     }
                 });
             }
+
+            const updateLogo = () => {
+                if (window.supabase) {
+                    window.supabase.from('stores').select('name')
+                        .then(({ data }) => {
+                            if (data && data[0] && data[0].name) {
+                                document.querySelectorAll(".logo").forEach(el => {
+                                    el.textContent = data[0].name;
+                                });
+                            }
+                        });
+
+                    window.supabase.auth.getSession().then(({ data: { session } }) => {
+                        if (session && session.user) {
+                            window.supabase.from('user_data').select('role').eq('id', session.user.id)
+                                .then(({ data }) => {
+                                    if (data && data[0] && data[0].role === 'medewerker') {
+                                        const allowed = ["dashboard", "voorraadmutaties", "tht module", "tht registratie", "tellen"];
+                                        document.querySelectorAll(".drawer-item").forEach(item => {
+                                            const text = item.querySelector("span").textContent.trim().toLowerCase();
+                                            if (!allowed.includes(text)) {
+                                                item.style.display = "none";
+                                            }
+                                        });
+                                    }
+                                });
+                        }
+                    });
+                } else {
+                    setTimeout(updateLogo, 50);
+                }
+            };
+            updateLogo();
         });
 }
 
