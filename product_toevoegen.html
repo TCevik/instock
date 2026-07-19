@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Product Toevoegen</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/header.css">
+    <link rel="stylesheet" href="css/product_toevoegen.css">
+    <script src="scripts/supabase.js" defer></script>
+    <script src="scripts/header.js" defer></script>
+    <script src="scripts/product_toevoegen.js" defer></script>
+</head>
+<body>
+    <main class="dashboard-container">
+        <div class="page-header">
+            <h1>Product Toevoegen</h1>
+        </div>
+        <div class="management-card">
+            <div class="message" id="message-box">
+                <i class="material-icons" id="message-icon"></i>
+                <span id="message-text"></span>
+            </div>
+            <form id="add-product-form" novalidate>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="ean">EAN *</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="ean" required placeholder="bijv. 8710400311234">
+                            <i class="material-icons">qr_code</i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="naam">Naam *</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="naam" required placeholder="bijv. Halfvolle Melk 1L">
+                            <i class="material-icons">label</i>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="merk">Merk</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="merk" placeholder="bijv. Huismerk">
+                            <i class="material-icons">branding_watermark</i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="afdeling">Afdeling</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="afdeling" placeholder="bijv. Zuivel">
+                            <i class="material-icons">category</i>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="voorraad">Voorraad</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="voorraad" min="0" placeholder="bijv. 10">
+                            <i class="material-icons">inventory_2</i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="minimale_voorraad">Minimale voorraad</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="minimale_voorraad" min="0" placeholder="bijv. 2">
+                            <i class="material-icons">warning</i>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="prijs">Prijs</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="prijs" step="0.01" min="0" placeholder="bijv. 1.49">
+                            <i class="material-icons">euro</i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="inkoopprijs">Inkoopprijs</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="inkoopprijs" step="0.01" min="0" placeholder="bijv. 0.95">
+                            <i class="material-icons">shopping_cart</i>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="tht">THT Datum</label>
+                        <div class="input-wrapper">
+                            <input type="date" id="tht">
+                            <i class="material-icons">calendar_today</i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="locatiecode">Locatiecode</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="locatiecode" placeholder="bijv. 3/2/8">
+                            <i class="material-icons">place</i>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="afbeelding">Afbeelding URL</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="afbeelding" placeholder="bijv. https://example.com/image.png">
+                        <i class="material-icons">image</i>
+                    </div>
+                </div>
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    <span>Product Opslaan</span>
+                    <i class="material-icons">add_box</i>
+                </button>
+            </form>
+        </div>
+    </main>
+</body>
+</html>
