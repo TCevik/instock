@@ -9,6 +9,16 @@ function init() {
                 document.body.insertBefore(tempDiv.firstChild, document.body.firstChild);
             }
 
+            const path = window.location.pathname;
+            document.querySelectorAll(".drawer-item").forEach(item => {
+                const href = item.getAttribute("href");
+                if (href && (path.endsWith(href) || (href === 'index.html' && (path.endsWith('/') || path.endsWith('index.html') || path === '')))) {
+                    item.classList.add("active");
+                } else {
+                    item.classList.remove("active");
+                }
+            });
+
             const menuToggleBtn = document.getElementById("menuToggleBtn");
             const menuCloseBtn = document.getElementById("menuCloseBtn");
             const navDrawer = document.getElementById("navDrawer");
@@ -35,6 +45,12 @@ function init() {
 
             const updateLogo = () => {
                 if (window.supabase) {
+                    window.supabase.auth.onAuthStateChange((event, session) => {
+                        if (event === 'SIGNED_OUT' || !session) {
+                            window.location.href = 'login.html';
+                        }
+                    });
+
                     window.supabase.from('stores').select('name')
                         .then(({ data }) => {
                             if (data && data[0] && data[0].name) {
@@ -57,7 +73,10 @@ function init() {
                                             }
                                         });
                                     }
+                                    window.dispatchEvent(new CustomEvent("menuReady"));
                                 });
+                        } else {
+                            window.location.href = 'login.html';
                         }
                     });
                 } else {

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gebruikersbeheer</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/header.css">
+    <link rel="stylesheet" href="css/gebruikersbeheer.css">
+    <script src="scripts/supabase.js" defer></script>
+    <script src="scripts/header.js" defer></script>
+    <script src="scripts/gebruikersbeheer.js" defer></script>
+</head>
+<body>
+    <main class="dashboard-container">
+        <div class="page-header">
+            <h1>Gebruikersbeheer</h1>
+            <button class="add-user-btn" id="openModalBtn">
+                <i class="material-icons">person_add</i>
+                <span>Nieuwe gebruiker</span>
+            </button>
+        </div>
+        <div class="modal-overlay" id="userModal">
+            <div class="management-card">
+                <div class="modal-header">
+                    <h2>Nieuwe Gebruiker Aanmaken</h2>
+                    <button class="close-modal-btn" id="closeModalBtn">
+                        <i class="material-icons">close</i>
+                    </button>
+                </div>
+                <div class="message" id="message-box">
+                    <i class="material-icons" id="message-icon"></i>
+                    <span id="message-text"></span>
+                </div>
+                <form id="create-user-form" novalidate>
+                    <div class="form-group">
+                        <label for="full-name">Volledige naam</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="full-name" required placeholder="bijv. Jan Jansen">
+                            <i class="material-icons">person</i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="personeelsnummer">Personeelsnummer</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="personeelsnummer" required placeholder="bijv. 12345">
+                            <i class="material-icons">badge</i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="role">Rol</label>
+                        <div class="input-wrapper">
+                            <select id="role" required>
+                                <option value="" disabled selected>Selecteer een rol</option>
+                                <option value="medewerker">Medewerker</option>
+                                <option value="beheerder">Beheerder</option>
+                            </select>
+                            <i class="material-icons">manage_accounts</i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Wachtwoord</label>
+                        <div class="input-wrapper">
+                            <input type="password" id="password" required placeholder="••••••••">
+                            <i class="material-icons">lock</i>
+                        </div>
+                    </div>
+                    <button type="submit" class="submit-btn" id="submitBtn">
+                        <span>Gebruiker Aanmaken</span>
+                        <i class="material-icons">person_add</i>
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="table-container">
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>Volledige Naam</th>
+                        <th>Personeelsnummer</th>
+                        <th>Rol</th>
+                        <th>Acties</th>
+                    </tr>
+                </thead>
+                <tbody id="users-table-body">
+                    <tr>
+                        <td colspan="4" class="loading-cell">Gebruikers laden...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</body>
+</html>
