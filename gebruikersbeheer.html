@@ -73,6 +73,23 @@
                 </form>
             </div>
         </div>
+        <div class="modal-overlay" id="confirmModal">
+            <div class="management-card">
+                <div class="modal-header">
+                    <h2>Gebruiker Verwijderen</h2>
+                    <button class="close-modal-btn" id="closeConfirmModalBtn">
+                        <i class="material-icons">close</i>
+                    </button>
+                </div>
+                <p style="margin-bottom: 24px; color: var(--text-color-muted); line-height: 1.5;">
+                    Weet je zeker dat je gebruiker <strong id="confirm-user-name" style="color: var(--text-color);"></strong> wilt verwijderen? Dit kan niet ongedaan worden gemaakt.
+                </p>
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <button class="action-btn" id="cancelDeleteBtn" style="padding: 10px 20px; font-weight: 600; border-radius: 8px;">Annuleren</button>
+                    <button id="confirmDeleteBtn" style="padding: 10px 20px; font-weight: 600; border-radius: 8px; background-color: var(--danger-color); color: white; border: none; cursor: pointer;">Verwijderen</button>
+                </div>
+            </div>
+        </div>
         <div class="table-container">
             <table class="users-table">
                 <thead>

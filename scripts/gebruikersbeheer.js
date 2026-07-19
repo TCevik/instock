@@ -37,34 +37,40 @@ document.addEventListener('DOMContentLoaded', () => {
         const { data: users, error } = await window.supabase
             .from('user_data')
             .select('id, full_name, role, personeelsnummer')
-            .eq('winkel', currentWinkelId)
-            .neq('id', loggedInUserId);
+            .eq('winkel', currentWinkelId);
 
         if (error || !users) {
             tableBody.innerHTML = '<tr><td colspan="4" class="loading-cell">Fout bij het laden van gebruikers.</td></tr>';
             return;
         }
 
-        currentUsers = users;
+        const loggedInUser = users.find(u => u.id === loggedInUserId);
+        const otherUsers = users.filter(u => u.id !== loggedInUserId);
+        const sortedUsers = loggedInUser ? [loggedInUser, ...otherUsers] : users;
 
-        if (users.length === 0) {
+        currentUsers = sortedUsers;
+
+        if (sortedUsers.length === 0) {
             tableBody.innerHTML = '<tr><td colspan="4" class="loading-cell">Geen gebruikers gevonden.</td></tr>';
             return;
         }
 
-        tableBody.innerHTML = users.map(u => `
-            <tr>
-                <td>${u.full_name || ''}</td>
-                <td>${u.personeelsnummer || ''}</td>
-                <td>${u.role || ''}</td>
-                <td>
-                    <div class="action-btns">
-                        <button class="action-btn edit" data-id="${u.id}"><i class="material-icons">edit</i></button>
-                        <button class="action-btn delete" data-id="${u.id}"><i class="material-icons">delete</i></button>
-                    </div>
-                </td>
-            </tr>
-        `).join('');
+        tableBody.innerHTML = sortedUsers.map(u => {
+            const isSelf = u.id === loggedInUserId;
+            return `
+                <tr ${isSelf ? 'class="self-row"' : ''}>
+                    <td data-label="Volledige Naam">${u.full_name || ''} ${isSelf ? '<strong>(Jij)</strong>' : ''}</td>
+                    <td data-label="Personeelsnummer">${u.personeelsnummer || ''}</td>
+                    <td data-label="Rol">${u.role || ''}</td>
+                    <td data-label="Acties">
+                        <div class="action-btns">
+                            <button class="action-btn edit" data-id="${u.id}" ${isSelf ? 'disabled style="opacity: 0.3; pointer-events: none; cursor: not-allowed;"' : ''}><i class="material-icons">edit</i></button>
+                            <button class="action-btn delete" data-id="${u.id}" ${isSelf ? 'disabled style="opacity: 0.3; pointer-events: none; cursor: not-allowed;"' : ''}><i class="material-icons">delete</i></button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     };
 
     const checkAuth = async () => {
@@ -149,12 +155,9 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 console.log("Succes:", data);
                 alert(isEditing ? "Gebruiker succesvol aangepast!" : "Gebruiker succesvol aangemaakt!");
-                showMessage(isEditing ? 'Gebruiker is succesvol aangepast!' : 'Gebruiker is succesvol aangemaakt!', 'success');
                 resetModalState();
                 loadUsers();
-                setTimeout(() => {
-                    userModal.classList.remove('open');
-                }, 1000);
+                userModal.classList.remove('open');
             }
         } catch (err) {
             showMessage('Er is een onverwachte netwerkfout opgetreden.', 'error');
@@ -186,6 +189,56 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    const confirmModal = document.getElementById('confirmModal');
+    const closeConfirmModalBtn = document.getElementById('closeConfirmModalBtn');
+    const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    const confirmUserName = document.getElementById('confirm-user-name');
+    let userToDeleteId = null;
+
+    const closeConfirmModal = () => {
+        confirmModal.classList.remove('open');
+        userToDeleteId = null;
+    };
+
+    closeConfirmModalBtn.addEventListener('click', closeConfirmModal);
+    cancelDeleteBtn.addEventListener('click', closeConfirmModal);
+    confirmModal.addEventListener('click', (e) => {
+        if (e.target === confirmModal) {
+            closeConfirmModal();
+        }
+    });
+
+    confirmDeleteBtn.addEventListener('click', async () => {
+        if (!userToDeleteId) return;
+        confirmDeleteBtn.disabled = true;
+        const originalText = confirmDeleteBtn.textContent;
+        confirmDeleteBtn.textContent = 'Verwijderen...';
+        try {
+            const { data, error } = await window.supabase.functions.invoke('manage-user', {
+                body: { action: 'delete', targetUserId: userToDeleteId }
+            });
+
+            if (error) {
+                if (error.context && typeof error.context.json === 'function') {
+                    const errorBody = await error.context.json();
+                    alert(`Fout: ${errorBody.error}\nDetails: ${errorBody.details || 'Geen details'}`);
+                } else {
+                    alert(`Fout: ${error.message}`);
+                }
+            } else {
+                alert("Gebruiker succesvol verwijderd!");
+                loadUsers();
+            }
+        } catch (err) {
+            alert("Er is een netwerkfout opgetreden.");
+        } finally {
+            confirmDeleteBtn.disabled = false;
+            confirmDeleteBtn.textContent = originalText;
+            closeConfirmModal();
+        }
+    });
+
     const tableBody = document.getElementById('users-table-body');
     tableBody.addEventListener('click', async (e) => {
         const editBtn = e.target.closest('.action-btn.edit');
@@ -196,28 +249,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const user = currentUsers.find(u => u.id === userId);
             if (!user) return;
 
-            const confirmed = confirm(`Weet je zeker dat je gebruiker "${user.full_name}" wilt verwijderen?`);
-            if (!confirmed) return;
-
-            try {
-                const { data, error } = await window.supabase.functions.invoke('manage-user', {
-                    body: { action: 'delete', targetUserId: userId }
-                });
-
-                if (error) {
-                    if (error.context && typeof error.context.json === 'function') {
-                        const errorBody = await error.context.json();
-                        alert(`Fout: ${errorBody.error}\nDetails: ${errorBody.details || 'Geen details'}`);
-                    } else {
-                        alert(`Fout: ${error.message}`);
-                    }
-                } else {
-                    alert("Gebruiker succesvol verwijderd!");
-                    loadUsers();
-                }
-            } catch (err) {
-                alert("Er is een netwerkfout opgetreden.");
-            }
+            userToDeleteId = userId;
+            confirmUserName.textContent = user.full_name || '';
+            confirmModal.classList.add('open');
         }
 
         if (editBtn) {
