@@ -121,7 +121,6 @@
 .login-btn:active {
     transform: translateY(1px);
 }
-
 .error-message {
     background-color: rgba(255, 82, 82, 0.1);
     border: 1px solid rgba(255, 82, 82, 0.2);
@@ -134,6 +133,10 @@
     align-items: center;
     gap: 8px;
     animation: shake 0.4s ease;
+}
+
+.error-message i {
+    font-size: 18px;
 }
 
 @keyframes shake {

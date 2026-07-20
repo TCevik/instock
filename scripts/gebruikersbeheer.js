@@ -64,8 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td data-label="Rol">${u.role || ''}</td>
                     <td data-label="Acties">
                         <div class="action-btns">
-                            <button class="action-btn edit" data-id="${u.id}" ${isSelf ? 'disabled style="opacity: 0.3; pointer-events: none; cursor: not-allowed;"' : ''}><i class="material-icons">edit</i></button>
-                            <button class="action-btn delete" data-id="${u.id}" ${isSelf ? 'disabled style="opacity: 0.3; pointer-events: none; cursor: not-allowed;"' : ''}><i class="material-icons">delete</i></button>
+                            <button class="action-btn edit" data-id="${u.id}" ${isSelf ? 'disabled' : ''}><i class="material-icons">edit</i></button>
+                            <button class="action-btn delete" data-id="${u.id}" ${isSelf ? 'disabled' : ''}><i class="material-icons">delete</i></button>
                         </div>
                     </td>
                 </tr>
