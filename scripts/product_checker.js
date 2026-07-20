@@ -1,4 +1,7 @@
-document.addEventListener('DOMContentLoaded', () => {
+import { getSupabase, showMessage } from './main.js';
+import { loadHeader } from './header.js';
+
+document.addEventListener('DOMContentLoaded', async () => {
     const searchInput = document.getElementById('search-input');
     const resultsList = document.getElementById('results-list');
     const detailCard = document.getElementById('detail-card');
@@ -20,15 +23,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const detailLocatie = document.getElementById('detail-locatie');
     const detailTht = document.getElementById('detail-tht');
     const productImageBox = document.getElementById('product-image-box');
-    const voorraadIcon = document.getElementById('voorraad-icon');
 
+    loadHeader();
+
+    const supabase = await getSupabase();
     let debounceTimer;
 
-    const showMessage = (text, type) => {
-        messageText.textContent = text;
-        messageBox.className = `message ${type}`;
-        messageIcon.textContent = type === 'error' ? 'error_outline' : 'info_outline';
-        messageBox.style.display = 'flex';
+    const showMsg = (text, type) => {
+        showMessage(messageBox, messageText, messageIcon, text, type);
         detailCard.style.display = 'none';
         resultsList.style.display = 'none';
         searchContainer.style.display = 'block';
@@ -37,21 +39,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const hideMessage = () => {
         messageBox.style.display = 'none';
-    };
-
-    const getSupabase = () => {
-        return new Promise((resolve) => {
-            if (window.supabase) {
-                resolve(window.supabase);
-            } else {
-                const checkInterval = setInterval(() => {
-                    if (window.supabase) {
-                        clearInterval(checkInterval);
-                        resolve(window.supabase);
-                    }
-                }, 50);
-            }
-        });
     };
 
     const formatPrice = (price) => {
@@ -202,7 +189,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const supabase = await getSupabase();
         const isEan = /^\d+$/.test(query) && query.length >= 8;
 
         try {
@@ -216,12 +202,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const { data, error } = await req;
 
             if (error) {
-                showMessage('Er is een fout opgetreden bij het zoeken.', 'error');
+                showMsg('Er is een fout opgetreden bij het zoeken.', 'error');
                 return;
             }
 
             if (!data || data.length === 0) {
-                showMessage('Geen product gevonden.', 'error');
+                showMsg('Geen product gevonden.', 'error');
                 return;
             }
 
@@ -262,7 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 resultsList.style.display = 'block';
             }
         } catch (err) {
-            showMessage('Er is een onverwachte fout opgetreden.', 'error');
+            showMsg('Er is een onverwachte fout opgetreden.', 'error');
         }
     };
 

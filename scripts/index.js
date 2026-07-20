@@ -1,25 +1,22 @@
-const initDashboard = () => {
-    if (window.supabase) {
-        window.supabase.auth.getSession().then(({ data: { session } }) => {
-            if (session && session.user) {
-                window.supabase
-                    .from('user_data')
-                    .select('full_name')
-                    .eq('id', session.user.id)
-                    .then(({ data }) => {
-                        const welcomeEl = document.getElementById("welcome-message");
-                        if (welcomeEl) {
-                            if (data && data[0] && data[0].full_name) {
-                                welcomeEl.textContent = `Welkom, ${data[0].full_name}!`;
-                            } else {
-                                welcomeEl.textContent = "Welkom terug!";
-                            }
-                        }
-                    });
+import { getSupabase } from './main.js';
+import { loadHeader } from './header.js';
+
+const initDashboard = async () => {
+    const supabase = await getSupabase();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session && session.user) {
+        const { data } = await supabase
+            .from('user_data')
+            .select('full_name')
+            .eq('id', session.user.id);
+        const welcomeEl = document.getElementById("welcome-message");
+        if (welcomeEl) {
+            if (data && data[0] && data[0].full_name) {
+                welcomeEl.textContent = `Welkom, ${data[0].full_name}!`;
+            } else {
+                welcomeEl.textContent = "Welkom terug!";
             }
-        });
-    } else {
-        setTimeout(initDashboard, 50);
+        }
     }
 };
 
@@ -71,7 +68,11 @@ const generateDashboardCards = () => {
 window.addEventListener("menuReady", generateDashboardCards);
 
 if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initDashboard);
+    document.addEventListener("DOMContentLoaded", () => {
+        loadHeader();
+        initDashboard();
+    });
 } else {
+    loadHeader();
     initDashboard();
 }

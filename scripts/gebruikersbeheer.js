@@ -1,4 +1,7 @@
-document.addEventListener('DOMContentLoaded', () => {
+import { getSupabase, checkAuth, showMessage } from './main.js';
+import { loadHeader } from './header.js';
+
+document.addEventListener('DOMContentLoaded', async () => {
     const form = document.getElementById('create-user-form');
     const fullNameInput = document.getElementById('full-name');
     const personeelsnummerInput = document.getElementById('personeelsnummer');
@@ -9,18 +12,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const messageText = document.getElementById('message-text');
     const submitBtn = document.getElementById('submitBtn');
 
-    const showMessage = (text, type) => {
-        messageText.textContent = text;
-        messageBox.className = `message ${type}`;
-        messageIcon.textContent = type === 'error' ? 'error_outline' : 'check_circle_outline';
-        messageBox.style.display = 'flex';
-    };
+    loadHeader();
 
-    let currentWinkelId = null;
+    const auth = await checkAuth(['beheerder']);
+    if (!auth) return;
+
+    const { session, userData } = auth;
+    const loggedInUserId = session.user.id;
+    const currentWinkelId = userData.winkel;
+    const supabase = await getSupabase();
+
     let currentUsers = [];
     let isEditing = false;
     let editingUserId = null;
-    let loggedInUserId = null;
 
     const resetModalState = () => {
         isEditing = false;
@@ -34,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadUsers = async () => {
         if (!currentWinkelId) return;
         const tableBody = document.getElementById('users-table-body');
-        const { data: users, error } = await window.supabase
+        const { data: users, error } = await supabase
             .from('user_data')
             .select('id, full_name, role, personeelsnummer')
             .eq('winkel', currentWinkelId);
@@ -73,30 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
     };
 
-    const checkAuth = async () => {
-        if (!window.supabase) {
-            setTimeout(checkAuth, 50);
-            return;
-        }
-
-        const { data: { session } } = await window.supabase.auth.getSession();
-        if (!session) {
-            window.location.href = 'login.html';
-            return;
-        }
-
-        const { data, error } = await window.supabase.from('user_data').select('role, winkel').eq('id', session.user.id).single();
-        if (error || !data || data.role !== 'beheerder') {
-            window.location.href = 'index.html';
-            return;
-        }
-
-        loggedInUserId = session.user.id;
-        currentWinkelId = data.winkel;
-        loadUsers();
-    };
-
-    checkAuth();
+    loadUsers();
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -108,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const password = passwordInput.value;
 
         if (!full_name || !personeelsnummer || !role || (!isEditing && !password)) {
-            showMessage('Vul alle verplichte velden in.', 'error');
+            showMessage(messageBox, messageText, messageIcon, 'Vul alle verplichte velden in.', 'error');
             return;
         }
 
@@ -124,11 +105,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (password) {
                     updates.password = password;
                 }
-                result = await window.supabase.functions.invoke('manage-user', {
+                result = await supabase.functions.invoke('manage-user', {
                     body: { action: 'update', targetUserId: editingUserId, updates }
                 });
             } else {
-                result = await window.supabase.functions.invoke('create-user', {
+                result = await supabase.functions.invoke('create-user', {
                     body: { full_name, role, personeelsnummer, password }
                 });
             }
@@ -141,26 +122,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         const errorBody = await error.context.json();
                         console.log("Database Details:", errorBody);
-                        alert(`Fout: ${errorBody.error}\nDetails: ${errorBody.details || 'Geen details'}`);
-                        showMessage(errorBody.error || 'Er ging iets mis.', 'error');
+                        showMessage(messageBox, messageText, messageIcon, `${errorBody.error || 'Er ging iets mis.'} ${errorBody.details || ''}`, 'error');
                     } catch (e) {
                         console.error("Kon fout-body niet parsen:", e);
-                        alert("Er ging iets mis bij het verwerken van de gebruiker.");
-                        showMessage("Er ging iets mis bij het verwerken van de gebruiker.", "error");
+                        showMessage(messageBox, messageText, messageIcon, "Er ging iets mis bij het verwerken van de gebruiker.", "error");
                     }
                 } else {
-                    alert("Er ging iets mis bij het verwerken van de gebruiker.");
-                    showMessage(error.message, 'error');
+                    showMessage(messageBox, messageText, messageIcon, error.message, 'error');
                 }
             } else {
                 console.log("Succes:", data);
-                alert(isEditing ? "Gebruiker succesvol aangepast!" : "Gebruiker succesvol aangemaakt!");
-                resetModalState();
-                loadUsers();
-                userModal.classList.remove('open');
+                showMessage(messageBox, messageText, messageIcon, isEditing ? "Gebruiker succesvol aangepast!" : "Gebruiker succesvol aangemaakt!", "success");
+                setTimeout(() => {
+                    resetModalState();
+                    loadUsers();
+                    userModal.classList.remove('open');
+                }, 1000);
             }
         } catch (err) {
-            showMessage('Er is een onverwachte netwerkfout opgetreden.', 'error');
+            showMessage(messageBox, messageText, messageIcon, 'Er is een onverwachte netwerkfout opgetreden.', 'error');
         } finally {
             submitBtn.disabled = false;
             btnText.textContent = originalText;
@@ -215,23 +195,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const originalText = confirmDeleteBtn.textContent;
         confirmDeleteBtn.textContent = 'Verwijderen...';
         try {
-            const { data, error } = await window.supabase.functions.invoke('manage-user', {
+            const { data, error } = await supabase.functions.invoke('manage-user', {
                 body: { action: 'delete', targetUserId: userToDeleteId }
             });
 
             if (error) {
+                let errorMsg = error.message;
                 if (error.context && typeof error.context.json === 'function') {
                     const errorBody = await error.context.json();
-                    alert(`Fout: ${errorBody.error}\nDetails: ${errorBody.details || 'Geen details'}`);
-                } else {
-                    alert(`Fout: ${error.message}`);
+                    errorMsg = `${errorBody.error || ''} ${errorBody.details || ''}`;
                 }
+                showMessage(messageBox, messageText, messageIcon, `Fout: ${errorMsg}`, "error");
             } else {
-                alert("Gebruiker succesvol verwijderd!");
+                showMessage(messageBox, messageText, messageIcon, "Gebruiker succesvol verwijderd!", "success");
                 loadUsers();
             }
         } catch (err) {
-            alert("Er is een netwerkfout opgetreden.");
+            showMessage(messageBox, messageText, messageIcon, "Er is een netwerkfout opgetreden.", "error");
         } finally {
             confirmDeleteBtn.disabled = false;
             confirmDeleteBtn.textContent = originalText;

@@ -1,7 +1,9 @@
-function init() {
+import { getSupabase } from './main.js';
+
+export function loadHeader() {
     fetch("header.html")
         .then(response => response.text())
-        .then(html => {
+        .then(async html => {
             const tempDiv = document.createElement("div");
             tempDiv.innerHTML = html;
             
@@ -33,62 +35,49 @@ function init() {
             menuCloseBtn.addEventListener("click", toggleDrawer);
             drawerOverlay.addEventListener("click", toggleDrawer);
 
+            const supabase = await getSupabase();
+
             const logoutBtn = document.getElementById("logoutBtn");
             if (logoutBtn) {
                 logoutBtn.addEventListener("click", async () => {
-                    if (window.supabase) {
-                        await window.supabase.auth.signOut();
-                        window.location.href = 'login.html';
-                    }
+                    await supabase.auth.signOut();
+                    window.location.href = 'login.html';
                 });
             }
 
-            const updateLogo = () => {
-                if (window.supabase) {
-                    window.supabase.auth.onAuthStateChange((event, session) => {
-                        if (event === 'SIGNED_OUT' || !session) {
-                            window.location.href = 'login.html';
-                        }
-                    });
+            supabase.auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_OUT' || !session) {
+                    window.location.href = 'login.html';
+                }
+            });
 
-                    window.supabase.from('stores').select('name')
+            supabase.from('stores').select('name')
+                .then(({ data }) => {
+                    if (data && data[0] && data[0].name) {
+                        document.querySelectorAll(".logo").forEach(el => {
+                            el.textContent = data[0].name;
+                        });
+                    }
+                });
+
+            supabase.auth.getSession().then(({ data: { session } }) => {
+                if (session && session.user) {
+                    supabase.from('user_data').select('role').eq('id', session.user.id)
                         .then(({ data }) => {
-                            if (data && data[0] && data[0].name) {
-                                document.querySelectorAll(".logo").forEach(el => {
-                                    el.textContent = data[0].name;
+                            if (data && data[0] && data[0].role === 'medewerker') {
+                                const allowed = ["dashboard", "product checker", "voorraadmutaties", "tht module", "tht registratie", "tellen", "bakplan"];
+                                document.querySelectorAll(".drawer-item").forEach(item => {
+                                    const text = item.querySelector("span").textContent.trim().toLowerCase();
+                                    if (!allowed.includes(text)) {
+                                        item.style.display = "none";
+                                    }
                                 });
                             }
+                            window.dispatchEvent(new CustomEvent("menuReady"));
                         });
-
-                    window.supabase.auth.getSession().then(({ data: { session } }) => {
-                        if (session && session.user) {
-                            window.supabase.from('user_data').select('role').eq('id', session.user.id)
-                                .then(({ data }) => {
-                                    if (data && data[0] && data[0].role === 'medewerker') {
-                                        const allowed = ["dashboard", "product checker", "voorraadmutaties", "tht module", "tht registratie", "tellen", "bakplan"];
-                                        document.querySelectorAll(".drawer-item").forEach(item => {
-                                            const text = item.querySelector("span").textContent.trim().toLowerCase();
-                                            if (!allowed.includes(text)) {
-                                                item.style.display = "none";
-                                            }
-                                        });
-                                    }
-                                    window.dispatchEvent(new CustomEvent("menuReady"));
-                                });
-                        } else {
-                            window.location.href = 'login.html';
-                        }
-                    });
                 } else {
-                    setTimeout(updateLogo, 50);
+                    window.location.href = 'login.html';
                 }
-            };
-            updateLogo();
+            });
         });
-}
-
-if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-} else {
-    init();
 }

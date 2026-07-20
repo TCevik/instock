@@ -1,4 +1,7 @@
-document.addEventListener('DOMContentLoaded', () => {
+import { getSupabase, checkAuth, showMessage } from './main.js';
+import { loadHeader } from './header.js';
+
+document.addEventListener('DOMContentLoaded', async () => {
     const form = document.getElementById('add-product-form');
     const eanInput = document.getElementById('ean');
     const naamInput = document.getElementById('naam');
@@ -11,6 +14,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const thtInput = document.getElementById('tht');
     const locatiecodeInput = document.getElementById('locatiecode');
     const afbeeldingInput = document.getElementById('afbeelding');
+
+    loadHeader();
+
+    const auth = await checkAuth(['beheerder']);
+    if (!auth) return;
+
+    const supabase = await getSupabase();
 
     const setDefaultDate = () => {
         const today = new Date();
@@ -41,33 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    const showMessage = (text, type) => {
-        messageText.textContent = text;
-        messageBox.className = `message ${type}`;
-        messageIcon.textContent = type === 'error' ? 'error_outline' : 'check_circle_outline';
-        messageBox.style.display = 'flex';
-    };
-
-    const checkAuth = async () => {
-        if (!window.supabase) {
-            setTimeout(checkAuth, 50);
-            return;
-        }
-
-        const { data: { session } } = await window.supabase.auth.getSession();
-        if (!session) {
-            window.location.href = 'login.html';
-            return;
-        }
-
-        const { data, error } = await window.supabase.from('user_data').select('role').eq('id', session.user.id).single();
-        if (error || !data || data.role !== 'beheerder') {
-            window.location.href = 'index.html';
-            return;
-        }
-    };
-
-    checkAuth();
     eanInput.focus();
 
     form.addEventListener('submit', async (e) => {
@@ -78,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const naam = naamInput.value.trim();
 
         if (!ean || !naam) {
-            showMessage('EAN en Naam zijn verplichte velden.', 'error');
+            showMessage(messageBox, messageText, messageIcon, 'EAN en Naam zijn verplichte velden.', 'error');
             return;
         }
 
@@ -102,20 +85,20 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         try {
-            const { error } = await window.supabase
+            const { error } = await supabase
                 .from('producten')
                 .insert([productData]);
 
             if (error) {
-                showMessage(error.message || 'Er is een fout opgetreden bij het toevoegen van het product.', 'error');
+                showMessage(messageBox, messageText, messageIcon, error.message || 'Er is een fout opgetreden bij het toevoegen van het product.', 'error');
             } else {
-                showMessage('Product succesvol toegevoegd!', 'success');
+                showMessage(messageBox, messageText, messageIcon, 'Product succesvol toegevoegd!', 'success');
                 form.reset();
                 setDefaultDate();
                 eanInput.focus();
             }
         } catch (err) {
-            showMessage('Er is een onverwachte fout opgetreden.', 'error');
+            showMessage(messageBox, messageText, messageIcon, 'Er is een onverwachte fout opgetreden.', 'error');
         } finally {
             submitBtn.disabled = false;
             btnText.textContent = originalText;
