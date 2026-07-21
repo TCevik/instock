@@ -45,7 +45,20 @@
                 </div>
             </div>
             <div class="drag-drop-workspace" id="drag-drop-workspace" style="display: none; margin-top: 20px;">
-                <div class="fillers-container" id="fillers-container"></div>
+                <div class="workspace-left-column">
+                    <div class="sort-filter-bar">
+                        <label for="filler-sort-select">Sorteer vullers:</label>
+                        <select id="filler-sort-select" autocomplete="off">
+                            <option value="name-asc">Naam (A - Z)</option>
+                            <option value="name-desc">Naam (Z - A)</option>
+                            <option value="start-asc">Begintijd (Vroeg - Laat)</option>
+                            <option value="start-desc">Begintijd (Laat - Vroeg)</option>
+                            <option value="end-asc">Eindtijd (Vroeg - Laat)</option>
+                            <option value="end-desc">Eindtijd (Laat - Vroeg)</option>
+                        </select>
+                    </div>
+                    <div class="fillers-container" id="fillers-container"></div>
+                </div>
                 <div class="tasks-container" id="tasks-container">
                     <div id="tasks-drop-overlay" class="tasks-drop-overlay">
                         <i class="material-icons" style="font-size: 32px; margin-bottom: 8px; color: var(--danger-color);">delete_outline</i>

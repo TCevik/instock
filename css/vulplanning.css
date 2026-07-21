@@ -124,6 +124,43 @@
     }
 }
 
+.workspace-left-column {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.sort-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 10px 14px;
+}
+
+.sort-filter-bar label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.sort-filter-bar select {
+    padding: 6px 12px;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-color);
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+}
+
+.sort-filter-bar select:focus {
+    border-color: var(--accent-color-sidemenu);
+}
+
 .fillers-container {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));

@@ -37,6 +37,7 @@ import { loadHeader } from './header.js';
         fillerTasks: {},
         helpers: {},
         activeTab: 'fill',
+        fillerSortOrder: 'name-asc',
         otherTimes: {
             "Restanten nalopen": 20,
             "Bulk nalopen": 30,
@@ -74,6 +75,20 @@ import { loadHeader } from './header.js';
         if (!match) return 0;
         const parts = match[0].split(':').map(p => parseInt(p) || 0);
         return parts[0] * 60 + parts[1];
+    };
+
+    const getFillerEndTime = (displayName) => {
+        const match = displayName.match(/\b\d{2}:\d{2}\s*-\s*\d{2}(?::\d{2})?/);
+        if (!match) return Infinity;
+        const parts = match[0].split('-').map(p => p.trim());
+        if (parts.length !== 2) return Infinity;
+        const parseTime = (str) => {
+            const hm = str.split(':');
+            const h = parseInt(hm[0]) || 0;
+            const m = parseInt(hm[1]) || 0;
+            return h * 60 + m;
+        };
+        return parseTime(parts[1]);
     };
 
     const formatTimeOfDay = (totalMinutes) => {
@@ -580,7 +595,24 @@ import { loadHeader } from './header.js';
             allTaskIds.push(`${pathName}_other`);
         });
 
-        state.selectedFillers.forEach(filler => {
+        const sortedFillers = [...state.selectedFillers].sort((a, b) => {
+            if (state.fillerSortOrder === 'name-asc') {
+                return a.localeCompare(b);
+            } else if (state.fillerSortOrder === 'name-desc') {
+                return b.localeCompare(a);
+            } else if (state.fillerSortOrder === 'start-asc') {
+                return getFillerStartTime(a) - getFillerStartTime(b);
+            } else if (state.fillerSortOrder === 'start-desc') {
+                return getFillerStartTime(b) - getFillerStartTime(a);
+            } else if (state.fillerSortOrder === 'end-asc') {
+                return getFillerEndTime(a) - getFillerEndTime(b);
+            } else if (state.fillerSortOrder === 'end-desc') {
+                return getFillerEndTime(b) - getFillerEndTime(a);
+            }
+            return 0;
+        });
+
+        sortedFillers.forEach(filler => {
             const totalMin = getFillerTotalTime(filler);
             const maxMin = getAvailableTime(filler);
             const roundedTotal = Math.round(totalMin);
@@ -594,7 +626,7 @@ import { loadHeader } from './header.js';
 
             const title = document.createElement('span');
             title.className = 'filler-card-title';
-            title.textContent = filler.split(' - ')[0];
+            title.textContent = filler;
 
             const timeSpan = document.createElement('span');
             timeSpan.className = `filler-card-time${isExceeded ? ' exceeded' : ''}`;
@@ -952,6 +984,14 @@ import { loadHeader } from './header.js';
             nextBtn.addEventListener('click', () => {
                 document.getElementById('step-1-container').style.display = 'none';
                 document.getElementById('step-2-container').style.display = 'block';
+            });
+        }
+
+        const sortSelect = document.getElementById('filler-sort-select');
+        if (sortSelect) {
+            sortSelect.addEventListener('change', (e) => {
+                state.fillerSortOrder = e.target.value;
+                renderWorkspace();
             });
         }
 
