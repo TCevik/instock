@@ -1164,48 +1164,49 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
             if (resetBtn) resetBtn.style.display = 'inline-block';
         }
 
+        let pendingFillers = null;
+        let pendingColli = null;
+
+        const checkAndApplyBothUploads = async () => {
+            if (!pendingFillers || !pendingColli) return;
+
+            const applyNewData = () => {
+                state.selectedFillers = pendingFillers;
+                state.pathColli = pendingColli;
+                state.fillerTasks = {};
+                state.helpers = {};
+                state.instanceTimes = {};
+                state.fillerBreaks = {};
+                pendingFillers = null;
+                pendingColli = null;
+
+                document.getElementById('step-1-container').style.display = 'none';
+                document.getElementById('step-2-container').style.display = 'block';
+                document.querySelectorAll('.upload-group').forEach(el => el.style.display = 'none');
+                renderWorkspace();
+                if (resetBtn) resetBtn.style.display = 'inline-block';
+                triggerSave();
+            };
+
+            showConfirmModal(
+                'Planning Overschrijven',
+                'Beide PDF\'s zijn geüpload. Weet je zeker dat je de bestaande planning wilt overschrijven met deze nieuwe gegevens?',
+                applyNewData
+            );
+        };
+
         const input = document.getElementById('vulplanning-input');
         if (input) {
             input.addEventListener('change', async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
-
-                const processPDF = async () => {
-                    try {
-                        const names = await parsePDFAndGetNames(file);
-                        state.selectedFillers = [];
-                        state.pathColli = {};
-                        state.fillerTasks = {};
-                        state.helpers = {};
-                        state.instanceTimes = {};
-                        state.fillerBreaks = {};
-                        renderPeopleList(names);
-                        triggerSave();
-                        const uploadGroup = input.closest('.upload-group');
-                        if (uploadGroup) uploadGroup.style.display = 'none';
-                    } catch (err) {
-                        console.error(err);
-                    }
-                };
-
-                if (state.selectedFillers && state.selectedFillers.length > 0) {
-                    showConfirmModal(
-                        'Planning Overschrijven',
-                        'Weet je zeker dat je het nieuwe dagrooster wilt importeren? De huidige opgeslagen planning wordt hiermee overschreven.',
-                        processPDF
-                    );
-                } else {
-                    await processPDF();
+                try {
+                    const names = await parsePDFAndGetNames(file);
+                    pendingFillers = names;
+                    await checkAndApplyBothUploads();
+                } catch (err) {
+                    console.error(err);
                 }
-            });
-        }
-
-        const nextBtn = document.getElementById('next-step-btn');
-        if (nextBtn) {
-            nextBtn.addEventListener('click', () => {
-                document.getElementById('step-1-container').style.display = 'none';
-                document.getElementById('step-2-container').style.display = 'block';
-                if (resetBtn) resetBtn.style.display = 'inline-block';
             });
         }
 
@@ -1241,11 +1242,8 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
                 const file = e.target.files[0];
                 if (!file) return;
                 try {
-                    state.pathColli = await parseColliPDF(file);
-                    renderWorkspace();
-                    triggerSave();
-                    const uploadGroup = colliInput.closest('.upload-group');
-                    if (uploadGroup) uploadGroup.style.display = 'none';
+                    pendingColli = await parseColliPDF(file);
+                    await checkAndApplyBothUploads();
                 } catch (err) {
                     console.error(err);
                 }
