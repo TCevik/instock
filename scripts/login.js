@@ -1,4 +1,4 @@
-import { getSupabase } from './main.js';
+import { getSupabase, handleFormSubmit } from './main.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const form = document.getElementById('login-form');
@@ -7,13 +7,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const passwordInput = document.getElementById('password');
     const errorMessage = document.getElementById('error-message');
     const errorText = document.getElementById('error-text');
+    const submitBtn = form.querySelector('.login-btn');
 
     const supabase = await getSupabase();
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
-        errorMessage.style.display = 'none';
 
         const storeCode = storeCodeInput.value.trim().toLowerCase();
         const employeeId = employeeIdInput.value.trim().toLowerCase();
@@ -27,7 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const email = `${employeeId}@${storeCode}.instock`;
 
-        try {
+        await handleFormSubmit(submitBtn, 'Bezig met inloggen...', errorMessage, async () => {
             const { data, error } = await supabase.auth.signInWithPassword({
                 email: email,
                 password: password
@@ -39,9 +38,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else if (data.session) {
                 window.location.href = 'index.html';
             }
-        } catch (err) {
-            errorText.textContent = 'Er is een onverwachte fout opgetreden.';
-            errorMessage.style.display = 'flex';
-        }
+        });
     });
 });

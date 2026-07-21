@@ -14,9 +14,12 @@
 <body>
     <main class="dashboard-container">
         <div class="page-header page-header-col">
-            <div class="page-header-row">
-                <i class="material-icons page-header-icon">assignment</i>
-                <h1 class="page-header-title">Vulplanning Maker</h1>
+            <div class="page-header-row" style="justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <i class="material-icons page-header-icon">assignment</i>
+                    <h1 class="page-header-title">Vulplanning Maker</h1>
+                </div>
+                <button id="reset-planning-btn" class="action-btn delete" style="display: none; padding: 8px 16px; background-color: var(--danger-color); color: #fff; border-radius: 8px; font-weight: 500;">Opnieuw Beginnen</button>
             </div>
             <p class="page-header-subtitle">Beheer en bekijk de vulplanning</p>
         </div>
@@ -73,6 +76,7 @@
                     <div class="tasks-grid" id="unassigned-fill-tasks"></div>
                     <div class="tasks-grid" id="unassigned-mirror-tasks" style="display: none;"></div>
                     <div class="tasks-grid" id="unassigned-other-tasks" style="display: none;"></div>
+                    <button id="add-custom-task-btn" class="submit-btn" style="margin-top: 12px; font-size: 13px; padding: 8px 12px; height: auto; display: none;">+ Custom taak toevoegen</button>
                 </div>
             </div>
         </div>
@@ -126,6 +130,39 @@
             <div style="display: flex; gap: 12px; justify-content: flex-end;">
                 <button id="duration-cancel-btn" class="submit-btn" style="background: var(--border-color); color: var(--text-color); max-width: 100px; box-shadow: none;">Annuleren</button>
                 <button id="duration-save-btn" class="submit-btn" style="max-width: 100px;">Opslaan</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="custom-task-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 16px;">Custom taak toevoegen</h3>
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label for="custom-task-name-input">Naam taak</label>
+                <div class="input-wrapper">
+                    <input type="text" id="custom-task-name-input" placeholder="Bijv. Schoonmaken..." style="width: 100%; padding: 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-color);">
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label for="custom-task-duration-input">Tijd (in minuten)</label>
+                <div class="input-wrapper">
+                    <input type="number" id="custom-task-duration-input" min="1" placeholder="Minuten..." style="width: 100%; padding: 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-color);">
+                </div>
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button id="custom-task-cancel-btn" class="submit-btn" style="background: var(--border-color); color: var(--text-color); max-width: 100px; box-shadow: none;">Annuleren</button>
+                <button id="custom-task-save-btn" class="submit-btn" style="max-width: 100px;">Toevoegen</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirm-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 420px;">
+            <h3 id="confirm-modal-title" style="font-size: 18px; font-weight: 600; margin-bottom: 12px; color: var(--text-color);">Bevestigen</h3>
+            <p id="confirm-modal-message" style="font-size: 14px; color: var(--text-color-muted); margin-bottom: 20px; line-height: 1.5;"></p>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button id="confirm-cancel-btn" class="action-btn" style="padding: 8px 16px; background-color: var(--input-bg);">Annuleren</button>
+                <button id="confirm-ok-btn" class="action-btn delete" style="padding: 8px 16px; background-color: var(--danger-color); color: #fff;">Overschrijven</button>
             </div>
         </div>
     </div>

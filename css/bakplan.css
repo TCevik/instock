@@ -38,7 +38,7 @@
 }
 
 .bakplan-row td[data-label="Gem Verk"] {
-    background-color: rgba(128, 189, 29, 0.15);
+    background-color: var(--gem-verk-bg);
     color: var(--accent-color-sidemenu);
     font-weight: 700;
     border-radius: 4px;

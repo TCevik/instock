@@ -1,5 +1,6 @@
 import { loadHeader } from './header.js';
-import { checkAuth, getSupabase } from './main.js';
+import { checkAuth, getSupabase, setupModal } from './main.js';
+import { extractTextLinesFromPage } from './pdf-utils.js';
 
 (() => {
     let storeId = null;
@@ -174,7 +175,7 @@ import { checkAuth, getSupabase } from './main.js';
 
             for (let i = 1; i <= pdf.numPages; i++) {
                 const page = await pdf.getPage(i);
-                const rows = await this.extractTextLinesFromPage(page);
+                const rows = await extractTextLinesFromPage(page);
                 
                 let pageMaxX = 500;
                 for (let row of rows) {
@@ -349,44 +350,6 @@ import { checkAuth, getSupabase } from './main.js';
                     });
                 });
             }
-        },
-
-        async extractTextLinesFromPage(page) {
-            const textContent = await page.getTextContent();
-            if (!textContent || !textContent.items || textContent.items.length === 0) {
-                return [];
-            }
-
-            const items = textContent.items
-                .map(item => ({
-                    text: item.str,
-                    x: item.transform[4],
-                    y: item.transform[5]
-                }))
-                .filter(item => item.text.trim() !== '');
-
-            if (items.length === 0) return [];
-
-            const tolerance = 5;
-            const linesMap = [];
-            for (let item of items) {
-                let foundLine = linesMap.find(line => Math.abs(line.y - item.y) <= tolerance);
-                if (!foundLine) {
-                    foundLine = { y: item.y, items: [] };
-                    linesMap.push(foundLine);
-                }
-                foundLine.items.push(item);
-            }
-
-            linesMap.sort((a, b) => b.y - a.y);
-
-            return linesMap.map(line => {
-                line.items.sort((a, b) => a.x - b.x);
-                return {
-                    rawText: line.items.map(item => item.text).join(' '),
-                    items: line.items
-                };
-            });
         }
     };
 
@@ -502,9 +465,7 @@ import { checkAuth, getSupabase } from './main.js';
                 } catch (err) {
                     console.error(err);
                 } finally {
-                    selectedFile = null;
-                    if (input) input.value = '';
-                    if (pdfModal) pdfModal.style.display = 'none';
+                    closePdfModal();
                 }
             };
 
@@ -525,13 +486,10 @@ import { checkAuth, getSupabase } from './main.js';
             }
 
             const modalCancelBtn = document.getElementById('pdf-modal-cancel-btn');
-            if (modalCancelBtn) {
-                modalCancelBtn.addEventListener('click', () => {
-                    selectedFile = null;
-                    if (input) input.value = '';
-                    if (pdfModal) pdfModal.style.display = 'none';
-                });
-            }
+            const closePdfModal = setupModal(pdfModal, [modalCancelBtn], () => {
+                selectedFile = null;
+                if (input) input.value = '';
+            });
 
             if (undoBtn) {
                 undoBtn.addEventListener('click', () => {
@@ -612,17 +570,14 @@ import { checkAuth, getSupabase } from './main.js';
                 });
             }
 
-            if (settingsCancelBtn && settingsModal) {
-                settingsCancelBtn.addEventListener('click', () => {
-                    tempConfig = {};
-                    settingsModal.style.display = 'none';
-                });
-            }
+            const closeSettingsModal = setupModal(settingsModal, [settingsCancelBtn], () => {
+                tempConfig = {};
+            });
 
             if (settingsSaveBtn && settingsModal) {
                 settingsSaveBtn.addEventListener('click', () => {
                     state.productPlateConfig = { ...tempConfig };
-                    settingsModal.style.display = 'none';
+                    closeSettingsModal();
                     this.renderTable();
                     triggerSave();
                 });

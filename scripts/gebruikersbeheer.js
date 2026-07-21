@@ -1,4 +1,4 @@
-import { getSupabase, checkAuth, showMessage } from './main.js';
+import { getSupabase, checkAuth, showMessage, setupModal, handleFormSubmit } from './main.js';
 import { loadHeader } from './header.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -81,7 +81,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        messageBox.style.display = 'none';
 
         const full_name = fullNameInput.value.trim();
         const personeelsnummer = personeelsnummerInput.value.trim();
@@ -93,12 +92,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        submitBtn.disabled = true;
-        const btnText = submitBtn.querySelector('span');
-        const originalText = btnText.textContent;
-        btnText.textContent = 'Bezig met verwerken...';
-
-        try {
+        await handleFormSubmit(submitBtn, 'Bezig met verwerken...', messageBox, async () => {
             let result;
             if (isEditing) {
                 const updates = { full_name, role, personeelsnummer };
@@ -134,17 +128,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log("Succes:", data);
                 showMessage(messageBox, messageText, messageIcon, isEditing ? "Gebruiker succesvol aangepast!" : "Gebruiker succesvol aangemaakt!", "success");
                 setTimeout(() => {
-                    resetModalState();
+                    closeUserModal();
                     loadUsers();
-                    userModal.classList.remove('open');
                 }, 1000);
             }
-        } catch (err) {
-            showMessage(messageBox, messageText, messageIcon, 'Er is een onverwachte netwerkfout opgetreden.', 'error');
-        } finally {
-            submitBtn.disabled = false;
-            btnText.textContent = originalText;
-        }
+        });
     });
 
     const userModal = document.getElementById('userModal');
@@ -157,17 +145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         messageBox.style.display = 'none';
     });
 
-    closeModalBtn.addEventListener('click', () => {
-        userModal.classList.remove('open');
-        resetModalState();
-    });
-
-    userModal.addEventListener('click', (e) => {
-        if (e.target === userModal) {
-            userModal.classList.remove('open');
-            resetModalState();
-        }
-    });
+    const closeUserModal = setupModal(userModal, [closeModalBtn], resetModalState);
 
     const confirmModal = document.getElementById('confirmModal');
     const closeConfirmModalBtn = document.getElementById('closeConfirmModalBtn');
@@ -176,25 +154,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const confirmUserName = document.getElementById('confirm-user-name');
     let userToDeleteId = null;
 
-    const closeConfirmModal = () => {
-        confirmModal.classList.remove('open');
+    const closeConfirmModal = setupModal(confirmModal, [closeConfirmModalBtn, cancelDeleteBtn], () => {
         userToDeleteId = null;
-    };
-
-    closeConfirmModalBtn.addEventListener('click', closeConfirmModal);
-    cancelDeleteBtn.addEventListener('click', closeConfirmModal);
-    confirmModal.addEventListener('click', (e) => {
-        if (e.target === confirmModal) {
-            closeConfirmModal();
-        }
     });
 
     confirmDeleteBtn.addEventListener('click', async () => {
         if (!userToDeleteId) return;
-        confirmDeleteBtn.disabled = true;
-        const originalText = confirmDeleteBtn.textContent;
-        confirmDeleteBtn.textContent = 'Verwijderen...';
-        try {
+        await handleFormSubmit(confirmDeleteBtn, 'Verwijderen...', messageBox, async () => {
             const { data, error } = await supabase.functions.invoke('manage-user', {
                 body: { action: 'delete', targetUserId: userToDeleteId }
             });
@@ -210,13 +176,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 showMessage(messageBox, messageText, messageIcon, "Gebruiker succesvol verwijderd!", "success");
                 loadUsers();
             }
-        } catch (err) {
-            showMessage(messageBox, messageText, messageIcon, "Er is een netwerkfout opgetreden.", "error");
-        } finally {
-            confirmDeleteBtn.disabled = false;
-            confirmDeleteBtn.textContent = originalText;
             closeConfirmModal();
-        }
+        });
     });
 
     const tableBody = document.getElementById('users-table-body');

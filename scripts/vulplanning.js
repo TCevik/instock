@@ -1,7 +1,10 @@
 import { loadHeader } from './header.js';
-import { checkAuth } from './main.js';
+import { checkAuth, getSupabase, setupModal } from './main.js';
+import { extractTextLinesFromPage } from './pdf-utils.js';
 
 (() => {
+    let storeId = null;
+    let saveTimeout = null;
     const PATHS_MAPPING = {
         "Wijn, Chips, Nootjes": ["Wijnen", "Zoutjes Snacks"],
         "Frisdrank, Bier": ["Frisdrank", "Bieren", "Vruchtensappen"],
@@ -46,13 +49,35 @@ import { checkAuth } from './main.js';
             "Magazijn opruimen": 45,
             "Tellen": 30
         },
-        instanceTimes: {}
+        instanceTimes: {},
+        fillerBreaks: {}
     };
+
+    let activeTaskId = null;
+    let activeDurationTaskId = null;
 
     const formatMin = (min) => {
         const hours = Math.floor(min / 60);
         const mins = Math.round(min % 60);
         return hours > 0 ? `${hours}u ${mins}m` : `${mins}m`;
+    };
+
+    const getFillerPause = (displayName) => {
+        if (state.fillerBreaks && state.fillerBreaks[displayName] !== undefined) {
+            return state.fillerBreaks[displayName];
+        }
+        const match = displayName.match(/\b\d{2}:\d{2}\s*-\s*\d{2}(?::\d{2})?/);
+        if (!match) return 0;
+        const parts = match[0].split('-').map(p => p.trim());
+        if (parts.length !== 2) return 0;
+        const parseTime = (str) => {
+            const hm = str.split(':');
+            return (parseInt(hm[0]) || 0) * 60 + (parseInt(hm[1]) || 0);
+        };
+        const gross = parseTime(parts[1]) - parseTime(parts[0]);
+        if (gross >= 480) return 60;
+        if (gross >= 270) return 30;
+        return 0;
     };
 
     const getAvailableTime = (displayName) => {
@@ -68,7 +93,10 @@ import { checkAuth } from './main.js';
         };
         const start = parseTime(parts[0]);
         const end = parseTime(parts[1]);
-        return end > start ? (end - start) : Infinity;
+        const gross = end > start ? (end - start) : Infinity;
+        if (!isFinite(gross)) return Infinity;
+        const pause = getFillerPause(displayName);
+        return Math.max(0, gross - pause);
     };
 
     const getFillerStartTime = (displayName) => {
@@ -292,16 +320,81 @@ import { checkAuth } from './main.js';
         return card;
     };
 
+    function checkHelperValidity() {
+        const select = document.getElementById('helper-select');
+        const durationInput = document.getElementById('helper-duration');
+        const saveBtn = document.getElementById('modal-save-btn');
+        if (!activeTaskId || !select || !durationInput || !saveBtn) return;
+        const hasHelper = !!select.value;
+        const hasDuration = parseInt(durationInput.value) > 0;
+        saveBtn.disabled = hasHelper && !hasDuration;
+        saveBtn.style.opacity = saveBtn.disabled ? '0.5' : '1';
+        saveBtn.style.cursor = saveBtn.disabled ? 'not-allowed' : 'pointer';
+    }
+
+    function updateDynamicDuration() {
+        const select = document.getElementById('helper-select');
+        const maxCheckbox = document.getElementById('helper-max-checkbox');
+        const halfCheckbox = document.getElementById('helper-half-checkbox');
+        const durationInput = document.getElementById('helper-duration');
+        const errorMsg = document.getElementById('helper-error-msg');
+        if (!activeTaskId || !select || !maxCheckbox || !halfCheckbox || !durationInput || !errorMsg) return;
+        const helperName = select.value;
+        if (!helperName) {
+            if (maxCheckbox.checked || halfCheckbox.checked) {
+                errorMsg.style.display = 'block';
+                maxCheckbox.checked = false;
+                halfCheckbox.checked = false;
+            }
+            checkHelperValidity();
+            return;
+        }
+        
+        errorMsg.style.display = 'none';
+        if (!maxCheckbox.checked && !halfCheckbox.checked) {
+            checkHelperValidity();
+            return;
+        }
+        
+        const duration = getTaskDuration(activeTaskId.replace('_helper', ''));
+        const assignee = getTaskAssignment(activeTaskId);
+        if (assignee) {
+            const existingHelper = state.helpers[activeTaskId];
+            const curDur = existingHelper ? ((existingHelper.isMax || existingHelper.isHalf) ? (existingHelper.calculatedDuration || 0) : Math.min(duration, existingHelper.duration || 0)) : 0;
+            
+            const limitA = getAvailableTime(assignee);
+            const limitH = getAvailableTime(helperName);
+            
+            const totalA = getFillerTotalTime(assignee) - (existingHelper ? (duration - curDur) : duration);
+            const totalH = getFillerTotalTime(helperName) - (existingHelper && existingHelper.helperName === helperName ? curDur : 0);
+            
+            const minHelperDur = isFinite(limitA) ? Math.max(0, totalA + duration - limitA) : 0;
+            const maxHelperDur = isFinite(limitH) ? Math.max(0, limitH - totalH) : duration;
+            
+            let optimal = duration / 2;
+            if (maxCheckbox.checked) {
+                optimal = Math.min(duration, maxHelperDur);
+            } else if (halfCheckbox.checked) {
+                if (minHelperDur > maxHelperDur) {
+                    optimal = Math.min(duration, maxHelperDur);
+                } else {
+                    optimal = Math.max(minHelperDur, Math.min(maxHelperDur, duration / 2));
+                }
+            }
+            durationInput.value = halfCheckbox.checked ? Math.floor(optimal) : Math.round(optimal);
+        }
+        checkHelperValidity();
+    }
+
     const openHelperModal = (taskId) => {
+        activeTaskId = taskId;
         const modal = document.getElementById('helper-modal');
         const select = document.getElementById('helper-select');
         const durationInput = document.getElementById('helper-duration');
         const maxCheckbox = document.getElementById('helper-max-checkbox');
         const halfCheckbox = document.getElementById('helper-half-checkbox');
-        const saveBtn = document.getElementById('modal-save-btn');
-        const cancelBtn = document.getElementById('modal-cancel-btn');
         const errorMsg = document.getElementById('helper-error-msg');
-        if (!modal || !select || !durationInput || !maxCheckbox || !halfCheckbox || !saveBtn || !cancelBtn || !errorMsg) return;
+        if (!modal || !select || !durationInput || !maxCheckbox || !halfCheckbox || !errorMsg) return;
 
         select.innerHTML = '';
         const defaultOpt = document.createElement('option');
@@ -332,140 +425,22 @@ import { checkAuth } from './main.js';
             halfCheckbox.checked = false;
         }
         errorMsg.style.display = 'none';
-
-        const checkValidity = () => {
-            const hasHelper = !!select.value;
-            const hasDuration = parseInt(durationInput.value) > 0;
-            saveBtn.disabled = hasHelper && !hasDuration;
-            saveBtn.style.opacity = saveBtn.disabled ? '0.5' : '1';
-            saveBtn.style.cursor = saveBtn.disabled ? 'not-allowed' : 'pointer';
-        };
-
-        const updateDynamicDuration = () => {
-            const helperName = select.value;
-            if (!helperName) {
-                if (maxCheckbox.checked || halfCheckbox.checked) {
-                    errorMsg.style.display = 'block';
-                    maxCheckbox.checked = false;
-                    halfCheckbox.checked = false;
-                }
-                checkValidity();
-                return;
-            }
-            
-            errorMsg.style.display = 'none';
-            if (!maxCheckbox.checked && !halfCheckbox.checked) {
-                checkValidity();
-                return;
-            }
-            
-            const duration = getTaskDuration(taskId.replace('_helper', ''));
-            const assignee = getTaskAssignment(taskId);
-            if (assignee) {
-                const existingHelper = state.helpers[taskId];
-                const curDur = existingHelper ? ((existingHelper.isMax || existingHelper.isHalf) ? (existingHelper.calculatedDuration || 0) : Math.min(duration, existingHelper.duration || 0)) : 0;
-                
-                const limitA = getAvailableTime(assignee);
-                const limitH = getAvailableTime(helperName);
-                
-                const totalA = getFillerTotalTime(assignee) - (existingHelper ? (duration - curDur) : duration);
-                const totalH = getFillerTotalTime(helperName) - (existingHelper && existingHelper.helperName === helperName ? curDur : 0);
-                
-                const minHelperDur = isFinite(limitA) ? Math.max(0, totalA + duration - limitA) : 0;
-                const maxHelperDur = isFinite(limitH) ? Math.max(0, limitH - totalH) : duration;
-                
-                let optimal = duration / 2;
-                if (maxCheckbox.checked) {
-                    optimal = Math.min(duration, maxHelperDur);
-                } else if (halfCheckbox.checked) {
-                    if (minHelperDur > maxHelperDur) {
-                        optimal = Math.min(duration, maxHelperDur);
-                    } else {
-                        optimal = Math.max(minHelperDur, Math.min(maxHelperDur, duration / 2));
-                    }
-                }
-                durationInput.value = halfCheckbox.checked ? Math.floor(optimal) : Math.round(optimal);
-            }
-            checkValidity();
-        };
-
-        maxCheckbox.onchange = () => {
-            if (maxCheckbox.checked) halfCheckbox.checked = false;
-            updateDynamicDuration();
-        };
-
-        halfCheckbox.onchange = () => {
-            if (halfCheckbox.checked) maxCheckbox.checked = false;
-            updateDynamicDuration();
-        };
-
-        select.onchange = () => {
-            if (select.value) {
-                errorMsg.style.display = 'none';
-            }
-            updateDynamicDuration();
-        };
-
-        durationInput.oninput = () => {
-            maxCheckbox.checked = false;
-            halfCheckbox.checked = false;
-            
-            const maxDuration = Math.round(getTaskDuration(taskId));
-            const val = parseInt(durationInput.value) || 0;
-            if (val > maxDuration) {
-                durationInput.value = maxDuration;
-            }
-            checkValidity();
-        };
-        
         durationInput.disabled = false;
         
         if (maxCheckbox.checked || halfCheckbox.checked) {
             updateDynamicDuration();
         } else {
-            checkValidity();
+            checkHelperValidity();
         }
-
-        saveBtn.onclick = () => {
-            const helperName = select.value;
-            Object.keys(state.fillerTasks).forEach(filler => {
-                state.fillerTasks[filler] = state.fillerTasks[filler].filter(id => id !== (taskId + '_helper'));
-            });
-            if (helperName) {
-                const maxDuration = Math.round(getTaskDuration(taskId));
-                const val = parseInt(durationInput.value) || 0;
-                const clampedVal = Math.min(maxDuration, val);
-                
-                state.helpers[taskId] = {
-                    helperName: helperName,
-                    duration: clampedVal,
-                    isMax: maxCheckbox.checked,
-                    isHalf: halfCheckbox.checked
-                };
-                if (!state.fillerTasks[helperName]) {
-                    state.fillerTasks[helperName] = [];
-                }
-                state.fillerTasks[helperName].push(taskId + '_helper');
-            } else {
-                delete state.helpers[taskId];
-            }
-            modal.style.display = 'none';
-            renderWorkspace();
-        };
-
-        cancelBtn.onclick = () => {
-            modal.style.display = 'none';
-        };
 
         modal.style.display = 'flex';
     };
 
     const openDurationModal = (taskId) => {
+        activeDurationTaskId = taskId;
         const modal = document.getElementById('duration-modal');
         const input = document.getElementById('task-duration-input');
-        const saveBtn = document.getElementById('duration-save-btn');
-        const cancelBtn = document.getElementById('duration-cancel-btn');
-        if (!modal || !input || !saveBtn || !cancelBtn) return;
+        if (!modal || !input) return;
 
         const [pathName, type] = taskId.split('_');
         
@@ -475,25 +450,140 @@ import { checkAuth } from './main.js';
             input.value = state.otherTimes[pathName] || 30;
         }
 
-        saveBtn.onclick = () => {
+        modal.style.display = 'flex';
+    };
+
+    const helperModal = document.getElementById('helper-modal');
+    const helperCancelBtn = document.getElementById('modal-cancel-btn');
+    const closeHelperModal = setupModal(helperModal, [helperCancelBtn], () => {
+        activeTaskId = null;
+    });
+
+    const helperSelect = document.getElementById('helper-select');
+    const helperDuration = document.getElementById('helper-duration');
+    const helperMaxCheckbox = document.getElementById('helper-max-checkbox');
+    const helperHalfCheckbox = document.getElementById('helper-half-checkbox');
+    const helperErrorMsg = document.getElementById('helper-error-msg');
+    const helperSaveBtn = document.getElementById('modal-save-btn');
+
+    if (helperMaxCheckbox) {
+        helperMaxCheckbox.addEventListener('change', () => {
+            if (helperMaxCheckbox.checked) helperHalfCheckbox.checked = false;
+            updateDynamicDuration();
+        });
+    }
+    if (helperHalfCheckbox) {
+        helperHalfCheckbox.addEventListener('change', () => {
+            if (helperHalfCheckbox.checked) helperMaxCheckbox.checked = false;
+            updateDynamicDuration();
+        });
+    }
+    if (helperSelect) {
+        helperSelect.addEventListener('change', () => {
+            if (helperSelect.value) {
+                helperErrorMsg.style.display = 'none';
+            }
+            updateDynamicDuration();
+        });
+    }
+    if (helperDuration) {
+        helperDuration.addEventListener('input', () => {
+            if (!activeTaskId) return;
+            helperMaxCheckbox.checked = false;
+            helperHalfCheckbox.checked = false;
+            const maxDuration = Math.round(getTaskDuration(activeTaskId));
+            const val = parseInt(helperDuration.value) || 0;
+            if (val > maxDuration) {
+                helperDuration.value = maxDuration;
+            }
+            checkHelperValidity();
+        });
+    }
+    if (helperSaveBtn) {
+        helperSaveBtn.addEventListener('click', () => {
+            if (!activeTaskId || !helperSelect || !helperDuration || !helperMaxCheckbox || !helperHalfCheckbox) return;
+            const helperName = helperSelect.value;
+            Object.keys(state.fillerTasks).forEach(filler => {
+                state.fillerTasks[filler] = state.fillerTasks[filler].filter(id => id !== (activeTaskId + '_helper'));
+            });
+            if (helperName) {
+                const maxDuration = Math.round(getTaskDuration(activeTaskId));
+                const val = parseInt(helperDuration.value) || 0;
+                const clampedVal = Math.min(maxDuration, val);
+                
+                state.helpers[activeTaskId] = {
+                    helperName: helperName,
+                    duration: clampedVal,
+                    isMax: helperMaxCheckbox.checked,
+                    isHalf: helperHalfCheckbox.checked
+                };
+                if (!state.fillerTasks[helperName]) {
+                    state.fillerTasks[helperName] = [];
+                }
+                state.fillerTasks[helperName].push(activeTaskId + '_helper');
+            } else {
+                delete state.helpers[activeTaskId];
+            }
+            closeHelperModal();
+            renderWorkspace();
+        });
+    }
+
+    const durationModal = document.getElementById('duration-modal');
+    const durationCancelBtn = document.getElementById('duration-cancel-btn');
+    const closeDurationModal = setupModal(durationModal, [durationCancelBtn], () => {
+        activeDurationTaskId = null;
+    });
+
+    const durationSaveBtn = document.getElementById('duration-save-btn');
+    if (durationSaveBtn) {
+        durationSaveBtn.addEventListener('click', () => {
+            if (!activeDurationTaskId) return;
+            const input = document.getElementById('task-duration-input');
+            const [pathName, type] = activeDurationTaskId.split('_');
             const val = parseInt(input.value) || 0;
             if (val > 0) {
-                if (taskId.includes('_inst-')) {
-                    state.instanceTimes[taskId] = val;
+                if (activeDurationTaskId.includes('_inst-')) {
+                    state.instanceTimes[activeDurationTaskId] = val;
                 } else {
                     state.otherTimes[pathName] = val;
                 }
-                modal.style.display = 'none';
+                closeDurationModal();
                 renderWorkspace();
             }
-        };
+        });
+    }
 
-        cancelBtn.onclick = () => {
-            modal.style.display = 'none';
-        };
+    const customTaskModal = document.getElementById('custom-task-modal');
+    const customTaskCancelBtn = document.getElementById('custom-task-cancel-btn');
+    const closeCustomTaskModal = setupModal(customTaskModal, [customTaskCancelBtn]);
 
-        modal.style.display = 'flex';
-    };
+    const addCustomTaskBtn = document.getElementById('add-custom-task-btn');
+    if (addCustomTaskBtn) {
+        addCustomTaskBtn.addEventListener('click', () => {
+            const nameInput = document.getElementById('custom-task-name-input');
+            const durInput = document.getElementById('custom-task-duration-input');
+            if (nameInput) nameInput.value = '';
+            if (durInput) durInput.value = '';
+            if (customTaskModal) customTaskModal.style.display = 'flex';
+        });
+    }
+
+    const customTaskSaveBtn = document.getElementById('custom-task-save-btn');
+    if (customTaskSaveBtn) {
+        customTaskSaveBtn.addEventListener('click', () => {
+            const nameInput = document.getElementById('custom-task-name-input');
+            const durInput = document.getElementById('custom-task-duration-input');
+            const name = nameInput ? nameInput.value.trim() : '';
+            const duration = durInput ? parseInt(durInput.value) || 0 : 0;
+            if (name && duration > 0) {
+                state.otherTimes[name] = duration;
+                closeCustomTaskModal();
+                renderWorkspace();
+            }
+        });
+    }
+
 
     const updateMaxHelperDurations = () => {
         Object.entries(state.helpers).forEach(([taskId, helperInfo]) => {
@@ -555,6 +645,10 @@ import { checkAuth } from './main.js';
         const tabFill = document.getElementById('tab-fill');
         const tabMirror = document.getElementById('tab-mirror');
         const tabOther = document.getElementById('tab-other');
+        const addCustomBtn = document.getElementById('add-custom-task-btn');
+        if (addCustomBtn) {
+            addCustomBtn.style.display = state.activeTab === 'other' ? 'block' : 'none';
+        }
         if (tabFill && tabMirror && tabOther) {
             if (state.activeTab === 'fill') {
                 tabFill.classList.add('active');
@@ -616,6 +710,7 @@ import { checkAuth } from './main.js';
         sortedFillers.forEach(filler => {
             const totalMin = getFillerTotalTime(filler);
             const maxMin = getAvailableTime(filler);
+            const pauseMin = getFillerPause(filler);
             const roundedTotal = Math.round(totalMin);
             const isExceeded = roundedTotal > maxMin;
 
@@ -625,17 +720,40 @@ import { checkAuth } from './main.js';
             const header = document.createElement('div');
             header.className = 'filler-card-header';
 
+            const titleRow = document.createElement('div');
+            titleRow.className = 'filler-card-title-row';
+
             const title = document.createElement('span');
             title.className = 'filler-card-title';
             title.textContent = filler;
 
-            const timeSpan = document.createElement('span');
-            timeSpan.className = `filler-card-time${isExceeded ? ' exceeded' : ''}`;
-            const maxText = isFinite(maxMin) ? ` / ${formatMin(maxMin)}` : '';
-            timeSpan.textContent = `${formatMin(roundedTotal)}${maxText}`;
+            titleRow.appendChild(title);
+            header.appendChild(titleRow);
 
-            header.appendChild(title);
-            header.appendChild(timeSpan);
+            if (isFinite(maxMin)) {
+                const statsRow = document.createElement('div');
+                statsRow.className = 'filler-card-stats';
+
+                const remainingMin = maxMin - roundedTotal;
+
+                const usageSpan = document.createElement('span');
+                usageSpan.className = `filler-stat-item${isExceeded ? ' exceeded' : ''}`;
+                usageSpan.textContent = `Tijd: ${formatMin(roundedTotal)} / ${formatMin(maxMin)}`;
+
+                const pauseSpan = document.createElement('span');
+                pauseSpan.className = 'filler-stat-item';
+                pauseSpan.textContent = `Pauze: ${formatMin(pauseMin)}`;
+
+                const remainingSpan = document.createElement('span');
+                remainingSpan.className = `filler-stat-item remaining ${remainingMin >= 0 ? 'positive' : 'negative'}`;
+                remainingSpan.textContent = remainingMin >= 0 ? `Over: ${formatMin(remainingMin)}` : `Te veel: ${formatMin(Math.abs(remainingMin))}`;
+
+                statsRow.appendChild(usageSpan);
+                statsRow.appendChild(pauseSpan);
+                statsRow.appendChild(remainingSpan);
+                header.appendChild(statsRow);
+            }
+
             fillerCard.appendChild(header);
 
             const progressBarContainer = document.createElement('div');
@@ -727,6 +845,7 @@ import { checkAuth } from './main.js';
                         state.fillerTasks[filler].push(taskId);
                     }
                     renderWorkspace();
+                    triggerSave();
                 }
             });
 
@@ -774,43 +893,7 @@ import { checkAuth } from './main.js';
         workspace.style.display = 'grid';
     };
 
-    const extractTextLinesFromPage = async (page) => {
-        const textContent = await page.getTextContent();
-        if (!textContent || !textContent.items || textContent.items.length === 0) {
-            return [];
-        }
 
-        const items = textContent.items
-            .map(item => ({
-                text: item.str,
-                x: item.transform[4],
-                y: item.transform[5]
-            }))
-            .filter(item => item.text.trim() !== '');
-
-        if (items.length === 0) return [];
-
-        const tolerance = 5;
-        const linesMap = [];
-        for (let item of items) {
-            let foundLine = linesMap.find(line => Math.abs(line.y - item.y) <= tolerance);
-            if (!foundLine) {
-                foundLine = { y: item.y, items: [] };
-                linesMap.push(foundLine);
-            }
-            foundLine.items.push(item);
-        }
-
-        linesMap.sort((a, b) => b.y - a.y);
-
-        return linesMap.map(line => {
-            line.items.sort((a, b) => a.x - b.x);
-            return {
-                rawText: line.items.map(item => item.text).join(' '),
-                items: line.items
-            };
-        });
-    };
 
     const parsePDFAndGetNames = async (file) => {
         const arrayBuffer = await file.arrayBuffer();
@@ -831,6 +914,13 @@ import { checkAuth } from './main.js';
                         const timeStr = timeMatch ? timeMatch[0].replace(/[…\.]+$/, '').trim() : '';
                         const displayName = timeStr ? `${name} - ${timeStr}` : name;
                         namesSet.add(displayName);
+
+                        const timeMatches = [...row.rawText.matchAll(/\b\d{2}:\d{2}\b/g)].map(m => m[0]);
+                        if (timeMatches.length >= 3) {
+                            const pParts = timeMatches[2].split(':');
+                            const pMin = (parseInt(pParts[0]) || 0) * 60 + (parseInt(pParts[1]) || 0);
+                            state.fillerBreaks[displayName] = pMin;
+                        }
                     }
                 }
             }
@@ -944,6 +1034,7 @@ import { checkAuth } from './main.js';
                 });
                 state.selectedFillers = selected;
                 document.getElementById('next-step-btn').disabled = selected.length === 0;
+                triggerSave();
             });
 
             const span = document.createElement('span');
@@ -958,10 +1049,74 @@ import { checkAuth } from './main.js';
         card.style.display = names.length > 0 ? 'block' : 'none';
     };
 
+    const showConfirmModal = (title, message, onConfirm) => {
+        const modal = document.getElementById('confirm-modal');
+        const titleEl = document.getElementById('confirm-modal-title');
+        const msgEl = document.getElementById('confirm-modal-message');
+        const cancelBtn = document.getElementById('confirm-cancel-btn');
+        const okBtn = document.getElementById('confirm-ok-btn');
+
+        if (!modal || !titleEl || !msgEl || !cancelBtn || !okBtn) return;
+
+        titleEl.textContent = title;
+        msgEl.textContent = message;
+        modal.style.display = 'flex';
+
+        const close = () => {
+            modal.style.display = 'none';
+            cancelBtn.removeEventListener('click', handleCancel);
+            okBtn.removeEventListener('click', handleOk);
+        };
+
+        const handleCancel = () => close();
+        const handleOk = () => {
+            close();
+            onConfirm();
+        };
+
+        cancelBtn.addEventListener('click', handleCancel);
+        okBtn.addEventListener('click', handleOk);
+    };
+
+    const triggerSave = () => {
+        if (!storeId) return;
+        if (saveTimeout) clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(async () => {
+            const supabase = await getSupabase();
+            const payload = {
+                selectedFillers: state.selectedFillers,
+                pathColli: state.pathColli,
+                fillerTasks: state.fillerTasks,
+                helpers: state.helpers,
+                otherTimes: state.otherTimes,
+                instanceTimes: state.instanceTimes,
+                fillerBreaks: state.fillerBreaks
+            };
+            await supabase.from('vulplanningen').upsert({ id: storeId, vulplanning: payload });
+        }, 500);
+    };
+
+    const loadData = async () => {
+        if (!storeId) return;
+        const supabase = await getSupabase();
+        const { data } = await supabase.from('vulplanningen').select('vulplanning').eq('id', storeId).single();
+        if (data && data.vulplanning) {
+            const vp = data.vulplanning;
+            if (vp.selectedFillers) state.selectedFillers = vp.selectedFillers;
+            if (vp.pathColli) state.pathColli = vp.pathColli;
+            if (vp.fillerTasks) state.fillerTasks = vp.fillerTasks;
+            if (vp.helpers) state.helpers = vp.helpers;
+            if (vp.otherTimes) state.otherTimes = vp.otherTimes;
+            if (vp.instanceTimes) state.instanceTimes = vp.instanceTimes;
+            if (vp.fillerBreaks) state.fillerBreaks = vp.fillerBreaks;
+        }
+    };
+
     document.addEventListener('DOMContentLoaded', async () => {
         loadHeader();
         const auth = await checkAuth(['beheerder']);
         if (!auth) return;
+        storeId = auth.userData.winkel;
         if (auth.storeCode !== 'plus-lms') {
             document.querySelectorAll('.upload-group').forEach(el => {
                 el.style.display = 'none';
@@ -971,18 +1126,80 @@ import { checkAuth } from './main.js';
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
         }
 
+        await loadData();
+
+        const resetBtn = document.getElementById('reset-planning-btn');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => {
+                showConfirmModal(
+                    'Opnieuw Beginnen',
+                    'Weet je zeker dat je opnieuw wilt beginnen? De huidige planning en gegevens worden gewist.',
+                    () => {
+                        state.selectedFillers = [];
+                        state.pathColli = {};
+                        state.fillerTasks = {};
+                        state.helpers = {};
+                        state.instanceTimes = {};
+                        state.fillerBreaks = {};
+                        triggerSave();
+
+                        document.getElementById('step-1-container').style.display = 'block';
+                        document.getElementById('step-2-container').style.display = 'none';
+                        resetBtn.style.display = 'none';
+                        const peopleCard = document.getElementById('people-card');
+                        if (peopleCard) peopleCard.style.display = 'none';
+                        document.querySelectorAll('.upload-group').forEach(el => el.style.display = 'block');
+                        const nextBtn = document.getElementById('next-step-btn');
+                        if (nextBtn) nextBtn.disabled = true;
+                    }
+                );
+            });
+        }
+
+        const hasExistingPlanning = state.selectedFillers && state.selectedFillers.length > 0;
+        if (hasExistingPlanning) {
+            renderPeopleList(state.selectedFillers);
+            state.selectedFillers.forEach(name => {
+                const list = document.getElementById('people-list');
+                if (list) {
+                    const cb = list.querySelector(`input[value="${CSS.escape(name)}"]`);
+                    if (cb) cb.checked = true;
+                }
+            });
+
+            document.getElementById('step-1-container').style.display = 'none';
+            document.getElementById('step-2-container').style.display = 'block';
+            document.querySelectorAll('.upload-group').forEach(el => el.style.display = 'none');
+            renderWorkspace();
+            if (resetBtn) resetBtn.style.display = 'inline-block';
+        }
+
         const input = document.getElementById('vulplanning-input');
         if (input) {
             input.addEventListener('change', async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
-                try {
-                    const names = await parsePDFAndGetNames(file);
-                    renderPeopleList(names);
-                    const uploadGroup = input.closest('.upload-group');
-                    if (uploadGroup) uploadGroup.style.display = 'none';
-                } catch (err) {
-                    console.error(err);
+
+                const processPDF = async () => {
+                    try {
+                        const names = await parsePDFAndGetNames(file);
+                        renderPeopleList(names);
+                        triggerSave();
+                        const uploadGroup = input.closest('.upload-group');
+                        if (uploadGroup) uploadGroup.style.display = 'none';
+                    } catch (err) {
+                        console.error(err);
+                    }
+                };
+
+                if (state.selectedFillers && state.selectedFillers.length > 0) {
+                    showConfirmModal(
+                        'Planning Overschrijven',
+                        'Weet je zeker dat je het nieuwe dagrooster wilt importeren? De huidige opgeslagen planning wordt overschreven.',
+                        processPDF
+                    );
+                } else {
+                    await processPDF();
                 }
             });
         }
@@ -992,6 +1209,7 @@ import { checkAuth } from './main.js';
             nextBtn.addEventListener('click', () => {
                 document.getElementById('step-1-container').style.display = 'none';
                 document.getElementById('step-2-container').style.display = 'block';
+                if (resetBtn) resetBtn.style.display = 'inline-block';
             });
         }
 
@@ -1029,6 +1247,7 @@ import { checkAuth } from './main.js';
                 try {
                     state.pathColli = await parseColliPDF(file);
                     renderWorkspace();
+                    triggerSave();
                     const uploadGroup = colliInput.closest('.upload-group');
                     if (uploadGroup) uploadGroup.style.display = 'none';
                 } catch (err) {
@@ -1077,6 +1296,7 @@ import { checkAuth } from './main.js';
                     delete state.helpers[taskId];
                 }
                 renderWorkspace();
+                triggerSave();
             } else if (!e.target.closest('.filler-card')) {
                 e.preventDefault();
                 renderWorkspace();

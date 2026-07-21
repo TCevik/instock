@@ -43,3 +43,58 @@ export function showMessage(messageBox, messageText, messageIcon, text, type) {
     }
     messageBox.style.display = 'flex';
 }
+
+export function setupModal(modal, closeButtons, onReset) {
+    if (!modal) return;
+    const closeModal = () => {
+        if (modal.classList.contains('open')) {
+            modal.classList.remove('open');
+        } else {
+            modal.style.display = 'none';
+        }
+        if (onReset) onReset();
+    };
+
+    if (closeButtons) {
+        closeButtons.forEach(btn => {
+            if (btn) {
+                btn.addEventListener('click', closeModal);
+            }
+        });
+    }
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+
+    return closeModal;
+}
+
+export async function handleFormSubmit(submitBtn, loadingText, messageBox, actionFn) {
+    if (!submitBtn) return;
+    const originalText = submitBtn.querySelector('span') ? submitBtn.querySelector('span').textContent : submitBtn.textContent;
+    const btnTextSpan = submitBtn.querySelector('span');
+
+    if (messageBox) messageBox.style.display = 'none';
+    submitBtn.disabled = true;
+    if (btnTextSpan) {
+        btnTextSpan.textContent = loadingText;
+    } else {
+        submitBtn.textContent = loadingText;
+    }
+
+    try {
+        await actionFn();
+    } catch (err) {
+        console.error(err);
+    } finally {
+        submitBtn.disabled = false;
+        if (btnTextSpan) {
+            btnTextSpan.textContent = originalText;
+        } else {
+            submitBtn.textContent = originalText;
+        }
+    }
+}

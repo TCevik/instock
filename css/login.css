@@ -37,62 +37,7 @@
     font-size: 14px;
 }
 
-.form-group {
-    position: relative;
-    margin-bottom: 24px;
-}
 
-.form-group label {
-    display: block;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-color-muted);
-    margin-bottom: 8px;
-    transition: color 0.2s;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-}
-
-.input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.input-wrapper i {
-    position: absolute;
-    left: 14px;
-    color: var(--text-color-muted);
-    font-size: 20px;
-    transition: color 0.2s;
-    pointer-events: none;
-}
-
-.input-wrapper input {
-    width: 100%;
-    padding: 14px 14px 14px 44px;
-    background-color: var(--input-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    color: var(--text-color);
-    font-size: 15px;
-    outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
-}
-
-.input-wrapper input:focus {
-    border-color: var(--accent-color-sidemenu);
-    background-color: rgba(32, 32, 35, 0.8);
-    box-shadow: 0 0 0 3px rgba(128, 189, 29, 0.15);
-}
-
-.input-wrapper input:focus + i {
-    color: var(--accent-color-sidemenu);
-}
-
-.form-group:focus-within label {
-    color: var(--accent-color-sidemenu);
-}
 
 .login-btn {
     width: 100%;

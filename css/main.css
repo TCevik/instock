@@ -75,6 +75,7 @@ html {
     --status-new-color: #80bd1d;
     --status-missing-bg: rgba(255, 82, 82, 0.2);
     --status-missing-color: #ff5252;
+    --gem-verk-bg: rgba(128, 189, 29, 0.15);
 }
 
 body {

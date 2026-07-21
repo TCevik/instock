@@ -1,4 +1,4 @@
-import { getSupabase, checkAuth, showMessage } from './main.js';
+import { getSupabase, checkAuth, showMessage, handleFormSubmit } from './main.js';
 import { loadHeader } from './header.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -55,7 +55,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        messageBox.style.display = 'none';
 
         const ean = eanInput.value.trim();
         const naam = naamInput.value.trim();
@@ -64,11 +63,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             showMessage(messageBox, messageText, messageIcon, 'EAN en Naam zijn verplichte velden.', 'error');
             return;
         }
-
-        submitBtn.disabled = true;
-        const btnText = submitBtn.querySelector('span');
-        const originalText = btnText.textContent;
-        btnText.textContent = 'Bezig met opslaan...';
 
         const productData = {
             ean: ean,
@@ -84,7 +78,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             afbeelding: afbeeldingInput.value.trim() || null
         };
 
-        try {
+        await handleFormSubmit(submitBtn, 'Bezig met opslaan...', messageBox, async () => {
             const { error } = await supabase
                 .from('producten')
                 .insert([productData]);
@@ -97,11 +91,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 setDefaultDate();
                 eanInput.focus();
             }
-        } catch (err) {
-            showMessage(messageBox, messageText, messageIcon, 'Er is een onverwachte fout opgetreden.', 'error');
-        } finally {
-            submitBtn.disabled = false;
-            btnText.textContent = originalText;
-        }
+        });
     });
 });

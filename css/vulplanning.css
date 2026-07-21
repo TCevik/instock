@@ -191,13 +191,51 @@
 
 .filler-card-header {
     display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.filler-card-title-row {
+    display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
 }
 
 .filler-card-title {
     font-size: 16px;
     font-weight: 600;
+}
+
+.filler-card-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.filler-stat-item {
+    background-color: var(--input-bg);
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    color: var(--text-color-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.filler-stat-item.exceeded,
+.filler-stat-item.remaining.negative {
+    color: var(--danger-color);
+    border-color: rgba(255, 82, 82, 0.3);
+    background-color: rgba(255, 82, 82, 0.08);
+}
+
+.filler-stat-item.remaining.positive {
+    color: var(--accent-color-sidemenu);
+    border-color: rgba(128, 189, 29, 0.3);
+    background-color: rgba(128, 189, 29, 0.08);
 }
 
 .filler-card-time {
@@ -216,7 +254,7 @@
     background-color: var(--input-bg);
     border-radius: 3px;
     overflow: hidden;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
 }
 
 .progress-bar-fill {
