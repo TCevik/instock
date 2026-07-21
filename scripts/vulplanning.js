@@ -1,4 +1,5 @@
 import { loadHeader } from './header.js';
+import { checkAuth } from './main.js';
 
 (() => {
     const PATHS_MAPPING = {
@@ -957,8 +958,15 @@ import { loadHeader } from './header.js';
         card.style.display = names.length > 0 ? 'block' : 'none';
     };
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
         loadHeader();
+        const auth = await checkAuth(['beheerder']);
+        if (!auth) return;
+        if (auth.storeCode !== 'plus-lms') {
+            document.querySelectorAll('.upload-group').forEach(el => {
+                el.style.display = 'none';
+            });
+        }
         if (window.pdfjsLib) {
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
         }

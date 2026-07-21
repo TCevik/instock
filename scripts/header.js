@@ -65,7 +65,7 @@ export function loadHeader() {
                     supabase.from('user_data').select('role').eq('id', session.user.id)
                         .then(({ data }) => {
                             if (data && data[0] && data[0].role === 'medewerker') {
-                                const allowed = ["dashboard", "product checker", "voorraadmutaties", "tht module", "tht registratie", "tellen", "bakplan", "vulplanning maker"];
+                                const allowed = ["dashboard", "product checker", "voorraadmutaties", "tht module", "tht registratie", "tellen"];
                                 document.querySelectorAll(".drawer-item").forEach(item => {
                                     const text = item.querySelector("span").textContent.trim().toLowerCase();
                                     if (!allowed.includes(text)) {

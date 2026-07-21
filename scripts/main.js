@@ -23,7 +23,15 @@ export async function checkAuth(allowedRoles = null) {
         return null;
     }
 
-    return { session, userData: data };
+    let storeCode = '';
+    if (session.user.email) {
+        const parts = session.user.email.split('@');
+        if (parts.length > 1) {
+            storeCode = parts[1].split('.')[0].toLowerCase();
+        }
+    }
+
+    return { session, userData: data, storeCode };
 }
 
 export function showMessage(messageBox, messageText, messageIcon, text, type) {

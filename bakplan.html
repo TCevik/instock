@@ -14,18 +14,40 @@
 <body>
     <main class="dashboard-container">
         <div class="page-header page-header-col">
-            <div class="page-header-row">
-                <i class="material-icons page-header-icon">bakery_dining</i>
-                <h1 class="page-header-title">Bakplan</h1>
+            <div class="page-header-row" style="width: 100%; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="material-icons page-header-icon">bakery_dining</i>
+                    <h1 class="page-header-title">Bakplan</h1>
+                </div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button id="add-category-btn" class="action-btn" style="padding: 8px 12px; display: flex; align-items: center; gap: 6px;">
+                        <i class="material-icons">create_new_folder</i>
+                        <span>Categorie Toevoegen</span>
+                    </button>
+                    <button id="add-product-btn" class="action-btn" style="padding: 8px 12px; display: flex; align-items: center; gap: 6px;">
+                        <i class="material-icons">add</i>
+                        <span>Product Toevoegen</span>
+                    </button>
+                    <button id="bakplan-settings-btn" class="action-btn" title="Instellingen" style="padding: 8px 12px; display: flex; align-items: center; gap: 6px;">
+                        <i class="material-icons">settings</i>
+                        <span>Instellingen</span>
+                    </button>
+                </div>
             </div>
             <p class="page-header-subtitle">Beheer en bekijk het bakplan</p>
         </div>
-        <div class="form-group upload-group">
-            <label for="bakplan-input">PDF Bestand uploaden</label>
-            <div class="input-wrapper">
-                <input type="file" id="bakplan-input" accept=".pdf" autocomplete="off">
-                <i class="material-icons">picture_as_pdf</i>
+        <div class="form-group upload-group" style="display: flex; align-items: flex-end; gap: 12px;">
+            <div style="flex: 1;">
+                <label for="bakplan-input">PDF Bestand uploaden</label>
+                <div class="input-wrapper">
+                    <input type="file" id="bakplan-input" accept=".pdf" autocomplete="off">
+                    <i class="material-icons">picture_as_pdf</i>
+                </div>
             </div>
+            <button id="undo-pdf-btn" class="action-btn" style="display: none; height: 42px; padding: 0 14px; align-items: center; gap: 6px; background-color: var(--input-bg);">
+                <i class="material-icons">undo</i>
+                <span>Undo Upload</span>
+            </button>
         </div>
         <div class="day-navigation"></div>
         <div class="table-container">
@@ -35,18 +57,79 @@
                          <th class="col-desc">Productomschrijving</th>
                         <th class="col-price">Prijs</th>
                         <th class="col-promo">Promo</th>
-                        <th class="col-sales">Gem Verk</th>
+                        <th class="col-sales">Opleggen</th>
                         <th class="col-plates">Platen</th>
                         <th class="col-derving">Derving</th>
+                        <th style="width: 40px;"></th>
                     </tr>
                 </thead>
                 <tbody id="bakplan-table-body">
                     <tr>
-                        <td colspan="6" class="loading-cell">Geen gegevens beschikbaar. Upload een PDF bestand.</td>
+                        <td colspan="7" class="loading-cell">Geen gegevens beschikbaar. Voeg een product toe.</td>
                     </tr>
                 </tbody>
             </table>
         </div>
     </main>
+
+    <div id="bakplan-settings-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 600px; max-height: 80vh; display: flex; flex-direction: column;">
+            <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 16px;">Plaathoeveelheden Instellingen</h3>
+            <div style="flex: 1; overflow-y: auto; margin-bottom: 16px;">
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>Titel</th>
+                            <th style="width: 200px;">Aantal op 1 plaat</th>
+                        </tr>
+                    </thead>
+                    <tbody id="settings-table-body">
+                        <tr>
+                            <td colspan="2" class="loading-cell">Geen producten geladen.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button id="settings-cancel-btn" class="action-btn" style="padding: 8px 16px; background-color: var(--input-bg);">Annuleren</button>
+                <button id="settings-save-btn" class="action-btn" style="padding: 8px 16px; background-color: var(--accent-color); color: #fff;">Opslaan</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="pdf-upload-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 440px;">
+            <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 12px; color: var(--text-color);">PDF Uploaden</h3>
+            <p style="font-size: 14px; color: var(--text-color-muted); margin-bottom: 20px; line-height: 1.5;">Weet je zeker dat je het bakplan wilt overschrijven met dit PDF-bestand?</p>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
+                <button id="pdf-modal-cancel-btn" class="action-btn" style="padding: 8px 16px; background-color: var(--input-bg);">Annuleren</button>
+                <button id="pdf-modal-confirm-btn" class="action-btn" style="padding: 8px 16px; background-color: var(--accent-color-sidemenu); color: #fff;">Overschrijven</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirm-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 420px;">
+            <h3 id="confirm-modal-title" style="font-size: 18px; font-weight: 600; margin-bottom: 12px; color: var(--text-color);">Verwijderen Bevestigen</h3>
+            <p id="confirm-modal-message" style="font-size: 14px; color: var(--text-color-muted); margin-bottom: 20px; line-height: 1.5;"></p>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button id="confirm-cancel-btn" class="action-btn" style="padding: 8px 16px; background-color: var(--input-bg);">Annuleren</button>
+                <button id="confirm-ok-btn" class="action-btn delete" style="padding: 8px 16px; background-color: var(--danger-color); color: #fff;">Verwijderen</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="context-menu" class="context-menu" style="display: none; position: fixed; z-index: 2000; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 6px 0; box-shadow: 0 4px 16px rgba(0,0,0,0.4); min-width: 180px;">
+        <div id="ctx-sync-field" class="context-menu-item" style="padding: 8px 16px; font-size: 13px; color: var(--text-color); cursor: pointer; display: flex; align-items: center; gap: 8px;">
+            <i class="material-icons" style="font-size: 16px; color: var(--accent-color-sidemenu);">sync</i>
+            <span id="ctx-field-text">Sync alleen dit type</span>
+        </div>
+        <div id="ctx-sync-product" class="context-menu-item" style="padding: 8px 16px; font-size: 13px; color: var(--text-color); cursor: pointer; display: flex; align-items: center; gap: 8px;">
+            <i class="material-icons" style="font-size: 16px; color: var(--accent-color-sidemenu);">sync_alt</i>
+            <span>Sync heel product</span>
+        </div>
+    </div>
 </body>
 </html>
+
+
