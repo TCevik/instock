@@ -1,0 +1,481 @@
+.people-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.people-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.person-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+    user-select: none;
+}
+
+.person-checkbox-label:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+    background-color: #232326;
+}
+
+.person-checkbox-label input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    outline: none;
+    background-color: var(--card-bg);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.person-checkbox-label input[type="checkbox"]:checked {
+    background-color: var(--accent-color-sidemenu);
+    border-color: var(--accent-color-sidemenu);
+}
+
+.person-checkbox-label input[type="checkbox"]:checked::after {
+    content: "check";
+    font-family: "Material Icons";
+    font-size: 14px;
+    color: white;
+}
+
+.person-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.path-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.path-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.path-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.path-colli {
+    font-size: 13px;
+    color: var(--accent-color-sidemenu);
+    font-weight: 700;
+}
+
+.path-assignee select {
+    padding: 8px 12px;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-color);
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+}
+
+.path-assignee select:focus {
+    border-color: var(--accent-color-sidemenu);
+}
+
+.drag-drop-workspace {
+    display: grid;
+    grid-template-columns: 1fr;
+    padding-right: 360px;
+    gap: 24px;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .drag-drop-workspace {
+        padding-right: 0;
+    }
+}
+
+.fillers-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.filler-card {
+    background-color: var(--card-bg);
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+.filler-card.drag-over {
+    border-color: var(--accent-color-sidemenu);
+    background-color: rgba(128, 189, 29, 0.05);
+}
+
+.filler-card.exceeded {
+    border-color: var(--danger-color);
+    background-color: rgba(255, 82, 82, 0.02);
+}
+
+.filler-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.filler-card-title {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.filler-card-time {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-color-muted);
+}
+
+.filler-card-time.exceeded {
+    color: var(--danger-color);
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 6px;
+    background-color: var(--input-bg);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background-color: var(--accent-color-sidemenu);
+    width: 0%;
+    transition: width 0.3s ease, background-color 0.3s ease;
+    border-radius: 3px;
+}
+
+.progress-bar-fill.exceeded {
+    background-color: var(--danger-color);
+}
+
+.filler-tasks-list {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 100px;
+    position: relative;
+}
+
+.drop-indicator-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background-color: var(--accent-color-sidemenu);
+    border-radius: 2px;
+    pointer-events: none;
+    display: none;
+    z-index: 10;
+}
+
+.drop-indicator-line::before,
+.drop-indicator-line::after {
+    content: '';
+    position: absolute;
+    top: -3px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--accent-color-sidemenu);
+}
+
+.drop-indicator-line::before {
+    left: -4px;
+}
+
+.drop-indicator-line::after {
+    right: -4px;
+}
+
+.task-card {
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    cursor: grab;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.task-card * {
+    pointer-events: none;
+}
+
+.task-card .task-menu-btn,
+.task-card .task-menu-btn * {
+    pointer-events: auto;
+}
+
+.task-card:active {
+    cursor: grabbing;
+}
+
+.task-card.dragging {
+    opacity: 0.5;
+}
+
+.task-card-title {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.task-card-meta {
+    font-size: 12px;
+    color: var(--text-color-muted);
+    display: flex;
+    justify-content: space-between;
+}
+
+.task-card-type {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+    width: fit-content;
+}
+
+.task-card-type.fill {
+    background-color: var(--vullen-bg);
+    color: var(--accent-color-sidemenu);
+}
+
+.task-card-type.mirror {
+    background-color: var(--spiegelen-bg);
+    color: var(--warning-color);
+}
+
+.task-card.fill {
+    background-color: var(--vullen-card-bg);
+    border-color: var(--vullen-border);
+}
+
+.task-card.mirror {
+    background-color: var(--spiegelen-card-bg);
+    border-color: var(--spiegelen-border);
+}
+
+.tasks-container {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    position: fixed;
+    right: calc(max(20px, (100vw - 1200px) / 2 + 20px));
+    top: 100px;
+    width: 320px;
+    max-height: calc(100vh - 124px);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.tasks-container.drag-delete {
+    border-color: var(--delete-zone-border);
+}
+
+.tasks-drop-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--overlay-bg);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 10;
+    transition: opacity 0.2s;
+}
+
+.tasks-container.drag-delete .tasks-drop-overlay {
+    opacity: 1;
+}
+
+@media (max-width: 900px) {
+    .tasks-container {
+        position: static;
+        width: 100%;
+        max-height: 500px;
+        margin-top: 24px;
+    }
+}
+
+.tasks-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+    padding-right: 4px;
+    flex-grow: 1;
+}
+
+.tasks-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 8px 12px;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: var(--text-color-muted);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tab-btn:hover {
+    color: var(--text-color);
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.tab-btn.active {
+    color: white;
+    background-color: var(--accent-color-sidemenu);
+}
+
+.tab-btn.active#tab-mirror {
+    background-color: var(--warning-color);
+    color: #000;
+}
+
+.task-card {
+    position: relative;
+    padding-right: 36px !important;
+}
+
+.task-menu-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: var(--text-color-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.task-menu-btn:hover {
+    color: var(--text-color);
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 24px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+}
+
+.task-card.helper {
+    border-color: var(--helper-border) !important;
+    border-style: dashed;
+    background-color: var(--helper-card-bg) !important;
+}
+
+.task-card.helper .task-card-type {
+    background-color: var(--helper-bg) !important;
+    color: var(--helper-color) !important;
+}
+
+.tab-btn.active#tab-other {
+    background-color: var(--other-color);
+}
+
+.task-card.other {
+    background-color: var(--other-card-bg);
+    border-color: var(--other-border);
+}
+
+.task-card.other .task-card-type {
+    background-color: var(--other-bg);
+    color: var(--other-color);
+}

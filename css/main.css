@@ -26,6 +26,28 @@
     --input-bg: #202023;
     --scrollbar-thumb: #27272a;
     --scrollbar-thumb-hover: #3f3f46;
+    
+    --vullen-bg: rgba(101, 141, 36, 0.15);
+    --vullen-card-bg: rgba(101, 141, 36, 0.05);
+    --vullen-border: rgba(101, 141, 36, 0.3);
+    
+    --spiegelen-bg: rgba(255, 183, 77, 0.15);
+    --spiegelen-card-bg: rgba(255, 183, 77, 0.05);
+    --spiegelen-border: rgba(255, 183, 77, 0.3);
+    
+    --helper-color: #ec4899;
+    --helper-bg: rgba(236, 72, 153, 0.15);
+    --helper-card-bg: rgba(236, 72, 153, 0.05);
+    --helper-border: rgba(236, 72, 153, 0.3);
+    
+    --delete-zone-bg: rgba(255, 82, 82, 0.08);
+    --delete-zone-border: #ff5252;
+    --overlay-bg: rgba(24, 24, 27, 0.85);
+
+    --other-color: #3b82f6;
+    --other-bg: rgba(59, 130, 246, 0.15);
+    --other-card-bg: rgba(59, 130, 246, 0.05);
+    --other-border: rgba(59, 130, 246, 0.3);
 }
 
 body {
