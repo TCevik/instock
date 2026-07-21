@@ -83,3 +83,18 @@
 .bakplan-row td[data-label="Productomschrijving"] {
     font-weight: 500;
 }
+
+.bakplan-row td[contenteditable="true"] {
+    outline: none;
+    transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.bakplan-row td[contenteditable="true"]:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    cursor: text;
+}
+
+.bakplan-row td[contenteditable="true"]:focus {
+    background-color: rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 0 0 1px var(--accent-color-sidemenu);
+}

@@ -254,24 +254,64 @@ import { loadHeader } from './header.js';
                     </tr>
                 `;
 
-                dayData[cat].forEach(prod => {
+                dayData[cat].forEach((prod, index) => {
                     const dervingClass = parseInt(prod.derving) < 0 ? 'class="derving-negative"' : '';
                     const gemVerkNum = parseInt(prod.gemVerk) || 0;
                     const platen = Math.round((gemVerkNum / 12) * 10) / 10;
                     html += `
                         <tr class="bakplan-row">
-                            <td data-label="Productomschrijving">${prod.description}</td>
-                            <td data-label="Prijs">€ ${prod.price}</td>
-                            <td data-label="Promo">${prod.promo ? '€ ' + prod.promo : '-'}</td>
-                            <td data-label="Gem Verk">${prod.gemVerk}</td>
+                            <td data-label="Productomschrijving" contenteditable="true" data-cat="${cat}" data-idx="${index}" data-field="description">${prod.description}</td>
+                            <td data-label="Prijs" contenteditable="true" data-cat="${cat}" data-idx="${index}" data-field="price">€ ${prod.price}</td>
+                            <td data-label="Promo" contenteditable="true" data-cat="${cat}" data-idx="${index}" data-field="promo">${prod.promo ? '€ ' + prod.promo : '-'}</td>
+                            <td data-label="Gem Verk" contenteditable="true" data-cat="${cat}" data-idx="${index}" data-field="gemVerk">${prod.gemVerk}</td>
                             <td data-label="Platen">${platen}</td>
-                            <td data-label="Derving" ${dervingClass}>${prod.derving}</td>
+                            <td data-label="Derving" contenteditable="true" data-cat="${cat}" data-idx="${index}" data-field="derving" ${dervingClass}>${prod.derving}</td>
                         </tr>
                     `;
                 });
             });
 
             tbody.innerHTML = html;
+
+            const editableCells = Array.from(tbody.querySelectorAll('td[contenteditable="true"]'));
+            editableCells.forEach((cell, idx) => {
+                cell.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const nextCell = editableCells[idx + 1];
+                        if (nextCell) {
+                            nextCell.focus();
+                        } else {
+                            cell.blur();
+                        }
+                    }
+                });
+
+                cell.addEventListener('blur', (e) => {
+                    const cat = e.target.dataset.cat;
+                    const idx = parseInt(e.target.dataset.idx);
+                    const field = e.target.dataset.field;
+                    let text = e.target.textContent.trim().replace(/[\r\n]+/g, ' ');
+
+                    if (field === 'price' || field === 'promo') {
+                        text = text.replace('€', '').trim();
+                        if (text === '-') text = '';
+                    }
+
+                    if (state.daysData[state.selectedDay][cat] && state.daysData[state.selectedDay][cat][idx]) {
+                        state.daysData[state.selectedDay][cat][idx][field] = text;
+                        if (field === 'gemVerk') {
+                            const gemVerkNum = parseInt(text) || 0;
+                            const platen = Math.round((gemVerkNum / 12) * 10) / 10;
+                            const row = e.target.closest('tr');
+                            if (row) {
+                                const platenCell = row.querySelector('td[data-label="Platen"]');
+                                if (platenCell) platenCell.textContent = platen;
+                            }
+                        }
+                    }
+                });
+            });
         }
     };
 
