@@ -77,6 +77,23 @@ import { checkAuth, getSupabase } from './main.js';
         if (saveTimeout) clearTimeout(saveTimeout);
         saveTimeout = setTimeout(async () => {
             const supabase = await getSupabase();
+
+            const activeProds = new Set();
+            DAYS.forEach(day => {
+                (state.daysData[day] || []).forEach(c => {
+                    (c.products || []).forEach(p => {
+                        if (p.description) {
+                            activeProds.add(p.description.trim());
+                        }
+                    });
+                });
+            });
+            Object.keys(state.productPlateConfig).forEach(key => {
+                if (!activeProds.has(key.trim())) {
+                    delete state.productPlateConfig[key];
+                }
+            });
+
             const baseDayList = state.daysData[state.selectedDay] || [];
             const categories = baseDayList.map(c => ({
                 category: c.category,
@@ -263,7 +280,7 @@ import { checkAuth, getSupabase } from './main.js';
                         parsedDataByDay[currentDay].push(catObj);
                     }
 
-                    const isNewProduct = !oldCeNrs.has(ceItem.text);
+                    const isNewProduct = oldCeNrs.size > 0 && !oldCeNrs.has(ceItem.text);
                     const existingInParsed = catObj.products.find(p => p.ceNr === ceItem.text);
                     if (existingInParsed) {
                         existingInParsed.description = descVal;
@@ -676,7 +693,10 @@ import { checkAuth, getSupabase } from './main.js';
                         <td colspan="6" contenteditable="true" data-catidx="${catIdx}">
                             ${cat}
                         </td>
-                        <td style="text-align: right;">
+                        <td style="text-align: right; display: flex; gap: 4px; justify-content: flex-end; align-items: center;">
+                            <button class="action-btn add-prod-to-cat-btn" data-catidx="${catIdx}" style="padding: 4px; background-color: var(--accent-color); color: #fff;" title="Product Toevoegen aan Categorie">
+                                <i class="material-icons" style="font-size: 16px;">add</i>
+                            </button>
                             <button class="action-btn delete delete-cat-btn" data-catidx="${catIdx}" style="padding: 4px;" title="Categorie Verwijderen">
                                 <i class="material-icons" style="font-size: 16px;">delete</i>
                             </button>
@@ -702,9 +722,9 @@ import { checkAuth, getSupabase } from './main.js';
 
                     let badgeHtml = '';
                     if (prod._pdfNew) {
-                        badgeHtml = '<span class="status-badge new">Nieuw in PDF</span>';
+                        badgeHtml = '<span class="status-badge new" contenteditable="false">Nieuw in PDF</span>';
                     } else if (prod._pdfMissing) {
-                        badgeHtml = '<span class="status-badge missing">Niet meer in PDF</span>';
+                        badgeHtml = '<span class="status-badge missing" contenteditable="false">Niet meer in PDF</span>';
                     }
 
                     const approveButtonHtml = isFlagged ? `
@@ -715,7 +735,7 @@ import { checkAuth, getSupabase } from './main.js';
 
                     html += `
                         <tr class="${rowClass}" ${titleText ? `title="${titleText}"` : ''}>
-                            <td data-label="Productomschrijving" contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="description">${prod.description} ${badgeHtml}</td>
+                            <td data-label="Productomschrijving"><span contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="description">${prod.description}</span> ${badgeHtml}</td>
                             <td data-label="Prijs" contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="price">€ ${prod.price}</td>
                             <td data-label="Promo" contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="promo">${prod.promo ? '€ ' + prod.promo : '-'}</td>
                             <td data-label="Opleggen" contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="gemVerk">${prod.gemVerk}</td>
@@ -733,6 +753,29 @@ import { checkAuth, getSupabase } from './main.js';
             });
 
             tbody.innerHTML = html;
+
+            tbody.querySelectorAll('.add-prod-to-cat-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const targetBtn = e.target.closest('.add-prod-to-cat-btn');
+                    const catIdx = parseInt(targetBtn.dataset.catidx);
+                    const dayList = state.daysData[state.selectedDay];
+                    const catObj = dayList[catIdx];
+                    if (catObj) {
+                        catObj.products.push({
+                            ceNr: String(Date.now()).slice(-6),
+                            description: 'Nieuw product',
+                            price: '0.00',
+                            promo: '',
+                            gemVerk: '0',
+                            derving: '0'
+                        });
+                        syncStructureAcrossDays();
+                        this.renderTabs();
+                        this.renderTable();
+                        triggerSave();
+                    }
+                });
+            });
 
             tbody.querySelectorAll('.approve-row-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
@@ -846,7 +889,7 @@ import { checkAuth, getSupabase } from './main.js';
                 });
             });
 
-            const editableCells = Array.from(tbody.querySelectorAll('.bakplan-row td[contenteditable="true"]'));
+            const editableCells = Array.from(tbody.querySelectorAll('.bakplan-row [contenteditable="true"]'));
             editableCells.forEach((cell, idx) => {
                 cell.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {

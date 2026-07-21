@@ -41,6 +41,11 @@
     display: flex;
 }
 
+.modal-overlay .management-card {
+    width: 90%;
+    max-width: 500px;
+}
+
 .modal-header {
     display: flex;
     justify-content: space-between;
