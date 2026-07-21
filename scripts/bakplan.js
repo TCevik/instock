@@ -781,11 +781,18 @@ import { checkAuth, getSupabase } from './main.js';
                         badgeHtml = '<span class="status-badge missing" contenteditable="false">Niet meer in PDF</span>';
                     }
 
-                    const approveButtonHtml = isFlagged ? `
-                        <button class="action-btn approve-row-btn" data-catidx="${catIdx}" data-idx="${index}" style="padding: 4px; background-color: var(--accent-color); color: #fff;" title="Product Goedkeuren">
-                            <i class="material-icons" style="font-size: 16px;">check</i>
+                    const actionButtonsHtml = isFlagged ? `
+                        <button class="action-btn approve-row-btn" data-catidx="${catIdx}" data-idx="${index}" style="height: 28px; padding: 0 12px; background-color: var(--accent-color); color: #fff; font-size: 13px; font-weight: 500; border-radius: 6px; border: none !important; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;" title="Product Houden">
+                            Houden
                         </button>
-                    ` : '';
+                        <button class="action-btn delete delete-row-btn" data-catidx="${catIdx}" data-idx="${index}" style="height: 28px; padding: 0 12px; background-color: var(--danger-color); color: #fff; font-size: 13px; font-weight: 500; border-radius: 6px; border: none !important; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;" title="Verwijderen">
+                            Verwijderen
+                        </button>
+                    ` : `
+                        <button class="action-btn delete delete-row-btn" data-catidx="${catIdx}" data-idx="${index}" style="height: 28px; width: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px;" title="Verwijderen">
+                            <i class="material-icons" style="font-size: 16px;">delete</i>
+                        </button>
+                    `;
 
                     html += `
                         <tr class="${rowClass}" ${titleText ? `title="${titleText}"` : ''}>
@@ -795,11 +802,8 @@ import { checkAuth, getSupabase } from './main.js';
                             <td data-label="Opleggen" contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="gemVerk">${prod.gemVerk}</td>
                             <td data-label="Platen">${platen}</td>
                             <td data-label="Derving" contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="derving" ${dervingClass}>${prod.derving}</td>
-                            <td data-label="Actie" style="display: flex; gap: 4px; align-items: center; justify-content: flex-end;">
-                                ${approveButtonHtml}
-                                <button class="action-btn delete delete-row-btn" data-catidx="${catIdx}" data-idx="${index}" style="padding: 4px;" title="Verwijderen">
-                                    <i class="material-icons" style="font-size: 16px;">delete</i>
-                                </button>
+                            <td data-label="Actie" style="display: flex; gap: 6px; align-items: center; justify-content: flex-end; min-height: 44px;">
+                                ${actionButtonsHtml}
                             </td>
                         </tr>
                     `;
@@ -920,25 +924,33 @@ import { checkAuth, getSupabase } from './main.js';
                     const idx = parseInt(targetBtn.dataset.idx);
                     const catObj = state.daysData[state.selectedDay][catIdx];
                     if (catObj && catObj.products && catObj.products[idx]) {
-                        const prodName = catObj.products[idx].description || 'dit product';
-                        showConfirmModal(
-                            'Product Verwijderen',
-                            `Weet je zeker dat je "${prodName}" wilt verwijderen voor alle dagen?`,
-                            () => {
-                                const prodDesc = catObj.products[idx].description;
-                                if (prodDesc) {
-                                    delete state.productPlateConfig[prodDesc.trim()];
-                                }
-                                catObj.products.splice(idx, 1);
-                                if (catObj.products.length === 0) {
-                                    state.daysData[state.selectedDay].splice(catIdx, 1);
-                                }
-                                syncStructureAcrossDays();
-                                this.renderTabs();
-                                this.renderTable();
-                                triggerSave();
+                        const targetProd = catObj.products[idx];
+                        const isFlagged = targetProd._pdfMissing || targetProd._pdfNew;
+                        const doDelete = () => {
+                            const prodDesc = targetProd.description;
+                            if (prodDesc) {
+                                delete state.productPlateConfig[prodDesc.trim()];
                             }
-                        );
+                            catObj.products.splice(idx, 1);
+                            if (catObj.products.length === 0) {
+                                state.daysData[state.selectedDay].splice(catIdx, 1);
+                            }
+                            syncStructureAcrossDays();
+                            this.renderTabs();
+                            this.renderTable();
+                            triggerSave();
+                        };
+
+                        if (isFlagged) {
+                            doDelete();
+                        } else {
+                            const prodName = targetProd.description || 'dit product';
+                            showConfirmModal(
+                                'Product Verwijderen',
+                                `Weet je zeker dat je "${prodName}" wilt verwijderen voor alle dagen?`,
+                                doDelete
+                            );
+                        }
                     }
                 });
             });

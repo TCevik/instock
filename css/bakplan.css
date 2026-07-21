@@ -103,18 +103,8 @@ td[contenteditable="true"]:focus {
     background-color: var(--pdf-highlight-bg) !important;
 }
 
-.row-pdf-flagged td {
-    border-top: 1px solid var(--pdf-highlight-border);
-    border-bottom: 1px solid var(--pdf-highlight-border);
-}
-
 .row-pdf-new {
     background-color: var(--pdf-new-bg) !important;
-}
-
-.row-pdf-new td {
-    border-top: 1px solid var(--pdf-new-border);
-    border-bottom: 1px solid var(--pdf-new-border);
 }
 
 .status-badge {
