@@ -1133,24 +1133,14 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
             resetBtn.addEventListener('click', () => {
                 showConfirmModal(
                     'Opnieuw Beginnen',
-                    'Weet je zeker dat je opnieuw wilt beginnen? De huidige planning en gegevens worden gewist.',
+                    'Weet je zeker dat je opnieuw wilt beginnen? Pas wanneer je de 2 nieuwe PDF\'s uploadt, wordt de huidige planning definitief overschreven.',
                     () => {
-                        state.selectedFillers = [];
-                        state.pathColli = {};
-                        state.fillerTasks = {};
-                        state.helpers = {};
-                        state.instanceTimes = {};
-                        state.fillerBreaks = {};
-                        triggerSave();
-
                         document.getElementById('step-1-container').style.display = 'block';
                         document.getElementById('step-2-container').style.display = 'none';
                         resetBtn.style.display = 'none';
                         const peopleCard = document.getElementById('people-card');
                         if (peopleCard) peopleCard.style.display = 'none';
                         document.querySelectorAll('.upload-group').forEach(el => el.style.display = 'block');
-                        const nextBtn = document.getElementById('next-step-btn');
-                        if (nextBtn) nextBtn.disabled = true;
                     }
                 );
             });
@@ -1183,6 +1173,12 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
                 const processPDF = async () => {
                     try {
                         const names = await parsePDFAndGetNames(file);
+                        state.selectedFillers = [];
+                        state.pathColli = {};
+                        state.fillerTasks = {};
+                        state.helpers = {};
+                        state.instanceTimes = {};
+                        state.fillerBreaks = {};
                         renderPeopleList(names);
                         triggerSave();
                         const uploadGroup = input.closest('.upload-group');
@@ -1195,7 +1191,7 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
                 if (state.selectedFillers && state.selectedFillers.length > 0) {
                     showConfirmModal(
                         'Planning Overschrijven',
-                        'Weet je zeker dat je het nieuwe dagrooster wilt importeren? De huidige opgeslagen planning wordt overschreven.',
+                        'Weet je zeker dat je het nieuwe dagrooster wilt importeren? De huidige opgeslagen planning wordt hiermee overschreven.',
                         processPDF
                     );
                 } else {
