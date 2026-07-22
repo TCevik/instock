@@ -137,3 +137,131 @@
     pointer-events: none;
     cursor: not-allowed;
 }
+
+.header-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.action-btn-secondary {
+    padding: 10px 20px;
+    background-color: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-color);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s;
+}
+
+.action-btn-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.checkbox-item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    background: var(--surface-color);
+    color: var(--text-color-muted);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.checkbox-item input[type="checkbox"] {
+    display: none;
+}
+
+.checkbox-item:hover {
+    border-color: var(--accent-color);
+    color: var(--text-color);
+}
+
+.checkbox-item:has(input[type="checkbox"]:checked) {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: white;
+    font-weight: 600;
+}
+
+.input-wrapper-btn {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.input-wrapper-btn .flex-grow {
+    flex: 1;
+}
+
+.submit-btn.compact {
+    padding: 12px;
+    width: auto;
+}
+
+.dept-list-container {
+    margin-top: 16px;
+}
+
+.dept-list {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 0 0;
+    max-height: 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dept-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--surface-color);
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.dept-list-item span {
+    font-size: 14px;
+    color: var(--text-color);
+}
+
+.department-section {
+    margin-bottom: 32px;
+}
+
+.department-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.department-title .material-icons {
+    color: var(--accent-color);
+}

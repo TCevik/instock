@@ -1363,6 +1363,27 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
             if (manualContainer) manualContainer.style.display = 'flex';
         }
 
+        let storeEmployees = [];
+        const supabase = await getSupabase();
+        if (storeId && supabase) {
+            const { data: users } = await supabase
+                .from('user_data')
+                .select('full_name')
+                .eq('winkel', storeId)
+                .order('full_name', { ascending: true });
+            if (users) {
+                storeEmployees = users.map(u => u.full_name).filter(Boolean);
+            }
+        }
+
+        let datalist = document.getElementById('store-employees-datalist');
+        if (!datalist && storeEmployees.length > 0) {
+            datalist = document.createElement('datalist');
+            datalist.id = 'store-employees-datalist';
+            datalist.innerHTML = storeEmployees.map(emp => `<option value="${emp}">`).join('');
+            document.body.appendChild(datalist);
+        }
+
         const manualFillersList = document.getElementById('manual-fillers-list');
         const manualPathsList = document.getElementById('manual-paths-list');
         const addFillerBtn = document.getElementById('add-manual-filler-btn');
@@ -1374,7 +1395,7 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
                 const row = document.createElement('div');
                 row.style.cssText = 'display: flex; gap: 8px; align-items: center;';
                 row.innerHTML = `
-                    <input type="text" placeholder="Naam vuller" value="${name}" class="manual-filler-name" style="flex: 2; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
+                    <input type="text" placeholder="Naam vuller" value="${name}" list="store-employees-datalist" class="manual-filler-name" style="flex: 2; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
                     <input type="time" value="${startTime}" class="manual-filler-start" style="flex: 1; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
                     <input type="time" value="${endTime}" class="manual-filler-end" style="flex: 1; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
                     <button type="button" class="remove-row-btn" style="background: none; border: none; color: var(--danger-color); cursor: pointer; padding: 4px;"><i class="material-icons">delete</i></button>

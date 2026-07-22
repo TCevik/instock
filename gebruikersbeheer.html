@@ -21,10 +21,20 @@
                     </div>
                     <p class="page-header-subtitle">Beheer systeemgebruikers en hun rechten</p>
                 </div>
-                <button class="add-user-btn" id="openModalBtn">
-                    <i class="material-icons">person_add</i>
-                    <span>Nieuwe gebruiker</span>
-                </button>
+                <div class="header-actions">
+                    <button class="action-btn-secondary" id="toggleViewBtn">
+                        <i class="material-icons">sort_by_alpha</i>
+                        <span>Alfabetische weergave</span>
+                    </button>
+                    <button class="action-btn-secondary" id="openDeptModalBtn">
+                        <i class="material-icons">domain</i>
+                        <span>Afdelingen beheren</span>
+                    </button>
+                    <button class="add-user-btn" id="openModalBtn">
+                        <i class="material-icons">person_add</i>
+                        <span>Nieuwe gebruiker</span>
+                    </button>
+                </div>
             </div>
         </div>
         <div class="modal-overlay" id="userModal">
@@ -66,6 +76,10 @@
                         </div>
                     </div>
                     <div class="form-group">
+                        <label>Afdelingen</label>
+                        <div class="checkbox-group" id="user-afdelingen-container"></div>
+                    </div>
+                    <div class="form-group">
                         <label for="password">Wachtwoord</label>
                         <div class="input-wrapper">
                             <input type="password" id="password" required placeholder="••••••••" autocomplete="off">
@@ -77,6 +91,38 @@
                         <i class="material-icons">person_add</i>
                     </button>
                 </form>
+            </div>
+        </div>
+        <div class="modal-overlay" id="deptModal">
+            <div class="management-card">
+                <div class="modal-header">
+                    <h2>Afdelingen Beheren</h2>
+                    <button class="close-modal-btn" id="closeDeptModalBtn">
+                        <i class="material-icons">close</i>
+                    </button>
+                </div>
+                <div class="message" id="dept-message-box">
+                    <i class="material-icons" id="dept-message-icon"></i>
+                    <span id="dept-message-text"></span>
+                </div>
+                <form id="add-dept-form" autocomplete="off">
+                    <div class="form-group">
+                        <label for="new-dept-name">Nieuwe afdeling toevoegen</label>
+                        <div class="input-wrapper-btn">
+                            <div class="input-wrapper flex-grow">
+                                <input type="text" id="new-dept-name" required placeholder="bijv. Magazijn" autocomplete="off">
+                                <i class="material-icons">storefront</i>
+                            </div>
+                            <button type="submit" class="submit-btn compact" id="addDeptBtn">
+                                <i class="material-icons">add</i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                <div class="dept-list-container">
+                    <label>Bestaande afdelingen</label>
+                    <ul class="dept-list" id="dept-list"></ul>
+                </div>
             </div>
         </div>
         <div class="modal-overlay" id="confirmModal">
@@ -96,23 +142,7 @@
                 </div>
             </div>
         </div>
-        <div class="table-container">
-            <table class="users-table">
-                <thead>
-                    <tr>
-                        <th>Volledige Naam</th>
-                        <th>Personeelsnummer</th>
-                        <th>Rol</th>
-                        <th>Acties</th>
-                    </tr>
-                </thead>
-                <tbody id="users-table-body">
-                    <tr>
-                        <td colspan="4" class="loading-cell">Gebruikers laden...</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <div id="department-sections-container"></div>
     </main>
 </body>
 </html>
