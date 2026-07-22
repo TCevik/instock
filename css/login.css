@@ -89,3 +89,55 @@
     25% { transform: translateX(-4px); }
     75% { transform: translateX(4px); }
 }
+
+.checkbox-group {
+    margin-bottom: 24px;
+}
+
+.form-group.checkbox-group label.remember-me-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+    margin-bottom: 0;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.remember-me-label input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    margin-top: 1px;
+    flex-shrink: 0;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    outline: none;
+    background-color: var(--input-bg);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.remember-me-label input[type="checkbox"]:checked {
+    background-color: var(--accent-color-sidemenu);
+    border-color: var(--accent-color-sidemenu);
+}
+
+.remember-me-label input[type="checkbox"]:checked::after {
+    content: "check";
+    font-family: "Material Icons";
+    font-size: 14px;
+    color: white;
+}
+
+.remember-me-label span {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--text-color-muted);
+    line-height: 20px;
+}

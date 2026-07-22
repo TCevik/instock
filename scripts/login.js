@@ -8,6 +8,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const errorMessage = document.getElementById('error-message');
     const errorText = document.getElementById('error-text');
     const submitBtn = form.querySelector('.login-btn');
+    const rememberMeCheckbox = document.getElementById('remember-me');
+
+    const savedStoreCode = localStorage.getItem('remembered_store_code');
+    const savedEmployeeId = localStorage.getItem('remembered_employee_id');
+    if (savedStoreCode && savedEmployeeId) {
+        storeCodeInput.value = savedStoreCode;
+        employeeIdInput.value = savedEmployeeId;
+        rememberMeCheckbox.checked = true;
+    }
 
     const supabase = await getSupabase();
 
@@ -36,6 +45,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 errorText.textContent = error.message;
                 errorMessage.style.display = 'flex';
             } else if (data.session) {
+                if (rememberMeCheckbox.checked) {
+                    localStorage.setItem('remembered_store_code', storeCodeInput.value.trim());
+                    localStorage.setItem('remembered_employee_id', employeeIdInput.value.trim());
+                } else {
+                    localStorage.removeItem('remembered_store_code');
+                    localStorage.removeItem('remembered_employee_id');
+                }
                 window.location.href = 'index.html';
             }
         });

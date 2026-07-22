@@ -89,12 +89,6 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
                     });
                 });
             });
-            Object.keys(state.productPlateConfig).forEach(key => {
-                if (!activeProds.has(key.trim())) {
-                    delete state.productPlateConfig[key];
-                }
-            });
-
             const baseDayList = state.daysData[state.selectedDay] || [];
             const categories = baseDayList.map(c => ({
                 category: c.category,
@@ -630,24 +624,58 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
             if (!tbody) return;
 
             const products = this.getAllProducts();
+            const activeProds = new Set(products.map(p => p.description.trim()));
+            const oldKeys = Object.keys(tempConfig).filter(k => k.trim() && !activeProds.has(k.trim()));
+
+            let html = `
+                <tr class="category-header-row">
+                    <td colspan="2">Huidige producten</td>
+                </tr>
+            `;
+
             if (products.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="2" class="loading-cell">Geen producten geladen. Voeg eerst een product toe.</td></tr>';
-                return;
+                html += '<tr><td colspan="2" class="loading-cell">Geen huidige producten in bakplan.</td></tr>';
+            } else {
+                products.forEach(prod => {
+                    const desc = prod.description.trim();
+                    const plateQty = (!isNaN(parseInt(tempConfig[desc])) && parseInt(tempConfig[desc]) > 0) ? parseInt(tempConfig[desc]) : getPlateQuantity(desc);
+                    html += `
+                        <tr>
+                            <td>${desc}</td>
+                            <td>
+                                <input type="number" min="1" class="plate-input" data-desc="${desc}" value="${plateQty}" style="width: 100%; padding: 6px 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
+                            </td>
+                        </tr>
+                    `;
+                });
             }
 
-            let html = '';
-            products.forEach(prod => {
-                const desc = prod.description.trim();
-                const plateQty = (!isNaN(parseInt(tempConfig[desc])) && parseInt(tempConfig[desc]) > 0) ? parseInt(tempConfig[desc]) : getPlateQuantity(desc);
-                html += `
-                    <tr>
-                        <td>${desc}</td>
-                        <td>
-                            <input type="number" min="1" class="plate-input" data-desc="${desc}" value="${plateQty}" style="width: 100%; padding: 6px 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
-                        </td>
-                    </tr>
-                `;
-            });
+            html += `
+                <tr class="category-header-row">
+                    <td colspan="2">Oude producten (niet in bakplan)</td>
+                </tr>
+            `;
+
+            if (oldKeys.length === 0) {
+                html += '<tr><td colspan="2" class="loading-cell">Geen oude producten.</td></tr>';
+            } else {
+                oldKeys.forEach(desc => {
+                    const plateQty = (!isNaN(parseInt(tempConfig[desc])) && parseInt(tempConfig[desc]) > 0) ? parseInt(tempConfig[desc]) : 12;
+                    html += `
+                        <tr>
+                            <td style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                <span>${desc}</span>
+                                <button type="button" class="action-btn delete remove-old-plate-btn" data-desc="${desc}" style="padding: 2px 6px; font-size: 12px; height: auto;" title="Verwijderen uit instellingen">
+                                    <i class="material-icons" style="font-size: 14px;">delete</i>
+                                </button>
+                            </td>
+                            <td>
+                                <input type="number" min="1" class="plate-input" data-desc="${desc}" value="${plateQty}" style="width: 100%; padding: 6px 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
 
             tbody.innerHTML = html;
 
@@ -656,6 +684,14 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
                     const desc = e.target.dataset.desc;
                     const val = parseInt(e.target.value);
                     tempConfig[desc] = (!isNaN(val) && val > 0) ? val : 12;
+                });
+            });
+
+            tbody.querySelectorAll('.remove-old-plate-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const desc = e.target.closest('.remove-old-plate-btn').dataset.desc;
+                    delete tempConfig[desc];
+                    this.renderSettingsTable(tempConfig);
                 });
             });
         },
@@ -827,11 +863,6 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
                             'Categorie Verwijderen',
                             `Weet je zeker dat je categorie "${catObj.category}" wilt verwijderen voor alle dagen?`,
                             () => {
-                                (catObj.products || []).forEach(p => {
-                                    if (p.description) {
-                                        delete state.productPlateConfig[p.description.trim()];
-                                    }
-                                });
                                 state.daysData[state.selectedDay].splice(catIdx, 1);
                                 syncStructureAcrossDays();
                                 this.renderTabs();
@@ -882,10 +913,6 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
                         const targetProd = catObj.products[idx];
                         const isFlagged = targetProd._pdfMissing || targetProd._pdfNew;
                         const doDelete = () => {
-                            const prodDesc = targetProd.description;
-                            if (prodDesc) {
-                                delete state.productPlateConfig[prodDesc.trim()];
-                            }
                             catObj.products.splice(idx, 1);
                             if (catObj.products.length === 0) {
                                 state.daysData[state.selectedDay].splice(catIdx, 1);
