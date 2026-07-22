@@ -1266,11 +1266,163 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
         const auth = await checkAuth(['beheerder']);
         if (!auth) return;
         storeId = auth.userData.winkel;
-        if (auth.storeCode !== 'plus-lms') {
+        const isPlusLms = auth.storeCode === 'plus-lms';
+
+        const showManualBtn = document.getElementById('show-manual-input-btn');
+        const manualContainer = document.getElementById('manual-input-container');
+
+        if (showManualBtn && manualContainer) {
+            showManualBtn.addEventListener('click', () => {
+                document.querySelectorAll('.upload-group').forEach(el => el.style.display = 'none');
+                manualContainer.style.display = 'flex';
+            });
+        }
+
+        if (!isPlusLms) {
             document.querySelectorAll('.upload-group').forEach(el => {
                 el.style.display = 'none';
             });
+            if (manualContainer) manualContainer.style.display = 'flex';
         }
+
+        const manualFillersList = document.getElementById('manual-fillers-list');
+        const manualPathsList = document.getElementById('manual-paths-list');
+        const addFillerBtn = document.getElementById('add-manual-filler-btn');
+        const addPathBtn = document.getElementById('add-manual-path-btn');
+        const startManualBtn = document.getElementById('start-manual-planning-btn');
+
+        if (manualFillersList && manualPathsList) {
+            const addFillerRow = (name = '', startTime = '', endTime = '') => {
+                const row = document.createElement('div');
+                row.style.cssText = 'display: flex; gap: 8px; align-items: center;';
+                row.innerHTML = `
+                    <input type="text" placeholder="Naam vuller" value="${name}" class="manual-filler-name" style="flex: 2; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
+                    <input type="time" value="${startTime}" class="manual-filler-start" style="flex: 1; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
+                    <input type="time" value="${endTime}" class="manual-filler-end" style="flex: 1; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
+                    <button type="button" class="remove-row-btn" style="background: none; border: none; color: var(--danger-color); cursor: pointer; padding: 4px;"><i class="material-icons">delete</i></button>
+                `;
+                row.querySelector('.remove-row-btn').addEventListener('click', () => row.remove());
+                manualFillersList.appendChild(row);
+            };
+
+            const addCategoryRow = (categoriesContainer, catName = '', colli = '', norm = '') => {
+                const row = document.createElement('div');
+                row.className = 'manual-category-row';
+                row.style.cssText = 'display: flex; gap: 8px; align-items: center; margin-bottom: 6px;';
+                row.innerHTML = `
+                    <input type="text" placeholder="Categorie (bijv. Frisdrank)" value="${catName}" class="manual-cat-name" style="flex: 2; padding: 6px 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color); font-size: 13px;">
+                    <input type="number" placeholder="Colli" value="${colli}" class="manual-cat-colli" style="flex: 1; padding: 6px 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color); font-size: 13px;">
+                    <input type="number" placeholder="Norm (colli/u)" value="${norm}" class="manual-cat-norm" style="flex: 1; padding: 6px 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color); font-size: 13px;">
+                    <button type="button" class="remove-cat-btn" style="background: none; border: none; color: var(--danger-color); cursor: pointer; padding: 2px;"><i class="material-icons" style="font-size: 18px;">close</i></button>
+                `;
+                row.querySelector('.remove-cat-btn').addEventListener('click', () => row.remove());
+                categoriesContainer.appendChild(row);
+            };
+
+            const addPathBlock = (pathName = '') => {
+                const block = document.createElement('div');
+                block.className = 'manual-path-block';
+                block.style.cssText = 'border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; background-color: var(--bg-color); display: flex; flex-direction: column; gap: 8px;';
+                block.innerHTML = `
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="text" placeholder="Padnaam (bijv. Frisdrank, Bier)" value="${pathName}" class="manual-path-name" style="flex: 1; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color); font-weight: 600;">
+                        <button type="button" class="remove-path-btn" style="background: none; border: none; color: var(--danger-color); cursor: pointer; padding: 4px;"><i class="material-icons">delete</i></button>
+                    </div>
+                    <div class="manual-categories-container" style="display: flex; flex-direction: column; padding-left: 12px; border-left: 2px solid var(--border-color); margin-top: 4px;"></div>
+                    <button type="button" class="add-cat-btn" style="align-self: flex-start; padding: 4px 8px; font-size: 12px; background: none; border: 1px dashed var(--border-color); color: var(--text-color); border-radius: 4px; cursor: pointer;">+ Categorie Toevoegen</button>
+                `;
+
+                const catContainer = block.querySelector('.manual-categories-container');
+                block.querySelector('.add-cat-btn').addEventListener('click', () => addCategoryRow(catContainer));
+                block.querySelector('.remove-path-btn').addEventListener('click', () => block.remove());
+                manualPathsList.appendChild(block);
+                return catContainer;
+            };
+
+            if (addFillerBtn) addFillerBtn.addEventListener('click', () => addFillerRow());
+            if (addPathBtn) addPathBtn.addEventListener('click', () => {
+                const catContainer = addPathBlock();
+                addCategoryRow(catContainer);
+            });
+
+            if (Object.keys(state.pathColli).length > 0) {
+                Object.entries(state.pathColli).forEach(([pathName, obj]) => {
+                    const catContainer = addPathBlock(pathName);
+                    const norm = obj.colli && obj.duration ? Math.round((obj.colli / (obj.duration / 60))) : '';
+                    addCategoryRow(catContainer, pathName, obj.colli || '', norm);
+                });
+            } else {
+                const catContainer = addPathBlock();
+                addCategoryRow(catContainer);
+            }
+
+            if (state.selectedFillers && state.selectedFillers.length > 0) {
+                state.selectedFillers.forEach(displayName => {
+                    const match = displayName.match(/^(.+?)\s*-\s*(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})$/);
+                    if (match) {
+                        addFillerRow(match[1], match[2], match[3]);
+                    } else {
+                        addFillerRow(displayName, '', '');
+                    }
+                });
+            } else {
+                addFillerRow('', '', '');
+            }
+
+            if (startManualBtn) {
+                startManualBtn.addEventListener('click', () => {
+                    const fillerRows = manualFillersList.querySelectorAll('div');
+                    const newFillers = [];
+                    fillerRows.forEach(r => {
+                        const nameInput = r.querySelector('.manual-filler-name');
+                        if (!nameInput) return;
+                        const name = nameInput.value.trim();
+                        const start = r.querySelector('.manual-filler-start').value;
+                        const end = r.querySelector('.manual-filler-end').value;
+                        if (name) {
+                            newFillers.push(`${name} - ${start} - ${end}`);
+                        }
+                    });
+
+                    const pathBlocks = manualPathsList.querySelectorAll('.manual-path-block');
+                    const newPathColli = {};
+                    pathBlocks.forEach(b => {
+                        const pathName = b.querySelector('.manual-path-name').value.trim();
+                        if (!pathName) return;
+
+                        let totalColli = 0;
+                        let totalDurationMinutes = 0;
+
+                        const catRows = b.querySelectorAll('.manual-category-row');
+                        catRows.forEach(cr => {
+                            const colli = parseInt(cr.querySelector('.manual-cat-colli').value) || 0;
+                            const norm = parseFloat(cr.querySelector('.manual-cat-norm').value) || 0;
+                            totalColli += colli;
+                            if (norm > 0 && colli > 0) {
+                                totalDurationMinutes += (colli / norm) * 60;
+                            }
+                        });
+
+                        newPathColli[pathName] = { colli: totalColli, duration: totalDurationMinutes };
+                    });
+
+                    state.selectedFillers = newFillers;
+                    state.pathColli = newPathColli;
+                    state.fillerTasks = {};
+                    state.helpers = {};
+                    state.instanceTimes = {};
+                    state.fillerBreaks = {};
+                    state.actualEndTimes = {};
+
+                    document.getElementById('step-1-container').style.display = 'none';
+                    document.getElementById('step-2-container').style.display = 'block';
+                    renderWorkspace();
+                    if (resetBtn) resetBtn.style.display = 'inline-block';
+                    triggerSave();
+                });
+            }
+        }
+
         if (window.pdfjsLib) {
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
         }
@@ -1282,14 +1434,18 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
             resetBtn.addEventListener('click', () => {
                 showConfirmModal(
                     'Opnieuw Beginnen',
-                    'Weet je zeker dat je opnieuw wilt beginnen? Pas wanneer je de 2 nieuwe PDF\'s uploadt, wordt de huidige planning definitief overschreven.',
+                    'Weet je zeker dat je opnieuw wilt beginnen? De huidige planning wordt overschreven.',
                     () => {
                         document.getElementById('step-1-container').style.display = 'block';
                         document.getElementById('step-2-container').style.display = 'none';
                         resetBtn.style.display = 'none';
                         const peopleCard = document.getElementById('people-card');
                         if (peopleCard) peopleCard.style.display = 'none';
-                        document.querySelectorAll('.upload-group').forEach(el => el.style.display = 'block');
+                        if (isPlusLms) {
+                            document.querySelectorAll('.upload-group').forEach(el => el.style.display = 'block');
+                        } else {
+                            document.getElementById('manual-input-container').style.display = 'flex';
+                        }
                     }
                 );
             });
@@ -1309,6 +1465,8 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
             document.getElementById('step-1-container').style.display = 'none';
             document.getElementById('step-2-container').style.display = 'block';
             document.querySelectorAll('.upload-group').forEach(el => el.style.display = 'none');
+            const manualContainer = document.getElementById('manual-input-container');
+            if (manualContainer) manualContainer.style.display = 'none';
             renderWorkspace();
             if (resetBtn) resetBtn.style.display = 'inline-block';
         }

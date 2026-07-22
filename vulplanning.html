@@ -39,6 +39,33 @@
                     <i class="material-icons">picture_as_pdf</i>
                 </div>
             </div>
+            <div class="upload-group" style="margin-top: 20px; text-align: center;">
+                <div style="display: flex; align-items: center; margin: 16px 0;">
+                    <div style="flex: 1; border-bottom: 1px solid var(--border-color);"></div>
+                    <span style="padding: 0 10px; color: var(--text-color-secondary); font-size: 13px;">of</span>
+                    <div style="flex: 1; border-bottom: 1px solid var(--border-color);"></div>
+                </div>
+                <button type="button" id="show-manual-input-btn" class="action-btn" style="padding: 10px 18px; font-size: 14px; background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 8px; cursor: pointer; width: 100%; font-weight: 500;">
+                    <i class="material-icons" style="vertical-align: middle; margin-right: 6px; font-size: 18px;">edit_note</i>Handmatig Invoeren
+                </button>
+            </div>
+            <div id="manual-input-container" style="display: none; flex-direction: column; gap: 24px;">
+                <div class="card" style="padding: 20px; background-color: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color);">
+                    <h3 style="margin-bottom: 12px; font-size: 16px; font-weight: 600;">1. Rooster / Vulploeg Invoeren</h3>
+                    <p style="font-size: 13px; color: var(--text-color-secondary); margin-bottom: 12px;">Voer medewerkers in met hun werktijden (bijv. "Piet - 17:00 - 21:00").</p>
+                    <div id="manual-fillers-list" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;"></div>
+                    <button type="button" id="add-manual-filler-btn" class="action-btn" style="align-self: flex-start; padding: 6px 12px; font-size: 13px; background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 6px;">+ Vuller Toevoegen</button>
+                </div>
+
+                <div class="card" style="padding: 20px; background-color: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color);">
+                    <h3 style="margin-bottom: 12px; font-size: 16px; font-weight: 600;">2. Paden, Categorieën, Colli & Normen Invoeren</h3>
+                    <p style="font-size: 13px; color: var(--text-color-secondary); margin-bottom: 12px;">Maak paden aan, voeg daarbinnen categorieën toe met hun norm (colli/uur) en colli-aantal. De padtijd en totale colli worden zo automatisch berekend.</p>
+                    <div id="manual-paths-list" style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 12px;"></div>
+                    <button type="button" id="add-manual-path-btn" class="action-btn" style="align-self: flex-start; padding: 6px 12px; font-size: 13px; background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 6px;">+ Pad Toevoegen</button>
+                </div>
+
+                <button type="button" id="start-manual-planning-btn" class="submit-btn" style="width: 100%; padding: 12px; font-size: 15px; font-weight: 600; background-color: var(--primary-color); color: #fff; border: none; border-radius: 8px; cursor: pointer;">Planning Starten</button>
+            </div>
         </div>
 
         <div id="step-2-container" style="display: none;">
