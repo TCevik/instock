@@ -64,6 +64,34 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
         return hours > 0 ? `${hours}u ${mins}m` : `${mins}m`;
     };
 
+    const parseNameAndSubtitle = (str) => {
+        if (!str) return { name: '', subtitle: '' };
+        const match = str.match(/^(.*?)\s*(?:-|:|\()\s*(\d{2}:\d{2}\s*-\s*\d{2}(?::\d{2})?)\)?$/);
+        if (match) {
+            return { name: match[1].trim(), subtitle: match[2].trim() };
+        }
+        return { name: str, subtitle: '' };
+    };
+
+    const createPersonNameElement = (fullName, titleClass = 'person-name', subtitleClass = 'person-subtitle', containerClass = 'person-info') => {
+        const { name, subtitle } = parseNameAndSubtitle(fullName);
+        const container = document.createElement('div');
+        container.className = containerClass;
+        
+        const nameEl = document.createElement('span');
+        nameEl.className = titleClass;
+        nameEl.textContent = name;
+        container.appendChild(nameEl);
+
+        if (subtitle) {
+            const subEl = document.createElement('span');
+            subEl.className = subtitleClass;
+            subEl.textContent = subtitle;
+            container.appendChild(subEl);
+        }
+        return container;
+    };
+
     const getFillerPause = (displayName) => {
         if (state.fillerBreaks && state.fillerBreaks[displayName] !== undefined) {
             return state.fillerBreaks[displayName];
@@ -789,8 +817,14 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
             state.hiddenFillers.forEach(filler => {
                 const badge = document.createElement('button');
                 badge.type = 'button';
-                badge.style.cssText = 'padding: 4px 8px; font-size: 12px; background-color: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;';
-                badge.innerHTML = `<span>${filler}</span> <i class="material-icons" style="font-size: 14px; color: var(--accent-color-sidemenu);">visibility</i>`;
+                badge.style.cssText = 'padding: 4px 8px; font-size: 12px; background-color: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px;';
+                const nameEl = createPersonNameElement(filler, 'person-name', 'person-subtitle', 'person-info');
+                const icon = document.createElement('i');
+                icon.className = 'material-icons';
+                icon.style.cssText = 'font-size: 14px; color: var(--accent-color-sidemenu);';
+                icon.textContent = 'visibility';
+                badge.appendChild(nameEl);
+                badge.appendChild(icon);
                 badge.addEventListener('click', () => {
                     state.hiddenFillers = state.hiddenFillers.filter(f => f !== filler);
                     renderWorkspace();
@@ -833,9 +867,7 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
             const titleRow = document.createElement('div');
             titleRow.className = 'filler-card-title-row';
 
-            const title = document.createElement('span');
-            title.className = 'filler-card-title';
-            title.textContent = filler;
+            const title = createPersonNameElement(filler, 'filler-card-title', 'filler-card-subtitle', 'filler-card-info');
 
             const hideBtn = document.createElement('button');
             hideBtn.type = 'button';
@@ -1260,12 +1292,10 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
                 triggerSave();
             });
 
-            const span = document.createElement('span');
-            span.className = 'person-name';
-            span.textContent = name;
+            const nameEl = createPersonNameElement(name, 'person-name', 'person-subtitle', 'person-info');
 
             label.appendChild(checkbox);
-            label.appendChild(span);
+            label.appendChild(nameEl);
             list.appendChild(label);
         });
 
@@ -1706,7 +1736,8 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
                 return a.localeCompare(b);
             });
 
-            const dateStr = new Date().toLocaleDateString('nl-NL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const now = new Date();
+            const dateStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} om ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
             let cardsHtml = '';
             sortedFillers.forEach(filler => {
@@ -1810,13 +1841,7 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
     <style>
         @page {
             size: A4 landscape;
-            margin: 10mm;
-            @bottom-right {
-                content: "Gemaakt in inStock";
-                font-size: 10pt;
-                font-family: 'Segoe UI', sans-serif;
-                color: #64748b;
-            }
+            margin: 0;
         }
         * {
             box-sizing: border-box;
@@ -1884,7 +1909,7 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
             }
             body {
                 background: white;
-                padding: 0;
+                padding: 10mm;
             }
             .printable-card {
                 break-inside: avoid;
@@ -2028,7 +2053,7 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
     </div>
     <div class="header">
         <h1>Vulplanning Overzicht</h1>
-        <div class="date">${dateStr}</div>
+        <div class="date">Deze planning is gemaakt op ${dateStr}</div>
     </div>
     <div class="grid-container">
         ${cardsHtml}

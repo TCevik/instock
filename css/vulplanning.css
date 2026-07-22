@@ -60,10 +60,23 @@
     color: white;
 }
 
+.person-info,
+.filler-card-info {
+    display: flex;
+    flex-direction: column;
+}
+
 .person-name {
     font-size: 14px;
     font-weight: 500;
     color: var(--text-color);
+}
+
+.person-subtitle,
+.filler-card-subtitle {
+    font-size: 12px;
+    color: var(--text-color-muted);
+    font-weight: 400;
 }
 
 .path-row {
