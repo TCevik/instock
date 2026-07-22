@@ -143,6 +143,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    const sortUsersByRole = (users) => {
+        return [...users].sort((a, b) => {
+            const roleA = (a.role || '').toLowerCase() === 'beheerder' ? 0 : 1;
+            const roleB = (b.role || '').toLowerCase() === 'beheerder' ? 0 : 1;
+            if (roleA !== roleB) return roleA - roleB;
+            return (a.full_name || '').localeCompare(b.full_name || '', 'nl', { sensitivity: 'base' });
+        });
+    };
+
     const renderUsers = () => {
         const container = document.getElementById('department-sections-container');
         if (!container) return;
@@ -153,9 +162,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (viewMode === 'alphabetical') {
-            const sortedAlphabetical = [...currentUsers].sort((a, b) => 
-                (a.full_name || '').localeCompare(b.full_name || '', 'nl', { sensitivity: 'base' })
-            );
+            const sortedAlphabetical = sortUsersByRole(currentUsers);
 
             const rowsHtml = sortedAlphabetical.map(u => {
                 const isSelf = u.id === loggedInUserId;
@@ -220,7 +227,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const allDeptKeys = Array.from(new Set([...currentStoreDepartments, ...Object.keys(departmentMap)])).sort();
 
         container.innerHTML = allDeptKeys.map(deptName => {
-            const deptUsers = departmentMap[deptName] || [];
+            const deptUsers = sortUsersByRole(departmentMap[deptName] || []);
             const rowsHtml = deptUsers.length > 0 ? deptUsers.map(u => {
                 const isSelf = u.id === loggedInUserId;
                 const formattedAfdeling = Array.isArray(u.afdeling) ? u.afdeling.join(', ') : (u.afdeling || '-');
@@ -283,11 +290,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        const loggedInUser = users.find(u => u.id === loggedInUserId);
-        const otherUsers = users.filter(u => u.id !== loggedInUserId);
-        const sortedUsers = loggedInUser ? [loggedInUser, ...otherUsers] : users;
-
-        currentUsers = sortedUsers;
+        currentUsers = sortUsersByRole(users);
         renderUsers();
     };
 
@@ -309,7 +312,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         await handleFormSubmit(submitBtn, 'Bezig met verwerken...', messageBox, async () => {
-            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            let { data: { session: currentSession } } = await supabase.auth.getSession();
+            if (!currentSession || (currentSession.expires_at && currentSession.expires_at * 1000 < Date.now() + 60000)) {
+                const { data: refreshed } = await supabase.auth.refreshSession();
+                currentSession = refreshed?.session || currentSession;
+            }
             const headers = currentSession?.access_token ? { Authorization: `Bearer ${currentSession.access_token}` } : {};
 
             let result;
@@ -432,7 +439,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     confirmDeleteBtn.addEventListener('click', async () => {
         if (!userToDeleteId) return;
         await handleFormSubmit(confirmDeleteBtn, 'Verwijderen...', messageBox, async () => {
-            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            let { data: { session: currentSession } } = await supabase.auth.getSession();
+            if (!currentSession || (currentSession.expires_at && currentSession.expires_at * 1000 < Date.now() + 60000)) {
+                const { data: refreshed } = await supabase.auth.refreshSession();
+                currentSession = refreshed?.session || currentSession;
+            }
             const headers = currentSession?.access_token ? { Authorization: `Bearer ${currentSession.access_token}` } : {};
 
             const { data, error } = await supabase.functions.invoke('manage-user', {

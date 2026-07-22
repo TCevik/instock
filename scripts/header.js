@@ -77,7 +77,6 @@ export function loadHeader() {
                                             "tht registratie": "tht_registratie",
                                             "tellen": "tellen",
                                             "acties": "acties",
-                                            "logboek": "logboek",
                                             "rapportages": "rapportages",
                                             "bakplan": "bakplan",
                                             "vulplanning maker": "vulplanning",
@@ -86,7 +85,7 @@ export function loadHeader() {
                                             "instellingen winkel": "instellingen_winkel"
                                         };
 
-                                        const fixedHiddenForMedewerker = ["gebruikersbeheer", "instellingen_winkel", "logboek"];
+                                        const fixedHiddenForMedewerker = ["gebruikersbeheer", "instellingen_winkel", "bakplan", "vulplanning"];
                                         const productRelatedKeys = ["product_checker", "voorraadmutaties", "tht_module", "tht_registratie", "tellen", "acties"];
                                         const allProductRelatedOff = productRelatedKeys.every(k => modules[k] === false);
 
