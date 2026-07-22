@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Instellingen Winkel</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/header.css">
+    <link rel="stylesheet" href="css/instellingen_winkel.css">
+    <script src="scripts/instellingen_winkel.js" type="module"></script>
+</head>
+<body>
+    <main class="dashboard-container">
+        <div class="page-header page-header-col">
+            <div class="page-header-row">
+                <i class="material-icons page-header-icon">store</i>
+                <h1 class="page-header-title">Instellingen Winkel</h1>
+            </div>
+            <p class="page-header-subtitle">Beheer winkelinstellingen en pagina-toegang voor medewerkers</p>
+        </div>
+        <div class="management-card">
+            <div class="message" id="message-box">
+                <i class="material-icons" id="message-icon"></i>
+                <span id="message-text"></span>
+            </div>
+            <form id="store-settings-form">
+                <h2 class="settings-section-title">Module-toegang voor medewerkers</h2>
+                <p class="settings-section-subtitle">Bepaal welke pagina's zichtbaar zijn op het dashboard en in het zijmenu.</p>
+                <div class="modules-grid" id="modules-container">
+                    <div class="loading-cell">Instellingen laden...</div>
+                </div>
+                <h2 class="settings-section-title" style="margin-top: 24px;">Standaard Paden & Categorieën</h2>
+                <p class="settings-section-subtitle">Beheer de vaste paden, categorieën en normen van de winkel voor snelle planning-invoer.</p>
+                <button type="button" id="open-paden-modal-btn" class="submit-btn" style="max-width: 280px; margin-bottom: 24px; background-color: var(--accent-color);">
+                    <i class="material-icons">view_list</i>
+                    <span>Paden & Categorieën Instellen</span>
+                </button>
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    <span>Instellingen Opslaan</span>
+                    <i class="material-icons">save</i>
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <div id="paden-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 600px; max-height: 85vh; overflow-y: auto;">
+            <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text-color);">Standaard Paden & Categorieën</h3>
+            <p style="font-size: 13px; color: var(--text-color-secondary); margin-bottom: 16px;">Stel hier de vaste paden, categorieën en normen (colli/uur) in voor jouw winkel.</p>
+            <div id="modal-paths-list" style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px;"></div>
+            <button type="button" id="modal-add-path-btn" class="action-btn" style="padding: 6px 12px; font-size: 13px; background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 6px;">+ Pad Toevoegen</button>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button type="button" id="paden-modal-cancel-btn" class="submit-btn" style="background: var(--border-color); color: var(--text-color); max-width: 100px; box-shadow: none;">Annuleren</button>
+                <button type="button" id="paden-modal-save-btn" class="submit-btn" style="max-width: 120px;">Opslaan</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

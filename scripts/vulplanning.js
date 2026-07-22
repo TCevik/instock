@@ -1,5 +1,5 @@
 import { loadHeader } from './header.js';
-import { checkAuth, getSupabase, setupModal } from './main.js';
+import { checkAuth, getSupabase, setupModal, initPadenModal } from './main.js';
 import { extractTextLinesFromPage } from './pdf-utils.js';
 
 (() => {
@@ -1364,6 +1364,7 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
         }
 
         let storeEmployees = [];
+        let storeDefaultPaden = [];
         const supabase = await getSupabase();
         if (storeId && supabase) {
             const { data: users } = await supabase
@@ -1374,6 +1375,13 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
             if (users) {
                 storeEmployees = users.map(u => u.full_name).filter(Boolean);
             }
+
+            const { data: storeData } = await supabase
+                .from('stores_info')
+                .select('paden_categorieen')
+                .eq('id', storeId)
+                .maybeSingle();
+            storeDefaultPaden = storeData?.paden_categorieen || [];
         }
 
         let datalist = document.getElementById('store-employees-datalist');
@@ -1438,6 +1446,23 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
                 return catContainer;
             };
 
+            const populatePaths = (padenList) => {
+                manualPathsList.innerHTML = '';
+                if (Array.isArray(padenList) && padenList.length > 0) {
+                    padenList.forEach(p => {
+                        const catContainer = addPathBlock(p.name || '');
+                        if (Array.isArray(p.categories) && p.categories.length > 0) {
+                            p.categories.forEach(c => addCategoryRow(catContainer, c.name || '', '', c.norm || ''));
+                        } else {
+                            addCategoryRow(catContainer);
+                        }
+                    });
+                } else {
+                    const catContainer = addPathBlock();
+                    addCategoryRow(catContainer);
+                }
+            };
+
             if (addFillerBtn) addFillerBtn.addEventListener('click', () => addFillerRow());
             if (addPathBtn) addPathBtn.addEventListener('click', () => {
                 const catContainer = addPathBlock();
@@ -1451,9 +1476,13 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
                     addCategoryRow(catContainer, pathName, obj.colli || '', norm);
                 });
             } else {
-                const catContainer = addPathBlock();
-                addCategoryRow(catContainer);
+                populatePaths(storeDefaultPaden);
             }
+
+            initPadenModal(supabase, storeId, (newPaden) => {
+                storeDefaultPaden = newPaden;
+                populatePaths(newPaden);
+            });
 
             if (state.selectedFillers && state.selectedFillers.length > 0) {
                 state.selectedFillers.forEach(displayName => {
@@ -1517,6 +1546,7 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
                     document.getElementById('step-2-container').style.display = 'block';
                     renderWorkspace();
                     if (resetBtn) resetBtn.style.display = 'inline-block';
+                    if (generateBtn) generateBtn.style.display = 'flex';
                     triggerSave();
                 });
             }
@@ -1529,6 +1559,7 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
         await loadData();
 
         const resetBtn = document.getElementById('reset-planning-btn');
+        const generateBtn = document.getElementById('generate-planning-btn');
         if (resetBtn) {
             resetBtn.addEventListener('click', () => {
                 showConfirmModal(
@@ -1538,6 +1569,7 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
                         document.getElementById('step-1-container').style.display = 'block';
                         document.getElementById('step-2-container').style.display = 'none';
                         resetBtn.style.display = 'none';
+                        if (generateBtn) generateBtn.style.display = 'none';
                         const peopleCard = document.getElementById('people-card');
                         if (peopleCard) peopleCard.style.display = 'none';
                         if (isPlusLms) {
@@ -1568,6 +1600,7 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
             if (manualContainer) manualContainer.style.display = 'none';
             renderWorkspace();
             if (resetBtn) resetBtn.style.display = 'inline-block';
+            if (generateBtn) generateBtn.style.display = 'flex';
         }
 
         let pendingFillers = null;
@@ -1592,6 +1625,7 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
                 document.querySelectorAll('.upload-group').forEach(el => el.style.display = 'none');
                 renderWorkspace();
                 if (resetBtn) resetBtn.style.display = 'inline-block';
+                if (generateBtn) generateBtn.style.display = 'flex';
                 triggerSave();
             };
 
@@ -2007,7 +2041,6 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
             printWin.document.close();
         };
 
-        const generateBtn = document.getElementById('generate-planning-btn');
         if (generateBtn) {
             generateBtn.addEventListener('click', generatePrintablePlanning);
         }
