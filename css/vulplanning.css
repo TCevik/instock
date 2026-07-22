@@ -529,3 +529,36 @@
     background-color: var(--other-bg);
     color: var(--other-color);
 }
+
+.actual-end-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.actual-end-label {
+    font-size: 12px;
+    color: var(--text-color-muted);
+    font-weight: 500;
+}
+
+.actual-end-input {
+    padding: 4px 6px;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-color);
+    font-size: 12px;
+    outline: none;
+    cursor: pointer;
+}
+
+.actual-end-input:focus {
+    border-color: var(--accent-color-sidemenu);
+}
+
+.filler-stat-item.prod {
+    color: var(--status-new-color);
+    border-color: var(--vullen-border);
+    background-color: var(--vullen-bg);
+}

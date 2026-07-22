@@ -50,7 +50,8 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
             "Tellen": 30
         },
         instanceTimes: {},
-        fillerBreaks: {}
+        fillerBreaks: {},
+        actualEndTimes: {}
     };
 
     let activeTaskId = null;
@@ -118,6 +119,61 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
             return h * 60 + m;
         };
         return parseTime(parts[1]);
+    };
+
+    const getFillerActualEndTime = (displayName) => {
+        if (state.actualEndTimes && state.actualEndTimes[displayName]) {
+            const parts = state.actualEndTimes[displayName].split(':');
+            if (parts.length === 2) {
+                return (parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0);
+            }
+        }
+        return getFillerEndTime(displayName);
+    };
+
+    const getFillerColli = (displayName) => {
+        let total = 0;
+        const tasks = state.fillerTasks[displayName] || [];
+        tasks.forEach(taskId => {
+            if (taskId.endsWith('_helper')) {
+                const mainTaskId = taskId.replace('_helper', '');
+                const [pathName, type] = mainTaskId.split('_');
+                if (type === 'fill' && state.pathColli[pathName]) {
+                    const colli = state.pathColli[pathName].colli || 0;
+                    const duration = getTaskDuration(mainTaskId);
+                    const helperInfo = state.helpers[mainTaskId];
+                    if (helperInfo && duration > 0) {
+                        const hDur = (helperInfo.isMax || helperInfo.isHalf) ? (helperInfo.calculatedDuration || 0) : Math.min(duration, helperInfo.duration || 0);
+                        total += (hDur / duration) * colli;
+                    }
+                }
+            } else {
+                const [pathName, type] = taskId.split('_');
+                if (type === 'fill' && state.pathColli[pathName]) {
+                    const colli = state.pathColli[pathName].colli || 0;
+                    const duration = getTaskDuration(taskId);
+                    const helperInfo = state.helpers[taskId];
+                    if (helperInfo && helperInfo.helperName && duration > 0) {
+                        const hDur = (helperInfo.isMax || helperInfo.isHalf) ? (helperInfo.calculatedDuration || 0) : Math.min(duration, helperInfo.duration || 0);
+                        total += ((duration - hDur) / duration) * colli;
+                    } else {
+                        total += colli;
+                    }
+                }
+            }
+        });
+        return Math.round(total);
+    };
+
+    const getFillerProductivity = (displayName) => {
+        const startMin = getFillerStartTime(displayName);
+        const endMin = getFillerActualEndTime(displayName);
+        if (!isFinite(endMin) || endMin <= startMin) return null;
+        const pauseMin = getFillerPause(displayName);
+        const workedNet = Math.max(1, (endMin - startMin) - pauseMin);
+        const plannedTime = getFillerTotalTime(displayName);
+        if (plannedTime <= 0) return null;
+        return Math.round((plannedTime / workedNet) * 100);
     };
 
     const formatTimeOfDay = (totalMinutes) => {
@@ -550,7 +606,31 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
                 }
                 closeDurationModal();
                 renderWorkspace();
+                triggerSave();
             }
+        });
+    }
+
+    const durationDeleteBtn = document.getElementById('duration-delete-btn');
+    if (durationDeleteBtn) {
+        durationDeleteBtn.addEventListener('click', () => {
+            if (!activeDurationTaskId) return;
+            const [pathName] = activeDurationTaskId.split('_');
+            if (activeDurationTaskId.includes('_inst-')) {
+                removeTaskFromAll(activeDurationTaskId);
+                delete state.instanceTimes[activeDurationTaskId];
+            } else {
+                delete state.otherTimes[pathName];
+                Object.keys(state.instanceTimes).forEach(instKey => {
+                    if (instKey.startsWith(`${pathName}_other_inst-`)) {
+                        removeTaskFromAll(instKey);
+                        delete state.instanceTimes[instKey];
+                    }
+                });
+            }
+            closeDurationModal();
+            renderWorkspace();
+            triggerSave();
         });
     }
 
@@ -580,6 +660,7 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
                 state.otherTimes[name] = duration;
                 closeCustomTaskModal();
                 renderWorkspace();
+                triggerSave();
             }
         });
     }
@@ -727,30 +808,96 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
             title.className = 'filler-card-title';
             title.textContent = filler;
 
+            const endWrapper = document.createElement('div');
+            endWrapper.className = 'actual-end-wrapper';
+
+            const endLabel = document.createElement('label');
+            endLabel.className = 'actual-end-label';
+            endLabel.textContent = 'Eindtijd:';
+
+            const endInput = document.createElement('input');
+            endInput.type = 'time';
+            endInput.className = 'actual-end-input';
+
+            const plannedEndMin = getFillerEndTime(filler);
+            const plannedEndStr = isFinite(plannedEndMin) ? formatTimeOfDay(plannedEndMin) : '';
+            const currentActual = state.actualEndTimes && state.actualEndTimes[filler] !== undefined ? state.actualEndTimes[filler] : plannedEndStr;
+            endInput.value = currentActual;
+
+            const updateFillerProdDisplay = () => {
+                const pVal = getFillerProductivity(filler);
+                let pSpan = header.querySelector('.filler-stat-item.prod');
+                if (pVal !== null) {
+                    let sRow = header.querySelector('.filler-card-stats');
+                    if (!sRow) {
+                        sRow = document.createElement('div');
+                        sRow.className = 'filler-card-stats';
+                        header.appendChild(sRow);
+                    }
+                    if (!pSpan) {
+                        pSpan = document.createElement('span');
+                        pSpan.className = 'filler-stat-item prod';
+                        sRow.appendChild(pSpan);
+                    }
+                    pSpan.textContent = `Productiviteit: ${pVal}%`;
+                } else if (pSpan) {
+                    pSpan.remove();
+                }
+            };
+
+            endInput.addEventListener('input', (e) => {
+                state.actualEndTimes[filler] = e.target.value;
+                updateFillerProdDisplay();
+                triggerSave();
+            });
+            endInput.addEventListener('change', (e) => {
+                state.actualEndTimes[filler] = e.target.value;
+                updateFillerProdDisplay();
+                triggerSave();
+            });
+            endInput.addEventListener('click', (e) => e.stopPropagation());
+
+            endWrapper.appendChild(endLabel);
+            endWrapper.appendChild(endInput);
+
             titleRow.appendChild(title);
+            titleRow.appendChild(endWrapper);
             header.appendChild(titleRow);
 
-            if (isFinite(maxMin)) {
-                const statsRow = document.createElement('div');
+            let statsRow = null;
+            const prodVal = getFillerProductivity(filler);
+
+            if (isFinite(maxMin) || prodVal !== null) {
+                statsRow = document.createElement('div');
                 statsRow.className = 'filler-card-stats';
 
-                const remainingMin = maxMin - roundedTotal;
+                if (isFinite(maxMin)) {
+                    const remainingMin = maxMin - roundedTotal;
 
-                const usageSpan = document.createElement('span');
-                usageSpan.className = `filler-stat-item${isExceeded ? ' exceeded' : ''}`;
-                usageSpan.textContent = `Tijd: ${formatMin(roundedTotal)} / ${formatMin(maxMin)}`;
+                    const usageSpan = document.createElement('span');
+                    usageSpan.className = `filler-stat-item${isExceeded ? ' exceeded' : ''}`;
+                    usageSpan.textContent = `Tijd: ${formatMin(roundedTotal)} / ${formatMin(maxMin)}`;
 
-                const pauseSpan = document.createElement('span');
-                pauseSpan.className = 'filler-stat-item';
-                pauseSpan.textContent = `Pauze: ${formatMin(pauseMin)}`;
+                    const pauseSpan = document.createElement('span');
+                    pauseSpan.className = 'filler-stat-item';
+                    pauseSpan.textContent = `Pauze: ${formatMin(pauseMin)}`;
 
-                const remainingSpan = document.createElement('span');
-                remainingSpan.className = `filler-stat-item remaining ${remainingMin >= 0 ? 'positive' : 'negative'}`;
-                remainingSpan.textContent = remainingMin >= 0 ? `Over: ${formatMin(remainingMin)}` : `Te veel: ${formatMin(Math.abs(remainingMin))}`;
+                    const remainingSpan = document.createElement('span');
+                    remainingSpan.className = `filler-stat-item remaining ${remainingMin >= 0 ? 'positive' : 'negative'}`;
+                    remainingSpan.textContent = remainingMin >= 0 ? `Over: ${formatMin(remainingMin)}` : `Te veel: ${formatMin(Math.abs(remainingMin))}`;
 
-                statsRow.appendChild(usageSpan);
-                statsRow.appendChild(pauseSpan);
-                statsRow.appendChild(remainingSpan);
+                    statsRow.appendChild(usageSpan);
+                    statsRow.appendChild(pauseSpan);
+                    statsRow.appendChild(remainingSpan);
+                }
+
+                if (prodVal !== null) {
+                    const prodSpan = document.createElement('span');
+                    prodSpan.className = 'filler-stat-item prod';
+                    prodSpan.textContent = `Prod: ${prodVal}%`;
+                    statsRow.appendChild(prodSpan);
+                }
+
                 header.appendChild(statsRow);
             }
 
@@ -1090,7 +1237,8 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
                 helpers: state.helpers,
                 otherTimes: state.otherTimes,
                 instanceTimes: state.instanceTimes,
-                fillerBreaks: state.fillerBreaks
+                fillerBreaks: state.fillerBreaks,
+                actualEndTimes: state.actualEndTimes
             };
             await supabase.from('vulplanningen').upsert({ id: storeId, vulplanning: payload });
         }, 500);
@@ -1109,6 +1257,7 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
             if (vp.otherTimes) state.otherTimes = vp.otherTimes;
             if (vp.instanceTimes) state.instanceTimes = vp.instanceTimes;
             if (vp.fillerBreaks) state.fillerBreaks = vp.fillerBreaks;
+            if (vp.actualEndTimes) state.actualEndTimes = vp.actualEndTimes;
         }
     };
 
@@ -1177,6 +1326,7 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
                 state.helpers = {};
                 state.instanceTimes = {};
                 state.fillerBreaks = {};
+                state.actualEndTimes = {};
                 pendingFillers = null;
                 pendingColli = null;
 
