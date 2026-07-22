@@ -19,7 +19,13 @@
                     <i class="material-icons page-header-icon">assignment</i>
                     <h1 class="page-header-title">Vulplanning Maker</h1>
                 </div>
-                <button id="reset-planning-btn" class="action-btn delete" style="display: none; padding: 8px 16px; background-color: var(--danger-color); color: #fff; border-radius: 8px; font-weight: 500;">Opnieuw Beginnen</button>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <button id="generate-planning-btn" class="action-btn" style="padding: 8px 16px; background-color: var(--accent-color); color: #fff; border-radius: 8px; font-weight: 500; display: flex; align-items: center; gap: 6px;">
+                        <i class="material-icons" style="font-size: 18px;">print</i>
+                        <span>Planning Genereren</span>
+                    </button>
+                    <button id="reset-planning-btn" class="action-btn delete" style="display: none; padding: 8px 16px; background-color: var(--danger-color); color: #fff; border-radius: 8px; font-weight: 500;">Opnieuw Beginnen</button>
+                </div>
             </div>
             <p class="page-header-subtitle">Beheer en bekijk de vulplanning</p>
         </div>
@@ -71,16 +77,26 @@
         <div id="step-2-container" style="display: none;">
             <div class="drag-drop-workspace" id="drag-drop-workspace" style="display: none; margin-top: 20px;">
                 <div class="workspace-left-column">
-                    <div class="sort-filter-bar">
-                        <label for="filler-sort-select">Sorteer vullers:</label>
-                        <select id="filler-sort-select" autocomplete="off">
-                            <option value="name-asc">Naam (A - Z)</option>
-                            <option value="name-desc">Naam (Z - A)</option>
-                            <option value="start-asc">Begintijd (Vroeg - Laat)</option>
-                            <option value="start-desc">Begintijd (Laat - Vroeg)</option>
-                            <option value="end-asc">Eindtijd (Vroeg - Laat)</option>
-                            <option value="end-desc">Eindtijd (Laat - Vroeg)</option>
-                        </select>
+                    <div class="sort-filter-bar" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <label for="filler-sort-select">Sorteer vullers:</label>
+                            <select id="filler-sort-select" autocomplete="off">
+                                <option value="name-asc">Naam (A - Z)</option>
+                                <option value="name-desc">Naam (Z - A)</option>
+                                <option value="start-asc">Begintijd (Vroeg - Laat)</option>
+                                <option value="start-desc">Begintijd (Laat - Vroeg)</option>
+                                <option value="end-asc">Eindtijd (Vroeg - Laat)</option>
+                                <option value="end-desc">Eindtijd (Laat - Vroeg)</option>
+                            </select>
+                        </div>
+                        <button id="toggle-hidden-fillers-btn" class="action-btn" style="padding: 6px 12px; font-size: 13px; background-color: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 6px; display: none; align-items: center; gap: 6px; cursor: pointer;">
+                            <i class="material-icons" style="font-size: 16px;">visibility_off</i>
+                            <span>Verborgen Vullers (<span id="hidden-fillers-count">0</span>)</span>
+                        </button>
+                    </div>
+                    <div id="hidden-fillers-panel" style="display: none; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-top: 10px;">
+                        <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--text-color-muted);">Verborgen vullers (klik om te herstellen):</div>
+                        <div id="hidden-fillers-list" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
                     </div>
                     <div class="fillers-container" id="fillers-container"></div>
                 </div>

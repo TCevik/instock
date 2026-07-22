@@ -51,7 +51,8 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
         },
         instanceTimes: {},
         fillerBreaks: {},
-        actualEndTimes: {}
+        actualEndTimes: {},
+        hiddenFillers: []
     };
 
     let activeTaskId = null;
@@ -771,7 +772,35 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
             allTaskIds.push(`${pathName}_other`);
         });
 
-        const sortedFillers = [...state.selectedFillers].sort((a, b) => {
+        if (!state.hiddenFillers) state.hiddenFillers = [];
+        const visibleFillers = state.selectedFillers.filter(f => !state.hiddenFillers.includes(f));
+
+        const toggleHiddenBtn = document.getElementById('toggle-hidden-fillers-btn');
+        const hiddenCountSpan = document.getElementById('hidden-fillers-count');
+        const hiddenListContainer = document.getElementById('hidden-fillers-list');
+        const hiddenPanel = document.getElementById('hidden-fillers-panel');
+
+        if (toggleHiddenBtn && hiddenCountSpan && hiddenListContainer) {
+            hiddenCountSpan.textContent = state.hiddenFillers.length;
+            toggleHiddenBtn.style.display = state.hiddenFillers.length > 0 ? 'flex' : 'none';
+            if (state.hiddenFillers.length === 0 && hiddenPanel) hiddenPanel.style.display = 'none';
+
+            hiddenListContainer.innerHTML = '';
+            state.hiddenFillers.forEach(filler => {
+                const badge = document.createElement('button');
+                badge.type = 'button';
+                badge.style.cssText = 'padding: 4px 8px; font-size: 12px; background-color: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;';
+                badge.innerHTML = `<span>${filler}</span> <i class="material-icons" style="font-size: 14px; color: var(--accent-color-sidemenu);">visibility</i>`;
+                badge.addEventListener('click', () => {
+                    state.hiddenFillers = state.hiddenFillers.filter(f => f !== filler);
+                    renderWorkspace();
+                    triggerSave();
+                });
+                hiddenListContainer.appendChild(badge);
+            });
+        }
+
+        const sortedFillers = [...visibleFillers].sort((a, b) => {
             if (state.fillerSortOrder === 'name-asc') {
                 return a.localeCompare(b);
             } else if (state.fillerSortOrder === 'name-desc') {
@@ -807,6 +836,48 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
             const title = document.createElement('span');
             title.className = 'filler-card-title';
             title.textContent = filler;
+
+            const hideBtn = document.createElement('button');
+            hideBtn.type = 'button';
+            hideBtn.title = 'Vuller verbergen';
+            hideBtn.style.cssText = 'background: none; border: none; color: var(--text-color-muted); cursor: pointer; padding: 2px 4px; display: flex; align-items: center; border-radius: 4px; margin-right: 6px;';
+            hideBtn.innerHTML = '<i class="material-icons" style="font-size: 18px;">visibility_off</i>';
+            hideBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const assignedTasks = (state.fillerTasks[filler] || []).slice();
+
+                const executeHide = () => {
+                    if (assignedTasks.length > 0) {
+                        assignedTasks.forEach(taskId => {
+                            if (taskId.endsWith('_helper')) {
+                                const mainTaskId = taskId.replace('_helper', '');
+                                removeTaskFromAll(taskId);
+                                delete state.helpers[mainTaskId];
+                            } else {
+                                removeTaskFromAll(taskId);
+                                removeTaskFromAll(taskId + '_helper');
+                                delete state.helpers[taskId];
+                            }
+                        });
+                    }
+                    if (!state.hiddenFillers.includes(filler)) {
+                        state.hiddenFillers.push(filler);
+                    }
+                    renderWorkspace();
+                    triggerSave();
+                };
+
+                if (assignedTasks.length > 0) {
+                    const cleanName = filler.split(/\s*-\s*\d{2}:\d{2}/)[0].trim();
+                    showConfirmModal(
+                        'Vuller Verbergen',
+                        `Weet je zeker dat je ${cleanName} wilt verbergen? Alle toegewezen taken van deze vuller gaan terug naar de onverdeelde taken.`,
+                        executeHide
+                    );
+                } else {
+                    executeHide();
+                }
+            });
 
             const endWrapper = document.createElement('div');
             endWrapper.className = 'actual-end-wrapper';
@@ -860,7 +931,12 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
             endWrapper.appendChild(endLabel);
             endWrapper.appendChild(endInput);
 
-            titleRow.appendChild(title);
+            const titleContainer = document.createElement('div');
+            titleContainer.style.cssText = 'display: flex; align-items: center;';
+            titleContainer.appendChild(hideBtn);
+            titleContainer.appendChild(title);
+
+            titleRow.appendChild(titleContainer);
             titleRow.appendChild(endWrapper);
             header.appendChild(titleRow);
 
@@ -1238,7 +1314,8 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
                 otherTimes: state.otherTimes,
                 instanceTimes: state.instanceTimes,
                 fillerBreaks: state.fillerBreaks,
-                actualEndTimes: state.actualEndTimes
+                actualEndTimes: state.actualEndTimes,
+                hiddenFillers: state.hiddenFillers || []
             };
             await supabase.from('vulplanningen').upsert({ id: storeId, vulplanning: payload });
         }, 500);
@@ -1258,6 +1335,7 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
             if (vp.instanceTimes) state.instanceTimes = vp.instanceTimes;
             if (vp.fillerBreaks) state.fillerBreaks = vp.fillerBreaks;
             if (vp.actualEndTimes) state.actualEndTimes = vp.actualEndTimes;
+            if (vp.hiddenFillers) state.hiddenFillers = vp.hiddenFillers;
         }
     };
 
@@ -1555,6 +1633,370 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
                 } catch (err) {
                     console.error(err);
                 }
+            });
+        }
+
+        const generatePrintablePlanning = () => {
+            const printWin = window.open('about:blank', '_blank');
+            if (!printWin) return;
+
+            const visibleFillers = state.selectedFillers.filter(f => !(state.hiddenFillers || []).includes(f));
+            const sortedFillers = [...visibleFillers].sort((a, b) => {
+                if (state.fillerSortOrder === 'name-asc') return a.localeCompare(b);
+                if (state.fillerSortOrder === 'name-desc') return b.localeCompare(a);
+                if (state.fillerSortOrder === 'start-asc') return getFillerStartTime(a) - getFillerStartTime(b);
+                if (state.fillerSortOrder === 'start-desc') return getFillerStartTime(b) - getFillerStartTime(a);
+                if (state.fillerSortOrder === 'end-asc') return getFillerEndTime(a) - getFillerEndTime(b);
+                if (state.fillerSortOrder === 'end-desc') return getFillerEndTime(b) - getFillerEndTime(a);
+                return a.localeCompare(b);
+            });
+
+            const dateStr = new Date().toLocaleDateString('nl-NL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+            let cardsHtml = '';
+            sortedFillers.forEach(filler => {
+                const tasks = state.fillerTasks[filler] || [];
+                const startMin = getFillerStartTime(filler);
+                const startStr = isFinite(startMin) ? formatTimeOfDay(startMin) : '--:--';
+                const pauseMin = getFillerPause(filler);
+                const plannedEndMin = getFillerEndTime(filler);
+                const plannedEndStr = isFinite(plannedEndMin) ? formatTimeOfDay(plannedEndMin) : '--:--';
+                const actualEndStr = (state.actualEndTimes && state.actualEndTimes[filler]) ? state.actualEndTimes[filler] : plannedEndStr;
+                const prodVal = getFillerProductivity(filler);
+
+                let currentTime = isFinite(startMin) ? startMin : 0;
+                let tasksListHtml = '';
+
+                if (tasks.length === 0) {
+                    tasksListHtml = `<div class="empty-task">Geen taken toegewezen</div>`;
+                } else {
+                    tasks.forEach((taskId, index) => {
+                        let duration = getTaskDuration(taskId);
+                        if (!taskId.endsWith('_helper')) {
+                            const helperInfo = state.helpers[taskId];
+                            if (helperInfo && helperInfo.helperName) {
+                                const helperDur = (helperInfo.isMax || helperInfo.isHalf) ? (helperInfo.calculatedDuration || 0) : Math.min(duration, helperInfo.duration || 0);
+                                duration -= helperDur;
+                            }
+                        }
+
+                        const tStart = currentTime;
+                        const tEnd = currentTime + duration;
+                        currentTime = tEnd;
+
+                        const startTimeStr = formatTimeOfDay(tStart);
+                        const endTimeStr = formatTimeOfDay(tEnd);
+
+                        let taskTitle = '';
+                        let taskBadge = '';
+                        let badgeClass = 'badge-fill';
+
+                        if (taskId.endsWith('_helper')) {
+                            const mainTaskId = taskId.replace('_helper', '');
+                            const [pName, pType] = mainTaskId.split('_');
+                            const mainAssignee = getTaskAssignment(mainTaskId) || 'Onbekend';
+                            taskTitle = `${pName} (Hulp bij ${mainAssignee})`;
+                            taskBadge = 'Hulp';
+                            badgeClass = 'badge-helper';
+                        } else {
+                            const [pName, pType] = taskId.split('_');
+                            taskTitle = pName;
+                            if (pType === 'fill') {
+                                taskBadge = 'Vullen';
+                                badgeClass = 'badge-fill';
+                            } else if (pType === 'mirror') {
+                                taskBadge = 'Spiegelen';
+                                badgeClass = 'badge-mirror';
+                            } else {
+                                taskBadge = 'Overig';
+                                badgeClass = 'badge-other';
+                            }
+                        }
+
+                        tasksListHtml += `
+                            <div class="task-row">
+                                <div class="task-time-col">
+                                    <span class="task-time">${startTimeStr} - ${endTimeStr}</span>
+                                    <span class="task-duration">${Math.round(duration)} min</span>
+                                </div>
+                                <div class="task-desc-col">
+                                    <span class="task-name">${taskTitle}</span>
+                                </div>
+                                <span class="task-badge ${badgeClass}">${taskBadge}</span>
+                            </div>
+                        `;
+                    });
+                }
+
+                cardsHtml += `
+                    <div class="printable-card">
+                        <div class="card-header">
+                            <div class="filler-info">
+                                <h2 class="filler-name">${filler}</h2>
+                                <div class="time-meta">
+                                    <span>Start: <strong>${startStr}</strong></span>
+                                    <span>Pauze: <strong>${pauseMin} min</strong></span>
+                                    <span>Eindtijd: <strong>${plannedEndStr}</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            ${tasksListHtml}
+                        </div>
+                    </div>
+                `;
+            });
+
+            const htmlContent = `<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Vulplanning ${dateStr}</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 10mm;
+            @bottom-right {
+                content: "Gemaakt in inStock";
+                font-size: 10pt;
+                font-family: 'Segoe UI', sans-serif;
+                color: #64748b;
+            }
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #f8fafc;
+            color: #0f172a;
+            padding: 15px;
+            position: relative;
+            min-height: 100vh;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #658d24;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .header h1 {
+            font-size: 22px;
+            color: #1e293b;
+        }
+        .header .date {
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 500;
+        }
+        .no-print-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .print-btn {
+            background-color: #658d24;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+        .print-footer {
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #e2e8f0;
+            text-align: right;
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 500;
+        }
+        @media print {
+            .no-print-bar {
+                display: none !important;
+            }
+            body {
+                background: white;
+                padding: 0;
+            }
+            .printable-card {
+                break-inside: avoid;
+            }
+            .print-footer {
+                position: fixed;
+                bottom: 0;
+                right: 0;
+                left: 0;
+                background: white;
+            }
+        }
+        .printable-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+        }
+        .card-header {
+            background: #f1f5f9;
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .filler-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .time-meta {
+            font-size: 11px;
+            color: #475569;
+            display: flex;
+            gap: 8px;
+            margin-top: 2px;
+        }
+        .prod-badge {
+            background: #dcfce7;
+            color: #166534;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #bbf7d0;
+        }
+        .card-body {
+            padding: 8px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex-grow: 1;
+        }
+        .empty-task {
+            font-size: 12px;
+            color: #94a3b8;
+            font-style: italic;
+            padding: 10px 0;
+            text-align: center;
+        }
+        .task-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 8px;
+            border-radius: 6px;
+            background: #f8fafc;
+            border: 1px solid #f1f5f9;
+            font-size: 12px;
+        }
+        .task-row.first-task {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+        }
+        .task-time-col {
+            display: flex;
+            flex-direction: column;
+            min-width: 90px;
+        }
+        .task-time {
+            font-weight: 700;
+            color: #1e293b;
+            font-size: 11px;
+        }
+        .task-duration {
+            font-size: 10px;
+            color: #64748b;
+        }
+        .task-desc-col {
+            flex-grow: 1;
+            padding: 0 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .task-name {
+            font-weight: 600;
+            color: #334155;
+        }
+        .first-tag {
+            background: #22c55e;
+            color: white;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 1px 4px;
+            border-radius: 3px;
+            text-transform: uppercase;
+        }
+        .task-badge {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+        .badge-fill {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+        .badge-mirror {
+            background: #fef3c7;
+            color: #b45309;
+        }
+        .badge-other {
+            background: #f3e8ff;
+            color: #6b21a8;
+        }
+        .badge-helper {
+            background: #fce7f3;
+            color: #be185d;
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print-bar">
+        <button class="print-btn" onclick="window.print()">Afdrukken / Opslaan als PDF</button>
+    </div>
+    <div class="header">
+        <h1>Vulplanning Overzicht</h1>
+        <div class="date">${dateStr}</div>
+    </div>
+    <div class="grid-container">
+        ${cardsHtml}
+    </div>
+</body>
+</html>`;
+
+            printWin.document.open();
+            printWin.document.write(htmlContent);
+            printWin.document.close();
+        };
+
+        const generateBtn = document.getElementById('generate-planning-btn');
+        if (generateBtn) {
+            generateBtn.addEventListener('click', generatePrintablePlanning);
+        }
+
+        const toggleHiddenBtn = document.getElementById('toggle-hidden-fillers-btn');
+        const hiddenPanel = document.getElementById('hidden-fillers-panel');
+        if (toggleHiddenBtn && hiddenPanel) {
+            toggleHiddenBtn.addEventListener('click', () => {
+                const current = hiddenPanel.style.display;
+                hiddenPanel.style.display = current === 'none' ? 'block' : 'none';
             });
         }
 
