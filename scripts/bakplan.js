@@ -797,10 +797,10 @@ import { DAYS, getPlateQuantity as logicGetPlateQuantity, normalizeDaysData as l
                 const isThawChecked = !!catObj.thawInBatch1;
                 html += `
                     <tr class="category-header-row">
-                        <td colspan="5" contenteditable="true" data-catidx="${catIdx}">
+                        <td colspan="4" contenteditable="true" data-catidx="${catIdx}">
                             ${cat}
                         </td>
-                        <td style="text-align: right;">
+                        <td colspan="2" style="text-align: right; min-width: 160px; white-space: nowrap;">
                             <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: normal; text-transform: none; cursor: pointer; color: var(--text-color-muted);" title="Plaats deze categorie in Batch 1 op de ontdooikar">
                                 <input type="checkbox" class="cat-thaw-check" data-catidx="${catIdx}" ${isThawChecked ? 'checked' : ''}>
                                 <span>Ontdooien Batch 1</span>
