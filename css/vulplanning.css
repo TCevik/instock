@@ -194,7 +194,7 @@
 
 .filler-card.drag-over {
     border-color: var(--accent-color-sidemenu);
-    background-color: rgba(128, 189, 29, 0.05);
+    background-color: var(--vullen-card-bg);
 }
 
 .filler-card.exceeded {
@@ -247,8 +247,8 @@
 
 .filler-stat-item.remaining.positive {
     color: var(--accent-color-sidemenu);
-    border-color: rgba(128, 189, 29, 0.3);
-    background-color: rgba(128, 189, 29, 0.08);
+    border-color: var(--vullen-border);
+    background-color: var(--vullen-card-bg);
 }
 
 .filler-card-time {

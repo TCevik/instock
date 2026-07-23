@@ -1,5 +1,89 @@
 import { getSupabase } from './main.js';
 
+export function applyStoreTheme(hex) {
+    if (!hex) return;
+    document.documentElement.style.setProperty('--accent-color', hex);
+    const r = parseInt(hex.slice(1, 3), 16) || 101;
+    const g = parseInt(hex.slice(3, 5), 16) || 141;
+    const b = parseInt(hex.slice(5, 7), 16) || 36;
+    document.documentElement.style.setProperty('--vullen-bg', `rgba(${r}, ${g}, ${b}, 0.15)`);
+    document.documentElement.style.setProperty('--vullen-card-bg', `rgba(${r}, ${g}, ${b}, 0.05)`);
+    document.documentElement.style.setProperty('--vullen-border', `rgba(${r}, ${g}, ${b}, 0.3)`);
+    document.documentElement.style.setProperty('--pdf-new-bg', `rgba(${r}, ${g}, ${b}, 0.15)`);
+    document.documentElement.style.setProperty('--pdf-new-border', `rgba(${r}, ${g}, ${b}, 0.5)`);
+    document.documentElement.style.setProperty('--status-new-bg', `rgba(${r}, ${g}, ${b}, 0.2)`);
+    document.documentElement.style.setProperty('--gem-verk-bg', `rgba(${r}, ${g}, ${b}, 0.15)`);
+}
+
+export async function updateHeaderMenu() {
+    const supabase = await getSupabase();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session || !session.user) return;
+
+    const { data } = await supabase.from('user_data').select('role, winkel').eq('id', session.user.id);
+    if (!data || !data[0]) return;
+
+    const userRole = data[0].role;
+    const storeId = data[0].winkel;
+
+    const { data: storeInfo } = await supabase.from('stores_info').select('modules, color').eq('store_id', storeId).maybeSingle();
+    const modules = storeInfo?.modules || {};
+
+    let hex = localStorage.getItem('store_primary_color');
+    if (storeInfo?.color && storeInfo.color.primary) {
+        hex = storeInfo.color.primary;
+        localStorage.setItem('store_primary_color', hex);
+    }
+
+    if (hex) {
+        applyStoreTheme(hex);
+    }
+
+    const moduleMap = {
+        "product checker": "product_checker",
+        "voorraadmutaties": "voorraadmutaties",
+        "tht module": "tht_module",
+        "tht registratie": "tht_registratie",
+        "tellen": "tellen",
+        "acties": "acties",
+        "rapportages": "rapportages",
+        "bakplan": "bakplan",
+        "vulplanning maker": "vulplanning",
+        "product toevoegen": "product_toevoegen",
+        "gebruikersbeheer": "gebruikersbeheer",
+        "instellingen winkel": "instellingen_winkel"
+    };
+
+    const fixedHiddenForMedewerker = ["gebruikersbeheer", "instellingen_winkel", "bakplan", "vulplanning"];
+    const productRelatedKeys = ["product_checker", "voorraadmutaties", "tht_module", "tht_registratie", "tellen", "acties"];
+    const allProductRelatedOff = productRelatedKeys.every(k => modules[k] === false);
+
+    document.querySelectorAll(".drawer-item").forEach(item => {
+        const span = item.querySelector("span");
+        if (!span) return;
+        const text = span.textContent.trim().toLowerCase();
+        if (text === 'dashboard') return;
+
+        const key = moduleMap[text];
+
+        if (key === 'product_toevoegen' && allProductRelatedOff) {
+            item.style.display = "none";
+            return;
+        }
+
+        if (userRole === 'medewerker' && fixedHiddenForMedewerker.includes(key)) {
+            item.style.display = "none";
+            return;
+        }
+
+        if (key && modules[key] === false) {
+            item.style.display = "none";
+        } else {
+            item.style.display = "";
+        }
+    });
+}
+
 export function loadHeader() {
     fetch("header.html")
         .then(response => response.text())
@@ -45,6 +129,26 @@ export function loadHeader() {
                 });
             }
 
+            const fullscreenBtn = document.getElementById("fullscreenBtn");
+            if (fullscreenBtn) {
+                fullscreenBtn.addEventListener("click", () => {
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen().catch(() => {});
+                    } else {
+                        if (document.exitFullscreen) {
+                            document.exitFullscreen().catch(() => {});
+                        }
+                    }
+                });
+
+                document.addEventListener("fullscreenchange", () => {
+                    const icon = fullscreenBtn.querySelector("i");
+                    if (icon) {
+                        icon.textContent = document.fullscreenElement ? "fullscreen_exit" : "fullscreen";
+                    }
+                });
+            }
+
             supabase.auth.onAuthStateChange((event, session) => {
                 if (event === 'SIGNED_OUT' || !session) {
                     window.location.href = 'login.html';
@@ -60,64 +164,7 @@ export function loadHeader() {
                     }
                 });
 
-            supabase.auth.getSession().then(({ data: { session } }) => {
-                if (session && session.user) {
-                    supabase.from('user_data').select('role, winkel').eq('id', session.user.id)
-                        .then(({ data }) => {
-                            if (data && data[0]) {
-                                const userRole = data[0].role;
-                                const storeId = data[0].winkel;
-                                supabase.from('stores_info').select('modules').eq('id', storeId).maybeSingle()
-                                    .then(({ data: storeInfo }) => {
-                                        const modules = storeInfo?.modules || {};
-                                        const moduleMap = {
-                                            "product checker": "product_checker",
-                                            "voorraadmutaties": "voorraadmutaties",
-                                            "tht module": "tht_module",
-                                            "tht registratie": "tht_registratie",
-                                            "tellen": "tellen",
-                                            "acties": "acties",
-                                            "rapportages": "rapportages",
-                                            "bakplan": "bakplan",
-                                            "vulplanning maker": "vulplanning",
-                                            "product toevoegen": "product_toevoegen",
-                                            "gebruikersbeheer": "gebruikersbeheer",
-                                            "instellingen winkel": "instellingen_winkel"
-                                        };
-
-                                        const fixedHiddenForMedewerker = ["gebruikersbeheer", "instellingen_winkel", "bakplan", "vulplanning"];
-                                        const productRelatedKeys = ["product_checker", "voorraadmutaties", "tht_module", "tht_registratie", "tellen", "acties"];
-                                        const allProductRelatedOff = productRelatedKeys.every(k => modules[k] === false);
-
-                                        document.querySelectorAll(".drawer-item").forEach(item => {
-                                             const text = item.querySelector("span").textContent.trim().toLowerCase();
-                                             if (text === 'dashboard') return;
-                                             
-                                             const key = moduleMap[text];
-                                             
-                                             if (key === 'product_toevoegen' && allProductRelatedOff) {
-                                                 item.style.display = "none";
-                                                 return;
-                                             }
-
-                                             if (userRole === 'medewerker' && fixedHiddenForMedewerker.includes(key)) {
-                                                 item.style.display = "none";
-                                                 return;
-                                             }
-
-                                             if (key && modules[key] === false) {
-                                                 item.style.display = "none";
-                                             }
-                                         });
-                                        window.dispatchEvent(new CustomEvent("menuReady"));
-                                    });
-                            } else {
-                                window.dispatchEvent(new CustomEvent("menuReady"));
-                            }
-                        });
-                } else {
-                    window.location.href = 'login.html';
-                }
-            });
+            await updateHeaderMenu();
+            window.dispatchEvent(new CustomEvent("menuReady"));
         });
 }

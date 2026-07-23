@@ -1,4 +1,22 @@
 import { supabasePromise } from './supabase.js';
+import { showToast } from './toast.js';
+
+(function initCachedTheme() {
+    const hex = localStorage.getItem('store_primary_color');
+    if (hex) {
+        document.documentElement.style.setProperty('--accent-color', hex);
+        const r = parseInt(hex.slice(1, 3), 16) || 101;
+        const g = parseInt(hex.slice(3, 5), 16) || 141;
+        const b = parseInt(hex.slice(5, 7), 16) || 36;
+        document.documentElement.style.setProperty('--vullen-bg', `rgba(${r}, ${g}, ${b}, 0.15)`);
+        document.documentElement.style.setProperty('--vullen-card-bg', `rgba(${r}, ${g}, ${b}, 0.05)`);
+        document.documentElement.style.setProperty('--vullen-border', `rgba(${r}, ${g}, ${b}, 0.3)`);
+        document.documentElement.style.setProperty('--pdf-new-bg', `rgba(${r}, ${g}, ${b}, 0.15)`);
+        document.documentElement.style.setProperty('--pdf-new-border', `rgba(${r}, ${g}, ${b}, 0.5)`);
+        document.documentElement.style.setProperty('--status-new-bg', `rgba(${r}, ${g}, ${b}, 0.2)`);
+        document.documentElement.style.setProperty('--gem-verk-bg', `rgba(${r}, ${g}, ${b}, 0.15)`);
+    }
+})();
 
 export async function getSupabase() {
     return supabasePromise;
@@ -35,13 +53,12 @@ export async function checkAuth(allowedRoles = null) {
 }
 
 export function showMessage(messageBox, messageText, messageIcon, text, type) {
-    if (!messageBox || !messageText) return;
-    messageText.textContent = text;
-    messageBox.className = `message ${type}`;
-    if (messageIcon) {
-        messageIcon.textContent = type === 'error' ? 'error_outline' : (type === 'success' ? 'check_circle_outline' : 'info_outline');
+    if (text) {
+        showToast(text, type);
     }
-    messageBox.style.display = 'flex';
+    if (messageBox) {
+        messageBox.style.display = 'none';
+    }
 }
 
 export function setupModal(modal, closeButtons, onReset) {
@@ -150,7 +167,7 @@ export function initPadenModal(supabase, storeId, onSaved) {
             addCategoryRow(catC);
             return;
         }
-        const { data } = await supabase.from('stores_info').select('paden_categorieen').eq('id', storeId).maybeSingle();
+        const { data } = await supabase.from('stores_info').select('paden_categorieen').eq('store_id', storeId).maybeSingle();
         const paden = data?.paden_categorieen;
         if (Array.isArray(paden) && paden.length > 0) {
             paden.forEach(p => {
@@ -200,7 +217,7 @@ export function initPadenModal(supabase, storeId, onSaved) {
             });
 
             if (storeId && supabase) {
-                await supabase.from('stores_info').upsert({ id: storeId, paden_categorieen: padenData }, { onConflict: 'id' });
+                await supabase.from('stores_info').upsert({ store_id: storeId, paden_categorieen: padenData }, { onConflict: 'store_id' });
             }
             if (closeModal) closeModal();
             if (onSaved) onSaved(padenData);

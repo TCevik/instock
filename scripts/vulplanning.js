@@ -1,39 +1,28 @@
 import { loadHeader } from './header.js';
 import { checkAuth, getSupabase, setupModal, initPadenModal } from './main.js';
 import { extractTextLinesFromPage } from './pdf-utils.js';
+import { showToast } from './toast.js';
+import {
+    PATHS_MAPPING,
+    MIRROR_TIMES,
+    formatMin,
+    parseNameAndSubtitle,
+    getFillerPause as logicGetFillerPause,
+    getAvailableTime as logicGetAvailableTime,
+    getFillerStartTime,
+    getFillerEndTime,
+    getFillerActualEndTime as logicGetFillerActualEndTime,
+    getTaskDuration as logicGetTaskDuration,
+    getFillerColli as logicGetFillerColli,
+    getFillerTotalTime as logicGetFillerTotalTime,
+    getFillerProductivity as logicGetFillerProductivity,
+    formatTimeOfDay,
+    getTaskAssignment as logicGetTaskAssignment
+} from './planning-logic.js';
 
 (() => {
     let storeId = null;
     let saveTimeout = null;
-    const PATHS_MAPPING = {
-        "Wijn, Chips, Nootjes": ["Wijnen", "Zoutjes Snacks"],
-        "Frisdrank, Bier": ["Frisdrank", "Bieren", "Vruchtensappen"],
-        "Ontbijt": ["Ontbijtvervangers", "Boterhambeleg"],
-        "Koffie, Koek, Chocolade": ["Koffie Thee", "Koffiemelk", "Koekjes", "Chocolade", "Suikerwerk", "Suiker"],
-        "Maaltijdstraat Conserven": ["Groenteconserven", "Vleesconserven", "Zuren sauzen", "Soepen", "Houdbare zuivel", "Gezondheidsvoeding"],
-        "Maaltijdstraat Oosters": ["Rijst en deegwaren", "Maaltijdstraat LDC + Specerijen"],
-        "Eieren, Afbakbrood": ["Eieren", "Meelproducten"],
-        "Non Food": ["Papierwaren", "Kindervoeding", "Luiers", "Wasmiddelen", "Reinigingsmiddelen", "Sorbo", "Huishoudelijk", "Nonfood", "Persoonlijke verzorging", "dierenvoeding"],
-        "Diepvries": ["Diepvries"],
-        "Zuivel": ["Zuivel", "Geelvetten"],
-        "Vlees": ["Vers vlees", "Vis"],
-        "Vleeswaren, Kaas": ["Vleeswaren AV/AVA", "Vleeswaren ZB", "Kaas AV/AVA", "Kaas ZB"]
-    };
-
-    const MIRROR_TIMES = {
-        "Wijn, Chips, Nootjes": 15,
-        "Frisdrank, Bier": 21,
-        "Ontbijt": 10,
-        "Koffie, Koek, Chocolade": 21,
-        "Maaltijdstraat Conserven": 21,
-        "Maaltijdstraat Oosters": 21,
-        "Eieren, Afbakbrood": 15,
-        "Non Food": 21,
-        "Diepvries": 21,
-        "Zuivel": 21,
-        "Vlees": 21,
-        "Vleeswaren, Kaas": 21
-    };
 
     const state = {
         selectedFillers: [],
@@ -58,21 +47,6 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
     let activeTaskId = null;
     let activeDurationTaskId = null;
 
-    const formatMin = (min) => {
-        const hours = Math.floor(min / 60);
-        const mins = Math.round(min % 60);
-        return hours > 0 ? `${hours}u ${mins}m` : `${mins}m`;
-    };
-
-    const parseNameAndSubtitle = (str) => {
-        if (!str) return { name: '', subtitle: '' };
-        const match = str.match(/^(.*?)\s*(?:-|:|\()\s*(\d{2}:\d{2}\s*-\s*\d{2}(?::\d{2})?)\)?$/);
-        if (match) {
-            return { name: match[1].trim(), subtitle: match[2].trim() };
-        }
-        return { name: str, subtitle: '' };
-    };
-
     const createPersonNameElement = (fullName, titleClass = 'person-name', subtitleClass = 'person-subtitle', containerClass = 'person-info') => {
         const { name, subtitle } = parseNameAndSubtitle(fullName);
         const container = document.createElement('div');
@@ -92,178 +66,14 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
         return container;
     };
 
-    const getFillerPause = (displayName) => {
-        if (state.fillerBreaks && state.fillerBreaks[displayName] !== undefined) {
-            return state.fillerBreaks[displayName];
-        }
-        const match = displayName.match(/\b\d{2}:\d{2}\s*-\s*\d{2}(?::\d{2})?/);
-        if (!match) return 0;
-        const parts = match[0].split('-').map(p => p.trim());
-        if (parts.length !== 2) return 0;
-        const parseTime = (str) => {
-            const hm = str.split(':');
-            return (parseInt(hm[0]) || 0) * 60 + (parseInt(hm[1]) || 0);
-        };
-        const gross = parseTime(parts[1]) - parseTime(parts[0]);
-        if (gross >= 480) return 60;
-        if (gross >= 270) return 30;
-        return 0;
-    };
-
-    const getAvailableTime = (displayName) => {
-        const match = displayName.match(/\b\d{2}:\d{2}\s*-\s*\d{2}(?::\d{2})?/);
-        if (!match) return Infinity;
-        const parts = match[0].split('-').map(p => p.trim());
-        if (parts.length !== 2) return Infinity;
-        const parseTime = (str) => {
-            const hm = str.split(':');
-            const h = parseInt(hm[0]) || 0;
-            const m = parseInt(hm[1]) || 0;
-            return h * 60 + m;
-        };
-        const start = parseTime(parts[0]);
-        const end = parseTime(parts[1]);
-        const gross = end > start ? (end - start) : Infinity;
-        if (!isFinite(gross)) return Infinity;
-        const pause = getFillerPause(displayName);
-        return Math.max(0, gross - pause);
-    };
-
-    const getFillerStartTime = (displayName) => {
-        const match = displayName.match(/\b\d{2}:\d{2}\b/);
-        if (!match) return 0;
-        const parts = match[0].split(':').map(p => parseInt(p) || 0);
-        return parts[0] * 60 + parts[1];
-    };
-
-    const getFillerEndTime = (displayName) => {
-        const match = displayName.match(/\b\d{2}:\d{2}\s*-\s*\d{2}(?::\d{2})?/);
-        if (!match) return Infinity;
-        const parts = match[0].split('-').map(p => p.trim());
-        if (parts.length !== 2) return Infinity;
-        const parseTime = (str) => {
-            const hm = str.split(':');
-            const h = parseInt(hm[0]) || 0;
-            const m = parseInt(hm[1]) || 0;
-            return h * 60 + m;
-        };
-        return parseTime(parts[1]);
-    };
-
-    const getFillerActualEndTime = (displayName) => {
-        if (state.actualEndTimes && state.actualEndTimes[displayName]) {
-            const parts = state.actualEndTimes[displayName].split(':');
-            if (parts.length === 2) {
-                return (parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0);
-            }
-        }
-        return getFillerEndTime(displayName);
-    };
-
-    const getFillerColli = (displayName) => {
-        let total = 0;
-        const tasks = state.fillerTasks[displayName] || [];
-        tasks.forEach(taskId => {
-            if (taskId.endsWith('_helper')) {
-                const mainTaskId = taskId.replace('_helper', '');
-                const [pathName, type] = mainTaskId.split('_');
-                if (type === 'fill' && state.pathColli[pathName]) {
-                    const colli = state.pathColli[pathName].colli || 0;
-                    const duration = getTaskDuration(mainTaskId);
-                    const helperInfo = state.helpers[mainTaskId];
-                    if (helperInfo && duration > 0) {
-                        const hDur = (helperInfo.isMax || helperInfo.isHalf) ? (helperInfo.calculatedDuration || 0) : Math.min(duration, helperInfo.duration || 0);
-                        total += (hDur / duration) * colli;
-                    }
-                }
-            } else {
-                const [pathName, type] = taskId.split('_');
-                if (type === 'fill' && state.pathColli[pathName]) {
-                    const colli = state.pathColli[pathName].colli || 0;
-                    const duration = getTaskDuration(taskId);
-                    const helperInfo = state.helpers[taskId];
-                    if (helperInfo && helperInfo.helperName && duration > 0) {
-                        const hDur = (helperInfo.isMax || helperInfo.isHalf) ? (helperInfo.calculatedDuration || 0) : Math.min(duration, helperInfo.duration || 0);
-                        total += ((duration - hDur) / duration) * colli;
-                    } else {
-                        total += colli;
-                    }
-                }
-            }
-        });
-        return Math.round(total);
-    };
-
-    const getFillerProductivity = (displayName) => {
-        const startMin = getFillerStartTime(displayName);
-        const endMin = getFillerActualEndTime(displayName);
-        if (!isFinite(endMin) || endMin <= startMin) return null;
-        const pauseMin = getFillerPause(displayName);
-        const workedNet = Math.max(1, (endMin - startMin) - pauseMin);
-        const plannedTime = getFillerTotalTime(displayName);
-        if (plannedTime <= 0) return null;
-        return Math.round((plannedTime / workedNet) * 100);
-    };
-
-    const formatTimeOfDay = (totalMinutes) => {
-        const hours = Math.floor(totalMinutes / 60) % 24;
-        const mins = Math.floor(totalMinutes % 60);
-        return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
-    };
-
-    const getTaskDuration = (taskId) => {
-        if (taskId.endsWith('_helper')) {
-            const mainTaskId = taskId.replace('_helper', '');
-            const helperInfo = state.helpers[mainTaskId];
-            if (!helperInfo) return 0;
-            if (helperInfo.isMax || helperInfo.isHalf) {
-                return helperInfo.calculatedDuration || 0;
-            }
-            const mainDuration = getTaskDuration(mainTaskId);
-            return Math.min(mainDuration, helperInfo.duration || 0);
-        }
-        if (state.instanceTimes && state.instanceTimes[taskId] !== undefined) {
-            return state.instanceTimes[taskId];
-        }
-        const [pathName, type] = taskId.split('_');
-        if (type === 'other') {
-            return state.otherTimes[pathName] || 0;
-        }
-        const data = state.pathColli[pathName];
-        if (!data) return 0;
-        if (type === 'fill') return data.duration;
-        if (type === 'mirror') return MIRROR_TIMES[pathName] || 0;
-        return 0;
-    };
-
-    const getFillerTotalTime = (filler) => {
-        let total = 0;
-        const tasks = state.fillerTasks[filler] || [];
-        tasks.forEach(taskId => {
-            if (taskId.endsWith('_helper')) {
-                total += getTaskDuration(taskId);
-            } else {
-                const duration = getTaskDuration(taskId);
-                const helperInfo = state.helpers[taskId];
-                if (helperInfo && helperInfo.helperName) {
-                    const helperDuration = (helperInfo.isMax || helperInfo.isHalf) ? (helperInfo.calculatedDuration || 0) : Math.min(duration, helperInfo.duration || 0);
-                    total += (duration - helperDuration);
-                } else {
-                    total += duration;
-                }
-            }
-        });
-        return total;
-    };
-
-    const getTaskAssignment = (taskId) => {
-        for (const [filler, tasks] of Object.entries(state.fillerTasks)) {
-            if (tasks.includes(taskId)) {
-                return filler;
-            }
-        }
-        return null;
-    };
+    const getFillerPause = (displayName) => logicGetFillerPause(displayName, state);
+    const getAvailableTime = (displayName) => logicGetAvailableTime(displayName, state);
+    const getFillerActualEndTime = (displayName) => logicGetFillerActualEndTime(displayName, state);
+    const getTaskDuration = (taskId) => logicGetTaskDuration(taskId, state);
+    const getFillerColli = (displayName) => logicGetFillerColli(displayName, state);
+    const getFillerTotalTime = (filler) => logicGetFillerTotalTime(filler, state);
+    const getFillerProductivity = (displayName) => logicGetFillerProductivity(displayName, state);
+    const getTaskAssignment = (taskId) => logicGetTaskAssignment(taskId, state);
 
     const removeTaskFromAll = (taskId) => {
         Object.keys(state.fillerTasks).forEach(filler => {
@@ -427,7 +237,8 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
         const helperName = select.value;
         if (!helperName) {
             if (maxCheckbox.checked || halfCheckbox.checked) {
-                errorMsg.style.display = 'block';
+                errorMsg.style.display = 'none';
+                showToast('Kies eerst een vuller om de tijd te zien', 'error');
                 maxCheckbox.checked = false;
                 halfCheckbox.checked = false;
             }
@@ -1409,18 +1220,61 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
             const { data: storeData } = await supabase
                 .from('stores_info')
                 .select('paden_categorieen')
-                .eq('id', storeId)
+                .eq('store_id', storeId)
                 .maybeSingle();
             storeDefaultPaden = storeData?.paden_categorieen || [];
         }
 
-        let datalist = document.getElementById('store-employees-datalist');
-        if (!datalist && storeEmployees.length > 0) {
-            datalist = document.createElement('datalist');
-            datalist.id = 'store-employees-datalist';
-            datalist.innerHTML = storeEmployees.map(emp => `<option value="${emp}">`).join('');
-            document.body.appendChild(datalist);
-        }
+        const setupFillerAutocomplete = (inputEl, listEl) => {
+            let currentMatches = [];
+            const render = () => {
+                const val = inputEl.value.trim().toLowerCase();
+                if (!val) {
+                    currentMatches = [...storeEmployees];
+                } else {
+                    currentMatches = storeEmployees.filter(e => e.toLowerCase().includes(val)).sort((a, b) => {
+                        const aLower = a.toLowerCase();
+                        const bLower = b.toLowerCase();
+                        const aStarts = aLower.startsWith(val);
+                        const bStarts = bLower.startsWith(val);
+                        if (aStarts && !bStarts) return -1;
+                        if (!aStarts && bStarts) return 1;
+                        return 0;
+                    });
+                }
+                if (!currentMatches.length) {
+                    listEl.style.display = 'none';
+                    return;
+                }
+                listEl.innerHTML = currentMatches.map((emp, idx) => `<div class="autocomplete-item" data-idx="${idx}" style="padding: 8px 12px; cursor: pointer; font-size: 13px; border-bottom: 1px solid var(--border-color); ${idx === 0 ? 'background-color: var(--border-color);' : ''}">${emp}</div>`).join('');
+                listEl.style.display = 'block';
+                listEl.querySelectorAll('.autocomplete-item').forEach(item => {
+                    item.addEventListener('mouseenter', () => item.style.backgroundColor = 'var(--border-color)');
+                    item.addEventListener('mouseleave', () => {
+                        if (item.getAttribute('data-idx') !== '0') item.style.backgroundColor = 'transparent';
+                    });
+                    item.addEventListener('mousedown', (e) => {
+                        e.preventDefault();
+                        inputEl.value = item.textContent;
+                        listEl.style.display = 'none';
+                    });
+                });
+            };
+            inputEl.addEventListener('focus', render);
+            inputEl.addEventListener('input', render);
+            inputEl.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    if (currentMatches.length > 0) {
+                        e.preventDefault();
+                        inputEl.value = currentMatches[0];
+                        listEl.style.display = 'none';
+                    }
+                }
+            });
+            inputEl.addEventListener('blur', () => {
+                setTimeout(() => { listEl.style.display = 'none'; }, 150);
+            });
+        };
 
         const manualFillersList = document.getElementById('manual-fillers-list');
         const manualPathsList = document.getElementById('manual-paths-list');
@@ -1431,14 +1285,19 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
         if (manualFillersList && manualPathsList) {
             const addFillerRow = (name = '', startTime = '', endTime = '') => {
                 const row = document.createElement('div');
+                row.className = 'manual-filler-row';
                 row.style.cssText = 'display: flex; gap: 8px; align-items: center;';
                 row.innerHTML = `
-                    <input type="text" placeholder="Naam vuller" value="${name}" list="store-employees-datalist" class="manual-filler-name" style="flex: 2; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
+                    <div style="flex: 2; position: relative;">
+                        <input type="text" placeholder="Naam vuller" value="${name}" class="manual-filler-name" style="width: 100%; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);" autocomplete="off">
+                        <div class="filler-autocomplete-list" style="display: none; position: absolute; top: 100%; left: 0; right: 0; max-height: 180px; overflow-y: auto; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 100; margin-top: 4px;"></div>
+                    </div>
                     <input type="time" value="${startTime}" class="manual-filler-start" style="flex: 1; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
                     <input type="time" value="${endTime}" class="manual-filler-end" style="flex: 1; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
                     <button type="button" class="remove-row-btn" style="background: none; border: none; color: var(--danger-color); cursor: pointer; padding: 4px;"><i class="material-icons">delete</i></button>
                 `;
                 row.querySelector('.remove-row-btn').addEventListener('click', () => row.remove());
+                setupFillerAutocomplete(row.querySelector('.manual-filler-name'), row.querySelector('.filler-autocomplete-list'));
                 manualFillersList.appendChild(row);
             };
 
@@ -1529,40 +1388,94 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
 
             if (startManualBtn) {
                 startManualBtn.addEventListener('click', () => {
-                    const fillerRows = manualFillersList.querySelectorAll('div');
+                    const fillerRows = manualFillersList.querySelectorAll('.manual-filler-row');
                     const newFillers = [];
+                    let missingTimes = false;
                     fillerRows.forEach(r => {
                         const nameInput = r.querySelector('.manual-filler-name');
                         if (!nameInput) return;
                         const name = nameInput.value.trim();
-                        const start = r.querySelector('.manual-filler-start').value;
-                        const end = r.querySelector('.manual-filler-end').value;
+                        const start = r.querySelector('.manual-filler-start')?.value || '';
+                        const end = r.querySelector('.manual-filler-end')?.value || '';
                         if (name) {
+                            if (!start || !end) missingTimes = true;
                             newFillers.push(`${name} - ${start} - ${end}`);
                         }
                     });
 
+                    if (!newFillers.length) {
+                        showToast('Voeg ten minste één vuller met naam toe.', 'error');
+                        return;
+                    }
+
+                    if (missingTimes) {
+                        showToast('Vul de begin- en eindtijd in voor alle vullers.', 'error');
+                        return;
+                    }
+
                     const pathBlocks = manualPathsList.querySelectorAll('.manual-path-block');
+                    if (!pathBlocks.length) {
+                        showToast('Voeg ten minste één pad toe.', 'error');
+                        return;
+                    }
+
+                    let missingPathName = false;
+                    let missingCatName = false;
+                    let missingNorm = false;
+
                     const newPathColli = {};
+
                     pathBlocks.forEach(b => {
-                        const pathName = b.querySelector('.manual-path-name').value.trim();
-                        if (!pathName) return;
+                        const pathName = b.querySelector('.manual-path-name')?.value.trim() || '';
+                        if (!pathName) missingPathName = true;
+
+                        const catRows = b.querySelectorAll('.manual-category-row');
+                        if (!catRows.length) missingCatName = true;
 
                         let totalColli = 0;
                         let totalDurationMinutes = 0;
 
-                        const catRows = b.querySelectorAll('.manual-category-row');
                         catRows.forEach(cr => {
-                            const colli = parseInt(cr.querySelector('.manual-cat-colli').value) || 0;
-                            const norm = parseFloat(cr.querySelector('.manual-cat-norm').value) || 0;
+                            const catName = cr.querySelector('.manual-cat-name')?.value.trim() || '';
+                            const colliVal = cr.querySelector('.manual-cat-colli')?.value;
+                            const colli = parseInt(colliVal) || 0;
+                            const normVal = cr.querySelector('.manual-cat-norm')?.value;
+                            const norm = parseFloat(normVal) || 0;
+
+                            if (!catName) missingCatName = true;
+                            if (!normVal || norm <= 0) missingNorm = true;
+
                             totalColli += colli;
                             if (norm > 0 && colli > 0) {
                                 totalDurationMinutes += (colli / norm) * 60;
                             }
                         });
 
-                        newPathColli[pathName] = { colli: totalColli, duration: totalDurationMinutes };
+                        if (pathName) {
+                            newPathColli[pathName] = { colli: totalColli, duration: totalDurationMinutes };
+                        }
                     });
+
+                    if (missingPathName) {
+                        showToast('Vul een naam in voor elk pad.', 'error');
+                        return;
+                    }
+
+                    if (missingCatName) {
+                        showToast('Vul een naam in voor alle categorieën.', 'error');
+                        return;
+                    }
+
+                    if (missingNorm) {
+                        showToast('Vul een geldige norm in voor alle categorieën.', 'error');
+                        return;
+                    }
+
+                    const totalColliAll = Object.values(newPathColli).reduce((acc, p) => acc + p.colli, 0);
+                    if (totalColliAll <= 0) {
+                        showToast('Vul colli-aantallen in voor de paden.', 'error');
+                        return;
+                    }
 
                     state.selectedFillers = newFillers;
                     state.pathColli = newPathColli;
@@ -1860,7 +1773,7 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 2px solid #658d24;
+            border-bottom: 2px solid var(--accent-color);
             padding-bottom: 10px;
             margin-bottom: 15px;
         }
@@ -1879,7 +1792,7 @@ import { extractTextLinesFromPage } from './pdf-utils.js';
             margin-bottom: 15px;
         }
         .print-btn {
-            background-color: #658d24;
+            background-color: var(--accent-color);
             color: white;
             border: none;
             padding: 8px 16px;

@@ -1,5 +1,6 @@
 import { getSupabase, showMessage } from './main.js';
 import { loadHeader } from './header.js';
+import { formatPrice, formatDate, calculateStockStatus } from './product_checker-logic.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const searchInput = document.getElementById('search-input');
@@ -41,17 +42,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         messageBox.style.display = 'none';
     };
 
-    const formatPrice = (price) => {
-        if (price === null || price === undefined) return '-';
-        return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(price);
-    };
-
-    const formatDate = (dateStr) => {
-        if (!dateStr) return '-';
-        const date = new Date(dateStr);
-        return new Intl.DateTimeFormat('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
-    };
-
     const showProductDetails = (product) => {
         hideMessage();
         resultsList.style.display = 'none';
@@ -67,38 +57,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         detailVoorraad.textContent = voorraad;
         document.getElementById('detail-min-voorraad-label').textContent = `Min: ${minVoorraad}`;
 
-        let progressWidth = 100;
-        if (minVoorraad > 0) {
-            progressWidth = Math.min((voorraad / minVoorraad) * 100, 100);
-        }
+        const status = calculateStockStatus(voorraad, minVoorraad);
 
         const progressBar = document.getElementById('stock-progress-bar');
-        progressBar.style.width = `${progressWidth}%`;
+        progressBar.style.width = `${status.progressWidth}%`;
+        progressBar.className = status.progressClass;
 
         const stockStatusBadge = document.getElementById('stock-status-badge');
-        const stockTitle = document.getElementById('stock-title');
+        stockStatusBadge.textContent = status.statusText;
+        stockStatusBadge.className = status.badgeClass;
 
-        if (voorraad < minVoorraad) {
-            if (voorraad < 0.2 * minVoorraad) {
-                stockStatusBadge.textContent = 'Kritiek';
-                stockStatusBadge.className = 'widget-badge danger';
-                progressBar.className = 'widget-progress-fill danger';
-                stockTitle.className = 'widget-title danger';
-                detailVoorraad.className = 'widget-value-large danger';
-            } else {
-                stockStatusBadge.textContent = 'Waarschuwing';
-                stockStatusBadge.className = 'widget-badge warning';
-                progressBar.className = 'widget-progress-fill warning';
-                stockTitle.className = 'widget-title warning';
-                detailVoorraad.className = 'widget-value-large warning';
-            }
-        } else {
-            stockStatusBadge.textContent = 'Voldoende';
-            stockStatusBadge.className = 'widget-badge success';
-            progressBar.className = 'widget-progress-fill';
-            stockTitle.className = 'widget-title';
-            detailVoorraad.className = 'widget-value-large';
-        }
+        const stockTitle = document.getElementById('stock-title');
+        stockTitle.className = status.titleClass;
+        detailVoorraad.className = status.valueClass;
 
         const thtStatusBadge = document.getElementById('tht-status-badge');
         const thtDaysLeft = document.getElementById('tht-days-left');
@@ -165,6 +136,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const newUrl = `${window.location.pathname}?ean=${product.ean}`;
         window.history.pushState({ ean: product.ean }, '', newUrl);
+
+        const editBtn = document.getElementById('edit-product-btn');
+        if (editBtn) {
+            editBtn.onclick = () => {
+                window.location.href = `product_toevoegen.html?edit=${product.ean}`;
+            };
+        }
 
         if (pageHeader) pageHeader.style.display = 'none';
         detailCard.style.display = 'block';
@@ -252,24 +230,53 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    const isValidBarcode = (code) => {
+        if (/^\d{13}$/.test(code)) return true; // EAN-13
+        if (/^\d{8}$/.test(code)) return true;  // EAN-8
+        if (/^\d{12}$/.test(code)) return true; // UPC-A
+        return false;
+    };
+
+    let firstInputTime = null;
+
     searchInput.addEventListener('input', () => {
         const query = searchInput.value.trim();
-        const isEan = /^\d+$/.test(query);
+        const now = Date.now();
 
-        if (isEan && query.length >= 8) {
+        if (!query) {
+            firstInputTime = null;
             clearTimeout(debounceTimer);
-            handleSearch();
-        } else {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-                handleSearch();
-            }, 300);
+            resultsList.style.display = 'none';
+            detailCard.style.display = 'none';
+            hideMessage();
+            return;
         }
+
+        if (!firstInputTime) {
+            firstInputTime = now;
+        }
+
+        clearTimeout(debounceTimer);
+
+        if (isValidBarcode(query)) {
+            const timeElapsed = now - firstInputTime;
+            if (timeElapsed <= 500) {
+                firstInputTime = null;
+                handleSearch();
+                return;
+            }
+        }
+
+        debounceTimer = setTimeout(() => {
+            firstInputTime = null;
+            handleSearch();
+        }, 1000);
     });
 
     searchInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
+            firstInputTime = null;
             clearTimeout(debounceTimer);
             handleSearch();
         }

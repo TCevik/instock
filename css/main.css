@@ -39,7 +39,7 @@ html {
     --text-color-muted: #888888;
     --border-color: #27272a;
     --accent-color: #658d24;
-    --accent-color-sidemenu: #80bd1d;
+    --accent-color-sidemenu: var(--accent-color);
     --card-bg: #18181b;
     --input-bg: #202023;
     --scrollbar-thumb: #27272a;
@@ -72,7 +72,7 @@ html {
     --pdf-new-bg: rgba(128, 189, 29, 0.15);
     --pdf-new-border: rgba(128, 189, 29, 0.5);
     --status-new-bg: rgba(128, 189, 29, 0.2);
-    --status-new-color: #80bd1d;
+    --status-new-color: var(--accent-color);
     --status-missing-bg: rgba(255, 82, 82, 0.2);
     --status-missing-color: #ff5252;
     --gem-verk-bg: rgba(128, 189, 29, 0.15);
@@ -183,7 +183,7 @@ body {
 .input-wrapper select:focus {
     border-color: var(--accent-color-sidemenu);
     background-color: #1e1e21;
-    box-shadow: 0 0 0 4px rgba(128, 189, 29, 0.15);
+    box-shadow: 0 0 0 4px var(--vullen-border);
 }
 
 .input-wrapper input[type="file"] {
@@ -236,13 +236,13 @@ body {
     justify-content: center;
     align-items: center;
     gap: 8px;
-    box-shadow: 0 4px 12px rgba(101, 141, 36, 0.2);
+    box-shadow: 0 4px 12px var(--vullen-border);
 }
 
 .submit-btn:hover {
     filter: brightness(1.1);
     transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(101, 141, 36, 0.3);
+    box-shadow: 0 6px 16px var(--vullen-border);
 }
 
 .submit-btn:active {
@@ -274,14 +274,18 @@ body {
 }
 
 .message.success {
-    background-color: rgba(101, 141, 36, 0.1);
-    border: 1px solid rgba(101, 141, 36, 0.2);
+    background-color: var(--vullen-bg);
+    border: 1px solid var(--vullen-border);
     color: var(--accent-color-sidemenu);
     display: flex;
 }
 
 
 @media (max-width: 768px) {
+    .dashboard-container {
+        padding: 20px 14px;
+    }
+
     .form-row {
         grid-template-columns: 1fr;
         gap: 0;
@@ -291,7 +295,17 @@ body {
         background-color: transparent;
         border: none;
         box-shadow: none;
-        padding: 10px 0;
+        padding: 0;
+        border-radius: 0;
+    }
+
+    .input-wrapper input,
+    .input-wrapper select {
+        font-size: 16px;
+    }
+
+    .page-header-title {
+        font-size: 22px;
     }
 }
 
@@ -346,9 +360,9 @@ body {
 .action-btn {
     background: none;
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: 10px;
     color: var(--text-color);
-    padding: 8px;
+    padding: 10px;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
@@ -371,15 +385,16 @@ body {
 }
 
 .action-btn i {
-    font-size: 18px;
+    font-size: 22px;
 }
 
 @media (max-width: 768px) {
     .table-container {
-        padding: 10px;
+        padding: 0;
         background-color: transparent;
         border: none;
         box-shadow: none;
+        margin-top: 10px;
     }
 
     .users-table,
@@ -396,41 +411,83 @@ body {
     }
 
     .users-table tr {
-        margin-bottom: 16px;
-        background-color: var(--card-bg);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        padding: 16px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        margin-bottom: 0;
+        background-color: transparent;
+        border: none;
+        border-bottom: 1px solid var(--border-color);
+        border-radius: 0;
+        padding: 12px 110px 12px 0;
+        box-shadow: none;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        position: relative;
     }
 
     .users-table td {
         display: flex;
-        justify-content: space-between;
+        flex-direction: row;
         align-items: center;
-        padding: 12px 0;
-        border-bottom: 1px solid var(--border-color);
-        font-size: 14px;
-        text-align: right;
+        padding: 0;
+        border: none;
+        font-size: 13px;
+        color: var(--text-color);
+        text-align: left;
+        gap: 6px;
     }
 
     .users-table td::before {
-        content: attr(data-label);
+        content: attr(data-label) ":";
         font-weight: 600;
         color: var(--text-color-muted);
         text-transform: uppercase;
-        font-size: 12px;
+        font-size: 11px;
         letter-spacing: 0.5px;
-        text-align: left;
-    }
-
-    .users-table td:last-child {
-        border-bottom: none;
-        padding-bottom: 0;
     }
 
     .users-table td:first-child {
-        padding-top: 0;
+        order: 1;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-color);
+    }
+
+    .users-table td:first-child::before {
+        display: none;
+    }
+
+    .users-table td[data-label="Rol"] {
+        order: 2;
+        font-size: 13px;
+        color: var(--accent-color-sidemenu);
+        font-weight: 500;
+        text-transform: capitalize;
+    }
+
+    .users-table td[data-label="Rol"]::before {
+        display: none;
+    }
+
+    .users-table td[data-label="Personeelsnummer"] {
+        order: 3;
+    }
+
+    .users-table td[data-label="Afdeling"] {
+        order: 4;
+    }
+
+    .users-table td:last-child {
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        order: 5;
+        margin: 0;
+        padding: 0;
+    }
+
+    .users-table td:last-child::before {
+        display: none;
     }
 
     .action-btns {

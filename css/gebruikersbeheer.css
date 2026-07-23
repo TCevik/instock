@@ -42,7 +42,7 @@
 }
 
 .modal-overlay .management-card {
-    width: 90%;
+    width: 100%;
     max-width: 500px;
 }
 
@@ -85,11 +85,12 @@
     }
 
     .modal-overlay .management-card {
+        width: 100%;
         max-width: 100%;
         min-height: calc(100vh - 70px);
         border-radius: 0;
         border: none;
-        padding: 20px;
+        padding: 20px 16px;
         box-shadow: none;
     }
 }
@@ -162,6 +163,33 @@
 
 .action-btn-secondary:hover {
     background-color: rgba(255, 255, 255, 0.05);
+}
+
+@media (max-width: 600px) {
+    .header-wrapper {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .header-actions {
+        width: 100%;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .header-actions button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .confirm-btn-container {
+        flex-direction: column-reverse;
+        gap: 8px;
+    }
+
+    .confirm-btn-container button {
+        width: 100%;
+    }
 }
 
 .checkbox-group {

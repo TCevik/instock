@@ -1,5 +1,5 @@
 import { getSupabase, checkAuth, showMessage, handleFormSubmit, initPadenModal } from './main.js';
-import { loadHeader } from './header.js';
+import { loadHeader, updateHeaderMenu, applyStoreTheme } from './header.js';
 
 const AVAILABLE_MODULES = [
     { key: "product_checker", label: "Product Checker", icon: "find_in_page" },
@@ -38,8 +38,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!currentWinkelId) return;
         const { data: storeInfo } = await supabase
             .from('stores_info')
-            .select('modules')
-            .eq('id', currentWinkelId)
+            .select('modules, color')
+            .eq('store_id', currentWinkelId)
             .maybeSingle();
 
         const storedModules = storeInfo?.modules || {};
@@ -48,6 +48,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         AVAILABLE_MODULES.forEach(mod => {
             currentModulesState[mod.key] = storedModules[mod.key] !== undefined ? Boolean(storedModules[mod.key]) : true;
         });
+
+        if (storeInfo?.color && storeInfo.color.primary) {
+            const colorRadio = form.querySelector(`input[name="store_color"][value="${storeInfo.color.primary}"]`);
+            if (colorRadio) colorRadio.checked = true;
+        }
 
         renderModules();
     };
@@ -81,19 +86,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             updatedModules[mod.key] = checkbox ? checkbox.checked : true;
         });
 
+        const selectedColorInput = form.querySelector('input[name="store_color"]:checked');
+        const colorData = { primary: selectedColorInput ? selectedColorInput.value : '#658d24' };
+
         await handleFormSubmit(submitBtn, 'Opslaan...', messageBox, async () => {
             const { error } = await supabase
                 .from('stores_info')
-                .upsert({ id: currentWinkelId, modules: updatedModules }, { onConflict: 'id' });
+                .upsert({ store_id: currentWinkelId, modules: updatedModules, color: colorData }, { onConflict: 'store_id' });
 
             if (error) {
                 showMessage(messageBox, messageText, messageIcon, error.message || 'Fout bij opslaan van instellingen.', 'error');
             } else {
                 showMessage(messageBox, messageText, messageIcon, 'Winkelinstellingen succesvol opgeslagen!', 'success');
                 currentModulesState = updatedModules;
-                setTimeout(() => {
-                    window.location.reload();
-                }, 500);
+                if (colorData.primary) {
+                    applyStoreTheme(colorData.primary);
+                    localStorage.setItem('store_primary_color', colorData.primary);
+                }
+                await loadStoreModules();
+                await updateHeaderMenu();
             }
         });
     });

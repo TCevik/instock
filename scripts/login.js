@@ -1,4 +1,5 @@
 import { getSupabase, handleFormSubmit } from './main.js';
+import { showToast } from './toast.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const form = document.getElementById('login-form');
@@ -28,8 +29,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const password = passwordInput.value;
 
         if (!storeCode || !employeeId || !password) {
-            errorText.textContent = 'Vul alle velden in.';
-            errorMessage.style.display = 'flex';
+            if (errorMessage) errorMessage.style.display = 'none';
+            showToast('Vul alle velden in.', 'error');
             return;
         }
 
@@ -42,8 +43,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             if (error) {
-                errorText.textContent = error.message;
-                errorMessage.style.display = 'flex';
+                if (errorMessage) errorMessage.style.display = 'none';
+                showToast(error.message, 'error');
             } else if (data.session) {
                 if (rememberMeCheckbox.checked) {
                     localStorage.setItem('remembered_store_code', storeCodeInput.value.trim());

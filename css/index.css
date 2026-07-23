@@ -47,7 +47,7 @@
     justify-content: center;
     width: 48px;
     height: 48px;
-    background-color: rgba(128, 189, 29, 0.1);
+    background-color: var(--vullen-bg);
     color: var(--accent-color-sidemenu);
     border-radius: 12px;
     transition: background-color 0.2s, color 0.2s;
@@ -77,4 +77,33 @@
 .dashboard-card:hover .dashboard-card-arrow {
     color: var(--accent-color-sidemenu);
     transform: translateX(4px);
+}
+
+@media (max-width: 600px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .dashboard-card {
+        background-color: transparent;
+        border: none;
+        border-bottom: 1px solid var(--border-color);
+        border-radius: 0;
+        box-shadow: none;
+        padding: 16px 4px;
+        flex-direction: row;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .dashboard-card:hover {
+        transform: none;
+        box-shadow: none;
+    }
+
+    .dashboard-card-arrow {
+        margin-top: 0;
+        align-self: center;
+    }
 }

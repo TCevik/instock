@@ -124,7 +124,7 @@ header .logo {
 }
 
 .drawer-item.active {
-    background-color: rgba(67, 186, 59, 0.1);
+    background-color: var(--vullen-bg);
     color: var(--accent-color-sidemenu);
 }
 
@@ -148,6 +148,33 @@ header .logo {
 .drawer-overlay.open {
     opacity: 1;
     visibility: visible;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.fullscreen-btn {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+}
+
+.fullscreen-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.fullscreen-btn i {
+    font-size: 22px;
 }
 
 .logout-btn {
@@ -174,6 +201,15 @@ header .logo {
 }
 
 @media (max-width: 480px) {
+    header {
+        padding: 0 12px;
+    }
+
+    .nav-drawer {
+        width: 85vw;
+        left: -85vw;
+    }
+
     .logout-btn span {
         display: none;
     }

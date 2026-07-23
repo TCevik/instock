@@ -1,5 +1,6 @@
 import { getSupabase, checkAuth, showMessage, setupModal, handleFormSubmit } from './main.js';
 import { loadHeader } from './header.js';
+import { parseStoreDepartments, sortUsersByRole, groupUsersByDepartment } from './gebruikersbeheer-logic.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const form = document.getElementById('create-user-form');
@@ -47,18 +48,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const { data: storeInfo, error } = await supabase
             .from('stores_info')
             .select('afdelingen')
-            .eq('id', currentWinkelId)
+            .eq('store_id', currentWinkelId)
             .maybeSingle();
 
         if (error || !storeInfo) return [];
-        
-        let depts = [];
-        if (Array.isArray(storeInfo.afdelingen)) {
-            depts = storeInfo.afdelingen;
-        } else if (typeof storeInfo.afdelingen === 'string' && storeInfo.afdelingen.trim()) {
-            depts = storeInfo.afdelingen.split(',').map(s => s.trim()).filter(Boolean);
-        }
-        currentStoreDepartments = Array.from(new Set(depts.map(d => d.trim()).filter(Boolean))).sort();
+        currentStoreDepartments = parseStoreDepartments(storeInfo);
         return currentStoreDepartments;
     };
 
@@ -103,7 +97,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         const { error } = await supabase
             .from('stores_info')
-            .upsert({ id: currentWinkelId, afdelingen: afdelingenString }, { onConflict: 'id' });
+            .upsert({ store_id: currentWinkelId, afdelingen: afdelingenString }, { onConflict: 'store_id' });
 
         if (!error) {
             currentStoreDepartments = uniqueDepts;
@@ -143,26 +137,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    const sortUsersByRole = (users) => {
-        return [...users].sort((a, b) => {
-            const roleA = (a.role || '').toLowerCase() === 'beheerder' ? 0 : 1;
-            const roleB = (b.role || '').toLowerCase() === 'beheerder' ? 0 : 1;
-            if (roleA !== roleB) return roleA - roleB;
-            return (a.full_name || '').localeCompare(b.full_name || '', 'nl', { sensitivity: 'base' });
+    const userSearchInput = document.getElementById('user-search-input');
+    let searchQuery = '';
+
+    if (userSearchInput) {
+        userSearchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value.toLowerCase().trim();
+            renderUsers();
         });
-    };
+    }
 
     const renderUsers = () => {
         const container = document.getElementById('department-sections-container');
         if (!container) return;
 
-        if (currentUsers.length === 0) {
+        let filteredUsers = currentUsers;
+        if (searchQuery) {
+            filteredUsers = currentUsers.filter(u => {
+                const nameMatch = (u.full_name || '').toLowerCase().includes(searchQuery);
+                const pnrMatch = (u.personeelsnummer || '').toLowerCase().includes(searchQuery);
+                const roleMatch = (u.role || '').toLowerCase().includes(searchQuery);
+                const deptStr = Array.isArray(u.afdeling) ? u.afdeling.join(' ') : (u.afdeling || '');
+                const deptMatch = deptStr.toLowerCase().includes(searchQuery);
+                return nameMatch || pnrMatch || roleMatch || deptMatch;
+            });
+        }
+
+        if (filteredUsers.length === 0) {
             container.innerHTML = '<div class="table-container"><table class="users-table"><tbody><tr><td colspan="5" class="loading-cell">Geen gebruikers gevonden.</td></tr></tbody></table></div>';
             return;
         }
 
         if (viewMode === 'alphabetical') {
-            const sortedAlphabetical = sortUsersByRole(currentUsers);
+            const sortedAlphabetical = sortUsersByRole(filteredUsers);
 
             const rowsHtml = sortedAlphabetical.map(u => {
                 const isSelf = u.id === loggedInUserId;
@@ -205,7 +212,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const departmentMap = {};
-        currentUsers.forEach(u => {
+        filteredUsers.forEach(u => {
             let deptList = [];
             if (Array.isArray(u.afdeling)) {
                 deptList = u.afdeling;

@@ -68,7 +68,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         return { valid: true };
     };
 
-    eanInput.focus();
+    const urlParams = new URLSearchParams(window.location.search);
+    const editEan = urlParams.get('edit');
+    let isEditMode = false;
+
+    if (editEan) {
+        const { data: existingProduct } = await supabase.from('producten').select('*').eq('ean', editEan).maybeSingle();
+        if (existingProduct) {
+            isEditMode = true;
+            document.querySelector('.page-header-title').textContent = 'Product Bewerken';
+            document.querySelector('.page-header-subtitle').textContent = 'Pas productgegevens aan in de database';
+            submitBtn.querySelector('span').textContent = 'Product Opslaan';
+
+            if (barcodeTypeSelect && existingProduct.barcode_type) barcodeTypeSelect.value = existingProduct.barcode_type;
+            eanInput.value = existingProduct.ean || '';
+            naamInput.value = existingProduct.naam || '';
+            merkInput.value = existingProduct.merk || '';
+            afdelingInput.value = existingProduct.afdeling || '';
+            voorraadInput.value = existingProduct.voorraad !== null ? existingProduct.voorraad : '';
+            minimaleVoorraadInput.value = existingProduct.minimale_voorraad !== null ? existingProduct.minimale_voorraad : '';
+            prijsInput.value = existingProduct.prijs !== null ? existingProduct.prijs : '';
+            inkoopprijsInput.value = existingProduct.inkoopprijs !== null ? existingProduct.inkoopprijs : '';
+            thtInput.value = existingProduct.tht || '';
+            locatiecodeInput.value = existingProduct.locatiecode || '';
+            afbeeldingInput.value = existingProduct.afbeelding || '';
+        }
+    } else {
+        eanInput.focus();
+    }
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -104,16 +131,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         await handleFormSubmit(submitBtn, 'Bezig met opslaan...', messageBox, async () => {
-            const { error } = await supabase
-                .from('producten')
-                .insert([productData]);
+            const { error } = isEditMode
+                ? await supabase.from('producten').update(productData).eq('ean', editEan)
+                : await supabase.from('producten').insert([productData]);
 
             if (error) {
-                showMessage(messageBox, messageText, messageIcon, error.message || 'Er is een fout opgetreden bij het toevoegen van het product.', 'error');
+                showMessage(messageBox, messageText, messageIcon, error.message || 'Er is een fout opgetreden bij het opslaan van het product.', 'error');
             } else {
-                showMessage(messageBox, messageText, messageIcon, 'Product succesvol toegevoegd!', 'success');
-                form.reset();
-                eanInput.focus();
+                showMessage(messageBox, messageText, messageIcon, isEditMode ? 'Product succesvol bijgewerkt!' : 'Product succesvol toegevoegd!', 'success');
+                if (isEditMode) {
+                    setTimeout(() => {
+                        window.location.href = `product_checker.html?ean=${productData.ean}`;
+                    }, 1000);
+                } else {
+                    form.reset();
+                    eanInput.focus();
+                }
             }
         });
     });
