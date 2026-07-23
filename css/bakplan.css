@@ -130,3 +130,20 @@ td[contenteditable="true"]:focus {
     background-color: var(--status-missing-bg);
     color: var(--status-missing-color);
 }
+
+.fraction-badge {
+    background-color: rgba(101, 141, 36, 0.2);
+    color: var(--accent-color);
+    border: 1px solid var(--vullen-border);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-left: 6px;
+}
+
+.combined-plate-info {
+    font-size: 11px;
+    color: var(--text-color-muted);
+    margin-top: 2px;
+}

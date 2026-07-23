@@ -159,8 +159,9 @@ import {
             const colliText = type === 'fill' ? `${data.colli} colli • ` : '';
             const helperInfo = state.helpers[taskId];
             if (helperInfo && helperInfo.helperName) {
-                const helperDuration = (helperInfo.isMax || helperInfo.isHalf) ? (helperInfo.calculatedDuration || 0) : Math.min(duration, helperInfo.duration || 0);
-                const remainingDuration = duration - helperDuration;
+                const rawHelperDur = (helperInfo.isMax || helperInfo.isHalf) ? (helperInfo.calculatedDuration || 0) : (helperInfo.duration || 0);
+                const helperDuration = Math.min(duration, Math.max(0, rawHelperDur));
+                const remainingDuration = Math.max(0, duration - helperDuration);
                 durationSpan.textContent = `${colliText}${formatMin(remainingDuration)} (was ${formatMin(duration)})`;
             } else {
                 durationSpan.textContent = `${colliText}${formatMin(duration)}`;
@@ -1674,8 +1675,9 @@ import {
                         if (!taskId.endsWith('_helper')) {
                             const helperInfo = state.helpers[taskId];
                             if (helperInfo && helperInfo.helperName) {
-                                const helperDur = (helperInfo.isMax || helperInfo.isHalf) ? (helperInfo.calculatedDuration || 0) : Math.min(duration, helperInfo.duration || 0);
-                                duration -= helperDur;
+                                const rawDur = (helperInfo.isMax || helperInfo.isHalf) ? (helperInfo.calculatedDuration || 0) : (helperInfo.duration || 0);
+                                const helperDur = Math.min(duration, Math.max(0, rawDur));
+                                duration = Math.max(0, duration - helperDur);
                             }
                         }
 
@@ -1746,12 +1748,73 @@ import {
                 `;
             });
 
+            let padCardsHtml = '';
+            const padMap = {};
+            sortedFillers.forEach(filler => {
+                const tasks = state.fillerTasks[filler] || [];
+                tasks.forEach(taskId => {
+                    let padName = '';
+                    let role = '';
+                    let badgeClass = 'badge-fill';
+
+                    if (taskId.endsWith('_helper')) {
+                        const mainTaskId = taskId.replace('_helper', '');
+                        padName = mainTaskId.split('_')[0];
+                        role = 'Hulp';
+                        badgeClass = 'badge-helper';
+                    } else {
+                        const [pName, pType] = taskId.split('_');
+                        padName = pName;
+                        if (pType === 'fill') {
+                            role = 'Vullen';
+                            badgeClass = 'badge-fill';
+                        } else if (pType === 'mirror') {
+                            role = 'Spiegelen';
+                            badgeClass = 'badge-mirror';
+                        } else {
+                            role = 'Overig';
+                            badgeClass = 'badge-other';
+                        }
+                    }
+
+                    if (padName) {
+                        if (!padMap[padName]) padMap[padName] = [];
+                        padMap[padName].push({ filler, role, badgeClass });
+                    }
+                });
+            });
+
+            const sortedPaden = Object.keys(padMap).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+            sortedPaden.forEach(padName => {
+                const assignments = padMap[padName];
+                const assignListHtml = assignments.map(a => `
+                    <div class="pad-assignment-item">
+                        <span class="pad-filler-name">${a.filler}</span>
+                        <span class="task-badge ${a.badgeClass}">${a.role}</span>
+                    </div>
+                `).join('');
+
+                padCardsHtml += `
+                    <div class="printable-card pad-card">
+                        <div class="card-header">
+                            <h2 class="filler-name">${padName}</h2>
+                        </div>
+                        <div class="card-body">
+                            ${assignListHtml}
+                        </div>
+                    </div>
+                `;
+            });
+
             const htmlContent = `<!DOCTYPE html>
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
     <title>Vulplanning ${dateStr}</title>
     <style>
+        :root {
+            --accent-color: #658d24;
+        }
         @page {
             size: A4 landscape;
             margin: 0;
@@ -1958,6 +2021,27 @@ import {
             background: #fce7f3;
             color: #be185d;
         }
+        .page-break {
+            page-break-before: always;
+            break-before: page;
+        }
+        .pad-card .card-header {
+            background: #e2e8f0;
+        }
+        .pad-assignment-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 6px;
+            background: #f8fafc;
+            border: 1px solid #f1f5f9;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .pad-filler-name {
+            font-weight: 600;
+            color: #1e293b;
+        }
     </style>
 </head>
 <body>
@@ -1970,6 +2054,14 @@ import {
     </div>
     <div class="grid-container">
         ${cardsHtml}
+    </div>
+    <div class="page-break"></div>
+    <div class="header">
+        <h1>Overzicht per Pad / Afdeling</h1>
+        <div class="date">Deze planning is gemaakt op ${dateStr}</div>
+    </div>
+    <div class="grid-container">
+        ${padCardsHtml}
     </div>
 </body>
 </html>`;

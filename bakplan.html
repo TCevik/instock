@@ -28,9 +28,17 @@
                         <i class="material-icons">add</i>
                         <span>Product Toevoegen</span>
                     </button>
+                    <button id="bakplan-carts-btn" class="action-btn" title="Karren Beheren" style="padding: 8px 12px; display: flex; align-items: center; gap: 6px;">
+                        <i class="material-icons">directions_bus</i>
+                        <span>Karren Beheren</span>
+                    </button>
                     <button id="bakplan-settings-btn" class="action-btn" title="Instellingen" style="padding: 8px 12px; display: flex; align-items: center; gap: 6px;">
                         <i class="material-icons">settings</i>
                         <span>Instellingen</span>
+                    </button>
+                    <button id="generate-bakplan-btn" class="action-btn" style="padding: 8px 12px; display: flex; align-items: center; gap: 6px; background-color: var(--accent-color); color: #fff;">
+                        <i class="material-icons">print</i>
+                        <span>Bakplan Genereren</span>
                     </button>
                     <button id="clear-all-btn" class="action-btn delete" title="Alles Verwijderen" style="padding: 8px 12px; display: flex; align-items: center; gap: 6px; background-color: var(--danger-color); color: #fff;">
                         <i class="material-icons">delete_forever</i>
@@ -75,6 +83,35 @@
             </table>
         </div>
     </main>
+
+    <div id="bakplan-carts-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 650px; max-height: 85vh; display: flex; flex-direction: column;">
+            <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 16px;">Karren Beheren</h3>
+            <div style="flex: 1; overflow-y: auto; margin-bottom: 16px;">
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>Naam / Nr</th>
+                            <th>Type</th>
+                            <th>Capaciteit</th>
+                            <th>Oven / Ontdooi</th>
+                            <th style="width: 40px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="carts-table-body">
+                    </tbody>
+                </table>
+                <button id="add-cart-row-btn" class="action-btn" style="margin-top: 12px; padding: 6px 12px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; background-color: var(--accent-color); color: #fff;">
+                    <i class="material-icons" style="font-size: 16px;">add</i>
+                    <span>Kar Toevoegen</span>
+                </button>
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button id="carts-cancel-btn" class="action-btn" style="padding: 8px 16px; background-color: var(--input-bg);">Annuleren</button>
+                <button id="carts-save-btn" class="action-btn" style="padding: 8px 16px; background-color: var(--accent-color); color: #fff;">Opslaan</button>
+            </div>
+        </div>
+    </div>
 
     <div id="bakplan-settings-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content" style="max-width: 600px; max-height: 80vh; display: flex; flex-direction: column;">

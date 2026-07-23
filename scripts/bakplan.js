@@ -1,7 +1,7 @@
 import { loadHeader } from './header.js';
 import { checkAuth, getSupabase, setupModal } from './main.js';
 import { extractTextLinesFromPage } from './pdf-utils.js';
-import { DAYS, getPlateQuantity as logicGetPlateQuantity, normalizeDaysData as logicNormalizeDaysData, syncStructureAcrossDays as logicSyncStructureAcrossDays } from './bakplan-logic.js';
+import { DAYS, getPlateQuantity as logicGetPlateQuantity, normalizeDaysData as logicNormalizeDaysData, syncStructureAcrossDays as logicSyncStructureAcrossDays, openPrintableBakplan, DEFAULT_CARTS } from './bakplan-logic.js';
 
 (() => {
     let storeId = null;
@@ -18,7 +18,8 @@ import { DAYS, getPlateQuantity as logicGetPlateQuantity, normalizeDaysData as l
             'ZATERDAG': [],
             'ZONDAG': []
         },
-        productPlateConfig: {}
+        productPlateConfig: {},
+        customCarts: JSON.parse(JSON.stringify(DEFAULT_CARTS))
     };
 
     const getPlateQuantity = (desc) => logicGetPlateQuantity(desc, state.productPlateConfig);
@@ -43,6 +44,7 @@ import { DAYS, getPlateQuantity as logicGetPlateQuantity, normalizeDaysData as l
             const baseDayList = state.daysData[state.selectedDay] || [];
             const categories = baseDayList.map(c => ({
                 category: c.category,
+                thawInBatch1: !!c.thawInBatch1,
                 products: (c.products || []).map(p => {
                     const prodObj = {
                         ceNr: p.ceNr,
@@ -77,7 +79,8 @@ import { DAYS, getPlateQuantity as logicGetPlateQuantity, normalizeDaysData as l
             const payload = {
                 categories,
                 dailyValues,
-                productPlateConfig: state.productPlateConfig
+                productPlateConfig: state.productPlateConfig,
+                customCarts: state.customCarts
             };
             await supabase.from('bakplannen').upsert({ id: storeId, bakplan: payload });
         }, 500);
@@ -90,6 +93,9 @@ import { DAYS, getPlateQuantity as logicGetPlateQuantity, normalizeDaysData as l
         if (data && data.bakplan) {
             normalizeDaysData(data.bakplan);
             if (data.bakplan.productPlateConfig) state.productPlateConfig = data.bakplan.productPlateConfig;
+            if (data.bakplan.customCarts && Array.isArray(data.bakplan.customCarts)) {
+                state.customCarts = data.bakplan.customCarts;
+            }
         }
     };
 
@@ -466,6 +472,48 @@ import { DAYS, getPlateQuantity as logicGetPlateQuantity, normalizeDaysData as l
                 });
             }
 
+            const cartsBtn = document.getElementById('bakplan-carts-btn');
+            const cartsModal = document.getElementById('bakplan-carts-modal');
+            const cartsCancelBtn = document.getElementById('carts-cancel-btn');
+            const cartsSaveBtn = document.getElementById('carts-save-btn');
+            const addCartRowBtn = document.getElementById('add-cart-row-btn');
+            let tempCarts = [];
+
+            if (cartsBtn && cartsModal) {
+                cartsBtn.addEventListener('click', () => {
+                    tempCarts = JSON.parse(JSON.stringify(state.customCarts));
+                    this.renderCartsTable(tempCarts);
+                    cartsModal.style.display = 'flex';
+                });
+            }
+
+            const closeCartsModal = setupModal(cartsModal, [cartsCancelBtn], () => {
+                tempCarts = [];
+            });
+
+            if (cartsSaveBtn && cartsModal) {
+                cartsSaveBtn.addEventListener('click', () => {
+                    state.customCarts = JSON.parse(JSON.stringify(tempCarts));
+                    closeCartsModal();
+                    triggerSave();
+                });
+            }
+
+            if (addCartRowBtn) {
+                addCartRowBtn.addEventListener('click', () => {
+                    const nextId = tempCarts.length > 0 ? Math.max(...tempCarts.map(c => c.id || 0)) + 1 : 1;
+                    tempCarts.push({
+                        id: nextId,
+                        name: `Kar ${nextId}`,
+                        type: 'mixed',
+                        capacity: 18,
+                        oven: true,
+                        desc: 'Custom kar'
+                    });
+                    this.renderCartsTable(tempCarts);
+                });
+            }
+
             const settingsBtn = document.getElementById('bakplan-settings-btn');
             const settingsModal = document.getElementById('bakplan-settings-modal');
             const settingsCancelBtn = document.getElementById('settings-cancel-btn');
@@ -490,6 +538,14 @@ import { DAYS, getPlateQuantity as logicGetPlateQuantity, normalizeDaysData as l
                     closeSettingsModal();
                     this.renderTable();
                     triggerSave();
+                });
+            }
+
+            const generateBtn = document.getElementById('generate-bakplan-btn');
+            if (generateBtn) {
+                generateBtn.addEventListener('click', () => {
+                    const dayCategories = state.daysData[state.selectedDay] || [];
+                    openPrintableBakplan(state.selectedDay, dayCategories, state.productPlateConfig, state.customCarts);
                 });
             }
 
@@ -635,6 +691,95 @@ import { DAYS, getPlateQuantity as logicGetPlateQuantity, normalizeDaysData as l
             });
         },
 
+        renderCartsTable(tempCarts) {
+            const tbody = document.getElementById('carts-table-body');
+            if (!tbody) return;
+
+            if (tempCarts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="loading-cell">Geen karren aanwezig. Voeg een kar toe.</td></tr>';
+                return;
+            }
+
+            let html = '';
+            tempCarts.forEach((cart, idx) => {
+                html += `
+                    <tr>
+                        <td>
+                            <input type="text" class="cart-name-input" data-idx="${idx}" value="${cart.name || 'Kar ' + (idx + 1)}" style="width: 100%; padding: 6px 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
+                        </td>
+                        <td>
+                            <select class="cart-type-select" data-idx="${idx}" style="padding: 6px 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
+                                <option value="single" ${cart.type === 'single' ? 'selected' : ''}>1 Categorie</option>
+                                <option value="mixed" ${cart.type === 'mixed' ? 'selected' : ''}>Gemixt</option>
+                                <option value="thaw" ${cart.type === 'thaw' ? 'selected' : ''}>Ontdooien</option>
+                            </select>
+                        </td>
+                        <td>
+                            <input type="number" min="1" max="50" class="cart-capacity-input" data-idx="${idx}" value="${cart.capacity || 18}" style="width: 70px; padding: 6px 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
+                        </td>
+                        <td>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer;">
+                                <input type="checkbox" class="cart-oven-check" data-idx="${idx}" ${cart.oven ? 'checked' : ''}>
+                                <span>Oven</span>
+                            </label>
+                        </td>
+                        <td style="text-align: right;">
+                            <button type="button" class="action-btn delete remove-cart-btn" data-idx="${idx}" style="padding: 4px;" title="Kar Verwijderen">
+                                <i class="material-icons" style="font-size: 16px;">delete</i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+
+            tbody.querySelectorAll('.cart-name-input').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const idx = parseInt(e.target.dataset.idx);
+                    if (tempCarts[idx]) tempCarts[idx].name = e.target.value;
+                });
+            });
+
+            tbody.querySelectorAll('.cart-type-select').forEach(select => {
+                select.addEventListener('change', (e) => {
+                    const idx = parseInt(e.target.dataset.idx);
+                    if (tempCarts[idx]) {
+                        tempCarts[idx].type = e.target.value;
+                        if (e.target.value === 'thaw') {
+                            tempCarts[idx].oven = false;
+                        } else {
+                            tempCarts[idx].oven = true;
+                        }
+                        this.renderCartsTable(tempCarts);
+                    }
+                });
+            });
+
+            tbody.querySelectorAll('.cart-capacity-input').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const idx = parseInt(e.target.dataset.idx);
+                    const val = parseInt(e.target.value);
+                    if (tempCarts[idx]) tempCarts[idx].capacity = (!isNaN(val) && val > 0) ? val : 18;
+                });
+            });
+
+            tbody.querySelectorAll('.cart-oven-check').forEach(check => {
+                check.addEventListener('change', (e) => {
+                    const idx = parseInt(e.target.dataset.idx);
+                    if (tempCarts[idx]) tempCarts[idx].oven = e.target.checked;
+                });
+            });
+
+            tbody.querySelectorAll('.remove-cart-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const idx = parseInt(e.target.closest('.remove-cart-btn').dataset.idx);
+                    tempCarts.splice(idx, 1);
+                    this.renderCartsTable(tempCarts);
+                });
+            });
+        },
+
         renderTable() {
             const tbody = document.getElementById('bakplan-table-body');
             if (!tbody) return;
@@ -649,10 +794,17 @@ import { DAYS, getPlateQuantity as logicGetPlateQuantity, normalizeDaysData as l
             let html = '';
             categories.forEach((catObj, catIdx) => {
                 const cat = catObj.category;
+                const isThawChecked = !!catObj.thawInBatch1;
                 html += `
                     <tr class="category-header-row">
-                        <td colspan="6" contenteditable="true" data-catidx="${catIdx}">
+                        <td colspan="5" contenteditable="true" data-catidx="${catIdx}">
                             ${cat}
+                        </td>
+                        <td style="text-align: right;">
+                            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: normal; text-transform: none; cursor: pointer; color: var(--text-color-muted);" title="Plaats deze categorie in Batch 1 op de ontdooikar">
+                                <input type="checkbox" class="cat-thaw-check" data-catidx="${catIdx}" ${isThawChecked ? 'checked' : ''}>
+                                <span>Ontdooien Batch 1</span>
+                            </label>
                         </td>
                         <td style="text-align: right; display: flex; gap: 4px; justify-content: flex-end; align-items: center;">
                             <button class="action-btn add-prod-to-cat-btn" data-catidx="${catIdx}" style="padding: 4px; background-color: var(--accent-color); color: #fff;" title="Product Toevoegen aan Categorie">
@@ -718,6 +870,18 @@ import { DAYS, getPlateQuantity as logicGetPlateQuantity, normalizeDaysData as l
             });
 
             tbody.innerHTML = html;
+
+            tbody.querySelectorAll('.cat-thaw-check').forEach(check => {
+                check.addEventListener('change', (e) => {
+                    const catIdx = parseInt(e.target.dataset.catidx);
+                    const catObj = state.daysData[state.selectedDay][catIdx];
+                    if (catObj) {
+                        catObj.thawInBatch1 = e.target.checked;
+                        syncStructureAcrossDays();
+                        triggerSave();
+                    }
+                });
+            });
 
             tbody.querySelectorAll('.add-prod-to-cat-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
