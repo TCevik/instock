@@ -1752,7 +1752,25 @@ import {
             const padMap = {};
             sortedFillers.forEach(filler => {
                 const tasks = state.fillerTasks[filler] || [];
+                const startMin = getFillerStartTime(filler);
+                let currentTime = isFinite(startMin) ? startMin : 0;
+                const cleanName = parseNameAndSubtitle(filler).name;
+
                 tasks.forEach(taskId => {
+                    let duration = getTaskDuration(taskId);
+                    if (!taskId.endsWith('_helper')) {
+                        const helperInfo = state.helpers[taskId];
+                        if (helperInfo && helperInfo.helperName) {
+                            const rawDur = (helperInfo.isMax || helperInfo.isHalf) ? (helperInfo.calculatedDuration || 0) : (helperInfo.duration || 0);
+                            const helperDur = Math.min(duration, Math.max(0, rawDur));
+                            duration = Math.max(0, duration - helperDur);
+                        }
+                    }
+
+                    const tStart = currentTime;
+                    const tEnd = currentTime + duration;
+                    currentTime = tEnd;
+
                     let padName = '';
                     let role = '';
                     let badgeClass = 'badge-fill';
@@ -1779,7 +1797,9 @@ import {
 
                     if (padName) {
                         if (!padMap[padName]) padMap[padName] = [];
-                        padMap[padName].push({ filler, role, badgeClass });
+                        const startTimeStr = formatTimeOfDay(tStart);
+                        const endTimeStr = formatTimeOfDay(tEnd);
+                        padMap[padName].push({ filler, cleanName, role, badgeClass, startTimeStr, endTimeStr });
                     }
                 });
             });
@@ -1787,7 +1807,7 @@ import {
             const sortedPaden = Object.keys(padMap).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
             sortedPaden.forEach(padName => {
                 const assignments = padMap[padName];
-                const uniquePersons = new Set(assignments.map(a => a.filler)).size;
+                const uniquePersons = new Set(assignments.map(a => a.cleanName)).size;
                 const pathData = state.pathColli[padName] || { colli: 0, duration: 0 };
                 const colli = pathData.colli || 0;
                 const totalMinutes = pathData.duration || 0;
@@ -1797,8 +1817,14 @@ import {
                 const mins = Math.round(totalMinutes % 60);
                 const formattedHours = totalMinutes > 0 ? `${hours}:${String(mins).padStart(2, '0')}` : '-';
 
-                const fillersList = Array.from(new Set(assignments.filter(a => a.role === 'Vullen' || a.role === 'Hulp').map(a => a.filler))).join('<br>');
-                const mirrorersList = Array.from(new Set(assignments.filter(a => a.role === 'Spiegelen').map(a => a.filler))).join('<br>');
+                const fillersList = assignments
+                    .filter(a => a.role === 'Vullen' || a.role === 'Hulp')
+                    .map(a => `${a.cleanName} (${a.startTimeStr} - ${a.endTimeStr})`)
+                    .join('<br>');
+                const mirrorersList = assignments
+                    .filter(a => a.role === 'Spiegelen')
+                    .map(a => `${a.cleanName} (${a.startTimeStr} - ${a.endTimeStr})`)
+                    .join('<br>');
 
                 padTableRowsHtml += `
                     <tr>
