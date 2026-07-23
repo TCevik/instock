@@ -1748,7 +1748,7 @@ import {
                 `;
             });
 
-            let padCardsHtml = '';
+            let padTableRowsHtml = '';
             const padMap = {};
             sortedFillers.forEach(filler => {
                 const tasks = state.fillerTasks[filler] || [];
@@ -1787,22 +1787,29 @@ import {
             const sortedPaden = Object.keys(padMap).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
             sortedPaden.forEach(padName => {
                 const assignments = padMap[padName];
-                const assignListHtml = assignments.map(a => `
-                    <div class="pad-assignment-item">
-                        <span class="pad-filler-name">${a.filler}</span>
-                        <span class="task-badge ${a.badgeClass}">${a.role}</span>
-                    </div>
-                `).join('');
+                const uniquePersons = new Set(assignments.map(a => a.filler)).size;
+                const pathData = state.pathColli[padName] || { colli: 0, duration: 0 };
+                const colli = pathData.colli || 0;
+                const totalMinutes = pathData.duration || 0;
+                const durationHours = totalMinutes / 60;
+                const norm = (colli > 0 && durationHours > 0) ? Math.round(colli / durationHours) : '-';
+                const hours = Math.floor(totalMinutes / 60);
+                const mins = Math.round(totalMinutes % 60);
+                const formattedHours = totalMinutes > 0 ? `${hours}:${String(mins).padStart(2, '0')}` : '-';
 
-                padCardsHtml += `
-                    <div class="printable-card pad-card">
-                        <div class="card-header">
-                            <h2 class="filler-name">${padName}</h2>
-                        </div>
-                        <div class="card-body">
-                            ${assignListHtml}
-                        </div>
-                    </div>
+                const fillersList = Array.from(new Set(assignments.filter(a => a.role === 'Vullen' || a.role === 'Hulp').map(a => a.filler))).join('<br>');
+                const mirrorersList = Array.from(new Set(assignments.filter(a => a.role === 'Spiegelen').map(a => a.filler))).join('<br>');
+
+                padTableRowsHtml += `
+                    <tr>
+                        <td><strong>${padName}</strong></td>
+                        <td>${fillersList || '-'}</td>
+                        <td>${mirrorersList || '-'}</td>
+                        <td style="text-align: center;">${uniquePersons}</td>
+                        <td style="text-align: right;">${colli}</td>
+                        <td style="text-align: right;">${norm}</td>
+                        <td style="text-align: right;">${formattedHours}</td>
+                    </tr>
                 `;
             });
 
@@ -2025,22 +2032,24 @@ import {
             page-break-before: always;
             break-before: page;
         }
-        .pad-card .card-header {
-            background: #e2e8f0;
+        .pad-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 13px;
         }
-        .pad-assignment-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 4px 6px;
+        .pad-table th, .pad-table td {
+            border: 1px solid #cbd5e1;
+            padding: 8px 12px;
+        }
+        .pad-table th {
+            background: #f1f5f9;
+            color: #0f172a;
+            font-weight: 700;
+            text-align: left;
+        }
+        .pad-table tr:nth-child(even) {
             background: #f8fafc;
-            border: 1px solid #f1f5f9;
-            border-radius: 4px;
-            font-size: 12px;
-        }
-        .pad-filler-name {
-            font-weight: 600;
-            color: #1e293b;
         }
     </style>
 </head>
@@ -2060,9 +2069,22 @@ import {
         <h1>Overzicht per Pad / Afdeling</h1>
         <div class="date">Deze planning is gemaakt op ${dateStr}</div>
     </div>
-    <div class="grid-container">
-        ${padCardsHtml}
-    </div>
+    <table class="pad-table">
+        <thead>
+            <tr>
+                <th>Naam Pad</th>
+                <th>Personen Vullen</th>
+                <th>Personen Spiegelen</th>
+                <th style="text-align: center;">Aantal Personen</th>
+                <th style="text-align: right;">Aantal Colli</th>
+                <th style="text-align: right;">Norm (Colli/Uur)</th>
+                <th style="text-align: right;">Benodigde Uren</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${padTableRowsHtml}
+        </tbody>
+    </table>
 </body>
 </html>`;
 
