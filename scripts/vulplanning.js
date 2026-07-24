@@ -1799,7 +1799,7 @@ import {
                         if (!padMap[padName]) padMap[padName] = [];
                         const startTimeStr = formatTimeOfDay(tStart);
                         const endTimeStr = formatTimeOfDay(tEnd);
-                        padMap[padName].push({ filler, cleanName, role, badgeClass, startTimeStr, endTimeStr });
+                        padMap[padName].push({ filler, cleanName, role, badgeClass, startTimeStr, endTimeStr, durationMins: duration });
                     }
                 });
             });
@@ -1810,12 +1810,23 @@ import {
                 const uniquePersons = new Set(assignments.map(a => a.cleanName)).size;
                 const pathData = state.pathColli[padName] || { colli: 0, duration: 0 };
                 const colli = pathData.colli || 0;
-                const totalMinutes = pathData.duration || 0;
-                const durationHours = totalMinutes / 60;
-                const norm = (colli > 0 && durationHours > 0) ? Math.round(colli / durationHours) : '-';
-                const hours = Math.floor(totalMinutes / 60);
-                const mins = Math.round(totalMinutes % 60);
-                const formattedHours = totalMinutes > 0 ? `${hours}:${String(mins).padStart(2, '0')}` : '-';
+                
+                let fillMins = 0;
+                let mirrorMins = 0;
+                assignments.forEach(a => {
+                    if (a.role === 'Vullen' || a.role === 'Hulp') fillMins += a.durationMins || 0;
+                    else if (a.role === 'Spiegelen') mirrorMins += a.durationMins || 0;
+                });
+
+                const formatMins = (mins) => {
+                    if (mins <= 0) return '-';
+                    const h = Math.floor(mins / 60);
+                    const m = Math.round(mins % 60);
+                    return `${h}:${String(m).padStart(2, '0')}`;
+                };
+
+                const fillHours = fillMins / 60;
+                const norm = (colli > 0 && fillHours > 0) ? Math.round(colli / fillHours) : '-';
 
                 const fillersList = assignments
                     .filter(a => a.role === 'Vullen' || a.role === 'Hulp')
@@ -1834,7 +1845,8 @@ import {
                         <td style="text-align: center;">${uniquePersons}</td>
                         <td style="text-align: right;">${colli}</td>
                         <td style="text-align: right;">${norm}</td>
-                        <td style="text-align: right;">${formattedHours}</td>
+                        <td style="text-align: right;">${formatMins(fillMins)}</td>
+                        <td style="text-align: right;">${formatMins(mirrorMins)}</td>
                     </tr>
                 `;
             });
@@ -2099,18 +2111,27 @@ import {
         <thead>
             <tr>
                 <th>Naam Pad</th>
-                <th>Personen Vullen</th>
-                <th>Personen Spiegelen</th>
+                <th>Vullers</th>
+                <th>Spiegelaars</th>
                 <th style="text-align: center;">Aantal Personen</th>
                 <th style="text-align: right;">Aantal Colli</th>
                 <th style="text-align: right;">Norm (Colli/Uur)</th>
-                <th style="text-align: right;">Benodigde Uren</th>
+                <th style="text-align: right;">Vultijd</th>
+                <th style="text-align: right;">Spiegeltijd</th>
             </tr>
         </thead>
         <tbody>
             ${padTableRowsHtml}
         </tbody>
     </table>
+    <div style="margin-top: 30px; page-break-inside: avoid;">
+        <h3 style="font-size: 14px; margin-bottom: 10px; color: #0f172a;">Aantekeningen:</h3>
+        <div style="border-bottom: 1px dashed #cbd5e1; height: 28px;"></div>
+        <div style="border-bottom: 1px dashed #cbd5e1; height: 28px;"></div>
+        <div style="border-bottom: 1px dashed #cbd5e1; height: 28px;"></div>
+        <div style="border-bottom: 1px dashed #cbd5e1; height: 28px;"></div>
+        <div style="border-bottom: 1px dashed #cbd5e1; height: 28px;"></div>
+    </div>
 </body>
 </html>`;
 

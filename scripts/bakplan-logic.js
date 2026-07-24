@@ -451,10 +451,18 @@ export const openPrintableBakplan = (selectedDay, dayCategories, productPlateCon
                 `;
             });
             html += `</div>`;
-        });
     }
 
-    html += `</body></html>`;
+    html += `
+    <div style="margin-top: 30px; page-break-inside: avoid;">
+        <h3 style="font-size: 14px; margin-bottom: 10px; color: #18181b;">Aantekeningen:</h3>
+        <div style="border-bottom: 1px dashed #e4e4e7; height: 28px;"></div>
+        <div style="border-bottom: 1px dashed #e4e4e7; height: 28px;"></div>
+        <div style="border-bottom: 1px dashed #e4e4e7; height: 28px;"></div>
+        <div style="border-bottom: 1px dashed #e4e4e7; height: 28px;"></div>
+        <div style="border-bottom: 1px dashed #e4e4e7; height: 28px;"></div>
+    </div>
+    </body></html>`;
     win.document.write(html);
     win.document.close();
 };
