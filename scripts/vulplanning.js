@@ -30,7 +30,7 @@ import {
         fillerTasks: {},
         helpers: {},
         activeTab: 'fill',
-        fillerSortOrder: 'name-asc',
+        fillerSortOrder: 'start-asc',
         otherTimes: {
             "Restanten nalopen": 20,
             "Bulk nalopen": 30,
@@ -41,7 +41,15 @@ import {
         instanceTimes: {},
         fillerBreaks: {},
         actualEndTimes: {},
-        hiddenFillers: []
+        nonFillers: [],
+        hiddenFillers: [],
+        showNonFillers: false,
+        showReallyHidden: false,
+        autoPairSettings: {
+            enabled: false,
+            prependOtherTask: false,
+            selectedOtherTask: ""
+        }
     };
 
     let activeTaskId = null;
@@ -81,20 +89,21 @@ import {
         });
     };
 
-    const getClosestTask = (container, y) => {
+    const getClosestTask = (container, x, y) => {
         const cards = [...container.querySelectorAll('.task-card:not(.dragging)')];
         if (cards.length === 0) return null;
         let closest = null;
         let minDistance = Infinity;
         cards.forEach(card => {
             const box = card.getBoundingClientRect();
-            const center = box.top + box.height / 2;
-            const distance = Math.abs(y - center);
+            const centerX = box.left + box.width / 2;
+            const centerY = box.top + box.height / 2;
+            const distance = Math.hypot(x - centerX, y - centerY);
             if (distance < minDistance) {
                 minDistance = distance;
                 closest = {
                     card: card,
-                    before: y < center
+                    before: x < centerX
                 };
             }
         });
@@ -115,6 +124,8 @@ import {
 
         card.addEventListener('dragstart', (e) => {
             e.dataTransfer.setData('text/plain', taskId);
+            const isFromAssigned = card.closest('#assigned-tasks-grid') !== null;
+            e.dataTransfer.setData('is-from-assigned', isFromAssigned ? 'true' : 'false');
             card.classList.add('dragging');
         });
 
@@ -122,56 +133,46 @@ import {
             card.classList.remove('dragging');
         });
 
-        const title = document.createElement('span');
-        title.className = 'task-card-title';
-        
-        const nameSpan = document.createElement('span');
-        nameSpan.textContent = pathName;
-        title.appendChild(nameSpan);
-        
-        if (startTime !== undefined && endTime !== undefined) {
-            const timeSpan = document.createElement('span');
-            timeSpan.textContent = ` (${formatTimeOfDay(startTime)} - ${formatTimeOfDay(endTime)})`;
-            timeSpan.style.fontSize = '11px';
-            timeSpan.style.fontWeight = '500';
-            timeSpan.style.color = 'var(--text-color-muted)';
-            timeSpan.style.marginLeft = '4px';
-            title.appendChild(timeSpan);
-        }
+        const colliSuffix = (type === 'fill' && data && data.colli) ? ` (${data.colli} c)` : '';
+        const titleRow = document.createElement('div');
+        titleRow.className = 'task-card-title';
+        titleRow.textContent = `${pathName}${colliSuffix}`;
+        card.appendChild(titleRow);
 
-        const meta = document.createElement('div');
-        meta.className = 'task-card-meta';
+        const metaRow = document.createElement('div');
+        metaRow.className = 'task-card-meta';
+        metaRow.style.cssText = 'display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 11px; color: var(--text-color-muted); white-space: nowrap;';
 
-        const typeSpan = document.createElement('span');
-        typeSpan.className = `task-card-type ${type}`;
-        if (type === 'fill') typeSpan.textContent = 'Vullen';
-        else if (type === 'mirror') typeSpan.textContent = 'Spiegelen';
-        else typeSpan.textContent = 'Overige';
-
-        const durationSpan = document.createElement('span');
         const duration = getTaskDuration(taskId);
-        
+        let durationText = '';
         if (isHelperTask) {
-            const mainAssignee = getTaskAssignment(mainTaskId);
-            const mainAssigneeName = mainAssignee ? mainAssignee.split(' - ')[0] : 'onbekend';
-            durationSpan.textContent = `Helpt ${mainAssigneeName} • ${formatMin(duration)}`;
+            card.classList.add('helper');
+            durationText = formatMin(duration);
+        } else if (startTime === undefined) {
+            durationText = formatMin(duration);
         } else {
-            const colliText = type === 'fill' ? `${data.colli} colli • ` : '';
             const helperInfo = state.helpers[taskId];
             if (helperInfo && helperInfo.helperName) {
                 const rawHelperDur = (helperInfo.isMax || helperInfo.isHalf) ? (helperInfo.calculatedDuration || 0) : (helperInfo.duration || 0);
                 const helperDuration = Math.min(duration, Math.max(0, rawHelperDur));
                 const remainingDuration = Math.max(0, duration - helperDuration);
-                durationSpan.textContent = `${colliText}${formatMin(remainingDuration)} (was ${formatMin(duration)})`;
+                durationText = formatMin(remainingDuration);
             } else {
-                durationSpan.textContent = `${colliText}${formatMin(duration)}`;
+                durationText = formatMin(duration);
             }
         }
 
-        meta.appendChild(typeSpan);
-        meta.appendChild(durationSpan);
-        card.appendChild(title);
-        card.appendChild(meta);
+        const leftMetaSpan = document.createElement('span');
+        leftMetaSpan.textContent = durationText;
+        metaRow.appendChild(leftMetaSpan);
+
+        if (startTime !== undefined && endTime !== undefined) {
+            const rightMetaSpan = document.createElement('span');
+            rightMetaSpan.textContent = `${formatTimeOfDay(startTime)} - ${formatTimeOfDay(endTime)}`;
+            metaRow.appendChild(rightMetaSpan);
+        }
+
+        card.appendChild(metaRow);
 
         if (!isHelperTask) {
             const assignee = getTaskAssignment(taskId);
@@ -188,29 +189,7 @@ import {
                     }
                 });
                 card.appendChild(menuBtn);
-
-                const helperInfo = state.helpers[taskId];
-                if (helperInfo && helperInfo.helperName) {
-                    const helperMeta = document.createElement('div');
-                    helperMeta.style.fontSize = '11px';
-                    helperMeta.style.color = 'var(--helper-color)';
-                    helperMeta.style.marginTop = '4px';
-                    helperMeta.style.fontWeight = '600';
-                    const durText = helperInfo.isMax ? 'Max' : (helperInfo.isHalf ? '50/50' : `${helperInfo.duration}m`);
-                    helperMeta.textContent = `Helper: ${helperInfo.helperName.split(' - ')[0]} (${durText})`;
-                    card.appendChild(helperMeta);
-                }
             }
-        } else {
-            const badge = document.createElement('span');
-            badge.style.position = 'absolute';
-            badge.style.top = '10px';
-            badge.style.right = '12px';
-            badge.style.fontSize = '11px';
-            badge.style.fontWeight = '700';
-            badge.style.color = 'var(--helper-color)';
-            badge.textContent = 'HELPER';
-            card.appendChild(badge);
         }
 
         return card;
@@ -272,11 +251,7 @@ import {
             if (maxCheckbox.checked) {
                 optimal = Math.min(duration, maxHelperDur);
             } else if (halfCheckbox.checked) {
-                if (minHelperDur > maxHelperDur) {
-                    optimal = Math.min(duration, maxHelperDur);
-                } else {
-                    optimal = Math.max(minHelperDur, Math.min(maxHelperDur, duration / 2));
-                }
+                optimal = duration / 2;
             }
             durationInput.value = halfCheckbox.checked ? Math.floor(optimal) : Math.round(optimal);
         }
@@ -300,7 +275,8 @@ import {
         select.appendChild(defaultOpt);
 
         const currentAssignee = getTaskAssignment(taskId);
-        state.selectedFillers.forEach(filler => {
+        const allAvailablePeople = [...new Set([...state.selectedFillers, ...(state.hiddenFillers || [])])];
+        allAvailablePeople.forEach(filler => {
             if (filler !== currentAssignee) {
                 const opt = document.createElement('option');
                 opt.value = filler;
@@ -509,34 +485,20 @@ import {
 
     const updateMaxHelperDurations = () => {
         Object.entries(state.helpers).forEach(([taskId, helperInfo]) => {
-            if (helperInfo.isMax || helperInfo.isHalf) {
+            if (helperInfo.isHalf) {
                 const duration = getTaskDuration(taskId);
-                helperInfo.calculatedDuration = helperInfo.isHalf ? Math.floor(duration / 2) : Math.round(duration / 2);
-            }
-        });
-        Object.entries(state.helpers).forEach(([taskId, helperInfo]) => {
-            if (helperInfo.isMax || helperInfo.isHalf) {
+                helperInfo.calculatedDuration = Math.floor(duration / 2);
+            } else if (helperInfo.isMax) {
                 const duration = getTaskDuration(taskId);
                 const helper = helperInfo.helperName;
                 const assignee = getTaskAssignment(taskId);
                 if (assignee) {
-                    const limitA = getAvailableTime(assignee);
                     const limitH = getAvailableTime(helper);
-                    const totalA = getFillerTotalTime(assignee) - (duration - helperInfo.calculatedDuration);
-                    const totalH = getFillerTotalTime(helper) - helperInfo.calculatedDuration;
-                    const minHelperDur = isFinite(limitA) ? Math.max(0, totalA + duration - limitA) : 0;
+                    const totalH = getFillerTotalTime(helper) - (helperInfo.calculatedDuration || 0);
                     const maxHelperDur = isFinite(limitH) ? Math.max(0, limitH - totalH) : duration;
-                    let optimal = duration / 2;
-                    if (helperInfo.isMax) {
-                        optimal = Math.min(duration, maxHelperDur);
-                    } else if (helperInfo.isHalf) {
-                        if (minHelperDur > maxHelperDur) {
-                            optimal = Math.min(duration, maxHelperDur);
-                        } else {
-                            optimal = Math.max(minHelperDur, Math.min(maxHelperDur, duration / 2));
-                        }
-                    }
-                    helperInfo.calculatedDuration = helperInfo.isHalf ? Math.floor(optimal) : Math.round(optimal);
+                    helperInfo.calculatedDuration = Math.min(duration, Math.round(maxHelperDur));
+                } else {
+                    helperInfo.calculatedDuration = Math.round(duration / 2);
                 }
             }
         });
@@ -545,20 +507,23 @@ import {
     const renderWorkspace = () => {
         updateMaxHelperDurations();
         const workspace = document.getElementById('drag-drop-workspace');
-        const fillersContainer = document.getElementById('fillers-container');
+        const fillersTableBody = document.getElementById('fillers-table-body');
         const fillContainer = document.getElementById('unassigned-fill-tasks');
         const mirrorContainer = document.getElementById('unassigned-mirror-tasks');
         const otherContainer = document.getElementById('unassigned-other-tasks');
-        if (!workspace || !fillersContainer || !fillContainer || !mirrorContainer || !otherContainer) return;
+        if (!workspace || !fillersTableBody || !fillContainer || !mirrorContainer || !otherContainer) return;
 
-        const currentFillers = new Set(state.selectedFillers);
+        const pairCheckbox = document.getElementById('pair-fill-mirror-checkbox');
+        if (pairCheckbox) pairCheckbox.checked = !!state.autoPairFillMirror;
+
+        const currentFillers = new Set([...state.selectedFillers, ...(state.hiddenFillers || [])]);
         Object.keys(state.fillerTasks).forEach(filler => {
             if (!currentFillers.has(filler)) {
                 delete state.fillerTasks[filler];
             }
         });
 
-        state.selectedFillers.forEach(filler => {
+        currentFillers.forEach(filler => {
             if (!state.fillerTasks[filler]) {
                 state.fillerTasks[filler] = [];
             }
@@ -567,6 +532,14 @@ import {
         const tabFill = document.getElementById('tab-fill');
         const tabMirror = document.getElementById('tab-mirror');
         const tabOther = document.getElementById('tab-other');
+
+        if (state.autoPairSettings && state.autoPairSettings.enabled) {
+            if (tabMirror) tabMirror.style.display = 'none';
+            if (state.activeTab === 'mirror') state.activeTab = 'fill';
+        } else {
+            if (tabMirror) tabMirror.style.display = '';
+        }
+
         const addCustomBtn = document.getElementById('add-custom-task-btn');
         if (addCustomBtn) {
             addCustomBtn.style.display = state.activeTab === 'other' ? 'block' : 'none';
@@ -596,10 +569,13 @@ import {
             }
         }
 
-        fillersContainer.innerHTML = '';
+        fillersTableBody.innerHTML = '';
         fillContainer.innerHTML = '';
         mirrorContainer.innerHTML = '';
         otherContainer.innerHTML = '';
+
+        const nonFillersTableBody = document.getElementById('non-fillers-table-body');
+        if (nonFillersTableBody) nonFillersTableBody.innerHTML = '';
 
         const allTaskIds = [];
         Object.keys(state.pathColli).forEach(pathName => {
@@ -612,84 +588,99 @@ import {
             allTaskIds.push(`${pathName}_other`);
         });
 
+        if (!state.nonFillers) state.nonFillers = [];
         if (!state.hiddenFillers) state.hiddenFillers = [];
-        const visibleFillers = state.selectedFillers.filter(f => !state.hiddenFillers.includes(f));
 
-        const toggleHiddenBtn = document.getElementById('toggle-hidden-fillers-btn');
-        const hiddenCountSpan = document.getElementById('hidden-fillers-count');
-        const hiddenListContainer = document.getElementById('hidden-fillers-list');
-        const hiddenPanel = document.getElementById('hidden-fillers-panel');
+        const activeFillers = state.selectedFillers.filter(f => !state.nonFillers.includes(f) && !state.hiddenFillers.includes(f));
+        const nonFillersList = state.selectedFillers.filter(f => state.nonFillers.includes(f) && !state.hiddenFillers.includes(f));
 
-        if (toggleHiddenBtn && hiddenCountSpan && hiddenListContainer) {
-            hiddenCountSpan.textContent = state.hiddenFillers.length;
-            toggleHiddenBtn.style.display = state.hiddenFillers.length > 0 ? 'flex' : 'none';
-            if (state.hiddenFillers.length === 0 && hiddenPanel) hiddenPanel.style.display = 'none';
+        const nonFillersCountEl = document.getElementById('non-fillers-count');
+        const hiddenCountEl = document.getElementById('hidden-fillers-count');
+        const toggleReallyHiddenBtn = document.getElementById('toggle-really-hidden-btn');
+        const nonFillersSection = document.getElementById('non-fillers-section');
+        const fillersHeader = document.getElementById('fillers-header');
+        const reallyHiddenPanel = document.getElementById('really-hidden-panel');
+        const reallyHiddenList = document.getElementById('really-hidden-list');
 
-            hiddenListContainer.innerHTML = '';
-            state.hiddenFillers.forEach(filler => {
-                const badge = document.createElement('button');
-                badge.type = 'button';
-                badge.style.cssText = 'padding: 4px 8px; font-size: 12px; background-color: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px;';
-                const nameEl = createPersonNameElement(filler, 'person-name', 'person-subtitle', 'person-info');
-                const icon = document.createElement('i');
-                icon.className = 'material-icons';
-                icon.style.cssText = 'font-size: 14px; color: var(--accent-color-sidemenu);';
-                icon.textContent = 'visibility';
-                badge.appendChild(nameEl);
-                badge.appendChild(icon);
-                badge.addEventListener('click', () => {
-                    state.hiddenFillers = state.hiddenFillers.filter(f => f !== filler);
-                    renderWorkspace();
-                    triggerSave();
-                });
-                hiddenListContainer.appendChild(badge);
-            });
+        if (nonFillersCountEl) nonFillersCountEl.textContent = nonFillersList.length;
+        if (hiddenCountEl) hiddenCountEl.textContent = state.hiddenFillers.length;
+        if (toggleReallyHiddenBtn) {
+            toggleReallyHiddenBtn.style.display = state.hiddenFillers.length > 0 ? 'flex' : 'none';
         }
 
-        const sortedFillers = [...visibleFillers].sort((a, b) => {
-            if (state.fillerSortOrder === 'name-asc') {
-                return a.localeCompare(b);
-            } else if (state.fillerSortOrder === 'name-desc') {
-                return b.localeCompare(a);
-            } else if (state.fillerSortOrder === 'start-asc') {
-                return getFillerStartTime(a) - getFillerStartTime(b);
-            } else if (state.fillerSortOrder === 'start-desc') {
-                return getFillerStartTime(b) - getFillerStartTime(a);
-            } else if (state.fillerSortOrder === 'end-asc') {
-                return getFillerEndTime(a) - getFillerEndTime(b);
-            } else if (state.fillerSortOrder === 'end-desc') {
-                return getFillerEndTime(b) - getFillerEndTime(a);
+        if (reallyHiddenPanel && reallyHiddenList) {
+            reallyHiddenList.innerHTML = '';
+            if (state.showReallyHidden && state.hiddenFillers.length > 0) {
+                reallyHiddenPanel.style.display = 'block';
+                state.hiddenFillers.forEach(filler => {
+                    const badge = document.createElement('button');
+                    badge.type = 'button';
+                    badge.style.cssText = 'padding: 4px 8px; font-size: 12px; background-color: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px;';
+                    const nameEl = createPersonNameElement(filler, 'person-name', 'person-subtitle', 'person-info');
+                    const icon = document.createElement('i');
+                    icon.className = 'material-icons';
+                    icon.style.cssText = 'font-size: 14px; color: var(--accent-color-sidemenu);';
+                    icon.textContent = 'restore';
+                    badge.appendChild(nameEl);
+                    badge.appendChild(icon);
+                    badge.addEventListener('click', () => {
+                        state.hiddenFillers = state.hiddenFillers.filter(f => f !== filler);
+                        renderWorkspace();
+                        triggerSave();
+                    });
+                    reallyHiddenList.appendChild(badge);
+                });
+            } else {
+                reallyHiddenPanel.style.display = 'none';
             }
-            return 0;
-        });
+        }
 
-        sortedFillers.forEach(filler => {
+        const buildFillerRow = (filler, isNonFiller = false) => {
             const totalMin = getFillerTotalTime(filler);
             const maxMin = getAvailableTime(filler);
             const pauseMin = getFillerPause(filler);
             const roundedTotal = Math.round(totalMin);
             const isExceeded = roundedTotal > maxMin;
 
-            const fillerCard = document.createElement('div');
-            fillerCard.className = `filler-card${isExceeded ? ' exceeded' : ''}`;
+            const tr = document.createElement('tr');
+            tr.className = `filler-row${isExceeded ? ' exceeded' : ''}`;
+            if (isNonFiller) {
+                tr.style.opacity = '0.95';
+            }
 
-            const header = document.createElement('div');
-            header.className = 'filler-card-header';
+            const tdActions = document.createElement('td');
+            tdActions.style.cssText = 'padding: 4px; width: 32px; text-align: center;';
+            const actionsContainer = document.createElement('div');
+            actionsContainer.style.cssText = 'display: flex; flex-direction: column; gap: 2px; align-items: center; justify-content: center;';
 
-            const titleRow = document.createElement('div');
-            titleRow.className = 'filler-card-title-row';
+            const toggleNonFillerBtn = document.createElement('button');
+            toggleNonFillerBtn.type = 'button';
+            toggleNonFillerBtn.title = isNonFiller ? 'Maak actieve vuller' : 'Maak niet-vuller';
+            toggleNonFillerBtn.style.cssText = 'background: none; border: none; color: var(--text-color-muted); cursor: pointer; padding: 1px; display: flex; align-items: center; border-radius: 3px;';
+            toggleNonFillerBtn.innerHTML = isNonFiller
+                ? '<i class="material-icons" style="font-size: 16px; color: var(--accent-color-sidemenu);">person</i>'
+                : '<i class="material-icons" style="font-size: 16px;">person_off</i>';
+            toggleNonFillerBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (isNonFiller) {
+                    state.nonFillers = state.nonFillers.filter(f => f !== filler);
+                } else {
+                    if (!state.nonFillers.includes(filler)) {
+                        state.nonFillers.push(filler);
+                    }
+                }
+                renderWorkspace();
+                triggerSave();
+            });
 
-            const title = createPersonNameElement(filler, 'filler-card-title', 'filler-card-subtitle', 'filler-card-info');
-
-            const hideBtn = document.createElement('button');
-            hideBtn.type = 'button';
-            hideBtn.title = 'Vuller verbergen';
-            hideBtn.style.cssText = 'background: none; border: none; color: var(--text-color-muted); cursor: pointer; padding: 2px 4px; display: flex; align-items: center; border-radius: 4px; margin-right: 6px;';
-            hideBtn.innerHTML = '<i class="material-icons" style="font-size: 18px;">visibility_off</i>';
-            hideBtn.addEventListener('click', (e) => {
+            const reallyHideBtn = document.createElement('button');
+            reallyHideBtn.type = 'button';
+            reallyHideBtn.title = 'Echt verbergen';
+            reallyHideBtn.style.cssText = 'background: none; border: none; color: var(--text-color-muted); cursor: pointer; padding: 1px; display: flex; align-items: center; border-radius: 3px;';
+            reallyHideBtn.innerHTML = '<i class="material-icons" style="font-size: 16px;">visibility_off</i>';
+            reallyHideBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const assignedTasks = (state.fillerTasks[filler] || []).slice();
-
                 const executeHide = () => {
                     if (assignedTasks.length > 0) {
                         assignedTasks.forEach(taskId => {
@@ -707,6 +698,8 @@ import {
                     if (!state.hiddenFillers.includes(filler)) {
                         state.hiddenFillers.push(filler);
                     }
+                    state.nonFillers = state.nonFillers.filter(f => f !== filler);
+                    state.showReallyHidden = false;
                     renderWorkspace();
                     triggerSave();
                 };
@@ -714,8 +707,8 @@ import {
                 if (assignedTasks.length > 0) {
                     const cleanName = filler.split(/\s*-\s*\d{2}:\d{2}/)[0].trim();
                     showConfirmModal(
-                        'Vuller Verbergen',
-                        `Weet je zeker dat je ${cleanName} wilt verbergen? Alle toegewezen taken van deze vuller gaan terug naar de onverdeelde taken.`,
+                        'Medewerker Verbergen',
+                        `Weet je zeker dat je ${cleanName} wilt verbergen? Alle toegewezen taken gaan terug naar onverdeeld.`,
                         executeHide
                     );
                 } else {
@@ -723,42 +716,105 @@ import {
                 }
             });
 
-            const endWrapper = document.createElement('div');
-            endWrapper.className = 'actual-end-wrapper';
+            actionsContainer.appendChild(toggleNonFillerBtn);
+            actionsContainer.appendChild(reallyHideBtn);
+            tdActions.appendChild(actionsContainer);
 
-            const endLabel = document.createElement('label');
-            endLabel.className = 'actual-end-label';
-            endLabel.textContent = 'Eindtijd:';
+            const tdInfo = document.createElement('td');
+            tdInfo.style.cssText = 'padding: 4px 4px 4px 0; white-space: nowrap;';
+            const infoContainer = document.createElement('div');
+            infoContainer.style.cssText = 'display: flex; flex-direction: column; gap: 1px;';
+            const { name, subtitle } = parseNameAndSubtitle(filler);
+            const truncatedName = name.length > 13 ? name.substring(0, 12) + '..' : name;
+            const nameEl = document.createElement('span');
+            nameEl.className = 'filler-card-title';
+            nameEl.style.cssText = 'font-size: 12px; font-weight: 600; white-space: nowrap;';
+            nameEl.textContent = truncatedName;
+            nameEl.title = name;
+            infoContainer.appendChild(nameEl);
+            if (subtitle) {
+                const subEl = document.createElement('span');
+                subEl.className = 'filler-card-subtitle';
+                subEl.style.cssText = 'font-size: 10px; color: var(--text-color-muted); white-space: nowrap;';
+                subEl.textContent = subtitle;
+                infoContainer.appendChild(subEl);
+            }
+            tdInfo.appendChild(infoContainer);
+
+            const tdStats = document.createElement('td');
+            tdStats.style.cssText = 'padding: 4px 6px; width: 215px;';
+            const statsContainer = document.createElement('div');
+            statsContainer.style.cssText = 'display: flex; flex-direction: column; gap: 2px;';
+
+            if (isFinite(maxMin)) {
+                const remainingMin = maxMin - roundedTotal;
+
+                const topRow = document.createElement('div');
+                topRow.style.cssText = 'display: flex; width: 100%;';
+                const usageSpan = document.createElement('span');
+                usageSpan.className = `filler-stat-item${isExceeded ? ' exceeded' : ''}`;
+                usageSpan.style.cssText = 'width: 100%; justify-content: center; text-align: center;';
+                usageSpan.textContent = `Tijd: ${formatMin(roundedTotal)} / ${formatMin(maxMin)}`;
+                topRow.appendChild(usageSpan);
+
+                const bottomRow = document.createElement('div');
+                bottomRow.style.cssText = 'display: flex; gap: 4px; width: 100%;';
+                const pauseSpan = document.createElement('span');
+                pauseSpan.className = 'filler-stat-item';
+                pauseSpan.style.cssText = 'flex: 1; justify-content: center; text-align: center;';
+                pauseSpan.textContent = `Pauze: ${formatMin(pauseMin)}`;
+
+                const remainingSpan = document.createElement('span');
+                remainingSpan.className = `filler-stat-item remaining ${remainingMin >= 0 ? 'positive' : 'negative'}`;
+                remainingSpan.style.cssText = 'flex: 1; justify-content: center; text-align: center;';
+                remainingSpan.textContent = remainingMin >= 0 ? `Over: ${formatMin(remainingMin)}` : `Te veel: ${formatMin(Math.abs(remainingMin))}`;
+
+                bottomRow.appendChild(pauseSpan);
+                bottomRow.appendChild(remainingSpan);
+
+                statsContainer.appendChild(topRow);
+                statsContainer.appendChild(bottomRow);
+            }
+
+            const progressBarContainer = document.createElement('div');
+            progressBarContainer.className = 'progress-bar-container';
+            progressBarContainer.style.cssText = 'height: 4px; margin-top: 2px;';
+            const progressBarFill = document.createElement('div');
+            progressBarFill.className = `progress-bar-fill${isExceeded ? ' exceeded' : ''}`;
+            const percentage = isFinite(maxMin) && maxMin > 0 ? Math.min((roundedTotal / maxMin) * 100, 100) : 0;
+            progressBarFill.style.width = `${percentage}%`;
+            progressBarContainer.appendChild(progressBarFill);
+            statsContainer.appendChild(progressBarContainer);
+            tdStats.appendChild(statsContainer);
+
+            const tdEnd = document.createElement('td');
+            tdEnd.style.cssText = 'padding: 4px; width: 75px; text-align: center;';
+            const endContainer = document.createElement('div');
+            endContainer.style.cssText = 'display: flex; flex-direction: column; gap: 2px; align-items: center; justify-content: center;';
 
             const endInput = document.createElement('input');
             endInput.type = 'time';
             endInput.className = 'actual-end-input';
+            endInput.style.cssText = 'padding: 2px 4px; font-size: 11px; width: 70px;';
 
             const plannedEndMin = getFillerEndTime(filler);
             const plannedEndStr = isFinite(plannedEndMin) ? formatTimeOfDay(plannedEndMin) : '';
             const currentActual = state.actualEndTimes && state.actualEndTimes[filler] !== undefined ? state.actualEndTimes[filler] : plannedEndStr;
             endInput.value = currentActual;
 
+            const prodContainer = document.createElement('div');
+
             const updateFillerProdDisplay = () => {
+                prodContainer.innerHTML = '';
                 const pVal = getFillerProductivity(filler);
-                let pSpan = header.querySelector('.filler-stat-item.prod');
                 if (pVal !== null) {
-                    let sRow = header.querySelector('.filler-card-stats');
-                    if (!sRow) {
-                        sRow = document.createElement('div');
-                        sRow.className = 'filler-card-stats';
-                        header.appendChild(sRow);
-                    }
-                    if (!pSpan) {
-                        pSpan = document.createElement('span');
-                        pSpan.className = 'filler-stat-item prod';
-                        sRow.appendChild(pSpan);
-                    }
-                    pSpan.textContent = `Productiviteit: ${pVal}%`;
-                } else if (pSpan) {
-                    pSpan.remove();
+                    const pSpan = document.createElement('span');
+                    pSpan.className = 'filler-stat-item prod';
+                    pSpan.textContent = `Prod: ${pVal}%`;
+                    prodContainer.appendChild(pSpan);
                 }
             };
+            updateFillerProdDisplay();
 
             endInput.addEventListener('input', (e) => {
                 state.actualEndTimes[filler] = e.target.value;
@@ -772,66 +828,12 @@ import {
             });
             endInput.addEventListener('click', (e) => e.stopPropagation());
 
-            endWrapper.appendChild(endLabel);
-            endWrapper.appendChild(endInput);
+            endContainer.appendChild(endInput);
+            endContainer.appendChild(prodContainer);
+            tdEnd.appendChild(endContainer);
 
-            const titleContainer = document.createElement('div');
-            titleContainer.style.cssText = 'display: flex; align-items: center;';
-            titleContainer.appendChild(hideBtn);
-            titleContainer.appendChild(title);
-
-            titleRow.appendChild(titleContainer);
-            titleRow.appendChild(endWrapper);
-            header.appendChild(titleRow);
-
-            let statsRow = null;
-            const prodVal = getFillerProductivity(filler);
-
-            if (isFinite(maxMin) || prodVal !== null) {
-                statsRow = document.createElement('div');
-                statsRow.className = 'filler-card-stats';
-
-                if (isFinite(maxMin)) {
-                    const remainingMin = maxMin - roundedTotal;
-
-                    const usageSpan = document.createElement('span');
-                    usageSpan.className = `filler-stat-item${isExceeded ? ' exceeded' : ''}`;
-                    usageSpan.textContent = `Tijd: ${formatMin(roundedTotal)} / ${formatMin(maxMin)}`;
-
-                    const pauseSpan = document.createElement('span');
-                    pauseSpan.className = 'filler-stat-item';
-                    pauseSpan.textContent = `Pauze: ${formatMin(pauseMin)}`;
-
-                    const remainingSpan = document.createElement('span');
-                    remainingSpan.className = `filler-stat-item remaining ${remainingMin >= 0 ? 'positive' : 'negative'}`;
-                    remainingSpan.textContent = remainingMin >= 0 ? `Over: ${formatMin(remainingMin)}` : `Te veel: ${formatMin(Math.abs(remainingMin))}`;
-
-                    statsRow.appendChild(usageSpan);
-                    statsRow.appendChild(pauseSpan);
-                    statsRow.appendChild(remainingSpan);
-                }
-
-                if (prodVal !== null) {
-                    const prodSpan = document.createElement('span');
-                    prodSpan.className = 'filler-stat-item prod';
-                    prodSpan.textContent = `Prod: ${prodVal}%`;
-                    statsRow.appendChild(prodSpan);
-                }
-
-                header.appendChild(statsRow);
-            }
-
-            fillerCard.appendChild(header);
-
-            const progressBarContainer = document.createElement('div');
-            progressBarContainer.className = 'progress-bar-container';
-            const progressBarFill = document.createElement('div');
-            progressBarFill.className = `progress-bar-fill${isExceeded ? ' exceeded' : ''}`;
-            const percentage = isFinite(maxMin) && maxMin > 0 ? Math.min((roundedTotal / maxMin) * 100, 100) : 0;
-            progressBarFill.style.width = `${percentage}%`;
-            progressBarContainer.appendChild(progressBarFill);
-            fillerCard.appendChild(progressBarContainer);
-
+            const tdTasks = document.createElement('td');
+            tdTasks.className = 'filler-tasks-cell';
             const tasksList = document.createElement('div');
             tasksList.className = 'filler-tasks-list';
 
@@ -839,41 +841,80 @@ import {
             indicator.className = 'drop-indicator-line';
             tasksList.appendChild(indicator);
 
-            fillerCard.addEventListener('dragover', (e) => {
+            tr.addEventListener('dragover', (e) => {
                 e.preventDefault();
-                const closest = getClosestTask(tasksList, e.clientY);
+                const closest = getClosestTask(tasksList, e.clientX, e.clientY);
                 if (closest) {
-                    fillerCard.classList.remove('drag-over');
+                    tr.classList.remove('drag-over');
                     const targetCard = closest.card;
-                    let targetTop = 0;
+                    let targetLeft = 0;
                     if (closest.before) {
-                        targetTop = targetCard.offsetTop - 6;
+                        targetLeft = targetCard.offsetLeft - 4;
                     } else {
-                        targetTop = targetCard.offsetTop + targetCard.offsetHeight + 2;
+                        targetLeft = targetCard.offsetLeft + targetCard.offsetWidth + 2;
                     }
-                    indicator.style.top = `${targetTop}px`;
+                    indicator.style.left = `${targetLeft}px`;
+                    indicator.style.top = '0';
+                    indicator.style.height = '100%';
                     indicator.style.display = 'block';
                 } else {
                     indicator.style.display = 'none';
                     if (tasksList.querySelectorAll('.task-card').length === 0) {
-                        fillerCard.classList.add('drag-over');
+                        tr.classList.add('drag-over');
                     }
                 }
             });
 
-            fillerCard.addEventListener('dragleave', (e) => {
-                if (!fillerCard.contains(e.relatedTarget)) {
-                    fillerCard.classList.remove('drag-over');
+            tr.addEventListener('dragleave', (e) => {
+                if (!tr.contains(e.relatedTarget)) {
+                    tr.classList.remove('drag-over');
                     indicator.style.display = 'none';
                 }
             });
 
-            fillerCard.addEventListener('drop', (e) => {
+            tr.addEventListener('drop', (e) => {
                 e.preventDefault();
-                fillerCard.classList.remove('drag-over');
+                tr.classList.remove('drag-over');
                 indicator.style.display = 'none';
                 let taskId = e.dataTransfer.getData('text/plain');
-                if (taskId) {
+                if (!taskId || !document.getElementById(`task-${taskId}`)) return;
+                    const existingAssignee = getTaskAssignment(taskId);
+                    const isFromAssigned = e.dataTransfer.getData('is-from-assigned') === 'true';
+
+                    if (isFromAssigned && existingAssignee && existingAssignee !== filler && !taskId.endsWith('_helper') && !taskId.includes('_other')) {
+                        const totalDur = getTaskDuration(taskId);
+                        const halfDur = Math.floor(totalDur / 2);
+                        const helperTaskId = `${taskId}_helper`;
+                        state.helpers[taskId] = {
+                            helperName: filler,
+                            isHalf: true,
+                            calculatedDuration: halfDur
+                        };
+                        if (!state.fillerTasks[filler]) {
+                            state.fillerTasks[filler] = [];
+                        }
+                        removeTaskFromAll(helperTaskId);
+                        const closest = getClosestTask(tasksList, e.clientX, e.clientY);
+                        if (closest) {
+                            const targetTaskId = closest.card.id.replace('task-', '');
+                            const tasks = state.fillerTasks[filler];
+                            const targetIndex = tasks.indexOf(targetTaskId);
+                            if (targetIndex !== -1) {
+                                const insertIndex = closest.before ? targetIndex : targetIndex + 1;
+                                tasks.splice(insertIndex, 0, helperTaskId);
+                            } else {
+                                tasks.push(helperTaskId);
+                            }
+                        } else {
+                            state.fillerTasks[filler].push(helperTaskId);
+                        }
+                        renderWorkspace();
+                        triggerSave();
+                        return;
+                    }
+
+                    const isAlreadyAssigned = existingAssignee !== null;
+
                     if (taskId.includes('_other') && !taskId.includes('_inst-')) {
                         const uniqueId = `${taskId}_inst-${Date.now()}`;
                         const [pathName] = taskId.split('_');
@@ -899,21 +940,62 @@ import {
                     if (!state.fillerTasks[filler]) {
                         state.fillerTasks[filler] = [];
                     }
-                    const closest = getClosestTask(tasksList, e.clientY);
+
+                    let counterpartTaskId = null;
+                    if (!isAlreadyAssigned && state.autoPairSettings && state.autoPairSettings.enabled) {
+                        if (taskId.endsWith('_fill')) {
+                            const pKey = taskId.replace('_fill', '');
+                            if (state.pathColli[pKey] && MIRROR_TIMES[pKey] !== undefined) {
+                                counterpartTaskId = `${pKey}_mirror`;
+                            }
+                        } else if (taskId.endsWith('_mirror')) {
+                            const pKey = taskId.replace('_mirror', '');
+                            if (state.pathColli[pKey] && MIRROR_TIMES[pKey] !== undefined) {
+                                counterpartTaskId = `${pKey}_fill`;
+                            }
+                        }
+                    }
+
+                    let extraOtherTaskId = null;
+                    const isFillOrMirror = taskId.endsWith('_fill') || taskId.endsWith('_mirror');
+                    if (!isAlreadyAssigned && isFillOrMirror && state.autoPairSettings && state.autoPairSettings.prependOtherTask && state.autoPairSettings.selectedOtherTask) {
+                        const otherName = state.autoPairSettings.selectedOtherTask;
+                        const uniqueId = `${otherName}_other_inst-${Date.now()}`;
+                        state.instanceTimes[uniqueId] = state.otherTimes[otherName] || 30;
+                        extraOtherTaskId = uniqueId;
+                    }
+
+                    if (counterpartTaskId) {
+                        removeTaskFromAll(counterpartTaskId);
+                    }
+
+                    const tasks = state.fillerTasks[filler];
+                    const closest = getClosestTask(tasksList, e.clientX, e.clientY);
                     if (closest) {
                         const targetTaskId = closest.card.id.replace('task-', '');
-                        const tasks = state.fillerTasks[filler];
                         const targetIndex = tasks.indexOf(targetTaskId);
                         if (targetIndex !== -1) {
                             const insertIndex = closest.before ? targetIndex : targetIndex + 1;
-                            tasks.splice(insertIndex, 0, taskId);
+                            if (extraOtherTaskId) {
+                                tasks.splice(insertIndex, 0, extraOtherTaskId);
+                                tasks.splice(insertIndex + 1, 0, taskId);
+                                if (counterpartTaskId) tasks.splice(insertIndex + 2, 0, counterpartTaskId);
+                            } else {
+                                tasks.splice(insertIndex, 0, taskId);
+                                if (counterpartTaskId) tasks.splice(insertIndex + 1, 0, counterpartTaskId);
+                            }
+                        } else {
+                            if (extraOtherTaskId) tasks.push(extraOtherTaskId);
+                            tasks.push(taskId);
+                            if (counterpartTaskId) tasks.push(counterpartTaskId);
                         }
                     } else {
-                        state.fillerTasks[filler].push(taskId);
+                        if (extraOtherTaskId) tasks.push(extraOtherTaskId);
+                        tasks.push(taskId);
+                        if (counterpartTaskId) tasks.push(counterpartTaskId);
                     }
                     renderWorkspace();
                     triggerSave();
-                }
             });
 
             let currentTime = getFillerStartTime(filler);
@@ -934,24 +1016,100 @@ import {
                 if (card) tasksList.appendChild(card);
             });
 
-            fillerCard.appendChild(tasksList);
-            fillersContainer.appendChild(fillerCard);
+            tdTasks.appendChild(tasksList);
+
+            tr.appendChild(tdActions);
+            tr.appendChild(tdInfo);
+            tr.appendChild(tdStats);
+            tr.appendChild(tdEnd);
+            tr.appendChild(tdTasks);
+
+            return tr;
+        };
+
+        const sortFillers = (list, sortOrder) => {
+            return [...list].sort((a, b) => {
+                if (sortOrder === 'name-asc') {
+                    return a.localeCompare(b);
+                } else if (sortOrder === 'name-desc') {
+                    return b.localeCompare(a);
+                } else if (sortOrder === 'start-asc') {
+                    return getFillerStartTime(a) - getFillerStartTime(b);
+                } else if (sortOrder === 'start-desc') {
+                    return getFillerStartTime(b) - getFillerStartTime(a);
+                } else if (sortOrder === 'end-asc') {
+                    return getFillerEndTime(a) - getFillerEndTime(b);
+                } else if (sortOrder === 'end-desc') {
+                    return getFillerEndTime(b) - getFillerEndTime(a);
+                }
+                return 0;
+            });
+        };
+
+        if (nonFillersSection && nonFillersTableBody) {
+            if (nonFillersList.length > 0) {
+                nonFillersSection.style.display = 'flex';
+                if (fillersHeader) fillersHeader.style.display = 'flex';
+                sortFillers(nonFillersList, state.fillerSortOrder).forEach(filler => {
+                    nonFillersTableBody.appendChild(buildFillerRow(filler, true));
+                });
+            } else {
+                nonFillersSection.style.display = 'none';
+                if (fillersHeader) fillersHeader.style.display = 'none';
+            }
+        }
+
+        const sortedFillers = sortFillers(activeFillers, state.fillerSortOrder);
+
+        sortedFillers.forEach(filler => {
+            fillersTableBody.appendChild(buildFillerRow(filler, false));
         });
 
+        const assignedGrid = document.getElementById('assigned-tasks-grid');
+        const assignedSection = document.getElementById('assigned-tasks-section');
+        if (assignedGrid) assignedGrid.innerHTML = '';
+
+        let fillCount = 0;
+        let mirrorCount = 0;
+        let otherCount = 0;
+        let assignedCount = 0;
+
         allTaskIds.forEach(taskId => {
-            if (!getTaskAssignment(taskId)) {
-                const card = createTaskCard(taskId);
-                if (card) {
-                    if (taskId.endsWith('_fill')) {
-                        fillContainer.appendChild(card);
-                    } else if (taskId.endsWith('_mirror')) {
-                        mirrorContainer.appendChild(card);
-                    } else {
-                        otherContainer.appendChild(card);
+            const card = createTaskCard(taskId);
+            if (!card) return;
+
+            const assignee = getTaskAssignment(taskId);
+            if (!assignee) {
+                if (taskId.endsWith('_fill')) {
+                    fillContainer.appendChild(card);
+                    fillCount++;
+                } else if (taskId.endsWith('_mirror')) {
+                    mirrorContainer.appendChild(card);
+                    mirrorCount++;
+                } else {
+                    otherContainer.appendChild(card);
+                    otherCount++;
+                }
+            } else {
+                if (assignedGrid) {
+                    const isTabMatch = (state.activeTab === 'fill' && taskId.endsWith('_fill')) ||
+                                       (state.activeTab === 'mirror' && taskId.endsWith('_mirror')) ||
+                                       (state.activeTab === 'other' && !taskId.endsWith('_fill') && !taskId.endsWith('_mirror'));
+                    if (isTabMatch) {
+                        assignedGrid.appendChild(card);
+                        assignedCount++;
                     }
                 }
             }
         });
+
+        if (assignedSection) {
+            assignedSection.style.display = assignedCount > 0 ? 'flex' : 'none';
+        }
+
+        if (tabFill) tabFill.textContent = `Vullen (${fillCount})`;
+        if (tabMirror) tabMirror.textContent = `Spiegelen (${mirrorCount})`;
+        if (tabOther) tabOther.textContent = 'Overige';
 
 
 
@@ -1114,7 +1272,15 @@ import {
         card.style.display = names.length > 0 ? 'block' : 'none';
     };
 
-    const showConfirmModal = (title, message, onConfirm) => {
+    const showConfirmModal = (title, message, btnTextOrCallback, onConfirmArg) => {
+        let btnText, onConfirm;
+        if (typeof btnTextOrCallback === 'function') {
+            btnText = 'Overschrijven';
+            onConfirm = btnTextOrCallback;
+        } else {
+            btnText = btnTextOrCallback;
+            onConfirm = onConfirmArg;
+        }
         const modal = document.getElementById('confirm-modal');
         const titleEl = document.getElementById('confirm-modal-title');
         const msgEl = document.getElementById('confirm-modal-message');
@@ -1125,6 +1291,7 @@ import {
 
         titleEl.textContent = title;
         msgEl.textContent = message;
+        okBtn.textContent = btnText;
         modal.style.display = 'flex';
 
         const close = () => {
@@ -1157,7 +1324,11 @@ import {
                 instanceTimes: state.instanceTimes,
                 fillerBreaks: state.fillerBreaks,
                 actualEndTimes: state.actualEndTimes,
-                hiddenFillers: state.hiddenFillers || []
+                nonFillers: state.nonFillers || [],
+                hiddenFillers: state.hiddenFillers || [],
+                showNonFillers: !!state.showNonFillers,
+                showReallyHidden: !!state.showReallyHidden,
+                autoPairSettings: state.autoPairSettings || { enabled: false, prependOtherTask: false, selectedOtherTask: "" }
             };
             await supabase.from('vulplanningen').upsert({ id: storeId, vulplanning: payload });
         }, 500);
@@ -1177,7 +1348,11 @@ import {
             if (vp.instanceTimes) state.instanceTimes = vp.instanceTimes;
             if (vp.fillerBreaks) state.fillerBreaks = vp.fillerBreaks;
             if (vp.actualEndTimes) state.actualEndTimes = vp.actualEndTimes;
+            if (vp.nonFillers) state.nonFillers = vp.nonFillers;
             if (vp.hiddenFillers) state.hiddenFillers = vp.hiddenFillers;
+            if (vp.showNonFillers !== undefined) state.showNonFillers = vp.showNonFillers;
+            // if (vp.showReallyHidden !== undefined) state.showReallyHidden = vp.showReallyHidden;
+            if (vp.autoPairSettings) state.autoPairSettings = vp.autoPairSettings;
         }
     };
 
@@ -1510,6 +1685,8 @@ import {
                     'Opnieuw Beginnen',
                     'Weet je zeker dat je opnieuw wilt beginnen? De huidige planning wordt overschreven.',
                     () => {
+                        state.hiddenFillers = [];
+                        state.nonFillers = [];
                         document.getElementById('step-1-container').style.display = 'block';
                         document.getElementById('step-2-container').style.display = 'none';
                         resetBtn.style.display = 'none';
@@ -1597,6 +1774,7 @@ import {
 
         const sortSelect = document.getElementById('filler-sort-select');
         if (sortSelect) {
+            sortSelect.value = state.fillerSortOrder;
             sortSelect.addEventListener('change', (e) => {
                 state.fillerSortOrder = e.target.value;
                 renderWorkspace();
@@ -1651,7 +1829,7 @@ import {
             });
 
             const now = new Date();
-            const dateStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} om ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            const dateStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
             let cardsHtml = '';
             sortedFillers.forEach(filler => {
@@ -1661,91 +1839,45 @@ import {
                 const pauseMin = getFillerPause(filler);
                 const plannedEndMin = getFillerEndTime(filler);
                 const plannedEndStr = isFinite(plannedEndMin) ? formatTimeOfDay(plannedEndMin) : '--:--';
-                const actualEndStr = (state.actualEndTimes && state.actualEndTimes[filler]) ? state.actualEndTimes[filler] : plannedEndStr;
-                const prodVal = getFillerProductivity(filler);
 
                 let currentTime = isFinite(startMin) ? startMin : 0;
-                let tasksListHtml = '';
 
                 if (tasks.length === 0) {
-                    tasksListHtml = `<div class="empty-task">Geen taken toegewezen</div>`;
+                    cardsHtml += `<div class="printable-card empty-card"><div class="card-header"><span class="filler-name">${parseNameAndSubtitle(filler).name}</span><span class="time-compact">${startStr} - ${plannedEndStr} | Pauze: ${pauseMin}m</span></div><div class="empty-label">Geen taken</div></div>`;
                 } else {
-                    tasks.forEach((taskId, index) => {
+                    let tasksListHtml = '';
+                    tasks.forEach(taskId => {
                         let duration = getTaskDuration(taskId);
                         if (!taskId.endsWith('_helper')) {
                             const helperInfo = state.helpers[taskId];
                             if (helperInfo && helperInfo.helperName) {
                                 const rawDur = (helperInfo.isMax || helperInfo.isHalf) ? (helperInfo.calculatedDuration || 0) : (helperInfo.duration || 0);
-                                const helperDur = Math.min(duration, Math.max(0, rawDur));
-                                duration = Math.max(0, duration - helperDur);
+                                duration = Math.max(0, duration - Math.min(duration, Math.max(0, rawDur)));
                             }
                         }
-
                         const tStart = currentTime;
-                        const tEnd = currentTime + duration;
-                        currentTime = tEnd;
-
+                        currentTime += duration;
                         const startTimeStr = formatTimeOfDay(tStart);
-                        const endTimeStr = formatTimeOfDay(tEnd);
-
+                        const endTimeStr = formatTimeOfDay(currentTime);
                         let taskTitle = '';
                         let taskBadge = '';
-                        let badgeClass = 'badge-fill';
-
+                        let badgeClass = '';
                         if (taskId.endsWith('_helper')) {
                             const mainTaskId = taskId.replace('_helper', '');
-                            const [pName, pType] = mainTaskId.split('_');
-                            const mainAssignee = getTaskAssignment(mainTaskId) || 'Onbekend';
-                            taskTitle = `${pName} (Hulp bij ${mainAssignee})`;
+                            taskTitle = `${mainTaskId.split('_')[0]} (Hulp)`;
                             taskBadge = 'Hulp';
                             badgeClass = 'badge-helper';
                         } else {
                             const [pName, pType] = taskId.split('_');
                             taskTitle = pName;
-                            if (pType === 'fill') {
-                                taskBadge = 'Vullen';
-                                badgeClass = 'badge-fill';
-                            } else if (pType === 'mirror') {
-                                taskBadge = 'Spiegelen';
-                                badgeClass = 'badge-mirror';
-                            } else {
-                                taskBadge = 'Overig';
-                                badgeClass = 'badge-other';
-                            }
+                            if (pType === 'fill') { taskBadge = 'Vul'; badgeClass = 'badge-fill'; }
+                            else if (pType === 'mirror') { taskBadge = 'Spgl'; badgeClass = 'badge-mirror'; }
+                            else { taskBadge = 'Ovr'; badgeClass = 'badge-other'; }
                         }
-
-                        tasksListHtml += `
-                            <div class="task-row">
-                                <div class="task-time-col">
-                                    <span class="task-time">${startTimeStr} - ${endTimeStr}</span>
-                                    <span class="task-duration">${Math.round(duration)} min</span>
-                                </div>
-                                <div class="task-desc-col">
-                                    <span class="task-name">${taskTitle}</span>
-                                </div>
-                                <span class="task-badge ${badgeClass}">${taskBadge}</span>
-                            </div>
-                        `;
+                        tasksListHtml += `<div class="task-row"><span class="task-time">${startTimeStr}-${endTimeStr}</span><span class="task-name">${taskTitle}</span><span class="task-badge ${badgeClass}">${taskBadge}</span></div>`;
                     });
+                    cardsHtml += `<div class="printable-card"><div class="card-header"><span class="filler-name">${parseNameAndSubtitle(filler).name}</span><span class="time-compact">${startStr} - ${plannedEndStr} | Pauze: ${pauseMin}m</span></div><div class="card-body">${tasksListHtml}</div></div>`;
                 }
-
-                cardsHtml += `
-                    <div class="printable-card">
-                        <div class="card-header">
-                            <div class="filler-info">
-                                <h2 class="filler-name">${filler}</h2>
-                                <div class="time-meta">
-                                    <span>Start: <strong>${startStr}</strong></span>
-                                    <span>Pauze: <strong>${pauseMin} min</strong></span>
-                                    <span>Eindtijd: <strong>${plannedEndStr}</strong></span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            ${tasksListHtml}
-                        </div>
-                    </div>
-                `;
             });
 
             let padTableRowsHtml = '';
@@ -1755,383 +1887,108 @@ import {
                 const startMin = getFillerStartTime(filler);
                 let currentTime = isFinite(startMin) ? startMin : 0;
                 const cleanName = parseNameAndSubtitle(filler).name;
-
                 tasks.forEach(taskId => {
                     let duration = getTaskDuration(taskId);
                     if (!taskId.endsWith('_helper')) {
                         const helperInfo = state.helpers[taskId];
                         if (helperInfo && helperInfo.helperName) {
                             const rawDur = (helperInfo.isMax || helperInfo.isHalf) ? (helperInfo.calculatedDuration || 0) : (helperInfo.duration || 0);
-                            const helperDur = Math.min(duration, Math.max(0, rawDur));
-                            duration = Math.max(0, duration - helperDur);
+                            duration = Math.max(0, duration - Math.min(duration, Math.max(0, rawDur)));
                         }
                     }
-
                     const tStart = currentTime;
-                    const tEnd = currentTime + duration;
-                    currentTime = tEnd;
-
+                    currentTime += duration;
                     let padName = '';
                     let role = '';
-                    let badgeClass = 'badge-fill';
-
                     if (taskId.endsWith('_helper')) {
-                        const mainTaskId = taskId.replace('_helper', '');
-                        padName = mainTaskId.split('_')[0];
+                        padName = taskId.replace('_helper', '').split('_')[0];
                         role = 'Hulp';
-                        badgeClass = 'badge-helper';
                     } else {
                         const [pName, pType] = taskId.split('_');
                         padName = pName;
-                        if (pType === 'fill') {
-                            role = 'Vullen';
-                            badgeClass = 'badge-fill';
-                        } else if (pType === 'mirror') {
-                            role = 'Spiegelen';
-                            badgeClass = 'badge-mirror';
-                        } else {
-                            role = 'Overig';
-                            badgeClass = 'badge-other';
-                        }
+                        role = pType === 'fill' ? 'Vullen' : pType === 'mirror' ? 'Spiegelen' : 'Overig';
                     }
-
                     if (padName) {
                         if (!padMap[padName]) padMap[padName] = [];
-                        const startTimeStr = formatTimeOfDay(tStart);
-                        const endTimeStr = formatTimeOfDay(tEnd);
-                        padMap[padName].push({ filler, cleanName, role, badgeClass, startTimeStr, endTimeStr, durationMins: duration });
+                        padMap[padName].push({ cleanName, role, startTimeStr: formatTimeOfDay(tStart), endTimeStr: formatTimeOfDay(currentTime), durationMins: duration });
                     }
                 });
             });
 
-            const sortedPaden = Object.keys(padMap).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
-            sortedPaden.forEach(padName => {
+            Object.keys(padMap).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })).forEach(padName => {
                 const assignments = padMap[padName];
                 const uniquePersons = new Set(assignments.map(a => a.cleanName)).size;
-                const pathData = state.pathColli[padName] || { colli: 0, duration: 0 };
+                const pathData = state.pathColli[padName] || { colli: 0 };
                 const colli = pathData.colli || 0;
-                
-                let fillMins = 0;
-                let mirrorMins = 0;
+                let fillMins = 0, mirrorMins = 0;
                 assignments.forEach(a => {
                     if (a.role === 'Vullen' || a.role === 'Hulp') fillMins += a.durationMins || 0;
                     else if (a.role === 'Spiegelen') mirrorMins += a.durationMins || 0;
                 });
-
-                const formatMins = (mins) => {
-                    if (mins <= 0) return '-';
-                    const h = Math.floor(mins / 60);
-                    const m = Math.round(mins % 60);
-                    return `${h}:${String(m).padStart(2, '0')}`;
-                };
-
+                const fmtM = m => m <= 0 ? '-' : `${Math.floor(m/60)}:${String(Math.round(m%60)).padStart(2,'0')}`;
                 const fillHours = fillMins / 60;
                 const norm = (colli > 0 && fillHours > 0) ? Math.round(colli / fillHours) : '-';
-
-                const fillersList = assignments
-                    .filter(a => a.role === 'Vullen' || a.role === 'Hulp')
-                    .map(a => `${a.cleanName} (${a.startTimeStr} - ${a.endTimeStr})`)
-                    .join('<br>');
-                const mirrorersList = assignments
-                    .filter(a => a.role === 'Spiegelen')
-                    .map(a => `${a.cleanName} (${a.startTimeStr} - ${a.endTimeStr})`)
-                    .join('<br>');
-
-                padTableRowsHtml += `
-                    <tr>
-                        <td><strong>${padName}</strong></td>
-                        <td>${fillersList || '-'}</td>
-                        <td>${mirrorersList || '-'}</td>
-                        <td style="text-align: center;">${uniquePersons}</td>
-                        <td style="text-align: right;">${colli}</td>
-                        <td style="text-align: right;">${norm}</td>
-                        <td style="text-align: right;">${formatMins(fillMins)}</td>
-                        <td style="text-align: right;">${formatMins(mirrorMins)}</td>
-                    </tr>
-                `;
+                const fillersList = assignments.filter(a => a.role === 'Vullen' || a.role === 'Hulp').map(a => `${a.cleanName}`).join(', ');
+                const mirrorersList = assignments.filter(a => a.role === 'Spiegelen').map(a => `${a.cleanName}`).join(', ');
+                padTableRowsHtml += `<tr><td>${padName}</td><td>${fillersList || '-'}</td><td>${mirrorersList || '-'}</td><td>${uniquePersons}</td><td>${colli}</td><td>${norm}</td><td>${fmtM(fillMins)}</td><td>${fmtM(mirrorMins)}</td></tr>`;
             });
 
             const htmlContent = `<!DOCTYPE html>
 <html lang="nl">
 <head>
-    <meta charset="UTF-8">
-    <title>Vulplanning ${dateStr}</title>
-    <style>
-        :root {
-            --accent-color: #658d24;
-        }
-        @page {
-            size: A4 landscape;
-            margin: 0;
-        }
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        body {
-            background-color: #f8fafc;
-            color: #0f172a;
-            padding: 15px;
-            position: relative;
-            min-height: 100vh;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid var(--accent-color);
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-        }
-        .header h1 {
-            font-size: 22px;
-            color: #1e293b;
-        }
-        .header .date {
-            font-size: 13px;
-            color: #64748b;
-            font-weight: 500;
-        }
-        .no-print-bar {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        .print-btn {
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .grid-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-bottom: 30px;
-        }
-        .print-footer {
-            margin-top: 20px;
-            padding-top: 10px;
-            border-top: 1px solid #e2e8f0;
-            text-align: right;
-            font-size: 12px;
-            color: #64748b;
-            font-weight: 500;
-        }
-        @media print {
-            .no-print-bar {
-                display: none !important;
-            }
-            body {
-                background: white;
-                padding: 10mm;
-            }
-            .printable-card {
-                break-inside: avoid;
-            }
-            .print-footer {
-                position: fixed;
-                bottom: 0;
-                right: 0;
-                left: 0;
-                background: white;
-            }
-        }
-        .printable-card {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            display: flex;
-            flex-direction: column;
-        }
-        .card-header {
-            background: #f1f5f9;
-            padding: 10px 12px;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .filler-name {
-            font-size: 15px;
-            font-weight: 700;
-            color: #0f172a;
-        }
-        .time-meta {
-            font-size: 11px;
-            color: #475569;
-            display: flex;
-            gap: 8px;
-            margin-top: 2px;
-        }
-        .prod-badge {
-            background: #dcfce7;
-            color: #166534;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 2px 6px;
-            border-radius: 4px;
-            border: 1px solid #bbf7d0;
-        }
-        .card-body {
-            padding: 8px 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            flex-grow: 1;
-        }
-        .empty-task {
-            font-size: 12px;
-            color: #94a3b8;
-            font-style: italic;
-            padding: 10px 0;
-            text-align: center;
-        }
-        .task-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 6px 8px;
-            border-radius: 6px;
-            background: #f8fafc;
-            border: 1px solid #f1f5f9;
-            font-size: 12px;
-        }
-        .task-row.first-task {
-            background: #f0fdf4;
-            border: 1px solid #bbf7d0;
-        }
-        .task-time-col {
-            display: flex;
-            flex-direction: column;
-            min-width: 90px;
-        }
-        .task-time {
-            font-weight: 700;
-            color: #1e293b;
-            font-size: 11px;
-        }
-        .task-duration {
-            font-size: 10px;
-            color: #64748b;
-        }
-        .task-desc-col {
-            flex-grow: 1;
-            padding: 0 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .task-name {
-            font-weight: 600;
-            color: #334155;
-        }
-        .first-tag {
-            background: #22c55e;
-            color: white;
-            font-size: 9px;
-            font-weight: 700;
-            padding: 1px 4px;
-            border-radius: 3px;
-            text-transform: uppercase;
-        }
-        .task-badge {
-            font-size: 10px;
-            font-weight: 600;
-            padding: 2px 6px;
-            border-radius: 4px;
-            white-space: nowrap;
-        }
-        .badge-fill {
-            background: #e0f2fe;
-            color: #0369a1;
-        }
-        .badge-mirror {
-            background: #fef3c7;
-            color: #b45309;
-        }
-        .badge-other {
-            background: #f3e8ff;
-            color: #6b21a8;
-        }
-        .badge-helper {
-            background: #fce7f3;
-            color: #be185d;
-        }
-        .page-break {
-            page-break-before: always;
-            break-before: page;
-        }
-        .pad-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            font-size: 13px;
-        }
-        .pad-table th, .pad-table td {
-            border: 1px solid #cbd5e1;
-            padding: 8px 12px;
-        }
-        .pad-table th {
-            background: #f1f5f9;
-            color: #0f172a;
-            font-weight: 700;
-            text-align: left;
-        }
-        .pad-table tr:nth-child(even) {
-            background: #f8fafc;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>Vulplanning ${dateStr}</title>
+<style>
+@page{size:A4 landscape;margin:5mm}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;font-size:0.85rem;line-height:1.3}
+body{background:#fff;color:#1e293b;padding:6px 10px}
+.header{display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid #658d24;padding-bottom:4px;margin-bottom:6px}
+.header h1{font-size:14px;font-weight:700;color:#0f172a}
+.header .date{font-size:10px;color:#64748b}
+.print-btn{background:#658d24;color:#fff;border:none;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer}
+.no-print-bar{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.grid-container{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
+.printable-card{border:1px solid #d1d5db;border-radius:4px;overflow:hidden}
+.printable-card.empty-card{max-height:35px;display:flex;align-items:center}
+.empty-card .card-header{border-bottom:none;padding:2px 6px;flex:1}
+.empty-label{font-size:10px;color:#94a3b8;font-style:italic;padding-right:6px;white-space:nowrap}
+.card-header{background:#f8fafc;border-bottom:1px solid #e5e7eb;padding:3px 6px;display:flex;justify-content:space-between;align-items:center}
+.filler-name{font-size:11px;font-weight:700;color:#0f172a}
+.time-compact{font-size:9px;color:#475569;white-space:nowrap}
+.card-body{padding:2px 4px;display:flex;flex-direction:column;gap:1px}
+.task-row{display:flex;align-items:center;gap:4px;padding:1px 4px;border-bottom:1px solid #f1f5f9}
+.task-row:last-child{border-bottom:none}
+.task-time{font-size:9px;font-weight:600;color:#334155;min-width:65px;flex-shrink:0}
+.task-name{font-size:10px;font-weight:500;color:#334155;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.task-badge{font-size:8px;font-weight:700;padding:1px 4px;border-radius:3px;white-space:nowrap;text-transform:uppercase;flex-shrink:0}
+.badge-fill{background:#dbeafe;color:#1d4ed8}
+.badge-mirror{background:#fef3c7;color:#b45309}
+.badge-other{background:#ede9fe;color:#6b21a8}
+.badge-helper{background:#fce7f3;color:#be185d}
+.page-break{page-break-before:always;break-before:page}
+.section-title{font-size:13px;font-weight:700;color:#0f172a;border-bottom:1.5px solid #658d24;padding-bottom:3px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
+.section-title .date{font-size:10px;color:#64748b;font-weight:400}
+.pad-table{width:100%;border-collapse:collapse;font-size:11px}
+.pad-table th,.pad-table td{border:1px solid #d1d5db;padding:3px 5px}
+.pad-table th{background:#f1f5f9;font-weight:700;font-size:10px;text-align:left;white-space:nowrap}
+.pad-table td{font-size:10px}
+.pad-table td:nth-child(n+4){text-align:center}
+.pad-table tr:nth-child(even){background:#fafbfc}
+.notes-box{margin-top:8px;border:1px solid #d1d5db;border-radius:4px;padding:4px 6px;page-break-inside:avoid}
+.notes-box h4{font-size:10px;font-weight:700;color:#475569;margin-bottom:2px}
+.notes-lines{height:36px}
+.notes-lines div{border-bottom:1px dashed #d1d5db;height:12px}
+@media print{.no-print-bar{display:none!important}body{padding:5mm;background:#fff}.printable-card{break-inside:avoid}}
+</style>
 </head>
 <body>
-    <div class="no-print-bar">
-        <button class="print-btn" onclick="window.print()">Afdrukken / Opslaan als PDF</button>
-    </div>
-    <div class="header">
-        <h1>Vulplanning Overzicht</h1>
-        <div class="date">Deze planning is gemaakt op ${dateStr}</div>
-    </div>
-    <div class="grid-container">
-        ${cardsHtml}
-    </div>
-    <div class="page-break"></div>
-    <div class="header">
-        <h1>Overzicht per Pad / Afdeling</h1>
-        <div class="date">Deze planning is gemaakt op ${dateStr}</div>
-    </div>
-    <table class="pad-table">
-        <thead>
-            <tr>
-                <th>Naam Pad</th>
-                <th>Vullers</th>
-                <th>Spiegelaars</th>
-                <th style="text-align: center;">Aantal Personen</th>
-                <th style="text-align: right;">Aantal Colli</th>
-                <th style="text-align: right;">Norm (Colli/Uur)</th>
-                <th style="text-align: right;">Vultijd</th>
-                <th style="text-align: right;">Spiegeltijd</th>
-            </tr>
-        </thead>
-        <tbody>
-            ${padTableRowsHtml}
-        </tbody>
-    </table>
-    <div style="margin-top: 30px; page-break-inside: avoid;">
-        <h3 style="font-size: 14px; margin-bottom: 10px; color: #0f172a;">Aantekeningen:</h3>
-        <div style="border-bottom: 1px dashed #cbd5e1; height: 28px;"></div>
-        <div style="border-bottom: 1px dashed #cbd5e1; height: 28px;"></div>
-        <div style="border-bottom: 1px dashed #cbd5e1; height: 28px;"></div>
-        <div style="border-bottom: 1px dashed #cbd5e1; height: 28px;"></div>
-        <div style="border-bottom: 1px dashed #cbd5e1; height: 28px;"></div>
-    </div>
+<div class="no-print-bar"><button class="print-btn" onclick="window.print()">Afdrukken / Opslaan als PDF</button><span class="date">${dateStr}</span></div>
+<div class="header"><h1>Vulplanning Overzicht</h1><span class="date">${dateStr}</span></div>
+<div class="grid-container">${cardsHtml}</div>
+<div class="page-break"></div>
+<div class="section-title"><span>Overzicht per Pad / Afdeling</span><span class="date">${dateStr}</span></div>
+<table class="pad-table"><thead><tr><th>Pad</th><th>Vullers</th><th>Spiegelaars</th><th>Pers.</th><th>Colli</th><th>Norm</th><th>Vultijd</th><th>Spgl.tijd</th></tr></thead><tbody>${padTableRowsHtml}</tbody></table>
+<div class="notes-box"><h4>Aantekeningen</h4><div class="notes-lines"><div></div><div></div><div></div></div></div>
 </body>
 </html>`;
 
@@ -2144,12 +2001,110 @@ import {
             generateBtn.addEventListener('click', generatePrintablePlanning);
         }
 
-        const toggleHiddenBtn = document.getElementById('toggle-hidden-fillers-btn');
-        const hiddenPanel = document.getElementById('hidden-fillers-panel');
-        if (toggleHiddenBtn && hiddenPanel) {
-            toggleHiddenBtn.addEventListener('click', () => {
-                const current = hiddenPanel.style.display;
-                hiddenPanel.style.display = current === 'none' ? 'block' : 'none';
+        const toggleReallyHiddenBtn = document.getElementById('toggle-really-hidden-btn');
+
+        const openAutoPairModalBtn = document.getElementById('open-auto-pair-modal-btn');
+        const autoPairModal = document.getElementById('auto-pair-modal');
+        const closeAutoPairModalBtn = document.getElementById('close-auto-pair-modal-btn');
+        const saveAutoPairModalBtn = document.getElementById('save-auto-pair-modal-btn');
+        const modalAutoPairEnabled = document.getElementById('modal-auto-pair-enabled');
+        const modalPrependOtherEnabled = document.getElementById('modal-prepend-other-enabled');
+        const modalOtherTaskSelection = document.getElementById('modal-other-task-selection');
+        const modalOtherTaskSelect = document.getElementById('modal-other-task-select');
+        const modalNewOtherName = document.getElementById('modal-new-other-name');
+        const modalNewOtherMin = document.getElementById('modal-new-other-min');
+        const modalAddOtherBtn = document.getElementById('modal-add-other-btn');
+
+        const populateOtherTaskSelect = (selectedVal) => {
+            if (!modalOtherTaskSelect) return;
+            modalOtherTaskSelect.innerHTML = '';
+            Object.keys(state.otherTimes).forEach(key => {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = `${key} (${state.otherTimes[key]} min)`;
+                modalOtherTaskSelect.appendChild(opt);
+            });
+            if (selectedVal && state.otherTimes[selectedVal]) {
+                modalOtherTaskSelect.value = selectedVal;
+            }
+        };
+
+        if (openAutoPairModalBtn && autoPairModal) {
+            setupModal(autoPairModal, [closeAutoPairModalBtn]);
+            openAutoPairModalBtn.addEventListener('click', () => {
+                if (!state.autoPairSettings) {
+                    state.autoPairSettings = { enabled: false, prependOtherTask: false, selectedOtherTask: "" };
+                }
+                if (modalAutoPairEnabled) modalAutoPairEnabled.checked = !!state.autoPairSettings.enabled;
+                if (modalPrependOtherEnabled) modalPrependOtherEnabled.checked = !!state.autoPairSettings.prependOtherTask;
+                if (modalOtherTaskSelection) modalOtherTaskSelection.style.display = state.autoPairSettings.prependOtherTask ? 'flex' : 'none';
+                populateOtherTaskSelect(state.autoPairSettings.selectedOtherTask);
+                autoPairModal.style.display = 'flex';
+            });
+        }
+
+        if (modalPrependOtherEnabled && modalOtherTaskSelection) {
+            modalPrependOtherEnabled.addEventListener('change', (e) => {
+                modalOtherTaskSelection.style.display = e.target.checked ? 'flex' : 'none';
+            });
+        }
+
+        if (modalAddOtherBtn && modalNewOtherName && modalNewOtherMin) {
+            modalAddOtherBtn.addEventListener('click', () => {
+                const name = modalNewOtherName.value.trim();
+                const min = parseInt(modalNewOtherMin.value, 10);
+                if (name && !isNaN(min) && min > 0) {
+                    state.otherTimes[name] = min;
+                    populateOtherTaskSelect(name);
+                    modalNewOtherName.value = '';
+                    modalNewOtherMin.value = '';
+                    showToast(`Taak "${name}" toegevoegd`, 'success');
+                    triggerSave();
+                } else {
+                    showToast('Vul een geldige naam en aantal minuten in', 'error');
+                }
+            });
+        }
+
+        if (saveAutoPairModalBtn && autoPairModal) {
+            saveAutoPairModalBtn.addEventListener('click', () => {
+                if (!state.autoPairSettings) state.autoPairSettings = {};
+                state.autoPairSettings.enabled = !!(modalAutoPairEnabled && modalAutoPairEnabled.checked);
+                state.autoPairSettings.prependOtherTask = !!(modalPrependOtherEnabled && modalPrependOtherEnabled.checked);
+                state.autoPairSettings.selectedOtherTask = modalOtherTaskSelect ? modalOtherTaskSelect.value : "";
+                autoPairModal.style.display = 'none';
+                renderWorkspace();
+                triggerSave();
+                showToast('Instellingen opslagen', 'success');
+            });
+        }
+
+
+
+        const clearPlanningBtn = document.getElementById('clear-planning-btn');
+        if (clearPlanningBtn) {
+            clearPlanningBtn.addEventListener('click', () => {
+                showConfirmModal(
+                    'Planning leegmaken',
+                    'Weet je zeker dat je alle toegewezen taken van alle medewerkers wilt verwijderen?',
+                    'Leegmaken',
+                    () => {
+                        state.fillerTasks = {};
+                        state.helpers = {};
+                        state.instanceTimes = {};
+                        renderWorkspace();
+                        triggerSave();
+                        showToast('Planning leeggemaakt', 'success');
+                    }
+                );
+            });
+        }
+
+        if (toggleReallyHiddenBtn) {
+            toggleReallyHiddenBtn.addEventListener('click', () => {
+                state.showReallyHidden = !state.showReallyHidden;
+                renderWorkspace();
+                triggerSave();
             });
         }
 
@@ -2179,7 +2134,7 @@ import {
             if (tasksContainerEl) tasksContainerEl.classList.remove('drag-delete');
             
             const taskId = e.dataTransfer.getData('text/plain');
-            if (!taskId || taskId.trim() === '') return;
+            if (!taskId || !document.getElementById(`task-${taskId}`)) return;
 
             if (e.target.closest('#tasks-container')) {
                 e.preventDefault();

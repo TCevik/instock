@@ -10,15 +10,15 @@
 .people-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 12px;
-    margin-top: 16px;
+    gap: 4px;
+    margin-top: 8px;
 }
 
 .person-checkbox-label {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 14px;
+    gap: 4px;
+    padding: 4px 8px;
     background-color: var(--input-bg);
     border: 1px solid var(--border-color);
     border-radius: 8px;
@@ -35,8 +35,8 @@
 .person-checkbox-label input[type="checkbox"] {
     appearance: none;
     -webkit-appearance: none;
-    width: 18px;
-    height: 18px;
+    width: 14px;
+    height: 14px;
     border: 1px solid var(--border-color);
     border-radius: 4px;
     outline: none;
@@ -67,14 +67,14 @@
 }
 
 .person-name {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     color: var(--text-color);
 }
 
 .person-subtitle,
 .filler-card-subtitle {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text-color-muted);
     font-weight: 400;
 }
@@ -83,38 +83,38 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 16px;
+    padding: 6px 8px;
     background-color: var(--input-bg);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 4px;
 }
 
 .path-info {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
 }
 
 .path-name {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--text-color);
 }
 
 .path-colli {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--accent-color-sidemenu);
     font-weight: 700;
 }
 
 .path-assignee select {
-    padding: 8px 12px;
+    padding: 4px 6px;
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 6px;
     color: var(--text-color);
-    font-size: 14px;
+    font-size: 12px;
     outline: none;
     cursor: pointer;
 }
@@ -126,8 +126,8 @@
 .drag-drop-workspace {
     display: grid;
     grid-template-columns: 1fr;
-    padding-right: 360px;
-    gap: 24px;
+    padding-right: 250px;
+    gap: 6px;
     align-items: start;
 }
 
@@ -140,32 +140,32 @@
 .workspace-left-column {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 4px;
 }
 
 .sort-filter-bar {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 4px;
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 10px 14px;
+    padding: 4px 6px;
 }
 
 .sort-filter-bar label {
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 500;
     color: var(--text-color);
 }
 
 .sort-filter-bar select {
-    padding: 6px 12px;
+    padding: 2px 4px;
     background-color: var(--input-bg);
     border: 1px solid var(--border-color);
     border-radius: 6px;
     color: var(--text-color);
-    font-size: 14px;
+    font-size: 12px;
     outline: none;
     cursor: pointer;
 }
@@ -174,30 +174,54 @@
     border-color: var(--accent-color-sidemenu);
 }
 
-.fillers-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px;
+.fillers-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 2px;
+    table-layout: fixed;
 }
 
-.filler-card {
+.fillers-table th {
+    padding: 2px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-color-muted);
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.filler-row {
     background-color: var(--card-bg);
-    border: 2px dashed var(--border-color);
-    border-radius: 12px;
-    padding: 16px;
-    min-height: 200px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    transition: border-color 0.2s, background-color 0.2s;
+    transition: background-color 0.2s, border-color 0.2s;
 }
 
-.filler-card.drag-over {
-    border-color: var(--accent-color-sidemenu);
+.filler-row td {
+    padding: 2px 4px;
+    vertical-align: middle;
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.filler-row td:first-child {
+    border-left: 1px solid var(--border-color);
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+}
+
+.filler-row td:last-child {
+    border-right: 1px solid var(--border-color);
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.filler-row.drag-over td {
     background-color: var(--vullen-card-bg);
+    border-color: var(--accent-color-sidemenu);
 }
 
-.filler-card.exceeded {
+.filler-row.exceeded td {
     border-color: var(--danger-color);
     background-color: rgba(255, 82, 82, 0.02);
 }
@@ -205,37 +229,44 @@
 .filler-card-header {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 2px;
 }
 
 .filler-card-title-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
 }
 
 .filler-card-title {
-    font-size: 16px;
+    font-size: 13px;
     font-weight: 600;
+    line-height: 1.3;
 }
 
 .filler-card-stats {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px 10px;
-    font-size: 12px;
+    gap: 2px;
+    font-size: 11px;
     font-weight: 500;
+    line-height: 1.3;
 }
 
 .filler-stat-item {
     background-color: var(--input-bg);
-    padding: 5px 10px;
-    border-radius: 6px;
+    padding: 1px 4px;
+    border-radius: 4px;
     border: 1px solid var(--border-color);
     color: var(--text-color-muted);
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 2px;
+    font-size: 10px;
+    line-height: 1.3;
+    white-space: nowrap;
 }
 
 .filler-stat-item.exceeded,
@@ -251,10 +282,23 @@
     background-color: var(--vullen-card-bg);
 }
 
+.filler-stat-item.prod {
+    display: inline-block;
+    width: 60px;
+    box-sizing: border-box;
+    text-align: center;
+    padding: 0 2px;
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.2;
+    margin: 0;
+}
+
 .filler-card-time {
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 700;
     color: var(--text-color-muted);
+    line-height: 1.3;
 }
 
 .filler-card-time.exceeded {
@@ -263,11 +307,11 @@
 
 .progress-bar-container {
     width: 100%;
-    height: 6px;
+    height: 4px;
     background-color: var(--input-bg);
-    border-radius: 3px;
+    border-radius: 2px;
     overflow: hidden;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
 }
 
 .progress-bar-fill {
@@ -275,7 +319,7 @@
     background-color: var(--accent-color-sidemenu);
     width: 0%;
     transition: width 0.3s ease, background-color 0.3s ease;
-    border-radius: 3px;
+    border-radius: 2px;
 }
 
 .progress-bar-fill.exceeded {
@@ -285,17 +329,44 @@
 .filler-tasks-list {
     flex-grow: 1;
     display: flex;
-    flex-direction: column;
-    gap: 8px;
-    min-height: 100px;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 2px;
+    min-height: 24px;
+    padding: 0 2px;
+    background-color: transparent;
+    border: none;
+    border-radius: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
     position: relative;
+    width: 100%;
+    scrollbar-width: thin;
+}
+
+.filler-tasks-list::-webkit-scrollbar {
+    height: 4px;
+}
+
+.filler-tasks-list::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+    border-radius: 2px;
+}
+
+.filler-tasks-list .task-card {
+    flex-shrink: 0;
+}
+
+.filler-row td.filler-tasks-cell {
+    border-left: 1px solid var(--border-color);
+    padding-left: 8px;
 }
 
 .drop-indicator-line {
     position: absolute;
-    left: 0;
-    right: 0;
-    height: 4px;
+    top: 0;
+    bottom: 0;
+    width: 4px;
     background-color: var(--accent-color-sidemenu);
     border-radius: 2px;
     pointer-events: none;
@@ -307,7 +378,7 @@
 .drop-indicator-line::after {
     content: '';
     position: absolute;
-    top: -3px;
+    left: -3px;
     width: 10px;
     height: 10px;
     border-radius: 50%;
@@ -315,23 +386,23 @@
 }
 
 .drop-indicator-line::before {
-    left: -4px;
+    top: -4px;
 }
 
 .drop-indicator-line::after {
-    right: -4px;
+    bottom: -4px;
 }
 
 .task-card {
     background-color: var(--input-bg);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 12px;
+    border-radius: 4px;
+    padding: 2px 4px;
     cursor: grab;
     user-select: none;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 1px;
     transition: transform 0.1s, box-shadow 0.1s;
 }
 
@@ -353,22 +424,24 @@
 }
 
 .task-card-title {
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 600;
+    line-height: 1.3;
 }
 
 .task-card-meta {
-    font-size: 12px;
+    font-size: 10px;
     color: var(--text-color-muted);
     display: flex;
     justify-content: space-between;
+    line-height: 1.3;
 }
 
 .task-card-type {
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 700;
     text-transform: uppercase;
-    padding: 2px 6px;
+    padding: 1px 3px;
     border-radius: 4px;
     width: fit-content;
 }
@@ -386,23 +459,42 @@
 .task-card.fill {
     background-color: var(--vullen-card-bg);
     border-color: var(--vullen-border);
+    border-left: 3px solid var(--accent-color-sidemenu);
 }
 
 .task-card.mirror {
     background-color: var(--spiegelen-card-bg);
     border-color: var(--spiegelen-border);
+    border-left: 3px solid var(--warning-color);
+}
+
+.task-card.other {
+    background-color: var(--input-bg);
+    border-color: var(--border-color);
+    border-left: 3px solid var(--text-color-muted);
+}
+
+.task-card.helper {
+    border-left: 3px solid #9c27b0;
+}
+
+.dashboard-container {
+    max-width: 100%;
+    padding-left: 5px;
+    padding-right: 5px;
 }
 
 .tasks-container {
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 20px;
+    border-radius: 10px;
+    padding: 6px;
     position: fixed;
-    right: calc(max(20px, (100vw - 1200px) / 2 + 20px));
-    top: 100px;
-    width: 320px;
-    max-height: calc(100vh - 124px);
+    right: 5px;
+    top: 80px;
+    width: 240px;
+    height: calc(100vh - 90px);
+    max-height: calc(100vh - 90px);
     display: flex;
     flex-direction: column;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
@@ -448,28 +540,33 @@
 .tasks-grid {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 4px;
     overflow-y: auto;
-    padding-right: 4px;
+    padding-right: 2px;
     flex-grow: 1;
+}
+
+.tasks-grid .task-card {
+    padding-top: 6px;
+    padding-bottom: 6px;
 }
 
 .tasks-tabs {
     display: flex;
-    gap: 8px;
-    margin-bottom: 16px;
+    gap: 4px;
+    margin-bottom: 8px;
     border-bottom: 1px solid var(--border-color);
-    padding-bottom: 10px;
+    padding-bottom: 6px;
 }
 
 .tab-btn {
     flex: 1;
-    padding: 8px 12px;
+    padding: 2px 4px;
     background: none;
     border: 1px solid transparent;
-    border-radius: 6px;
+    border-radius: 4px;
     color: var(--text-color-muted);
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
@@ -494,18 +591,18 @@
 
 .task-card {
     position: relative;
-    padding-right: 36px !important;
+    padding-right: 24px !important;
 }
 
 .task-menu-btn {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 3px;
+    right: 3px;
     background: none;
     border: none;
     color: var(--text-color-muted);
     cursor: pointer;
-    padding: 4px;
+    padding: 2px;
     border-radius: 4px;
     display: inline-flex;
     align-items: center;
@@ -547,6 +644,8 @@
     display: flex;
     align-items: center;
     gap: 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .actual-end-label {

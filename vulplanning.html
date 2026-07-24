@@ -15,16 +15,16 @@
     <main class="dashboard-container">
         <div class="page-header page-header-col">
             <div class="page-header-row" style="justify-content: space-between;">
-                <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 6px;">
                     <i class="material-icons page-header-icon">assignment</i>
                     <h1 class="page-header-title">Vulplanning Maker</h1>
                 </div>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <button id="generate-planning-btn" class="action-btn" style="display: none; padding: 8px 16px; background-color: var(--accent-color); color: #fff; border-radius: 8px; font-weight: 500; align-items: center; gap: 6px;">
+                <div style="display: flex; align-items: center; gap: 4px;">
+                    <button id="generate-planning-btn" class="action-btn" style="display: none; padding: 4px 8px; background-color: var(--accent-color); color: #fff; border-radius: 8px; font-weight: 500; align-items: center; gap: 4px;">
                         <i class="material-icons" style="font-size: 18px;">print</i>
                         <span>Planning Genereren</span>
                     </button>
-                    <button id="reset-planning-btn" class="action-btn delete" style="display: none; padding: 8px 16px; background-color: var(--danger-color); color: #fff; border-radius: 8px; font-weight: 500;">Opnieuw Beginnen</button>
+                    <button id="reset-planning-btn" class="action-btn delete" style="display: none; padding: 4px 8px; background-color: var(--danger-color); color: #fff; border-radius: 8px; font-weight: 500;">Opnieuw Beginnen</button>
                 </div>
             </div>
             <p class="page-header-subtitle">Beheer en bekijk de vulplanning</p>
@@ -38,79 +38,140 @@
                     <i class="material-icons">picture_as_pdf</i>
                 </div>
             </div>
-            <div class="form-group upload-group" style="margin-top: 16px;">
+            <div class="form-group upload-group" style="margin-top: 8px;">
                 <label for="colli-input">2. Colli Overzicht PDF uploaden</label>
                 <div class="input-wrapper">
                     <input type="file" id="colli-input" accept=".pdf" autocomplete="off">
                     <i class="material-icons">picture_as_pdf</i>
                 </div>
             </div>
-            <div class="upload-group" style="margin-top: 20px; text-align: center;">
-                <div style="display: flex; align-items: center; margin: 16px 0;">
+            <div class="upload-group" style="margin-top: 8px; text-align: center;">
+                <div style="display: flex; align-items: center; margin: 8px 0;">
                     <div style="flex: 1; border-bottom: 1px solid var(--border-color);"></div>
                     <span style="padding: 0 10px; color: var(--text-color-secondary); font-size: 13px;">of</span>
                     <div style="flex: 1; border-bottom: 1px solid var(--border-color);"></div>
                 </div>
-                <button type="button" id="show-manual-input-btn" class="action-btn" style="padding: 10px 18px; font-size: 14px; background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 8px; cursor: pointer; width: 100%; font-weight: 500;">
+                <button type="button" id="show-manual-input-btn" class="action-btn" style="padding: 6px 10px; font-size: 13px; background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 8px; cursor: pointer; width: 100%; font-weight: 500;">
                     <i class="material-icons" style="vertical-align: middle; margin-right: 6px; font-size: 18px;">edit_note</i>Handmatig Invoeren
                 </button>
             </div>
-            <div id="manual-input-container" style="display: none; flex-direction: column; gap: 24px;">
-                <div class="card" style="padding: 20px; background-color: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color);">
-                    <h3 style="margin-bottom: 12px; font-size: 16px; font-weight: 600;">1. Rooster / Vulploeg Invoeren</h3>
-                    <p style="font-size: 13px; color: var(--text-color-secondary); margin-bottom: 12px;">Voer medewerkers in met hun werktijden (bijv. "Piet - 17:00 - 21:00").</p>
-                    <div id="manual-fillers-list" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;"></div>
-                    <button type="button" id="add-manual-filler-btn" class="action-btn" style="align-self: flex-start; padding: 6px 12px; font-size: 13px; background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 6px;">+ Vuller Toevoegen</button>
+            <div id="manual-input-container" style="display: none; flex-direction: column; gap: 8px;">
+                <div class="card" style="padding: 8px; background-color: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color);">
+                    <h3 style="margin-bottom: 6px; font-size: 15px; font-weight: 600;">1. Rooster / Vulploeg Invoeren</h3>
+                    <p style="font-size: 12px; color: var(--text-color-secondary); margin-bottom: 6px;">Voer medewerkers in met hun werktijden (bijv. "Piet - 17:00 - 21:00").</p>
+                    <div id="manual-fillers-list" style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px;"></div>
+                    <button type="button" id="add-manual-filler-btn" class="action-btn" style="align-self: flex-start; padding: 4px 8px; font-size: 12px; background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 6px;">+ Vuller Toevoegen</button>
                 </div>
 
-                <div class="card" style="padding: 20px; background-color: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color);">
-                    <h3 style="margin-bottom: 12px; font-size: 16px; font-weight: 600;">2. Paden, Categorieën, Colli & Normen Invoeren</h3>
-                    <p style="font-size: 13px; color: var(--text-color-secondary); margin-bottom: 12px;">Maak paden aan, voeg daarbinnen categorieën toe met hun norm (colli/uur) en colli-aantal. De padtijd en totale colli worden zo automatisch berekend.</p>
-                    <div id="manual-paths-list" style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 12px;"></div>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <button type="button" id="add-manual-path-btn" class="action-btn" style="align-self: flex-start; padding: 6px 12px; font-size: 13px; background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 6px;">+ Pad Toevoegen</button>
-                        <button type="button" id="open-paden-modal-btn" class="action-btn" style="align-self: flex-start; padding: 6px 12px; font-size: 13px; background-color: var(--accent-color); color: #fff; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                <div class="card" style="padding: 8px; background-color: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color);">
+                    <h3 style="margin-bottom: 6px; font-size: 15px; font-weight: 600;">2. Paden, Categorieën, Colli & Normen Invoeren</h3>
+                    <p style="font-size: 12px; color: var(--text-color-secondary); margin-bottom: 6px;">Maak paden aan, voeg daarbinnen categorieën toe met hun norm (colli/uur) en colli-aantal. De padtijd en totale colli worden zo automatisch berekend.</p>
+                    <div id="manual-paths-list" style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px;"></div>
+                    <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                        <button type="button" id="add-manual-path-btn" class="action-btn" style="align-self: flex-start; padding: 4px 8px; font-size: 12px; background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 6px;">+ Pad Toevoegen</button>
+                        <button type="button" id="open-paden-modal-btn" class="action-btn" style="align-self: flex-start; padding: 4px 8px; font-size: 12px; background-color: var(--accent-color); color: #fff; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 2px;">
                             <i class="material-icons" style="font-size: 16px;">settings</i>Paden & Categorieën Beheren
                         </button>
                     </div>
                 </div>
 
-                <button type="button" id="start-manual-planning-btn" class="submit-btn" style="width: 100%; padding: 12px; font-size: 15px; font-weight: 600; background-color: var(--primary-color); color: #fff; border: none; border-radius: 8px; cursor: pointer;">Planning Starten</button>
+                <button type="button" id="start-manual-planning-btn" class="submit-btn" style="width: 100%; padding: 8px; font-size: 14px; font-weight: 600; background-color: var(--primary-color); color: #fff; border: none; border-radius: 8px; cursor: pointer;">Planning Starten</button>
             </div>
         </div>
 
         <div id="step-2-container" style="display: none;">
-            <div class="drag-drop-workspace" id="drag-drop-workspace" style="display: none; margin-top: 20px;">
+            <div class="drag-drop-workspace" id="drag-drop-workspace" style="display: none; margin-top: 8px;">
                 <div class="workspace-left-column">
-                    <div class="sort-filter-bar" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
+                    <div class="sort-filter-bar" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
+                        <div style="display: flex; align-items: center; gap: 4px;">
                             <label for="filler-sort-select">Sorteer vullers:</label>
                             <select id="filler-sort-select" autocomplete="off">
                                 <option value="name-asc">Naam (A - Z)</option>
                                 <option value="name-desc">Naam (Z - A)</option>
-                                <option value="start-asc">Begintijd (Vroeg - Laat)</option>
+                                <option value="start-asc" selected>Begintijd (Vroeg - Laat)</option>
                                 <option value="start-desc">Begintijd (Laat - Vroeg)</option>
                                 <option value="end-asc">Eindtijd (Vroeg - Laat)</option>
                                 <option value="end-desc">Eindtijd (Laat - Vroeg)</option>
                             </select>
                         </div>
-                        <button id="toggle-hidden-fillers-btn" class="action-btn" style="padding: 6px 12px; font-size: 13px; background-color: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 6px; display: none; align-items: center; gap: 6px; cursor: pointer;">
-                            <i class="material-icons" style="font-size: 16px;">visibility_off</i>
-                            <span>Verborgen Vullers (<span id="hidden-fillers-count">0</span>)</span>
-                        </button>
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                            <button id="clear-planning-btn" class="action-btn delete" style="padding: 4px 8px; font-size: 12px; background-color: var(--input-bg); border: 1px solid var(--border-color); color: var(--danger-color); border-radius: 6px; display: flex; align-items: center; gap: 4px; cursor: pointer;" title="Alle taken van medewerkers leegmaken">
+                                <i class="material-icons" style="font-size: 14px; color: var(--danger-color);">backspace</i>
+                                <span>Planning leegmaken</span>
+                            </button>
+                            <button id="toggle-really-hidden-btn" class="action-btn" style="padding: 4px 8px; font-size: 12px; background-color: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 6px; display: none; align-items: center; gap: 4px; cursor: pointer;">
+                                <i class="material-icons" style="font-size: 14px;">visibility_off</i>
+                                <span>Verborgen (<span id="hidden-fillers-count">0</span>)</span>
+                            </button>
+                        </div>
                     </div>
-                    <div id="hidden-fillers-panel" style="display: none; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-top: 10px;">
-                        <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--text-color-muted);">Verborgen vullers (klik om te herstellen):</div>
-                        <div id="hidden-fillers-list" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                    <div id="really-hidden-panel" style="display: none; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 4px 6px; margin-top: 4px;">
+                        <div style="font-size: 12px; font-weight: 600; margin-bottom: 4px; color: var(--text-color-muted);">Verborgen medewerkers (klik om te herstellen):</div>
+                        <div id="really-hidden-list" style="display: flex; flex-wrap: wrap; gap: 4px;"></div>
                     </div>
-                    <div class="fillers-container" id="fillers-container"></div>
+                    <div id="fillers-layout-wrapper" style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px; width: 100%;">
+                        <div id="non-fillers-section" style="display: none; flex-direction: column; gap: 4px; width: 100%;">
+                            <div style="font-size: 12px; font-weight: 600; color: var(--text-color-muted); display: flex; align-items: center; gap: 4px;">
+                                <i class="material-icons" style="font-size: 14px;">person_off</i>Niet-vullers
+                            </div>
+                            <table class="fillers-table non-fillers-table">
+                                <colgroup>
+                                    <col style="width: 20px;">
+                                    <col style="width: 85px;">
+                                    <col style="width: 215px;">
+                                    <col style="width: 75px;">
+                                    <col style="width: auto;">
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th>Medewerker</th>
+                                        <th>Tijd & Pauze</th>
+                                        <th>Eindtijd</th>
+                                        <th>Toegewezen Taken</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="non-fillers-table-body"></tbody>
+                            </table>
+                        </div>
+                        <div id="fillers-main-section" style="display: flex; flex-direction: column; gap: 4px; width: 100%;">
+                            <div id="fillers-header" style="display: none; font-size: 12px; font-weight: 600; color: var(--text-color-muted); align-items: center; gap: 4px;">
+                                <i class="material-icons" style="font-size: 14px;">person</i>Vullers
+                            </div>
+                            <table class="fillers-table">
+                                <colgroup>
+                                    <col style="width: 20px;">
+                                    <col style="width: 85px;">
+                                    <col style="width: 215px;">
+                                    <col style="width: 75px;">
+                                    <col style="width: auto;">
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th>Medewerker</th>
+                                        <th>Tijd & Pauze</th>
+                                        <th>Eindtijd</th>
+                                        <th>Toegewezen Taken</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fillers-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
                 <div class="tasks-container" id="tasks-container">
                     <div id="tasks-drop-overlay" class="tasks-drop-overlay">
                         <i class="material-icons" style="font-size: 32px; margin-bottom: 8px; color: var(--danger-color);">delete_outline</i>
                         <span style="font-size: 14px; font-weight: 500; text-align: center; color: var(--text-color);">Terug naar<br>onverdeelde taken</span>
                     </div>
-                    <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 12px;">Onverdeelde Taken</h2>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; gap: 4px;">
+                        <h2 style="font-size: 15px; font-weight: 600; margin: 0;">Onverdeelde Taken</h2>
+                        <button type="button" id="open-auto-pair-modal-btn" class="action-btn" style="padding: 2px 4px; font-size: 11px; background-color: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 6px; display: flex; align-items: center; gap: 2px; cursor: pointer;" title="Instellingen Samen Indelen">
+                            <i class="material-icons" style="font-size: 14px; color: var(--accent-color-sidemenu);">settings</i>
+                            <span>Instellingen</span>
+                        </button>
+                    </div>
                     <div class="tasks-tabs">
                         <button class="tab-btn active" id="tab-fill" autocomplete="off">Vullen</button>
                         <button class="tab-btn" id="tab-mirror" autocomplete="off">Spiegelen</button>
@@ -119,7 +180,11 @@
                     <div class="tasks-grid" id="unassigned-fill-tasks"></div>
                     <div class="tasks-grid" id="unassigned-mirror-tasks" style="display: none;"></div>
                     <div class="tasks-grid" id="unassigned-other-tasks" style="display: none;"></div>
-                    <button id="add-custom-task-btn" class="submit-btn" style="margin-top: 12px; font-size: 13px; padding: 8px 12px; height: auto; display: none;">+ Custom taak toevoegen</button>
+                    <button id="add-custom-task-btn" class="submit-btn" style="margin-top: 4px; font-size: 12px; padding: 4px 8px; height: auto; display: none;">+ Custom taak toevoegen</button>
+                    <div id="assigned-tasks-section" style="margin-top: 8px; border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; flex-direction: column; gap: 4px;">
+                        <h3 style="font-size: 13px; font-weight: 600; margin: 0; color: var(--text-color-muted);">Verdeelde Taken</h3>
+                        <div class="tasks-grid" id="assigned-tasks-grid"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -220,6 +285,42 @@
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
                 <button type="button" id="paden-modal-cancel-btn" class="submit-btn" style="background: var(--border-color); color: var(--text-color); max-width: 100px; box-shadow: none;">Annuleren</button>
                 <button type="button" id="paden-modal-save-btn" class="submit-btn" style="max-width: 120px;">Opslaan</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="auto-pair-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 440px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="font-size: 17px; font-weight: 600; margin: 0; color: var(--text-color);">Samen Indelen Instellingen</h3>
+                <button type="button" id="close-auto-pair-modal-btn" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-color-muted);">&times;</button>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px;">
+                <label style="display: flex; align-items: center; justify-content: space-between; font-weight: 500; font-size: 13px; cursor: pointer; padding: 10px; background-color: var(--input-bg); border-radius: 8px; border: 1px solid var(--border-color);">
+                    <span>Vullen & Spiegelen automatisch samenvoegen</span>
+                    <input type="checkbox" id="modal-auto-pair-enabled" style="width: 16px; height: 16px; accent-color: var(--accent-color-sidemenu); cursor: pointer;">
+                </label>
+
+                <div style="border-top: 1px solid var(--border-color); padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
+                    <label style="display: flex; align-items: center; justify-content: space-between; font-weight: 500; font-size: 13px; cursor: pointer; padding: 10px; background-color: var(--input-bg); border-radius: 8px; border: 1px solid var(--border-color);">
+                        <span>Standaard Overige taak ervoor zetten</span>
+                        <input type="checkbox" id="modal-prepend-other-enabled" style="width: 16px; height: 16px; accent-color: var(--accent-color-sidemenu); cursor: pointer;">
+                    </label>
+
+                    <div id="modal-other-task-selection" style="display: none; flex-direction: column; gap: 8px; padding: 4px;">
+                        <label style="font-size: 12px; font-weight: 600; color: var(--text-color-muted);">Kies Overige Taak:</label>
+                        <select id="modal-other-task-select" class="form-input" style="width: 100%; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color); font-size: 13px;"></select>
+                        
+                        <div style="display: flex; gap: 6px; margin-top: 4px; align-items: center;">
+                            <input type="text" id="modal-new-other-name" class="form-input" placeholder="Nieuwe taaknaam..." style="flex: 1; padding: 6px 8px; font-size: 12px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
+                            <input type="number" id="modal-new-other-min" class="form-input" placeholder="Min" min="1" style="width: 60px; padding: 6px 8px; font-size: 12px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
+                            <button type="button" id="modal-add-other-btn" class="action-btn" style="padding: 6px 10px; font-size: 12px; background-color: var(--accent-color-sidemenu); color: #fff; border: none; border-radius: 6px; cursor: pointer;">+ Maak</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" id="save-auto-pair-modal-btn" class="submit-btn" style="max-width: 120px;">Opslaan</button>
             </div>
         </div>
     </div>

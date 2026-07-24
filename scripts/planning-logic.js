@@ -202,8 +202,9 @@ export const getFillerProductivity = (displayName, state) => {
 };
 
 export const formatTimeOfDay = (totalMinutes) => {
-    const hours = Math.floor(totalMinutes / 60) % 24;
-    const mins = Math.floor(totalMinutes % 60);
+    const rounded = Math.round(totalMinutes);
+    const hours = Math.floor(rounded / 60) % 24;
+    const mins = rounded % 60;
     return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
 };
 
