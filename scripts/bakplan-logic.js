@@ -451,6 +451,7 @@ export const openPrintableBakplan = (selectedDay, dayCategories, productPlateCon
                 `;
             });
             html += `</div>`;
+        });
     }
 
     html += `
