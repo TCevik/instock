@@ -14,33 +14,33 @@
 <body>
     <main class="dashboard-container">
         <div class="page-header page-header-col">
-            <div class="page-header-row" style="width: 100%; justify-content: space-between;">
-                <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="page-header-row w-full justify-between">
+                <div class="flex-row align-center gap-10">
                     <i class="material-icons page-header-icon">bakery_dining</i>
                     <h1 class="page-header-title">Bakplan</h1>
                 </div>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button id="add-category-btn" class="action-btn" style="padding: 8px 12px; display: flex; align-items: center; gap: 6px;">
+                <div class="flex-row gap-10 flex-wrap">
+                    <button id="add-category-btn" class="action-btn btn-header-action">
                         <i class="material-icons">create_new_folder</i>
                         <span>Categorie Toevoegen</span>
                     </button>
-                    <button id="add-product-btn" class="action-btn" style="padding: 8px 12px; display: flex; align-items: center; gap: 6px;">
+                    <button id="add-product-btn" class="action-btn btn-header-action">
                         <i class="material-icons">add</i>
                         <span>Product Toevoegen</span>
                     </button>
-                    <button id="bakplan-carts-btn" class="action-btn" title="Karren Beheren" style="padding: 8px 12px; display: flex; align-items: center; gap: 6px;">
+                    <button id="bakplan-carts-btn" class="action-btn btn-header-action" title="Karren Beheren">
                         <i class="material-icons">directions_bus</i>
                         <span>Karren Beheren</span>
                     </button>
-                    <button id="bakplan-settings-btn" class="action-btn" title="Instellingen" style="padding: 8px 12px; display: flex; align-items: center; gap: 6px;">
+                    <button id="bakplan-settings-btn" class="action-btn btn-header-action" title="Instellingen">
                         <i class="material-icons">settings</i>
                         <span>Instellingen</span>
                     </button>
-                    <button id="generate-bakplan-btn" class="action-btn" style="padding: 8px 12px; display: flex; align-items: center; gap: 6px; background-color: var(--accent-color); color: #fff;">
+                    <button id="generate-bakplan-btn" class="action-btn btn-header-action btn-accent">
                         <i class="material-icons">print</i>
                         <span>Bakplan Genereren</span>
                     </button>
-                    <button id="clear-all-btn" class="action-btn delete" title="Alles Verwijderen" style="padding: 8px 12px; display: flex; align-items: center; gap: 6px; background-color: var(--danger-color); color: #fff;">
+                    <button id="clear-all-btn" class="action-btn delete btn-header-action btn-danger" title="Alles Verwijderen">
                         <i class="material-icons">delete_forever</i>
                         <span>Alles Verwijderen</span>
                     </button>
@@ -48,15 +48,15 @@
             </div>
             <p class="page-header-subtitle">Beheer en bekijk het bakplan</p>
         </div>
-        <div class="form-group upload-group" style="display: flex; align-items: flex-end; gap: 12px;">
-            <div style="flex: 1;">
+        <div class="form-group upload-group flex-row align-end gap-12">
+            <div class="flex-1">
                 <label for="bakplan-input">PDF Bestand uploaden</label>
                 <div class="input-wrapper">
                     <input type="file" id="bakplan-input" accept=".pdf" autocomplete="off">
                     <i class="material-icons">picture_as_pdf</i>
                 </div>
             </div>
-            <button id="undo-pdf-btn" class="action-btn" style="display: none; height: 42px; padding: 0 14px; align-items: center; gap: 6px; background-color: var(--input-bg);">
+            <button id="undo-pdf-btn" class="action-btn btn-input-bg" style="display: none; height: 42px; padding: 0 14px; align-items: center; gap: 6px;">
                 <i class="material-icons">undo</i>
                 <span>Undo Upload</span>
             </button>
@@ -85,9 +85,9 @@
     </main>
 
     <div id="bakplan-carts-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-content" style="max-width: 650px; max-height: 85vh; display: flex; flex-direction: column;">
-            <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 16px;">Karren Beheren</h3>
-            <div style="flex: 1; overflow-y: auto; margin-bottom: 16px;">
+        <div class="modal-content modal-content-lg flex-col">
+            <h3 class="modal-title">Karren Beheren</h3>
+            <div class="modal-body-scroll">
                 <table class="users-table">
                     <thead>
                         <tr>
@@ -101,22 +101,22 @@
                     <tbody id="carts-table-body">
                     </tbody>
                 </table>
-                <button id="add-cart-row-btn" class="action-btn" style="margin-top: 12px; padding: 6px 12px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; background-color: var(--accent-color); color: #fff;">
+                <button id="add-cart-row-btn" class="action-btn btn-accent" style="margin-top: 12px; padding: 6px 12px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
                     <i class="material-icons" style="font-size: 16px;">add</i>
                     <span>Kar Toevoegen</span>
                 </button>
             </div>
-            <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                <button id="carts-cancel-btn" class="action-btn" style="padding: 8px 16px; background-color: var(--input-bg);">Annuleren</button>
-                <button id="carts-save-btn" class="action-btn" style="padding: 8px 16px; background-color: var(--accent-color); color: #fff;">Opslaan</button>
+            <div class="modal-footer">
+                <button id="carts-cancel-btn" class="action-btn btn-input-bg" style="padding: 8px 16px;">Annuleren</button>
+                <button id="carts-save-btn" class="action-btn btn-accent" style="padding: 8px 16px;">Opslaan</button>
             </div>
         </div>
     </div>
 
     <div id="bakplan-settings-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-content" style="max-width: 600px; max-height: 80vh; display: flex; flex-direction: column;">
-            <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 16px;">Plaathoeveelheden Instellingen</h3>
-            <div style="flex: 1; overflow-y: auto; margin-bottom: 16px;">
+        <div class="modal-content modal-content-md flex-col">
+            <h3 class="modal-title">Plaathoeveelheden Instellingen</h3>
+            <div class="modal-body-scroll">
                 <table class="users-table">
                     <thead>
                         <tr>
@@ -131,41 +131,41 @@
                     </tbody>
                 </table>
             </div>
-            <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                <button id="settings-cancel-btn" class="action-btn" style="padding: 8px 16px; background-color: var(--input-bg);">Annuleren</button>
-                <button id="settings-save-btn" class="action-btn" style="padding: 8px 16px; background-color: var(--accent-color); color: #fff;">Opslaan</button>
+            <div class="modal-footer">
+                <button id="settings-cancel-btn" class="action-btn btn-input-bg" style="padding: 8px 16px;">Annuleren</button>
+                <button id="settings-save-btn" class="action-btn btn-accent" style="padding: 8px 16px;">Opslaan</button>
             </div>
         </div>
     </div>
 
     <div id="pdf-upload-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-content" style="max-width: 440px;">
-            <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 12px; color: var(--text-color);">PDF Uploaden</h3>
-            <p style="font-size: 14px; color: var(--text-color-muted); margin-bottom: 20px; line-height: 1.5;">Weet je zeker dat je het bakplan wilt overschrijven met dit PDF-bestand?</p>
-            <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
-                <button id="pdf-modal-cancel-btn" class="action-btn" style="padding: 8px 16px; background-color: var(--input-bg);">Annuleren</button>
-                <button id="pdf-modal-confirm-btn" class="action-btn" style="padding: 8px 16px; background-color: var(--accent-color-sidemenu); color: #fff;">Overschrijven</button>
+        <div class="modal-content modal-content-sm">
+            <h3 class="modal-title">PDF Uploaden</h3>
+            <p class="modal-desc">Weet je zeker dat je het bakplan wilt overschrijven met dit PDF-bestand?</p>
+            <div class="modal-footer flex-wrap">
+                <button id="pdf-modal-cancel-btn" class="action-btn btn-input-bg" style="padding: 8px 16px;">Annuleren</button>
+                <button id="pdf-modal-confirm-btn" class="action-btn btn-accent" style="padding: 8px 16px;">Overschrijven</button>
             </div>
         </div>
     </div>
 
     <div id="confirm-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-content" style="max-width: 420px;">
-            <h3 id="confirm-modal-title" style="font-size: 18px; font-weight: 600; margin-bottom: 12px; color: var(--text-color);">Verwijderen Bevestigen</h3>
-            <p id="confirm-modal-message" style="font-size: 14px; color: var(--text-color-muted); margin-bottom: 20px; line-height: 1.5;"></p>
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button id="confirm-cancel-btn" class="action-btn" style="padding: 8px 16px; background-color: var(--input-bg);">Annuleren</button>
-                <button id="confirm-ok-btn" class="action-btn delete" style="padding: 8px 16px; background-color: var(--danger-color); color: #fff;">Verwijderen</button>
+        <div class="modal-content modal-content-sm">
+            <h3 id="confirm-modal-title" class="modal-title">Verwijderen Bevestigen</h3>
+            <p id="confirm-modal-message" class="modal-desc"></p>
+            <div class="modal-footer">
+                <button id="confirm-cancel-btn" class="action-btn btn-input-bg" style="padding: 8px 16px;">Annuleren</button>
+                <button id="confirm-ok-btn" class="action-btn delete btn-danger" style="padding: 8px 16px;">Verwijderen</button>
             </div>
         </div>
     </div>
 
-    <div id="context-menu" class="context-menu" style="display: none; position: fixed; z-index: 2000; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 6px 0; box-shadow: 0 4px 16px rgba(0,0,0,0.4); min-width: 180px;">
-        <div id="ctx-sync-field" class="context-menu-item" style="padding: 8px 16px; font-size: 13px; color: var(--text-color); cursor: pointer; display: flex; align-items: center; gap: 8px;">
+    <div id="context-menu" class="context-menu" style="display: none;">
+        <div id="ctx-sync-field" class="context-menu-item">
             <i class="material-icons" style="font-size: 16px; color: var(--accent-color-sidemenu);">sync</i>
             <span id="ctx-field-text">Sync alleen dit type</span>
         </div>
-        <div id="ctx-sync-product" class="context-menu-item" style="padding: 8px 16px; font-size: 13px; color: var(--text-color); cursor: pointer; display: flex; align-items: center; gap: 8px;">
+        <div id="ctx-sync-product" class="context-menu-item">
             <i class="material-icons" style="font-size: 16px; color: var(--accent-color-sidemenu);">sync_alt</i>
             <span>Sync heel product</span>
         </div>

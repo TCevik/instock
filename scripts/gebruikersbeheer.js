@@ -4,6 +4,11 @@ import { parseStoreDepartments, sortUsersByRole, groupUsersByDepartment } from '
 import { showToast } from './toast.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
+    const auth = await checkAuth(['beheerder']);
+    if (!auth) return;
+
+    loadHeader();
+
     const form = document.getElementById('create-user-form');
     const fullNameInput = document.getElementById('full-name');
     const gebruikersnaamInput = document.getElementById('gebruikersnaam');
@@ -25,11 +30,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const deptMessageBox = document.getElementById('dept-message-box');
     const deptMessageIcon = document.getElementById('dept-message-icon');
     const deptMessageText = document.getElementById('dept-message-text');
-
-    loadHeader();
-
-    const auth = await checkAuth(['beheerder']);
-    if (!auth) return;
 
     const { session, userData } = auth;
     const loggedInUserId = session.user.id;

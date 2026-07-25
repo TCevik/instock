@@ -61,7 +61,7 @@ export async function updateHeaderMenu() {
     document.querySelectorAll(".drawer-item, .nav-item").forEach(item => {
         const text = item.querySelector("span") ? item.querySelector("span").textContent.toLowerCase().trim() : "";
         const moduleKey = moduleMap[text];
-        
+
         let hide = false;
         if (userRole === "medewerker" && fixedHiddenForMedewerker.includes(moduleKey)) {
             hide = true;
@@ -71,11 +71,7 @@ export async function updateHeaderMenu() {
             hide = true;
         }
 
-        if (hide) {
-            item.style.display = "none";
-        } else {
-            item.style.display = "";
-        }
+        item.style.display = hide ? 'none' : '';
     });
 
     setAppReady();
@@ -87,7 +83,7 @@ export function loadHeader() {
         .then(async html => {
             const tempDiv = document.createElement("div");
             tempDiv.innerHTML = html;
-            
+
             while (tempDiv.firstChild) {
                 document.body.insertBefore(tempDiv.firstChild, document.body.firstChild);
             }
@@ -130,10 +126,10 @@ export function loadHeader() {
             if (fullscreenBtn) {
                 fullscreenBtn.addEventListener("click", () => {
                     if (!document.fullscreenElement) {
-                        document.documentElement.requestFullscreen().catch(() => {});
+                        document.documentElement.requestFullscreen().catch(() => { });
                     } else {
                         if (document.exitFullscreen) {
-                            document.exitFullscreen().catch(() => {});
+                            document.exitFullscreen().catch(() => { });
                         }
                     }
                 });

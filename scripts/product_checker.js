@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const auth = await checkAuth();
     if (!auth) return;
 
+    loadHeader();
+
     const searchInput = document.getElementById('search-input');
     const resultsList = document.getElementById('results-list');
     const detailCard = document.getElementById('detail-card');
@@ -27,8 +29,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const detailLocatie = document.getElementById('detail-locatie');
     const detailTht = document.getElementById('detail-tht');
     const productImageBox = document.getElementById('product-image-box');
-
-    loadHeader();
 
     const supabase = await getSupabase();
     const { data: { session } } = await supabase.auth.getSession();

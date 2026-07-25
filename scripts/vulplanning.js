@@ -1326,9 +1326,9 @@ import {
     };
 
     document.addEventListener('DOMContentLoaded', async () => {
-        loadHeader();
         const auth = await checkAuth(['beheerder']);
         if (!auth) return;
+        loadHeader();
         storeId = auth.userData.winkel;
         const isPlusLms = auth.storeCode === 'plus-lms';
 

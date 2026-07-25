@@ -10,15 +10,14 @@ const AVAILABLE_MODULES = [
     { key: "acties", label: "Acties", icon: "local_offer" },
     { key: "rapportages", label: "Rapportages", icon: "bar_chart" },
     { key: "bakplan", label: "Bakplan", icon: "bakery_dining" },
-    { key: "vulplanning", label: "Vulplanning Maker", icon: "assignment" },
-    { key: "product_toevoegen", label: "Product Toevoegen", icon: "add_box" }
+    { key: "vulplanning", label: "Vulplanning Maker", icon: "assignment" }
 ];
 
 document.addEventListener('DOMContentLoaded', async () => {
-    loadHeader();
-
     const auth = await checkAuth(['beheerder']);
     if (!auth) return;
+
+    loadHeader();
 
     const { userData } = auth;
     const currentWinkelId = userData.winkel;

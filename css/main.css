@@ -635,3 +635,157 @@ body.app-ready {
 .modal-cat-row td {
     padding: 2px 4px;
 }
+
+/* Utility classes to clean up inline styles */
+.flex-row {
+    display: flex;
+    flex-direction: row;
+}
+
+.flex-col {
+    display: flex;
+    flex-direction: column;
+}
+
+.align-center {
+    align-items: center;
+}
+
+.align-end {
+    align-items: flex-end;
+}
+
+.justify-between {
+    justify-content: space-between;
+}
+
+.justify-end {
+    justify-content: flex-end;
+}
+
+.flex-1 {
+    flex: 1;
+}
+
+.flex-wrap {
+    flex-wrap: wrap;
+}
+
+.gap-4 { gap: 4px; }
+.gap-6 { gap: 6px; }
+.gap-8 { gap: 8px; }
+.gap-10 { gap: 10px; }
+.gap-12 { gap: 12px; }
+.gap-16 { gap: 16px; }
+
+.w-full {
+    width: 100%;
+}
+
+.btn-accent {
+    background-color: var(--accent-color);
+    color: #ffffff;
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+    color: #ffffff;
+}
+
+.btn-input-bg {
+    background-color: var(--input-bg);
+}
+
+.btn-card-bg {
+    background-color: var(--card-bg);
+}
+
+.btn-header-action {
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-header-action-sm {
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-weight: 500;
+    align-items: center;
+    gap: 4px;
+    display: flex;
+}
+
+.btn-compact {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.modal-content-sm {
+    max-width: 420px;
+}
+
+.modal-content-md {
+    max-width: 600px;
+    max-height: 80vh;
+}
+
+.modal-content-lg {
+    max-width: 650px;
+    max-height: 85vh;
+}
+
+.modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--text-color);
+}
+
+.modal-body-scroll {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 16px;
+}
+
+.modal-footer {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.modal-desc {
+    font-size: 14px;
+    color: var(--text-color-muted);
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.context-menu {
+    position: fixed;
+    z-index: 2000;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 6px 0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    min-width: 180px;
+}
+
+.context-menu-item {
+    padding: 8px 16px;
+    font-size: 13px;
+    color: var(--text-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.context-menu-item:hover {
+    background-color: var(--input-bg);
+}

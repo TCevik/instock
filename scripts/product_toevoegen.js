@@ -2,6 +2,11 @@ import { getSupabase, checkAuth, showMessage, handleFormSubmit } from './main.js
 import { loadHeader } from './header.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
+    const auth = await checkAuth(['beheerder']);
+    if (!auth) return;
+
+    loadHeader();
+
     const form = document.getElementById('add-product-form');
     const eanInput = document.getElementById('ean');
     const naamInput = document.getElementById('naam');
@@ -14,11 +19,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const thtInput = document.getElementById('tht');
     const locatiecodeInput = document.getElementById('locatiecode');
     const afbeeldingInput = document.getElementById('afbeelding');
-
-    loadHeader();
-
-    const auth = await checkAuth(['beheerder']);
-    if (!auth) return;
 
     const supabase = await getSupabase();
 

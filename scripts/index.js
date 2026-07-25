@@ -2,8 +2,7 @@ import { checkAuth, getSupabase, handleFormSubmit } from './main.js';
 import { loadHeader } from './header.js';
 import { showToast } from './toast.js';
 
-const initDashboard = async () => {
-    const auth = await checkAuth();
+const initDashboard = async (auth) => {
     if (!auth) return;
 
     const { session } = auth;
@@ -137,14 +136,16 @@ const generateDashboardCards = () => {
 
 window.addEventListener("menuReady", generateDashboardCards);
 
-if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => {
-        loadHeader();
-        initDashboard();
-        setupPasswordModal();
-    });
-} else {
+const initApp = async () => {
+    const auth = await checkAuth();
+    if (!auth) return;
     loadHeader();
-    initDashboard();
+    await initDashboard(auth);
     setupPasswordModal();
+};
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initApp);
+} else {
+    initApp();
 }

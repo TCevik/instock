@@ -1160,10 +1160,10 @@ import { DAYS, getPlateQuantity as logicGetPlateQuantity, normalizeDaysData as l
     };
 
     document.addEventListener('DOMContentLoaded', async () => {
-        loadHeader();
-        initContextMenu();
         const auth = await checkAuth(['beheerder']);
         if (!auth) return;
+        loadHeader();
+        initContextMenu();
         storeId = auth.userData.winkel;
         const uploadGroup = document.querySelector('.upload-group');
         if (uploadGroup && auth.storeCode !== 'plus-lms') {
