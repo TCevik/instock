@@ -15,14 +15,50 @@
 <body>
     <main class="dashboard-container">
         <div class="page-header page-header-col">
-            <div class="page-header-row">
-                <i class="material-icons page-header-icon">dashboard</i>
-                <h1 id="welcome-message" class="page-header-title">Welkom terug!</h1>
+            <div class="header-wrapper">
+                <div class="page-header-row">
+                    <i class="material-icons page-header-icon">dashboard</i>
+                    <h1 id="welcome-message" class="page-header-title">Welkom terug!</h1>
+                </div>
+                <button id="changePasswordBtn" class="action-btn-secondary">
+                    <i class="material-icons">lock_reset</i>
+                    <span>Wachtwoord wijzigen</span>
+                </button>
             </div>
             <p class="page-header-subtitle">Bekijk de huidige status en beheer de voorraad</p>
         </div>
         <div class="dashboard-grid" id="dashboardGrid"></div>
     </main>
+
+    <div class="modal-overlay" id="passwordModal">
+        <div class="management-card modal-card">
+            <div class="modal-header">
+                <h2>Wachtwoord Wijzigen</h2>
+                <button class="close-modal-btn" id="closePasswordModal">
+                    <i class="material-icons">close</i>
+                </button>
+            </div>
+            <form id="change-password-form" novalidate>
+                <div class="form-group">
+                    <label for="new-password">Nieuw Wachtwoord</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="new-password">
+                        <i class="material-icons">lock</i>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="confirm-password">Bevestig Wachtwoord</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="confirm-password">
+                        <i class="material-icons">lock_outline</i>
+                    </div>
+                </div>
+                <button type="submit" class="submit-btn" id="savePasswordBtn">
+                    <span>Wachtwoord Opslaan</span>
+                </button>
+            </form>
+        </div>
+    </div>
 </body>
 
 </html>

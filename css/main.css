@@ -468,7 +468,7 @@ body {
         display: none;
     }
 
-    .users-table td[data-label="Personeelsnummer"] {
+    .users-table td[data-label="Gebruikersnaam"] {
         order: 3;
     }
 

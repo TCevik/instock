@@ -35,6 +35,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     const currentWinkelId = userData.winkel;
     const supabase = await getSupabase();
 
+    async function invokeFunctionWithRetry(functionName, body, headers) {
+        let currentHeaders = { ...headers };
+        let result = await supabase.functions.invoke(functionName, { body, headers: currentHeaders });
+        if (result.error) {
+            let errorText = String(result.error.message || result.error);
+            if (result.error.context && typeof result.error.context.json === 'function') {
+                try {
+                    const errorBody = await result.error.context.json();
+                    errorText += ' ' + JSON.stringify(errorBody);
+                } catch (e) {}
+            }
+            if (errorText.includes('JWT') || errorText.includes('signature')) {
+                const { data: refreshed } = await supabase.auth.refreshSession();
+                const newToken = refreshed?.session?.access_token;
+                if (newToken) {
+                    currentHeaders.Authorization = `Bearer ${newToken}`;
+                }
+                result = await supabase.functions.invoke(functionName, { body, headers: currentHeaders });
+            }
+        }
+        return result;
+    }
+
     const toggleViewBtn = document.getElementById('toggleViewBtn');
 
     let currentUsers = [];
@@ -177,7 +200,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return `
                     <tr ${isSelf ? 'class="self-row"' : ''}>
                         <td data-label="Volledige Naam">${u.full_name || ''} ${isSelf ? '<strong>(Jij)</strong>' : ''}</td>
-                        <td data-label="Personeelsnummer">${u.personeelsnummer || ''}</td>
+                        <td data-label="Gebruikersnaam">${u.personeelsnummer || ''}</td>
                         <td data-label="Rol">${u.role || ''}</td>
                         <td data-label="Afdeling">${formattedAfdeling}</td>
                         <td data-label="Acties">
@@ -196,7 +219,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <thead>
                             <tr>
                                 <th>Volledige Naam</th>
-                                <th>Personeelsnummer</th>
+                                <th>Gebruikersnaam</th>
                                 <th>Rol</th>
                                 <th>Afdeling</th>
                                 <th>Acties</th>
@@ -241,7 +264,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return `
                     <tr ${isSelf ? 'class="self-row"' : ''}>
                         <td data-label="Volledige Naam">${u.full_name || ''} ${isSelf ? '<strong>(Jij)</strong>' : ''}</td>
-                        <td data-label="Personeelsnummer">${u.personeelsnummer || ''}</td>
+                        <td data-label="Gebruikersnaam">${u.personeelsnummer || ''}</td>
                         <td data-label="Rol">${u.role || ''}</td>
                         <td data-label="Afdeling">${formattedAfdeling}</td>
                         <td data-label="Acties">
@@ -265,7 +288,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <thead>
                                 <tr>
                                     <th>Volledige Naam</th>
-                                    <th>Personeelsnummer</th>
+                                    <th>Gebruikersnaam</th>
                                     <th>Rol</th>
                                     <th>Afdeling</th>
                                     <th>Acties</th>
@@ -332,15 +355,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (password) {
                     updates.password = password;
                 }
-                result = await supabase.functions.invoke('manage-user', {
-                    body: { action: 'update', targetUserId: editingUserId, updates },
-                    headers
-                });
+                result = await invokeFunctionWithRetry('manage-user', { action: 'update', targetUserId: editingUserId, updates }, headers);
             } else {
-                result = await supabase.functions.invoke('create-user', {
-                    body: { full_name, role, personeelsnummer, password, afdeling },
-                    headers
-                });
+                result = await invokeFunctionWithRetry('create-user', { full_name, role, personeelsnummer, password, afdeling }, headers);
             }
 
             const { data, error } = result;
@@ -453,10 +470,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             const headers = currentSession?.access_token ? { Authorization: `Bearer ${currentSession.access_token}` } : {};
 
-            const { data, error } = await supabase.functions.invoke('manage-user', {
-                body: { action: 'delete', targetUserId: userToDeleteId },
-                headers
-            });
+            const { data, error } = await invokeFunctionWithRetry('manage-user', { action: 'delete', targetUserId: userToDeleteId }, headers);
 
             if (error) {
                 let errorMsg = error.message;
