@@ -1,31 +1,47 @@
-export const PATHS_MAPPING = {
-    "Wijn, Chips, Nootjes": ["Wijnen", "Zoutjes Snacks"],
-    "Frisdrank, Bier": ["Frisdrank", "Bieren", "Vruchtensappen"],
-    "Ontbijt": ["Ontbijtvervangers", "Boterhambeleg"],
-    "Koffie, Koek, Chocolade": ["Koffie Thee", "Koffiemelk", "Koekjes", "Chocolade", "Suikerwerk", "Suiker"],
-    "Maaltijdstraat Conserven": ["Groenteconserven", "Vleesconserven", "Zuren sauzen", "Soepen", "Houdbare zuivel", "Gezondheidsvoeding"],
-    "Maaltijdstraat Oosters": ["Rijst en deegwaren", "Maaltijdstraat LDC + Specerijen"],
-    "Eieren, Afbakbrood": ["Eieren", "Meelproducten"],
-    "Non Food": ["Papierwaren", "Kindervoeding", "Luiers", "Wasmiddelen", "Reinigingsmiddelen", "Sorbo", "Huishoudelijk", "Nonfood", "Persoonlijke verzorging", "dierenvoeding"],
-    "Diepvries": ["Diepvries"],
-    "Zuivel": ["Zuivel", "Geelvetten"],
-    "Vlees": ["Vers vlees", "Vis"],
-    "Vleeswaren, Kaas": ["Vleeswaren AV/AVA", "Vleeswaren ZB", "Kaas AV/AVA", "Kaas ZB"]
+export const parsePadenData = (padenData) => {
+    const list = Array.isArray(padenData) ? padenData : [];
+    const pathsMapping = {};
+    const normsMapping = {};
+    const mirrorNormsMapping = {};
+    list.forEach(p => {
+        if (!p.name) return;
+        if (p.mirrorNorm !== undefined) {
+            mirrorNormsMapping[p.name] = parseFloat(p.mirrorNorm) || 21;
+        }
+        const cats = Array.isArray(p.categories) ? p.categories : [];
+        pathsMapping[p.name] = cats.map(c => typeof c === 'string' ? c : c.name).filter(Boolean);
+        cats.forEach(c => {
+            if (typeof c === 'object' && c.name) {
+                normsMapping[c.name.toLowerCase()] = parseFloat(c.norm) || 62;
+            }
+        });
+    });
+    return { pathsMapping, normsMapping, mirrorNormsMapping };
 };
 
-export const MIRROR_TIMES = {
-    "Wijn, Chips, Nootjes": 15,
-    "Frisdrank, Bier": 21,
-    "Ontbijt": 10,
-    "Koffie, Koek, Chocolade": 21,
-    "Maaltijdstraat Conserven": 21,
-    "Maaltijdstraat Oosters": 21,
-    "Eieren, Afbakbrood": 15,
-    "Non Food": 21,
-    "Diepvries": 21,
-    "Zuivel": 21,
-    "Vlees": 21,
-    "Vleeswaren, Kaas": 21
+export const getTaskDuration = (taskId, state) => {
+    if (taskId.endsWith('_helper')) {
+        const mainTaskId = taskId.replace('_helper', '');
+        const helperInfo = state.helpers[mainTaskId];
+        if (!helperInfo) return 0;
+        if (helperInfo.isMax || helperInfo.isHalf) {
+            return helperInfo.calculatedDuration || 0;
+        }
+        const mainDuration = getTaskDuration(mainTaskId, state);
+        return Math.min(mainDuration, helperInfo.duration || 0);
+    }
+    if (state.instanceTimes && state.instanceTimes[taskId] !== undefined) {
+        return state.instanceTimes[taskId];
+    }
+    const [pathName, type] = taskId.split('_');
+    if (type === 'other') {
+        return state.otherTimes[pathName] || 0;
+    }
+    const data = state.pathColli[pathName];
+    if (!data) return 0;
+    if (type === 'fill') return data.duration;
+    if (type === 'mirror') return data.mirrorDuration !== undefined ? data.mirrorDuration : 21;
+    return 0;
 };
 
 export const formatMin = (min) => {
@@ -44,20 +60,9 @@ export const parseNameAndSubtitle = (str) => {
 };
 
 export const getFillerPause = (displayName, state) => {
-    if (state.fillerBreaks && state.fillerBreaks[displayName] !== undefined) {
+    if (state && state.fillerBreaks && state.fillerBreaks[displayName] !== undefined) {
         return state.fillerBreaks[displayName];
     }
-    const match = displayName.match(/\b\d{2}:\d{2}\s*-\s*\d{2}(?::\d{2})?/);
-    if (!match) return 0;
-    const parts = match[0].split('-').map(p => p.trim());
-    if (parts.length !== 2) return 0;
-    const parseTime = (str) => {
-        const hm = str.split(':');
-        return (parseInt(hm[0]) || 0) * 60 + (parseInt(hm[1]) || 0);
-    };
-    const gross = parseTime(parts[1]) - parseTime(parts[0]);
-    if (gross >= 480) return 60;
-    if (gross >= 270) return 30;
     return 0;
 };
 
@@ -109,31 +114,6 @@ export const getFillerActualEndTime = (displayName, state) => {
         }
     }
     return getFillerEndTime(displayName);
-};
-
-export const getTaskDuration = (taskId, state) => {
-    if (taskId.endsWith('_helper')) {
-        const mainTaskId = taskId.replace('_helper', '');
-        const helperInfo = state.helpers[mainTaskId];
-        if (!helperInfo) return 0;
-        if (helperInfo.isMax || helperInfo.isHalf) {
-            return helperInfo.calculatedDuration || 0;
-        }
-        const mainDuration = getTaskDuration(mainTaskId, state);
-        return Math.min(mainDuration, helperInfo.duration || 0);
-    }
-    if (state.instanceTimes && state.instanceTimes[taskId] !== undefined) {
-        return state.instanceTimes[taskId];
-    }
-    const [pathName, type] = taskId.split('_');
-    if (type === 'other') {
-        return state.otherTimes[pathName] || 0;
-    }
-    const data = state.pathColli[pathName];
-    if (!data) return 0;
-    if (type === 'fill') return data.duration;
-    if (type === 'mirror') return MIRROR_TIMES[pathName] || 0;
-    return 0;
 };
 
 export const getFillerColli = (displayName, state) => {

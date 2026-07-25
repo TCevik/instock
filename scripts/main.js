@@ -126,63 +126,116 @@ export function initPadenModal(supabase, storeId, onSaved) {
     const cancelBtn = document.getElementById('paden-modal-cancel-btn');
     const saveBtn = document.getElementById('paden-modal-save-btn');
 
-    const closeModal = setupModal(modal, [cancelBtn]);
-
-    const addCategoryRow = (container, name = '', norm = '') => {
-        const row = document.createElement('div');
-        row.className = 'modal-category-row';
-        row.style.cssText = 'display: flex; gap: 8px; align-items: center; margin-bottom: 6px;';
-        row.innerHTML = `
-            <input type="text" placeholder="Categorie (bijv. Frisdrank)" value="${name}" class="modal-cat-name" style="flex: 2; padding: 6px 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color); font-size: 13px;">
-            <input type="number" placeholder="Norm (colli/u)" value="${norm}" class="modal-cat-norm" style="flex: 1; padding: 6px 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color); font-size: 13px;">
-            <button type="button" class="remove-cat-btn" style="background: none; border: none; color: var(--danger-color); cursor: pointer; padding: 2px;"><i class="material-icons" style="font-size: 18px;">close</i></button>
+    const addCategoryRow = (catTbody, name = '', norm = '', catIdx = 0) => {
+        const tr = document.createElement('tr');
+        tr.className = 'modal-category-row';
+        tr.setAttribute('data-path-idx', catIdx);
+        tr.innerHTML = `
+            <td style="padding: 3px 4px;">
+                <input type="text" placeholder="bijv. Frisdrank" value="${name}" class="modal-cat-name modal-path-input" style="width: 100%;">
+            </td>
+            <td style="padding: 3px 4px; width: 140px;">
+                <input type="number" placeholder="colli/u" value="${norm}" class="modal-cat-norm modal-path-input" style="width: 100%;">
+            </td>
+            <td style="padding: 3px 4px; text-align: right; width: 40px;">
+                <button type="button" class="remove-cat-btn action-btn delete" style="padding: 6px; border-radius: 6px;" title="Categorie Verwijderen"><i class="material-icons" style="font-size: 16px;">delete</i></button>
+            </td>
         `;
-        row.querySelector('.remove-cat-btn').addEventListener('click', () => row.remove());
-        container.appendChild(row);
+        tr.querySelector('.remove-cat-btn').addEventListener('click', () => tr.remove());
+        catTbody.appendChild(tr);
     };
 
-    const addPathBlock = (pathName = '') => {
-        const block = document.createElement('div');
-        block.className = 'modal-path-block';
-        block.style.cssText = 'border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; background-color: var(--bg-color); display: flex; flex-direction: column; gap: 8px;';
-        block.innerHTML = `
-            <div style="display: flex; gap: 8px; align-items: center;">
-                <input type="text" placeholder="Padnaam (bijv. Frisdrank, Bier)" value="${pathName}" class="modal-path-name" style="flex: 1; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color); font-weight: 600;">
-                <button type="button" class="remove-path-btn" style="background: none; border: none; color: var(--danger-color); cursor: pointer; padding: 4px;"><i class="material-icons">delete</i></button>
+    const addPathBlock = (pathName = '', mirrorNorm = '') => {
+        const pathIdx = Date.now() + Math.random();
+
+        const card = document.createElement('div');
+        card.className = 'modal-path-card';
+
+        const header = document.createElement('div');
+        header.className = 'modal-path-header modal-path-card-header';
+        header.setAttribute('data-path-idx', pathIdx);
+        header.innerHTML = `
+            <div style="display: flex; gap: 8px; align-items: center; flex: 1; min-width: 200px;">
+                <input type="text" placeholder="bijv. Frisdrank, Bier" value="${pathName}" class="modal-path-name modal-path-input" style="flex: 1; font-weight: 600;">
             </div>
-            <div class="modal-categories-container" style="display: flex; flex-direction: column; padding-left: 12px; border-left: 2px solid var(--border-color); margin-top: 4px;"></div>
-            <button type="button" class="add-cat-btn" style="align-self: flex-start; padding: 4px 8px; font-size: 12px; background: none; border: 1px dashed var(--border-color); color: var(--text-color); border-radius: 4px; cursor: pointer;">+ Categorie Toevoegen</button>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <span class="modal-path-label" style="color: var(--text-color-muted);">SPIEGELNORM (MIN):</span>
+                <input type="number" placeholder="min" value="${mirrorNorm}" class="modal-path-mirror-norm modal-path-input" style="width: 75px;">
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center; margin-left: auto;">
+                <button type="button" class="add-cat-btn action-btn" style="padding: 6px 10px; background-color: var(--accent-color); color: #fff; display: flex; align-items: center; border-radius: 6px;" title="Categorie Toevoegen"><i class="material-icons" style="font-size: 16px;">add</i></button>
+                <button type="button" class="remove-path-btn action-btn delete" style="padding: 6px; border-radius: 6px;" title="Pad Verwijderen"><i class="material-icons" style="font-size: 16px;">delete</i></button>
+            </div>
         `;
-        const catContainer = block.querySelector('.modal-categories-container');
-        block.querySelector('.add-cat-btn').addEventListener('click', () => addCategoryRow(catContainer));
-        block.querySelector('.remove-path-btn').addEventListener('click', () => block.remove());
-        pathsList.appendChild(block);
-        return catContainer;
+
+        const tableContainer = document.createElement('div');
+        tableContainer.innerHTML = `
+            <table class="modal-cat-table">
+                <thead>
+                    <tr>
+                        <th>Categorie</th>
+                        <th style="width: 140px;">Norm (colli/u)</th>
+                        <th style="width: 40px;"></th>
+                    </tr>
+                </thead>
+                <tbody class="modal-cat-tbody"></tbody>
+            </table>
+        `;
+        const catTbody = tableContainer.querySelector('.modal-cat-tbody');
+
+        card.appendChild(header);
+        card.appendChild(tableContainer);
+        pathsList.appendChild(card);
+
+        const addCat = (cName = '', cNorm = '') => addCategoryRow(catTbody, cName, cNorm, pathIdx);
+
+        header.querySelector('.add-cat-btn').addEventListener('click', () => addCat());
+        header.querySelector('.remove-path-btn').addEventListener('click', () => card.remove());
+
+        return { addCategoryRow: addCat };
     };
 
     const loadAndRender = async () => {
         pathsList.innerHTML = '';
         if (!storeId || !supabase) {
-            const catC = addPathBlock();
-            addCategoryRow(catC);
+            const pathRes = addPathBlock();
+            pathRes.addCategoryRow();
             return;
         }
-        const { data } = await supabase.from('stores_info').select('paden_categorieen').eq('store_id', storeId).maybeSingle();
-        const paden = data?.paden_categorieen;
-        if (Array.isArray(paden) && paden.length > 0) {
+        let paden = null;
+        const { data: vpData } = await supabase.from('vulplanningen').select('instellingen').eq('id', storeId).maybeSingle();
+        if (vpData?.instellingen?.paden_categorieen && vpData.instellingen.paden_categorieen.length > 0) {
+            paden = vpData.instellingen.paden_categorieen;
+        } else {
+            const { data: storeData } = await supabase.from('stores_info').select('paden_categorieen').eq('store_id', storeId).maybeSingle();
+            if (storeData?.paden_categorieen && storeData.paden_categorieen.length > 0) {
+                paden = storeData.paden_categorieen;
+            }
+        }
+        if (!paden || paden.length === 0) {
+            const pathRes = addPathBlock();
+            pathRes.addCategoryRow();
+        } else {
             paden.forEach(p => {
-                const catC = addPathBlock(p.name || '');
+                const pathRes = addPathBlock(p.name || '', p.mirrorNorm !== undefined ? p.mirrorNorm : '');
                 if (Array.isArray(p.categories) && p.categories.length > 0) {
-                    p.categories.forEach(c => addCategoryRow(catC, c.name || '', c.norm || ''));
+                    p.categories.forEach(c => pathRes.addCategoryRow(c.name || '', c.norm || ''));
                 } else {
-                    addCategoryRow(catC);
+                    pathRes.addCategoryRow();
                 }
             });
-        } else {
-            const catC = addPathBlock();
-            addCategoryRow(catC);
         }
     };
+
+    const closeModal = () => modal.style.display = 'none';
+
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', closeModal);
+    }
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
 
     if (openBtn) {
         openBtn.addEventListener('click', async () => {
@@ -193,33 +246,46 @@ export function initPadenModal(supabase, storeId, onSaved) {
 
     if (addPathBtn) {
         addPathBtn.addEventListener('click', () => {
-            const catC = addPathBlock();
-            addCategoryRow(catC);
+            const pathRes = addPathBlock();
+            pathRes.addCategoryRow();
         });
     }
 
     if (saveBtn) {
         saveBtn.addEventListener('click', async () => {
-            const pathBlocks = pathsList.querySelectorAll('.modal-path-block');
+            const tbody = document.getElementById('modal-paths-tbody') || pathsList;
+            const headerRows = tbody.querySelectorAll('.modal-path-header');
             const padenData = [];
-            pathBlocks.forEach(b => {
-                const name = b.querySelector('.modal-path-name').value.trim();
+            headerRows.forEach(headerTr => {
+                const pathIdx = headerTr.getAttribute('data-path-idx');
+                const name = headerTr.querySelector('.modal-path-name').value.trim();
                 if (!name) return;
+                const mirrorNormVal = headerTr.querySelector('.modal-path-mirror-norm').value;
+                const mirrorNorm = mirrorNormVal !== '' ? parseFloat(mirrorNormVal) : 21;
                 const categories = [];
-                b.querySelectorAll('.modal-category-row').forEach(cr => {
+                tbody.querySelectorAll(`tr.modal-category-row[data-path-idx="${pathIdx}"]`).forEach(cr => {
                     const catName = cr.querySelector('.modal-cat-name').value.trim();
                     const norm = parseFloat(cr.querySelector('.modal-cat-norm').value) || 0;
                     if (catName) {
                         categories.push({ name: catName, norm });
                     }
                 });
-                padenData.push({ name, categories });
+                padenData.push({ name, mirrorNorm, categories });
             });
 
             if (storeId && supabase) {
-                await supabase.from('stores_info').upsert({ store_id: storeId, paden_categorieen: padenData }, { onConflict: 'store_id' });
+                const { error: storeError } = await supabase.from('stores_info').upsert({ store_id: storeId, paden_categorieen: padenData }, { onConflict: 'store_id' });
+                if (storeError) {
+                    showToast('Fout bij opslaan in stores_info: ' + storeError.message, 'error');
+                }
+                const { error: vpError } = await supabase.from('vulplanningen').upsert({ id: storeId, instellingen: { paden_categorieen: padenData } }, { onConflict: 'id' });
+                if (vpError) {
+                    showToast('Fout bij opslaan van instellingen: ' + vpError.message, 'error');
+                } else {
+                    showToast('Paden en normen opgeslagen!', 'success');
+                }
             }
-            if (closeModal) closeModal();
+            closeModal();
             if (onSaved) onSaved(padenData);
         });
     }

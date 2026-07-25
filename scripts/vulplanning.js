@@ -2,11 +2,11 @@ import { loadHeader } from './header.js';
 import { checkAuth, getSupabase, setupModal, initPadenModal } from './main.js';
 import { extractTextLinesFromPage } from './pdf-utils.js';
 import { showToast } from './toast.js';
+import { HARDCODED_PATHS_MAPPING, HARDCODED_NORMS, HARDCODED_MIRROR_TIMES } from './pdf-defaults.js';
 import {
-    PATHS_MAPPING,
-    MIRROR_TIMES,
     formatMin,
     parseNameAndSubtitle,
+    parsePadenData,
     getFillerPause as logicGetFillerPause,
     getAvailableTime as logicGetAvailableTime,
     getFillerStartTime,
@@ -580,7 +580,7 @@ import {
         const allTaskIds = [];
         Object.keys(state.pathColli).forEach(pathName => {
             allTaskIds.push(`${pathName}_fill`);
-            if (MIRROR_TIMES[pathName] !== undefined) {
+            if (HARDCODED_MIRROR_TIMES[pathName] !== undefined || (state.pathColli[pathName] && state.pathColli[pathName].mirrorDuration !== undefined)) {
                 allTaskIds.push(`${pathName}_mirror`);
             }
         });
@@ -945,12 +945,12 @@ import {
                     if (!isAlreadyAssigned && state.autoPairSettings && state.autoPairSettings.enabled) {
                         if (taskId.endsWith('_fill')) {
                             const pKey = taskId.replace('_fill', '');
-                            if (state.pathColli[pKey] && MIRROR_TIMES[pKey] !== undefined) {
+                            if (state.pathColli[pKey]) {
                                 counterpartTaskId = `${pKey}_mirror`;
                             }
                         } else if (taskId.endsWith('_mirror')) {
                             const pKey = taskId.replace('_mirror', '');
-                            if (state.pathColli[pKey] && MIRROR_TIMES[pKey] !== undefined) {
+                            if (state.pathColli[pKey]) {
                                 counterpartTaskId = `${pKey}_fill`;
                             }
                         }
@@ -1160,57 +1160,13 @@ import {
         return Array.from(namesSet).sort();
     };
 
-    const NORMS = {
-        "wijnen": 50,
-        "zoutjes snacks": 60,
-        "frisdrank": 80,
-        "bieren": 80,
-        "vruchtensappen": 75,
-        "ontbijtvervangers": 50,
-        "boterhambeleg": 50,
-        "koffie thee": 50,
-        "koffiemelk": 50,
-        "koekjes": 50,
-        "chocolade": 50,
-        "suikerwerk": 50,
-        "suiker": 50,
-        "groenteconserven": 50,
-        "vleesconserven": 50,
-        "zuren sauzen": 50,
-        "soepen": 50,
-        "houdbare zuivel": 50,
-        "gezondheidsvoeding": 50,
-        "rijst en deegwaren": 50,
-        "maaltijdstraat ldc + specerijen": 50,
-        "eieren": 34,
-        "meelproducten": 50,
-        "papierwaren": 80,
-        "kindervoeding": 50,
-        "luiers": 50,
-        "wasmiddelen": 54,
-        "reinigingsmiddelen": 54,
-        "sorbo": 88,
-        "huishoudelijk": 88,
-        "nonfood": 88,
-        "persoonlijke verzorging": 60,
-        "dierenvoeding": 50,
-        "diepvries": 60,
-        "zuivel": 60,
-        "geelvetten": 46,
-        "vers vlees": 80,
-        "vis": 100,
-        "vleeswaren av/ava": 90,
-        "vleeswaren zb": 70,
-        "kaas av/ava": 100,
-        "kaas zb": 60
-    };
-
     const parseColliPDF = async (file) => {
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
         const colliMap = {};
+        const categoryColli = {};
 
-        Object.keys(PATHS_MAPPING).forEach(path => {
+        Object.keys(HARDCODED_PATHS_MAPPING).forEach(path => {
             colliMap[path] = { colli: 0, duration: 0 };
         });
 
@@ -1224,21 +1180,23 @@ import {
                     const category = match[1].trim();
                     const colli = parseInt(match[2].trim()) || 0;
                     let foundPath = null;
-                    for (const [pathName, categories] of Object.entries(PATHS_MAPPING)) {
+                    for (const [pathName, categories] of Object.entries(HARDCODED_PATHS_MAPPING)) {
                         if (categories.some(cat => cat.trim().toLowerCase() === category.toLowerCase())) {
                             foundPath = pathName;
                             break;
                         }
                     }
                     if (foundPath) {
-                        const norm = NORMS[category.toLowerCase()] || 62;
+                        const norm = HARDCODED_NORMS[category.toLowerCase()] || 62;
                         colliMap[foundPath].colli += colli;
                         colliMap[foundPath].duration += (colli / norm) * 60;
                     }
+                    const catKey = category.toLowerCase();
+                    categoryColli[catKey] = (categoryColli[catKey] || 0) + colli;
                 }
             }
         }
-        return colliMap;
+        return { colliMap, categoryColli };
     };
 
     const renderPeopleList = (names) => {
@@ -1279,7 +1237,7 @@ import {
         card.style.display = names.length > 0 ? 'block' : 'none';
     };
 
-    const showConfirmModal = (title, message, btnTextOrCallback, onConfirmArg) => {
+    const showConfirmModal = (title, message, btnTextOrCallback, onConfirmArg, onCancelArg, cancelBtnText) => {
         let btnText, onConfirm;
         if (typeof btnTextOrCallback === 'function') {
             btnText = 'Overschrijven';
@@ -1299,6 +1257,7 @@ import {
         titleEl.textContent = title;
         msgEl.textContent = message;
         okBtn.textContent = btnText;
+        cancelBtn.textContent = cancelBtnText || 'Annuleren';
         modal.style.display = 'flex';
 
         const close = () => {
@@ -1307,7 +1266,10 @@ import {
             okBtn.removeEventListener('click', handleOk);
         };
 
-        const handleCancel = () => close();
+        const handleCancel = () => {
+            close();
+            if (typeof onCancelArg === 'function') onCancelArg();
+        };
         const handleOk = () => {
             close();
             onConfirm();
@@ -1400,12 +1362,22 @@ import {
                 storeEmployees = users.map(u => u.full_name).filter(Boolean);
             }
 
-            const { data: storeData } = await supabase
-                .from('stores_info')
-                .select('paden_categorieen')
-                .eq('store_id', storeId)
+            const { data: vpData } = await supabase
+                .from('vulplanningen')
+                .select('instellingen')
+                .eq('id', storeId)
                 .maybeSingle();
-            storeDefaultPaden = storeData?.paden_categorieen || [];
+
+            if (vpData?.instellingen?.paden_categorieen && vpData.instellingen.paden_categorieen.length > 0) {
+                storeDefaultPaden = vpData.instellingen.paden_categorieen;
+            } else {
+                const { data: storeData } = await supabase
+                    .from('stores_info')
+                    .select('paden_categorieen')
+                    .eq('store_id', storeId)
+                    .maybeSingle();
+                storeDefaultPaden = storeData?.paden_categorieen || [];
+            }
         }
 
         const setupFillerAutocomplete = (inputEl, listEl) => {
@@ -1465,87 +1437,148 @@ import {
         const addPathBtn = document.getElementById('add-manual-path-btn');
         const startManualBtn = document.getElementById('start-manual-planning-btn');
 
+        let addFillerRow = () => {};
+        let populatePaths = () => {};
+
         if (manualFillersList && manualPathsList) {
-            const addFillerRow = (name = '', startTime = '', endTime = '') => {
+            addFillerRow = (name = '', startTime = '', endTime = '', pauseMinutes = '') => {
+                const isFirst = manualFillersList.children.length === 0;
                 const row = document.createElement('div');
                 row.className = 'manual-filler-row';
-                row.style.cssText = 'display: flex; gap: 8px; align-items: center;';
+                row.style.cssText = 'display: flex; gap: 6px; align-items: center; margin-bottom: 0px; padding: 1px 0;';
                 row.innerHTML = `
-                    <div style="flex: 2; position: relative;">
-                        <input type="text" placeholder="Naam vuller" value="${name}" class="manual-filler-name" style="width: 100%; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);" autocomplete="off">
+                    <div style="flex: 2; position: relative; display: flex; flex-direction: column; gap: 2px;">
+                        ${isFirst ? '<label style="font-size: 11px; font-weight: 600; color: var(--text-color-secondary);">Naam vuller</label>' : ''}
+                        <input type="text" placeholder="bijv. Jan Jansen" value="${name}" class="manual-filler-name" style="width: 100%; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);" autocomplete="off">
                         <div class="filler-autocomplete-list" style="display: none; position: absolute; top: 100%; left: 0; right: 0; max-height: 180px; overflow-y: auto; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 100; margin-top: 4px;"></div>
                     </div>
-                    <input type="time" value="${startTime}" class="manual-filler-start" style="flex: 1; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
-                    <input type="time" value="${endTime}" class="manual-filler-end" style="flex: 1; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
-                    <button type="button" class="remove-row-btn" style="background: none; border: none; color: var(--danger-color); cursor: pointer; padding: 4px;"><i class="material-icons">delete</i></button>
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 2px;">
+                        ${isFirst ? '<label style="font-size: 11px; font-weight: 600; color: var(--text-color-secondary);">Begintijd</label>' : ''}
+                        <input type="time" value="${startTime}" class="manual-filler-start" style="width: 100%; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
+                    </div>
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 2px;">
+                        ${isFirst ? '<label style="font-size: 11px; font-weight: 600; color: var(--text-color-secondary);">Eindtijd</label>' : ''}
+                        <input type="time" value="${endTime}" class="manual-filler-end" style="width: 100%; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
+                    </div>
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 2px;">
+                        ${isFirst ? '<label style="font-size: 11px; font-weight: 600; color: var(--text-color-secondary);">Pauze (min)</label>' : ''}
+                        <input type="number" placeholder="0" value="${pauseMinutes}" class="manual-filler-pause" min="0" style="width: 100%; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
+                    </div>
+                    <button type="button" class="remove-row-btn" style="background: none; border: none; color: var(--danger-color); cursor: pointer; padding: 8px 4px;"><i class="material-icons">delete</i></button>
                 `;
                 row.querySelector('.remove-row-btn').addEventListener('click', () => row.remove());
                 setupFillerAutocomplete(row.querySelector('.manual-filler-name'), row.querySelector('.filler-autocomplete-list'));
                 manualFillersList.appendChild(row);
             };
 
-            const addCategoryRow = (categoriesContainer, catName = '', colli = '', norm = '') => {
-                const row = document.createElement('div');
-                row.className = 'manual-category-row';
-                row.style.cssText = 'display: flex; gap: 8px; align-items: center; margin-bottom: 6px;';
-                row.innerHTML = `
-                    <input type="text" placeholder="Categorie (bijv. Frisdrank)" value="${catName}" class="manual-cat-name" style="flex: 2; padding: 6px 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color); font-size: 13px;">
-                    <input type="number" placeholder="Colli" value="${colli}" class="manual-cat-colli" style="flex: 1; padding: 6px 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color); font-size: 13px;">
-                    <input type="number" placeholder="Norm (colli/u)" value="${norm}" class="manual-cat-norm" style="flex: 1; padding: 6px 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color); font-size: 13px;">
-                    <button type="button" class="remove-cat-btn" style="background: none; border: none; color: var(--danger-color); cursor: pointer; padding: 2px;"><i class="material-icons" style="font-size: 18px;">close</i></button>
+            const addCategoryRow = (tbody, catName = '', colli = '', norm = '', pathIdx = 0, headerTr = null) => {
+                const tr = document.createElement('tr');
+                tr.className = 'bakplan-row manual-category-row';
+                tr.setAttribute('data-path-idx', pathIdx);
+                tr.innerHTML = `
+                    <td style="padding: 6px 12px; font-weight: 500; width: 240px;">
+                        <input type="text" value="${catName}" class="manual-cat-name" readonly style="width: 100%; border: none; background: transparent; color: var(--text-color); font-weight: 500; font-size: 13px; outline: none; cursor: default;">
+                    </td>
+                    <td style="padding: 6px 12px; width: 120px;">
+                        <input type="number" placeholder="0" value="${colli}" class="manual-cat-colli" style="width: 100%; padding: 5px 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color); font-size: 13px; font-weight: 600;">
+                    </td>
+                    <td style="padding: 6px 12px; width: 120px;">
+                        <input type="number" value="${norm}" class="manual-cat-norm" readonly style="width: 100%; border: none; background: transparent; color: var(--text-color-muted); font-size: 13px; outline: none; cursor: default;">
+                    </td>
                 `;
-                row.querySelector('.remove-cat-btn').addEventListener('click', () => row.remove());
-                categoriesContainer.appendChild(row);
+                
+                const existingRows = tbody.querySelectorAll(`tr.manual-category-row[data-path-idx="${pathIdx}"]`);
+                if (existingRows.length > 0) {
+                    existingRows[existingRows.length - 1].after(tr);
+                } else if (headerTr) {
+                    headerTr.after(tr);
+                } else {
+                    tbody.appendChild(tr);
+                }
             };
 
-            const addPathBlock = (pathName = '') => {
-                const block = document.createElement('div');
-                block.className = 'manual-path-block';
-                block.style.cssText = 'border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; background-color: var(--bg-color); display: flex; flex-direction: column; gap: 8px;';
-                block.innerHTML = `
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                        <input type="text" placeholder="Padnaam (bijv. Frisdrank, Bier)" value="${pathName}" class="manual-path-name" style="flex: 1; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color); font-weight: 600;">
-                        <button type="button" class="remove-path-btn" style="background: none; border: none; color: var(--danger-color); cursor: pointer; padding: 4px;"><i class="material-icons">delete</i></button>
+            const addPathBlock = (pathName = '', mirrorNorm = '') => {
+                const tbody = document.getElementById('manual-paths-tbody') || manualPathsList;
+                const pathIdx = Date.now() + Math.random();
+
+                const headerTr = document.createElement('tr');
+                headerTr.className = 'category-header-row manual-path-header';
+                headerTr.setAttribute('data-path-idx', pathIdx);
+                headerTr.innerHTML = `
+                    <td colspan="3" style="padding: 8px 12px;">
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <input type="text" value="${pathName}" class="manual-path-name" readonly style="border: none; background: transparent; color: var(--text-color); font-weight: 700; font-size: 14px; outline: none; cursor: default; width: auto; max-width: 220px;">
+                            <span style="font-size: 11px; font-weight: 600; color: var(--text-color-muted); text-transform: uppercase; margin-left: 8px;">(Spiegelnorm: ${mirrorNorm} min)</span>
+                            <input type="hidden" value="${mirrorNorm}" class="manual-path-mirror-norm">
+                        </div>
+                    </td>
+                `;
+
+                tbody.appendChild(headerTr);
+
+                const addCat = (cName = '', cColli = '', cNorm = '') => addCategoryRow(tbody, cName, cColli, cNorm, pathIdx, headerTr);
+
+                return { addCategoryRow: addCat };
+            };
+
+            const initPathsTable = () => {
+                manualPathsList.innerHTML = `
+                    <div class="table-container">
+                        <table class="users-table" style="width: 100%; max-width: 500px;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border-color);">
+                                    <th style="padding: 8px 12px; font-size: 11px; font-weight: 600; color: var(--text-color-muted); text-transform: uppercase; width: 240px;">Categorie</th>
+                                    <th style="padding: 8px 12px; font-size: 11px; font-weight: 600; color: var(--text-color-muted); text-transform: uppercase; width: 120px;">Aantal Colli</th>
+                                    <th style="padding: 8px 12px; font-size: 11px; font-weight: 600; color: var(--text-color-muted); text-transform: uppercase; width: 120px;">Norm (colli/u)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="manual-paths-tbody"></tbody>
+                        </table>
                     </div>
-                    <div class="manual-categories-container" style="display: flex; flex-direction: column; padding-left: 12px; border-left: 2px solid var(--border-color); margin-top: 4px;"></div>
-                    <button type="button" class="add-cat-btn" style="align-self: flex-start; padding: 4px 8px; font-size: 12px; background: none; border: 1px dashed var(--border-color); color: var(--text-color); border-radius: 4px; cursor: pointer;">+ Categorie Toevoegen</button>
                 `;
-
-                const catContainer = block.querySelector('.manual-categories-container');
-                block.querySelector('.add-cat-btn').addEventListener('click', () => addCategoryRow(catContainer));
-                block.querySelector('.remove-path-btn').addEventListener('click', () => block.remove());
-                manualPathsList.appendChild(block);
-                return catContainer;
             };
 
-            const populatePaths = (padenList) => {
-                manualPathsList.innerHTML = '';
+            populatePaths = (padenList, categoryColliMap = {}) => {
+                initPathsTable();
                 if (Array.isArray(padenList) && padenList.length > 0) {
                     padenList.forEach(p => {
-                        const catContainer = addPathBlock(p.name || '');
+                        const pathRes = addPathBlock(p.name || '', p.mirrorNorm !== undefined ? p.mirrorNorm : '');
                         if (Array.isArray(p.categories) && p.categories.length > 0) {
-                            p.categories.forEach(c => addCategoryRow(catContainer, c.name || '', '', c.norm || ''));
-                        } else {
-                            addCategoryRow(catContainer);
+                            p.categories.forEach(c => {
+                                const catKey = (c.name || '').toLowerCase();
+                                const colliVal = categoryColliMap[catKey] !== undefined ? categoryColliMap[catKey] : '';
+                                pathRes.addCategoryRow(c.name || '', colliVal, c.norm || '');
+                            });
                         }
                     });
                 } else {
-                    const catContainer = addPathBlock();
-                    addCategoryRow(catContainer);
+                    manualPathsList.innerHTML = `
+                        <div style="text-align: left; padding: 16px; background: var(--input-bg); border: 1px dashed var(--border-color); border-radius: 8px;">
+                            <p style="margin-bottom: 12px; color: var(--text-color-muted); font-size: 13px;">Nog geen paden en categorieën ingesteld.</p>
+                            <button type="button" class="action-btn" id="empty-add-paden-btn" style="padding: 8px 16px; background-color: var(--accent-color); color: #fff; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="material-icons" style="font-size: 18px;">add</i>
+                                <span>Paden & Categorieën Toevoegen</span>
+                            </button>
+                        </div>
+                    `;
+                    const emptyBtn = document.getElementById('empty-add-paden-btn');
+                    if (emptyBtn) {
+                        emptyBtn.addEventListener('click', () => {
+                            const openModalBtn = document.getElementById('open-paden-modal-btn');
+                            if (openModalBtn) openModalBtn.click();
+                        });
+                    }
                 }
             };
 
             if (addFillerBtn) addFillerBtn.addEventListener('click', () => addFillerRow());
-            if (addPathBtn) addPathBtn.addEventListener('click', () => {
-                const catContainer = addPathBlock();
-                addCategoryRow(catContainer);
-            });
 
             if (Object.keys(state.pathColli).length > 0) {
+                initPathsTable();
                 Object.entries(state.pathColli).forEach(([pathName, obj]) => {
-                    const catContainer = addPathBlock(pathName);
+                    const pathRes = addPathBlock(pathName, obj.mirrorDuration !== undefined ? obj.mirrorDuration : '');
                     const norm = obj.colli && obj.duration ? Math.round((obj.colli / (obj.duration / 60))) : '';
-                    addCategoryRow(catContainer, pathName, obj.colli || '', norm);
+                    pathRes.addCategoryRow(pathName, obj.colli || '', norm);
                 });
             } else {
                 populatePaths(storeDefaultPaden);
@@ -1556,17 +1589,26 @@ import {
                 populatePaths(newPaden);
             });
 
+            const padenHeaderBtn = document.getElementById('open-paden-header-btn');
+            if (padenHeaderBtn) {
+                padenHeaderBtn.addEventListener('click', () => {
+                    const openModalBtn = document.getElementById('open-paden-modal-btn');
+                    if (openModalBtn) openModalBtn.click();
+                });
+            }
+
             if (state.selectedFillers && state.selectedFillers.length > 0) {
                 state.selectedFillers.forEach(displayName => {
                     const match = displayName.match(/^(.+?)\s*-\s*(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})$/);
+                    const pause = state.fillerBreaks && state.fillerBreaks[displayName] !== undefined ? state.fillerBreaks[displayName] : '';
                     if (match) {
-                        addFillerRow(match[1], match[2], match[3]);
+                        addFillerRow(match[1], match[2], match[3], pause);
                     } else {
-                        addFillerRow(displayName, '', '');
+                        addFillerRow(displayName, '', '', pause);
                     }
                 });
             } else {
-                addFillerRow('', '', '');
+                addFillerRow('', '', '', '');
             }
 
             if (startManualBtn) {
@@ -1580,9 +1622,14 @@ import {
                         const name = nameInput.value.trim();
                         const start = r.querySelector('.manual-filler-start')?.value || '';
                         const end = r.querySelector('.manual-filler-end')?.value || '';
+                        const pauseVal = r.querySelector('.manual-filler-pause')?.value;
                         if (name) {
                             if (!start || !end) missingTimes = true;
-                            newFillers.push(`${name} - ${start} - ${end}`);
+                            const displayName = `${name} - ${start} - ${end}`;
+                            newFillers.push(displayName);
+                            if (pauseVal !== undefined && pauseVal !== '') {
+                                state.fillerBreaks[displayName] = parseInt(pauseVal, 10) || 0;
+                            }
                         }
                     });
 
@@ -1596,8 +1643,9 @@ import {
                         return;
                     }
 
-                    const pathBlocks = manualPathsList.querySelectorAll('.manual-path-block');
-                    if (!pathBlocks.length) {
+                    const tbody = document.getElementById('manual-paths-tbody');
+                    const headerRows = tbody ? tbody.querySelectorAll('.manual-path-header') : [];
+                    if (!headerRows.length) {
                         showToast('Voeg ten minste één pad toe.', 'error');
                         return;
                     }
@@ -1608,35 +1656,39 @@ import {
 
                     const newPathColli = {};
 
-                    pathBlocks.forEach(b => {
-                        const pathName = b.querySelector('.manual-path-name')?.value.trim() || '';
+                    headerRows.forEach(headerTr => {
+                        const pathIdx = headerTr.getAttribute('data-path-idx');
+                        const pathName = headerTr.querySelector('.manual-path-name')?.value.trim() || '';
                         if (!pathName) missingPathName = true;
+                        const mirrorNormVal = headerTr.querySelector('.manual-path-mirror-norm')?.value;
+                        const mirrorDur = mirrorNormVal !== undefined && mirrorNormVal !== '' ? parseFloat(mirrorNormVal) : 21;
 
-                        const catRows = b.querySelectorAll('.manual-category-row');
+                        const catRows = tbody.querySelectorAll(`tr.manual-category-row[data-path-idx="${pathIdx}"]`);
                         if (!catRows.length) missingCatName = true;
 
                         let totalColli = 0;
-                        let totalDurationMinutes = 0;
+                        let weightedSumMinutes = 0;
 
                         catRows.forEach(cr => {
                             const catName = cr.querySelector('.manual-cat-name')?.value.trim() || '';
-                            const colliVal = cr.querySelector('.manual-cat-colli')?.value;
-                            const colli = parseInt(colliVal) || 0;
-                            const normVal = cr.querySelector('.manual-cat-norm')?.value;
-                            const norm = parseFloat(normVal) || 0;
-
                             if (!catName) missingCatName = true;
-                            if (!normVal || norm <= 0) missingNorm = true;
 
-                            totalColli += colli;
-                            if (norm > 0 && colli > 0) {
-                                totalDurationMinutes += (colli / norm) * 60;
+                            const colliVal = parseFloat(cr.querySelector('.manual-cat-colli')?.value) || 0;
+                            const normVal = parseFloat(cr.querySelector('.manual-cat-norm')?.value) || 0;
+
+                            if (!normVal || normVal <= 0) missingNorm = true;
+
+                            totalColli += colliVal;
+                            if (normVal > 0) {
+                                weightedSumMinutes += (colliVal / normVal) * 60;
                             }
                         });
 
-                        if (pathName) {
-                            newPathColli[pathName] = { colli: totalColli, duration: totalDurationMinutes };
-                        }
+                        newPathColli[pathName] = {
+                            colli: totalColli,
+                            duration: Math.round(weightedSumMinutes),
+                            mirrorDuration: mirrorDur
+                        };
                     });
 
                     if (missingPathName) {
@@ -1670,6 +1722,8 @@ import {
 
                     document.getElementById('step-1-container').style.display = 'none';
                     document.getElementById('step-2-container').style.display = 'block';
+                    const manualContainer = document.getElementById('manual-input-container');
+                    if (manualContainer) manualContainer.style.display = 'none';
                     renderWorkspace();
                     if (resetBtn) resetBtn.style.display = 'inline-block';
                     if (generateBtn) generateBtn.style.display = 'flex';
@@ -1694,17 +1748,33 @@ import {
                     () => {
                         state.hiddenFillers = [];
                         state.nonFillers = [];
+                        state.selectedFillers = [];
+                        state.pathColli = {};
+                        state.fillerTasks = {};
+                        state.helpers = {};
+                        state.instanceTimes = {};
+                        state.fillerBreaks = {};
+                        state.actualEndTimes = {};
+
+                        const manualFillersList = document.getElementById('manual-fillers-list');
+                        if (manualFillersList) manualFillersList.innerHTML = '';
+                        document.querySelectorAll('.manual-cat-colli').forEach(input => input.value = '');
+
                         document.getElementById('step-1-container').style.display = 'block';
                         document.getElementById('step-2-container').style.display = 'none';
                         resetBtn.style.display = 'none';
                         if (generateBtn) generateBtn.style.display = 'none';
                         const peopleCard = document.getElementById('people-card');
                         if (peopleCard) peopleCard.style.display = 'none';
+                        const manualContainer = document.getElementById('manual-input-container');
                         if (isPlusLms) {
                             document.querySelectorAll('.upload-group').forEach(el => el.style.display = 'block');
+                            if (manualContainer) manualContainer.style.display = 'none';
                         } else {
-                            document.getElementById('manual-input-container').style.display = 'flex';
+                            document.querySelectorAll('.upload-group').forEach(el => el.style.display = 'none');
+                            if (manualContainer) manualContainer.style.display = 'flex';
                         }
+                        triggerSave();
                     }
                 );
             });
@@ -1731,37 +1801,115 @@ import {
             if (generateBtn) generateBtn.style.display = 'flex';
         }
 
+        const getDefaultPDFPaden = () => {
+            return Object.entries(HARDCODED_PATHS_MAPPING).map(([pathName, categories]) => ({
+                name: pathName,
+                mirrorNorm: HARDCODED_MIRROR_TIMES[pathName] ?? 21,
+                categories: categories.map(cat => ({
+                    name: cat,
+                    norm: HARDCODED_NORMS[cat.toLowerCase()] ?? 62
+                }))
+            }));
+        };
+
+        const doSettingsMatchPDF = (padenList) => {
+            if (!Array.isArray(padenList) || padenList.length === 0) return false;
+            const defaultPaden = getDefaultPDFPaden();
+            if (padenList.length !== defaultPaden.length) return false;
+            for (let i = 0; i < defaultPaden.length; i++) {
+                const defP = defaultPaden[i];
+                const storeP = padenList.find(p => p.name && p.name.trim().toLowerCase() === defP.name.toLowerCase());
+                if (!storeP) return false;
+                if (!Array.isArray(storeP.categories) || storeP.categories.length !== defP.categories.length) return false;
+                for (let j = 0; j < defP.categories.length; j++) {
+                    const defC = defP.categories[j];
+                    const storeC = storeP.categories.find(c => c.name && c.name.trim().toLowerCase() === defC.name.toLowerCase());
+                    if (!storeC) return false;
+                }
+            }
+            return true;
+        };
+
         let pendingFillers = null;
         let pendingColli = null;
 
         const checkAndApplyBothUploads = async () => {
             if (!pendingFillers || !pendingColli) return;
 
-            const applyNewData = () => {
-                state.selectedFillers = pendingFillers;
-                state.pathColli = pendingColli;
-                state.fillerTasks = {};
-                state.helpers = {};
-                state.instanceTimes = {};
-                // Preserve state.fillerBreaks parsed from PDF
-                state.actualEndTimes = {};
-                pendingFillers = null;
-                pendingColli = null;
-
-                document.getElementById('step-1-container').style.display = 'none';
-                document.getElementById('step-2-container').style.display = 'block';
+            const fillManualScreen = (padenToUse) => {
                 document.querySelectorAll('.upload-group').forEach(el => el.style.display = 'none');
-                renderWorkspace();
-                if (resetBtn) resetBtn.style.display = 'inline-block';
-                if (generateBtn) generateBtn.style.display = 'flex';
-                triggerSave();
+                const manualContainer = document.getElementById('manual-input-container');
+                if (manualContainer) manualContainer.style.display = 'flex';
+
+                if (manualFillersList) {
+                    manualFillersList.innerHTML = '';
+                    if (pendingFillers && pendingFillers.length > 0) {
+                        pendingFillers.forEach(displayName => {
+                            const match = displayName.match(/^(.+?)\s*-\s*(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})$/);
+                            const pause = state.fillerBreaks && state.fillerBreaks[displayName] !== undefined ? state.fillerBreaks[displayName] : '';
+                            if (match) {
+                                addFillerRow(match[1], match[2], match[3], pause);
+                            } else {
+                                addFillerRow(displayName, '', '', pause);
+                            }
+                        });
+                    }
+                }
+
+                populatePaths(padenToUse, pendingColli.categoryColli || {});
             };
 
-            showConfirmModal(
-                'Planning Overschrijven',
-                'Beide PDF\'s zijn geüpload. Weet je zeker dat je de bestaande planning wilt overschrijven met deze nieuwe gegevens?',
-                applyNewData
-            );
+            const matches = doSettingsMatchPDF(storeDefaultPaden);
+
+            if (!matches) {
+                showConfirmModal(
+                    'Instellingen Aanpassen',
+                    'De paden en categorieën in de instellingen matchen het geüploade document niet. Wil je de instellingen automatisch goedzetten naar de standaard PDF-indeling voor PLUS Lammenschans?',
+                    'Goedzetten',
+                    async () => {
+                        const defaultPaden = getDefaultPDFPaden();
+                        storeDefaultPaden = defaultPaden;
+                        if (storeId && supabase) {
+                            await supabase.from('vulplanningen').upsert({
+                                id: storeId,
+                                instellingen: { paden_categorieen: defaultPaden }
+                            });
+                        }
+                        fillManualScreen(defaultPaden);
+                    },
+                    () => {
+                        document.querySelectorAll('.upload-group').forEach(el => el.style.display = 'none');
+                        const manualContainer = document.getElementById('manual-input-container');
+                        if (manualContainer) manualContainer.style.display = 'flex';
+
+                        if (manualFillersList) {
+                            manualFillersList.innerHTML = '';
+                            if (pendingFillers && pendingFillers.length > 0) {
+                                pendingFillers.forEach(displayName => {
+                                    const match = displayName.match(/^(.+?)\s*-\s*(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})$/);
+                                    const pause = state.fillerBreaks && state.fillerBreaks[displayName] !== undefined ? state.fillerBreaks[displayName] : '';
+                                    if (match) {
+                                        addFillerRow(match[1], match[2], match[3], pause);
+                                    } else {
+                                        addFillerRow(displayName, '', '', pause);
+                                    }
+                                });
+                            }
+                        }
+
+                        pendingFillers = null;
+                        pendingColli = null;
+                        const file1 = document.getElementById('vulplanning-input');
+                        const file2 = document.getElementById('colli-input');
+                        if (file1) file1.value = '';
+                        if (file2) file2.value = '';
+                        populatePaths(storeDefaultPaden);
+                    },
+                    'Alleen rooster importeren'
+                );
+            } else {
+                fillManualScreen(storeDefaultPaden);
+            }
         };
 
         const input = document.getElementById('vulplanning-input');

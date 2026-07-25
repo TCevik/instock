@@ -1,4 +1,4 @@
-import { getSupabase, checkAuth, showMessage, handleFormSubmit, initPadenModal } from './main.js';
+import { getSupabase, checkAuth, showMessage, handleFormSubmit } from './main.js';
 import { loadHeader, updateHeaderMenu, applyStoreTheme } from './header.js';
 
 const AVAILABLE_MODULES = [
@@ -22,8 +22,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { userData } = auth;
     const currentWinkelId = userData.winkel;
     const supabase = await getSupabase();
-
-    initPadenModal(supabase, currentWinkelId);
 
     const modulesContainer = document.getElementById('modules-container');
     const form = document.getElementById('store-settings-form');
