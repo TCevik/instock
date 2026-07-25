@@ -1717,7 +1717,6 @@ import {
                     state.fillerTasks = {};
                     state.helpers = {};
                     state.instanceTimes = {};
-                    state.fillerBreaks = {};
                     state.actualEndTimes = {};
 
                     document.getElementById('step-1-container').style.display = 'none';
