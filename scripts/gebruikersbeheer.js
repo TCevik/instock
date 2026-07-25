@@ -1,6 +1,7 @@
 import { getSupabase, checkAuth, showMessage, setupModal, handleFormSubmit } from './main.js';
 import { loadHeader } from './header.js';
 import { parseStoreDepartments, sortUsersByRole, groupUsersByDepartment } from './gebruikersbeheer-logic.js';
+import { showToast } from './toast.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const form = document.getElementById('create-user-form');
@@ -40,13 +41,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         let result = await supabase.functions.invoke(functionName, { body, headers: currentHeaders });
         if (result.error) {
             let errorText = String(result.error.message || result.error);
-            if (result.error.context && typeof result.error.context.json === 'function') {
+            if (result.error.context && typeof result.error.context.clone === 'function') {
                 try {
-                    const errorBody = await result.error.context.json();
+                    const errorBody = await result.error.context.clone().json();
                     errorText += ' ' + JSON.stringify(errorBody);
                 } catch (e) {}
             }
-            if (errorText.includes('JWT') || errorText.includes('signature')) {
+            const lowerErr = errorText.toLowerCase();
+            const isJwtErr = lowerErr.includes('jwt') || lowerErr.includes('signature') || result.error.status === 401;
+            if (isJwtErr) {
                 const { data: refreshed } = await supabase.auth.refreshSession();
                 const newToken = refreshed?.session?.access_token;
                 if (newToken) {
@@ -378,11 +381,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             } else {
                 console.log("Succes:", data);
-                showMessage(messageBox, messageText, messageIcon, isEditing ? "Gebruiker succesvol aangepast!" : "Gebruiker succesvol aangemaakt!", "success");
-                setTimeout(() => {
-                    closeUserModal();
-                    loadUsers();
-                }, 1000);
+                closeUserModal();
+                showToast(isEditing ? "Gebruiker succesvol aangepast!" : "Gebruiker succesvol aangemaakt!", "success");
+                loadUsers();
             }
         });
     });
