@@ -53,6 +53,15 @@ export async function checkAuth(allowedRoles = null) {
         }
     }
 
+    if (!window._authListenerRegistered) {
+        window._authListenerRegistered = true;
+        supabase.auth.onAuthStateChange((event, s) => {
+            if (event === 'SIGNED_OUT' || !s) {
+                window.location.href = 'login.html';
+            }
+        });
+    }
+
     setAppReady();
     return { session, userData: data, storeCode };
 }

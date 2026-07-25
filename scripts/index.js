@@ -1,10 +1,13 @@
-import { getSupabase, handleFormSubmit } from './main.js';
+import { checkAuth, getSupabase, handleFormSubmit } from './main.js';
 import { loadHeader } from './header.js';
 import { showToast } from './toast.js';
 
 const initDashboard = async () => {
+    const auth = await checkAuth();
+    if (!auth) return;
+
+    const { session } = auth;
     const supabase = await getSupabase();
-    const { data: { session } } = await supabase.auth.getSession();
     if (session && session.user) {
         const { data } = await supabase
             .from('user_data')

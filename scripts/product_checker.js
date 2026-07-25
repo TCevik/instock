@@ -1,8 +1,11 @@
-import { getSupabase, showMessage } from './main.js';
+import { checkAuth, getSupabase, showMessage } from './main.js';
 import { loadHeader } from './header.js';
 import { formatPrice, formatDate, calculateStockStatus } from './product_checker-logic.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
+    const auth = await checkAuth();
+    if (!auth) return;
+
     const searchInput = document.getElementById('search-input');
     const resultsList = document.getElementById('results-list');
     const detailCard = document.getElementById('detail-card');
@@ -28,6 +31,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadHeader();
 
     const supabase = await getSupabase();
+    const { data: { session } } = await supabase.auth.getSession();
+    let isMedewerker = false;
+    if (session?.user) {
+        const { data: userData } = await supabase.from('user_data').select('role').eq('id', session.user.id).maybeSingle();
+        if (userData?.role === 'medewerker') {
+            isMedewerker = true;
+        }
+    }
+
     let debounceTimer;
 
     const showMsg = (text, type) => {
@@ -139,9 +151,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const editBtn = document.getElementById('edit-product-btn');
         if (editBtn) {
-            editBtn.onclick = () => {
-                window.location.href = `product_toevoegen.html?edit=${product.ean}`;
-            };
+            if (isMedewerker) {
+                editBtn.style.display = 'none';
+            } else {
+                editBtn.style.display = '';
+                editBtn.onclick = () => {
+                    window.location.href = `product_toevoegen.html?edit=${product.ean}`;
+                };
+            }
         }
 
         if (pageHeader) pageHeader.style.display = 'none';

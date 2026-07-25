@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setAppReady();
     const form = document.getElementById('login-form');
     const storeCodeInput = document.getElementById('store-code');
-    const employeeIdInput = document.getElementById('employee-id');
+    const gebruikersnaamInput = document.getElementById('gebruikersnaam');
     const passwordInput = document.getElementById('password');
     const errorMessage = document.getElementById('error-message');
     const errorText = document.getElementById('error-text');
@@ -13,10 +13,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const rememberMeCheckbox = document.getElementById('remember-me');
 
     const savedStoreCode = localStorage.getItem('remembered_store_code');
-    const savedEmployeeId = localStorage.getItem('remembered_employee_id');
-    if (savedStoreCode && savedEmployeeId) {
+    const savedGebruikersnaam = localStorage.getItem('remembered_gebruikersnaam') || localStorage.getItem('remembered_employee_id');
+    if (savedStoreCode && savedGebruikersnaam) {
         storeCodeInput.value = savedStoreCode;
-        employeeIdInput.value = savedEmployeeId;
+        gebruikersnaamInput.value = savedGebruikersnaam;
         rememberMeCheckbox.checked = true;
     }
 
@@ -26,16 +26,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
 
         const storeCode = storeCodeInput.value.trim().toLowerCase();
-        const employeeId = employeeIdInput.value.trim().toLowerCase();
+        const gebruikersnaam = gebruikersnaamInput.value.trim().toLowerCase();
         const password = passwordInput.value;
 
-        if (!storeCode || !employeeId || !password) {
+        if (!storeCode || !gebruikersnaam || !password) {
             if (errorMessage) errorMessage.style.display = 'none';
             showToast('Vul alle velden in.', 'error');
             return;
         }
 
-        const email = `${employeeId}@${storeCode}.instock`;
+        const email = `${gebruikersnaam}@${storeCode}.instock`;
 
         await handleFormSubmit(submitBtn, 'Bezig met inloggen...', errorMessage, async () => {
             const { data, error } = await supabase.auth.signInWithPassword({
@@ -49,9 +49,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else if (data.session) {
                 if (rememberMeCheckbox.checked) {
                     localStorage.setItem('remembered_store_code', storeCodeInput.value.trim());
-                    localStorage.setItem('remembered_employee_id', employeeIdInput.value.trim());
+                    localStorage.setItem('remembered_gebruikersnaam', gebruikersnaamInput.value.trim());
                 } else {
                     localStorage.removeItem('remembered_store_code');
+                    localStorage.removeItem('remembered_gebruikersnaam');
                     localStorage.removeItem('remembered_employee_id');
                 }
                 window.location.href = 'index.html';

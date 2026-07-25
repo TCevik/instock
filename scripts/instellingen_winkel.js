@@ -10,7 +10,8 @@ const AVAILABLE_MODULES = [
     { key: "acties", label: "Acties", icon: "local_offer" },
     { key: "rapportages", label: "Rapportages", icon: "bar_chart" },
     { key: "bakplan", label: "Bakplan", icon: "bakery_dining" },
-    { key: "vulplanning", label: "Vulplanning Maker", icon: "assignment" }
+    { key: "vulplanning", label: "Vulplanning Maker", icon: "assignment" },
+    { key: "product_toevoegen", label: "Product Toevoegen", icon: "add_box" }
 ];
 
 document.addEventListener('DOMContentLoaded', async () => {

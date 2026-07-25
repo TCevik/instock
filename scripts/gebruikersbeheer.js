@@ -6,7 +6,7 @@ import { showToast } from './toast.js';
 document.addEventListener('DOMContentLoaded', async () => {
     const form = document.getElementById('create-user-form');
     const fullNameInput = document.getElementById('full-name');
-    const personeelsnummerInput = document.getElementById('personeelsnummer');
+    const gebruikersnaamInput = document.getElementById('gebruikersnaam');
     const roleSelect = document.getElementById('role');
     const userAfdelingenContainer = document.getElementById('user-afdelingen-container');
     const passwordInput = document.getElementById('password');
@@ -181,11 +181,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (searchQuery) {
             filteredUsers = currentUsers.filter(u => {
                 const nameMatch = (u.full_name || '').toLowerCase().includes(searchQuery);
-                const pnrMatch = (u.personeelsnummer || '').toLowerCase().includes(searchQuery);
+                const gnaamMatch = (u.gebruikersnaam || '').toLowerCase().includes(searchQuery);
                 const roleMatch = (u.role || '').toLowerCase().includes(searchQuery);
                 const deptStr = Array.isArray(u.afdeling) ? u.afdeling.join(' ') : (u.afdeling || '');
                 const deptMatch = deptStr.toLowerCase().includes(searchQuery);
-                return nameMatch || pnrMatch || roleMatch || deptMatch;
+                return nameMatch || gnaamMatch || roleMatch || deptMatch;
             });
         }
 
@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return `
                     <tr ${isSelf ? 'class="self-row"' : ''}>
                         <td data-label="Volledige Naam">${u.full_name || ''} ${isSelf ? '<strong>(Jij)</strong>' : ''}</td>
-                        <td data-label="Gebruikersnaam">${u.personeelsnummer || ''}</td>
+                        <td data-label="Gebruikersnaam">${u.gebruikersnaam || ''}</td>
                         <td data-label="Rol">${u.role || ''}</td>
                         <td data-label="Afdeling">${formattedAfdeling}</td>
                         <td data-label="Acties">
@@ -267,7 +267,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return `
                     <tr ${isSelf ? 'class="self-row"' : ''}>
                         <td data-label="Volledige Naam">${u.full_name || ''} ${isSelf ? '<strong>(Jij)</strong>' : ''}</td>
-                        <td data-label="Gebruikersnaam">${u.personeelsnummer || ''}</td>
+                        <td data-label="Gebruikersnaam">${u.gebruikersnaam || ''}</td>
                         <td data-label="Rol">${u.role || ''}</td>
                         <td data-label="Afdeling">${formattedAfdeling}</td>
                         <td data-label="Acties">
@@ -315,7 +315,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const container = document.getElementById('department-sections-container');
         const { data: users, error } = await supabase
             .from('user_data')
-            .select('id, full_name, role, personeelsnummer, afdeling')
+            .select('id, full_name, role, gebruikersnaam, afdeling')
             .eq('winkel', currentWinkelId);
 
         if (error || !users) {
@@ -333,13 +333,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         e.preventDefault();
 
         const full_name = fullNameInput.value.trim();
-        const personeelsnummer = personeelsnummerInput.value.trim();
+        const gebruikersnaam = gebruikersnaamInput.value.trim();
         const role = roleSelect.value;
         const selectedDepts = getSelectedAfdelingen();
         const afdeling = selectedDepts.join(', ');
         const password = passwordInput.value;
 
-        if (!full_name || !personeelsnummer || !role || (!isEditing && !password)) {
+        if (!full_name || !gebruikersnaam || !role || (!isEditing && !password)) {
             showMessage(messageBox, messageText, messageIcon, 'Vul alle verplichte velden in.', 'error');
             return;
         }
@@ -354,13 +354,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             let result;
             if (isEditing) {
-                const updates = { full_name, role, personeelsnummer, afdeling };
+                const userData = { full_name, role, gebruikersnaam, afdeling };
                 if (password) {
-                    updates.password = password;
+                    userData.password = password;
                 }
-                result = await invokeFunctionWithRetry('manage-user', { action: 'update', targetUserId: editingUserId, updates }, headers);
+                result = await invokeFunctionWithRetry('manage_users', { action: 'update', targetUserId: editingUserId, userData }, headers);
             } else {
-                result = await invokeFunctionWithRetry('create-user', { full_name, role, personeelsnummer, password, afdeling }, headers);
+                result = await invokeFunctionWithRetry('manage_users', { action: 'create', userData: { full_name, role, gebruikersnaam, password, afdeling } }, headers);
             }
 
             const { data, error } = result;
@@ -471,7 +471,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             const headers = currentSession?.access_token ? { Authorization: `Bearer ${currentSession.access_token}` } : {};
 
-            const { data, error } = await invokeFunctionWithRetry('manage-user', { action: 'delete', targetUserId: userToDeleteId }, headers);
+            const { data, error } = await invokeFunctionWithRetry('manage_users', { action: 'delete', targetUserId: userToDeleteId }, headers);
 
             if (error) {
                 let errorMsg = error.message;
@@ -512,7 +512,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             editingUserId = userId;
 
             fullNameInput.value = user.full_name || '';
-            personeelsnummerInput.value = user.personeelsnummer || '';
+            gebruikersnaamInput.value = user.gebruikersnaam || '';
             roleSelect.value = user.role || '';
             
             const userDepts = Array.isArray(user.afdeling)

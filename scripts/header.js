@@ -54,7 +54,7 @@ export async function updateHeaderMenu() {
         "instellingen winkel": "instellingen_winkel"
     };
 
-    const fixedHiddenForMedewerker = ["gebruikersbeheer", "instellingen_winkel", "bakplan", "vulplanning"];
+    const fixedHiddenForMedewerker = ["gebruikersbeheer", "instellingen_winkel", "bakplan", "vulplanning", "product_toevoegen"];
     const productRelatedKeys = ["product_checker", "voorraadmutaties", "tht_module", "tht_registratie", "tellen", "acties"];
     const allProductRelatedOff = productRelatedKeys.every(k => modules[k] === false);
 
@@ -65,7 +65,7 @@ export async function updateHeaderMenu() {
         let hide = false;
         if (userRole === "medewerker" && fixedHiddenForMedewerker.includes(moduleKey)) {
             hide = true;
-        } else if (allProductRelatedOff && text === "producten") {
+        } else if (allProductRelatedOff && (text === "producten" || moduleKey === "product_toevoegen")) {
             hide = true;
         } else if (moduleKey && modules[moduleKey] === false) {
             hide = true;
@@ -146,11 +146,7 @@ export function loadHeader() {
                 });
             }
 
-            supabase.auth.onAuthStateChange((event, session) => {
-                if (event === 'SIGNED_OUT' || !session) {
-                    window.location.href = 'login.html';
-                }
-            });
+
 
             supabase.from('stores').select('name')
                 .then(({ data }) => {
