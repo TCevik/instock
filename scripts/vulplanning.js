@@ -1838,8 +1838,8 @@ import {
                     const manualContainer = document.getElementById('manual-input-container');
                     if (manualContainer) manualContainer.style.display = 'none';
                     renderWorkspace();
-                    if (resetBtn) resetBtn.style.display = 'inline-block';
-                    if (generateBtn) generateBtn.style.display = 'flex';
+                    if (resetBtn) resetBtn.style.display = 'inline-flex';
+                    if (generateBtn) generateBtn.style.display = 'inline-flex';
                     triggerSave();
                 });
             }
@@ -1910,8 +1910,8 @@ import {
             const manualContainer = document.getElementById('manual-input-container');
             if (manualContainer) manualContainer.style.display = 'none';
             renderWorkspace();
-            if (resetBtn) resetBtn.style.display = 'inline-block';
-            if (generateBtn) generateBtn.style.display = 'flex';
+            if (resetBtn) resetBtn.style.display = 'inline-flex';
+            if (generateBtn) generateBtn.style.display = 'inline-flex';
         }
 
         const getDefaultPDFPaden = () => {
