@@ -1141,10 +1141,17 @@ import {
                         namesSet.add(displayName);
 
                         const timeMatches = [...row.rawText.matchAll(/\b\d{2}:\d{2}\b/g)].map(m => m[0]);
-                        if (timeMatches.length >= 3) {
-                            const pParts = timeMatches[2].split(':');
-                            const pMin = (parseInt(pParts[0]) || 0) * 60 + (parseInt(pParts[1]) || 0);
-                            state.fillerBreaks[displayName] = pMin;
+                        if (timeMatches.length >= 2) {
+                            const shiftMatch = row.rawText.match(/\b\d{2}:\d{2}\s*-\s*\d{2}(?::\d{2})?\b/);
+                            if (shiftMatch) {
+                                const afterShift = row.rawText.substring(shiftMatch.index + shiftMatch[0].length);
+                                const pauseMatch = afterShift.match(/\b\d{2}:\d{2}\b/);
+                                if (pauseMatch) {
+                                    const pParts = pauseMatch[0].split(':');
+                                    const pMin = (parseInt(pParts[0], 10) || 0) * 60 + (parseInt(pParts[1], 10) || 0);
+                                    state.fillerBreaks[displayName] = pMin;
+                                }
+                            }
                         }
                     }
                 }
@@ -1736,7 +1743,7 @@ import {
                 state.fillerTasks = {};
                 state.helpers = {};
                 state.instanceTimes = {};
-                state.fillerBreaks = {};
+                // Preserve state.fillerBreaks parsed from PDF
                 state.actualEndTimes = {};
                 pendingFillers = null;
                 pendingColli = null;
