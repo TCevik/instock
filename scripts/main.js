@@ -22,6 +22,10 @@ export async function getSupabase() {
     return supabasePromise;
 }
 
+export function setAppReady() {
+    document.body.classList.add('app-ready');
+}
+
 export async function checkAuth(allowedRoles = null) {
     const supabase = await getSupabase();
     const { data: { session } } = await supabase.auth.getSession();
@@ -49,6 +53,7 @@ export async function checkAuth(allowedRoles = null) {
         }
     }
 
+    setAppReady();
     return { session, userData: data, storeCode };
 }
 

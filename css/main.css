@@ -83,6 +83,14 @@ body {
     color: var(--text-color);
 }
 
+body:not(.app-ready) {
+    visibility: hidden;
+}
+
+body.app-ready {
+    visibility: visible;
+}
+
 .dashboard-container {
     padding: 30px 20px;
     max-width: 1200px;

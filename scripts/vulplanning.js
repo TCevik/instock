@@ -1454,11 +1454,11 @@ import {
                     </div>
                     <div style="flex: 1; display: flex; flex-direction: column; gap: 2px;">
                         ${isFirst ? '<label style="font-size: 11px; font-weight: 600; color: var(--text-color-secondary);">Begintijd</label>' : ''}
-                        <input type="time" value="${startTime}" class="manual-filler-start" style="width: 100%; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
+                        <input type="text" placeholder="18:00" value="${startTime}" class="manual-filler-start" style="width: 100%; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
                     </div>
                     <div style="flex: 1; display: flex; flex-direction: column; gap: 2px;">
                         ${isFirst ? '<label style="font-size: 11px; font-weight: 600; color: var(--text-color-secondary);">Eindtijd</label>' : ''}
-                        <input type="time" value="${endTime}" class="manual-filler-end" style="width: 100%; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
+                        <input type="text" placeholder="21:00" value="${endTime}" class="manual-filler-end" style="width: 100%; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
                     </div>
                     <div style="flex: 1; display: flex; flex-direction: column; gap: 2px;">
                         ${isFirst ? '<label style="font-size: 11px; font-weight: 600; color: var(--text-color-secondary);">Pauze (min)</label>' : ''}
@@ -1467,8 +1467,87 @@ import {
                     <button type="button" class="remove-row-btn" style="background: none; border: none; color: var(--danger-color); cursor: pointer; padding: 8px 4px;"><i class="material-icons">delete</i></button>
                 `;
                 row.querySelector('.remove-row-btn').addEventListener('click', () => row.remove());
-                setupFillerAutocomplete(row.querySelector('.manual-filler-name'), row.querySelector('.filler-autocomplete-list'));
+                
+                const nameInput = row.querySelector('.manual-filler-name');
+                const startInput = row.querySelector('.manual-filler-start');
+                const endInput = row.querySelector('.manual-filler-end');
+                const pauseInput = row.querySelector('.manual-filler-pause');
+
+                nameInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        startInput.focus();
+                    } else if (e.key === 'Backspace' && !nameInput.value) {
+                        const prevRow = row.previousElementSibling;
+                        if (prevRow && prevRow.classList.contains('manual-filler-row')) {
+                            e.preventDefault();
+                            const prevPause = prevRow.querySelector('.manual-filler-pause');
+                            if (prevPause) {
+                                prevPause.value = '';
+                                prevPause.focus();
+                            }
+                        }
+                    }
+                });
+
+                const formatTimeInput = (input, nextInput) => {
+                    input.addEventListener('input', (e) => {
+                        let val = input.value.replace(/\D/g, '');
+                        if (val.length > 4) val = val.substring(0, 4);
+                        if (val.length >= 3) {
+                            input.value = val.substring(0, 2) + ':' + val.substring(2);
+                        } else {
+                            input.value = val;
+                        }
+                        if (val.length === 4 && nextInput && !nextInput.value) {
+                            nextInput.focus();
+                        }
+                    });
+                };
+
+                formatTimeInput(startInput, endInput);
+                formatTimeInput(endInput, pauseInput);
+
+                startInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        endInput.focus();
+                    } else if (e.key === 'Backspace' && !startInput.value) {
+                        e.preventDefault();
+                        nameInput.value = '';
+                        nameInput.focus();
+                    }
+                });
+
+                endInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        pauseInput.focus();
+                    } else if (e.key === 'Backspace' && !endInput.value) {
+                        e.preventDefault();
+                        startInput.value = '';
+                        startInput.focus();
+                    }
+                });
+
+                pauseInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const newRow = addFillerRow();
+                        if (newRow) {
+                            const newNameInput = newRow.querySelector('.manual-filler-name');
+                            if (newNameInput) newNameInput.focus();
+                        }
+                    } else if (e.key === 'Backspace' && !pauseInput.value) {
+                        e.preventDefault();
+                        endInput.value = '';
+                        endInput.focus();
+                    }
+                });
+
+                setupFillerAutocomplete(nameInput, row.querySelector('.filler-autocomplete-list'));
                 manualFillersList.appendChild(row);
+                return row;
             };
 
             const addCategoryRow = (tbody, catName = '', colli = '', norm = '', pathIdx = 0, headerTr = null) => {
@@ -1486,6 +1565,21 @@ import {
                         <input type="number" value="${norm}" class="manual-cat-norm" readonly style="width: 100%; border: none; background: transparent; color: var(--text-color-muted); font-size: 13px; outline: none; cursor: default;">
                     </td>
                 `;
+
+                const colliInput = tr.querySelector('.manual-cat-colli');
+                if (colliInput) {
+                    colliInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const allColliInputs = Array.from(tbody.querySelectorAll('.manual-cat-colli'));
+                            const currentIndex = allColliInputs.indexOf(colliInput);
+                            if (currentIndex !== -1 && currentIndex < allColliInputs.length - 1) {
+                                allColliInputs[currentIndex + 1].focus();
+                                allColliInputs[currentIndex + 1].select();
+                            }
+                        }
+                    });
+                }
                 
                 const existingRows = tbody.querySelectorAll(`tr.manual-category-row[data-path-idx="${pathIdx}"]`);
                 if (existingRows.length > 0) {
@@ -1615,7 +1709,10 @@ import {
                 startManualBtn.addEventListener('click', () => {
                     const fillerRows = manualFillersList.querySelectorAll('.manual-filler-row');
                     const newFillers = [];
+                    const seenNames = new Set();
+                    let duplicateName = '';
                     let missingTimes = false;
+                    let invalidTimes = false;
                     fillerRows.forEach(r => {
                         const nameInput = r.querySelector('.manual-filler-name');
                         if (!nameInput) return;
@@ -1624,7 +1721,14 @@ import {
                         const end = r.querySelector('.manual-filler-end')?.value || '';
                         const pauseVal = r.querySelector('.manual-filler-pause')?.value;
                         if (name) {
+                            const lowerName = name.toLowerCase();
+                            if (seenNames.has(lowerName)) {
+                                duplicateName = name;
+                            }
+                            seenNames.add(lowerName);
+
                             if (!start || !end) missingTimes = true;
+                            if (start && end && start >= end) invalidTimes = true;
                             const displayName = `${name} - ${start} - ${end}`;
                             newFillers.push(displayName);
                             if (pauseVal !== undefined && pauseVal !== '') {
@@ -1633,6 +1737,11 @@ import {
                         }
                     });
 
+                    if (duplicateName) {
+                        showToast(`Vuller "${duplicateName}" mag maar 1x worden toegevoegd.`, 'error');
+                        return;
+                    }
+
                     if (!newFillers.length) {
                         showToast('Voeg ten minste één vuller met naam toe.', 'error');
                         return;
@@ -1640,6 +1749,11 @@ import {
 
                     if (missingTimes) {
                         showToast('Vul de begin- en eindtijd in voor alle vullers.', 'error');
+                        return;
+                    }
+
+                    if (invalidTimes) {
+                        showToast('De begintijd van een vuller moet vroeger zijn dan de eindtijd.', 'error');
                         return;
                     }
 

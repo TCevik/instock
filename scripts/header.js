@@ -1,4 +1,4 @@
-import { getSupabase } from './main.js';
+import { getSupabase, setAppReady } from './main.js';
 
 export function applyStoreTheme(hex) {
     if (!hex) return;
@@ -58,30 +58,27 @@ export async function updateHeaderMenu() {
     const productRelatedKeys = ["product_checker", "voorraadmutaties", "tht_module", "tht_registratie", "tellen", "acties"];
     const allProductRelatedOff = productRelatedKeys.every(k => modules[k] === false);
 
-    document.querySelectorAll(".drawer-item").forEach(item => {
-        const span = item.querySelector("span");
-        if (!span) return;
-        const text = span.textContent.trim().toLowerCase();
-        if (text === 'dashboard') return;
-
-        const key = moduleMap[text];
-
-        if (key === 'product_toevoegen' && allProductRelatedOff) {
-            item.style.display = "none";
-            return;
+    document.querySelectorAll(".drawer-item, .nav-item").forEach(item => {
+        const text = item.querySelector("span") ? item.querySelector("span").textContent.toLowerCase().trim() : "";
+        const moduleKey = moduleMap[text];
+        
+        let hide = false;
+        if (userRole === "medewerker" && fixedHiddenForMedewerker.includes(moduleKey)) {
+            hide = true;
+        } else if (allProductRelatedOff && text === "producten") {
+            hide = true;
+        } else if (moduleKey && modules[moduleKey] === false) {
+            hide = true;
         }
 
-        if (userRole === 'medewerker' && fixedHiddenForMedewerker.includes(key)) {
-            item.style.display = "none";
-            return;
-        }
-
-        if (key && modules[key] === false) {
+        if (hide) {
             item.style.display = "none";
         } else {
             item.style.display = "";
         }
     });
+
+    setAppReady();
 }
 
 export function loadHeader() {
