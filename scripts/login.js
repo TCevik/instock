@@ -1,7 +1,8 @@
-import { getSupabase, handleFormSubmit } from './main.js';
+import { getSupabase, handleFormSubmit, setAppReady } from './main.js';
 import { showToast } from './toast.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
+    setAppReady();
     const form = document.getElementById('login-form');
     const storeCodeInput = document.getElementById('store-code');
     const employeeIdInput = document.getElementById('employee-id');
