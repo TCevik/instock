@@ -1,0 +1,94 @@
+import {
+    parseNameAndSubtitle,
+    getFillerPause as logicGetFillerPause,
+    getAvailableTime as logicGetAvailableTime,
+    getFillerActualEndTime as logicGetFillerActualEndTime,
+    getTaskDuration as logicGetTaskDuration,
+    getFillerColli as logicGetFillerColli,
+    getFillerTotalTime as logicGetFillerTotalTime,
+    getFillerProductivity as logicGetFillerProductivity,
+    getTaskAssignment as logicGetTaskAssignment
+} from '../planning-logic.js';
+
+export const state = {
+    selectedFillers: [],
+    pathColli: {},
+    fillerTasks: {},
+    helpers: {},
+    activeTab: 'fill',
+    fillerSortOrder: 'start-asc',
+    otherTimes: {
+        "Restanten nalopen": 20,
+        "Bulk nalopen": 30,
+        "Acties terugvullen": 15,
+        "Magazijn opruimen": 45,
+        "Tellen": 30
+    },
+    instanceTimes: {},
+    fillerBreaks: {},
+    actualEndTimes: {},
+    nonFillers: [],
+    hiddenFillers: [],
+    showNonFillers: false,
+    showReallyHidden: false,
+    autoPairSettings: {
+        enabled: false,
+        prependOtherTask: false,
+        selectedOtherTask: ""
+    }
+};
+
+export const createPersonNameElement = (fullName, titleClass = 'person-name', subtitleClass = 'person-subtitle', containerClass = 'person-info') => {
+    const { name, subtitle } = parseNameAndSubtitle(fullName);
+    const container = document.createElement('div');
+    container.className = containerClass;
+    
+    const nameEl = document.createElement('span');
+    nameEl.className = titleClass;
+    nameEl.textContent = name;
+    container.appendChild(nameEl);
+
+    if (subtitle) {
+        const subEl = document.createElement('span');
+        subEl.className = subtitleClass;
+        subEl.textContent = subtitle;
+        container.appendChild(subEl);
+    }
+    return container;
+};
+
+export const getFillerPause = (displayName) => logicGetFillerPause(displayName, state);
+export const getAvailableTime = (displayName) => logicGetAvailableTime(displayName, state);
+export const getFillerActualEndTime = (displayName) => logicGetFillerActualEndTime(displayName, state);
+export const getTaskDuration = (taskId) => logicGetTaskDuration(taskId, state);
+export const getFillerColli = (displayName) => logicGetFillerColli(displayName, state);
+export const getFillerTotalTime = (filler) => logicGetFillerTotalTime(filler, state);
+export const getFillerProductivity = (displayName) => logicGetFillerProductivity(displayName, state);
+export const getTaskAssignment = (taskId) => logicGetTaskAssignment(taskId, state);
+
+export const removeTaskFromAll = (taskId) => {
+    Object.keys(state.fillerTasks).forEach(filler => {
+        state.fillerTasks[filler] = state.fillerTasks[filler].filter(id => id !== taskId);
+    });
+};
+
+export const getClosestTask = (container, x, y) => {
+    const cards = [...container.querySelectorAll('.task-card:not(.dragging)')];
+    if (cards.length === 0) return null;
+    let closest = null;
+    let minDistance = Infinity;
+    cards.forEach(card => {
+        const box = card.getBoundingClientRect();
+        const centerX = box.left + box.width / 2;
+        const centerY = box.top + box.height / 2;
+        const distance = Math.hypot(x - centerX, y - centerY);
+        if (distance < minDistance) {
+            minDistance = distance;
+            closest = {
+                card: card,
+                before: x < centerX
+            };
+        }
+    });
+    return closest;
+};

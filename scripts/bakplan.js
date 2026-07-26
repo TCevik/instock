@@ -448,29 +448,6 @@ import { DAYS, getPlateQuantity as logicGetPlateQuantity, normalizeDaysData as l
                 });
             }
 
-            const addBtn = document.getElementById('add-product-btn');
-            if (addBtn) {
-                addBtn.addEventListener('click', () => {
-                    const dayList = state.daysData[state.selectedDay];
-                    let catObj = dayList.length > 0 ? dayList[0] : null;
-                    if (!catObj) {
-                        catObj = { category: 'Overig', products: [] };
-                        dayList.push(catObj);
-                    }
-                    catObj.products.push({
-                        ceNr: String(Date.now()).slice(-6),
-                        description: 'Nieuw product',
-                        price: '0.00',
-                        promo: '',
-                        gemVerk: '0',
-                        derving: '0'
-                    });
-                    syncStructureAcrossDays();
-                    this.renderTabs();
-                    this.renderTable();
-                    triggerSave();
-                });
-            }
 
             const cartsBtn = document.getElementById('bakplan-carts-btn');
             const cartsModal = document.getElementById('bakplan-carts-modal');

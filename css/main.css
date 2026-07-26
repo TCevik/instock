@@ -162,7 +162,8 @@ body.app-ready {
 }
 
 .input-wrapper input,
-.input-wrapper select {
+.input-wrapper select,
+.form-input {
     width: 100%;
     padding: 14px 14px 14px 44px;
     background-color: var(--input-bg);
@@ -177,18 +178,24 @@ body.app-ready {
     -moz-appearance: none;
 }
 
+.form-input {
+    padding: 8px 12px;
+}
+
 .input-wrapper select {
     cursor: pointer;
 }
 
 .input-wrapper input:hover,
-.input-wrapper select:hover {
+.input-wrapper select:hover,
+.form-input:hover {
     border-color: rgba(255, 255, 255, 0.15);
     background-color: #232326;
 }
 
 .input-wrapper input:focus,
-.input-wrapper select:focus {
+.input-wrapper select:focus,
+.form-input:focus {
     border-color: var(--accent-color-sidemenu);
     background-color: #1e1e21;
     box-shadow: 0 0 0 4px var(--vullen-border);

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="nl">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -10,6 +11,7 @@
     <link rel="stylesheet" href="css/instellingen_winkel.css">
     <script src="scripts/instellingen_winkel.js" type="module"></script>
 </head>
+
 <body>
     <main class="dashboard-container">
         <div class="page-header page-header-col">
@@ -26,13 +28,15 @@
             </div>
             <form id="store-settings-form">
                 <h2 class="settings-section-title">Module-toegang voor medewerkers</h2>
-                <p class="settings-section-subtitle">Bepaal welke pagina's zichtbaar zijn op het dashboard en in het zijmenu.</p>
+                <p class="settings-section-subtitle">Bepaal welke pagina's zichtbaar zijn op het dashboard en in het
+                    zijmenu.</p>
                 <div class="modules-grid" id="modules-container">
                     <div class="loading-cell">Instellingen laden...</div>
                 </div>
                 <h2 class="settings-section-title" style="margin-top: 24px;">Winkelkleuren</h2>
                 <p class="settings-section-subtitle">Kies de primaire accentkleur voor de winkel.</p>
-                <div class="color-options-grid" id="color-options-container" style="display: flex; gap: 12px; margin-bottom: 32px;">
+                <div class="color-options-grid" id="color-options-container"
+                    style="display: flex; gap: 12px; margin-bottom: 32px;">
                     <label class="color-option">
                         <input type="radio" name="store_color" value="#658d24" checked>
                         <span class="color-swatch" style="background-color: #658d24;"></span>
@@ -59,12 +63,13 @@
                         <span>Rood</span>
                     </label>
                 </div>
-                </div>
                 <button type="submit" class="submit-btn" id="submitBtn">
                     <span>Instellingen Opslaan</span>
                     <i class="material-icons">save</i>
                 </button>
             </form>
+        </div>
     </main>
 </body>
+
 </html>

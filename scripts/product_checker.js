@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const detailName = document.getElementById('detail-name');
     const detailEan = document.getElementById('detail-ean');
     const detailVoorraad = document.getElementById('detail-voorraad');
-    const detailMinVoorraad = document.getElementById('detail-min-voorraad');
+    const detailMinVoorraad = document.getElementById('detail-min-voorraad-label');
     const detailPrijs = document.getElementById('detail-prijs');
     const detailInkoopprijs = document.getElementById('detail-inkoopprijs');
     const detailAfdeling = document.getElementById('detail-afdeling');
@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const voorraad = product.voorraad || 0;
 
         detailVoorraad.textContent = voorraad;
-        document.getElementById('detail-min-voorraad-label').textContent = `Min: ${minVoorraad}`;
+        detailMinVoorraad.textContent = `Min: ${minVoorraad}`;
 
         const status = calculateStockStatus(voorraad, minVoorraad);
 
@@ -140,8 +140,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         detailAfdeling.textContent = product.afdeling || '-';
         detailLocatie.textContent = product.locatiecode || '-';
 
+        productImageBox.innerHTML = '';
         if (product.afbeelding) {
-            productImageBox.innerHTML = `<img src="${product.afbeelding}" alt="${product.naam}">`;
+            const img = document.createElement('img');
+            img.src = product.afbeelding;
+            img.alt = product.naam || '';
+            productImageBox.appendChild(img);
         } else {
             productImageBox.innerHTML = `<i class="material-icons">image</i>`;
         }
@@ -216,24 +220,38 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const item = document.createElement('div');
                     item.className = 'search-result-item';
 
-                    const imgHtml = product.afbeelding
-                        ? `<img src="${product.afbeelding}" alt="${product.naam}">`
-                        : `<i class="material-icons">image</i>`;
+                    const imgDiv = document.createElement('div');
+                    imgDiv.className = 'search-result-img';
+                    if (product.afbeelding) {
+                        const img = document.createElement('img');
+                        img.src = product.afbeelding;
+                        img.alt = product.naam || '';
+                        imgDiv.appendChild(img);
+                    } else {
+                        imgDiv.innerHTML = `<i class="material-icons">image</i>`;
+                    }
 
-                    const priceHtml = formatPrice(product.prijs);
+                    const infoDiv = document.createElement('div');
+                    infoDiv.className = 'search-result-info';
 
-                    item.innerHTML = `
-                        <div class="search-result-img">
-                            ${imgHtml}
-                        </div>
-                        <div class="search-result-info">
-                            <span class="search-result-name">${product.naam}</span>
-                            <span class="search-result-sub">${product.merk || 'Geen merk'} - EAN: ${product.ean}</span>
-                        </div>
-                        <div class="search-result-price">
-                            ${priceHtml}
-                        </div>
-                    `;
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'search-result-name';
+                    nameSpan.textContent = product.naam;
+
+                    const subSpan = document.createElement('span');
+                    subSpan.className = 'search-result-sub';
+                    subSpan.textContent = `${product.merk || 'Geen merk'} - EAN: ${product.ean}`;
+
+                    infoDiv.appendChild(nameSpan);
+                    infoDiv.appendChild(subSpan);
+
+                    const priceDiv = document.createElement('div');
+                    priceDiv.className = 'search-result-price';
+                    priceDiv.textContent = formatPrice(product.prijs);
+
+                    item.appendChild(imgDiv);
+                    item.appendChild(infoDiv);
+                    item.appendChild(priceDiv);
                     item.addEventListener('click', () => {
                         showProductDetails(product);
                         searchInput.value = product.ean;

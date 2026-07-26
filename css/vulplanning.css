@@ -674,3 +674,167 @@
     border-color: var(--vullen-border);
     background-color: var(--vullen-bg);
 }
+
+.task-card-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-color-muted);
+    white-space: nowrap;
+}
+
+.task-menu-btn .material-icons {
+    font-size: 18px;
+}
+
+.really-hidden-badge {
+    padding: 4px 8px;
+    font-size: 12px;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.really-hidden-badge .material-icons {
+    font-size: 14px;
+    color: var(--accent-color-sidemenu);
+}
+
+.filler-row.non-filler {
+    opacity: 0.95;
+}
+
+.td-actions {
+    padding: 2px 2px 2px 2px;
+    width: 20px;
+    text-align: center;
+}
+
+.actions-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-btn-toggle {
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-color-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-btn-toggle .material-icons {
+    font-size: 13px;
+}
+
+.action-btn-hide {
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--danger-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-btn-hide .material-icons {
+    font-size: 13px;
+}
+
+.td-info {
+    padding: 4px 4px 4px 0;
+    white-space: nowrap;
+}
+
+.info-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.name-el {
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.sub-el {
+    font-size: 10px;
+    color: var(--text-color-muted);
+    white-space: nowrap;
+}
+
+.td-stats {
+    padding: 4px 6px;
+    width: 215px;
+}
+
+.stats-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.top-row-stats {
+    display: flex;
+    width: 100%;
+}
+
+.usage-span {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+}
+
+.bottom-row-stats {
+    display: flex;
+    gap: 4px;
+    width: 100%;
+}
+
+.pause-span,
+.remaining-span {
+    flex: 1;
+    justify-content: center;
+    text-align: center;
+}
+
+.progress-bar-container-custom {
+    height: 4px;
+    margin-top: 2px;
+}
+
+.td-end {
+    padding: 4px;
+    width: 75px;
+    text-align: center;
+}
+
+.end-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: center;
+    justify-content: center;
+}
+
+.end-input-custom {
+    padding: 2px 4px;
+    font-size: 11px;
+    width: 70px;
+}
+

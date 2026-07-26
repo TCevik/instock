@@ -135,32 +135,6 @@
                     </div>
                     <div id="fillers-layout-wrapper"
                         style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px; width: 100%;">
-                        <div id="non-fillers-section"
-                            style="display: none; flex-direction: column; gap: 4px; width: 100%;">
-                            <div
-                                style="font-size: 12px; font-weight: 600; color: var(--text-color-muted); display: flex; align-items: center; gap: 4px;">
-                                <i class="material-icons" style="font-size: 14px;">person_off</i>Niet-vullers
-                            </div>
-                            <table class="fillers-table non-fillers-table">
-                                <colgroup>
-                                    <col style="width: 20px;">
-                                    <col style="width: 85px;">
-                                    <col style="width: 215px;">
-                                    <col style="width: 75px;">
-                                    <col style="width: auto;">
-                                </colgroup>
-                                <thead>
-                                    <tr>
-                                        <th></th>
-                                        <th>Medewerker</th>
-                                        <th>Tijd & Pauze</th>
-                                        <th>Eindtijd</th>
-                                        <th>Toegewezen Taken</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="non-fillers-table-body"></tbody>
-                            </table>
-                        </div>
                         <div id="fillers-main-section"
                             style="display: flex; flex-direction: column; gap: 4px; width: 100%;">
                             <div id="fillers-header"
@@ -185,6 +159,32 @@
                                     </tr>
                                 </thead>
                                 <tbody id="fillers-table-body"></tbody>
+                            </table>
+                        </div>
+                        <div id="non-fillers-section"
+                            style="display: none; flex-direction: column; gap: 4px; width: 100%;">
+                            <div
+                                style="font-size: 12px; font-weight: 600; color: var(--text-color-muted); display: flex; align-items: center; gap: 4px;">
+                                <i class="material-icons" style="font-size: 14px;">person_off</i>Niet-vullers
+                            </div>
+                            <table class="fillers-table non-fillers-table">
+                                <colgroup>
+                                    <col style="width: 20px;">
+                                    <col style="width: 85px;">
+                                    <col style="width: 215px;">
+                                    <col style="width: 75px;">
+                                    <col style="width: auto;">
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th>Medewerker</th>
+                                        <th>Tijd & Pauze</th>
+                                        <th>Eindtijd</th>
+                                        <th>Toegewezen Taken</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="non-fillers-table-body"></tbody>
                             </table>
                         </div>
                     </div>
@@ -361,9 +361,12 @@
                     style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-color-muted);">&times;</button>
             </div>
             <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px;">
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                    <span style="font-size: 12px; color: var(--text-color-muted);">Samenvoegen werkt alleen bij het inslepen van een <strong>vulopdracht</strong>.</span>
+                </div>
                 <label
                     style="display: flex; align-items: center; justify-content: space-between; font-weight: 500; font-size: 13px; cursor: pointer; padding: 10px; background-color: var(--input-bg); border-radius: 8px; border: 1px solid var(--border-color);">
-                    <span>Vullen & Spiegelen automatisch samenvoegen</span>
+                    <span>Bij vulopdracht: Spiegelen automatisch toevoegen</span>
                     <input type="checkbox" id="modal-auto-pair-enabled"
                         style="width: 16px; height: 16px; accent-color: var(--accent-color-sidemenu); cursor: pointer;">
                 </label>
@@ -372,7 +375,7 @@
                     style="border-top: 1px solid var(--border-color); padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
                     <label
                         style="display: flex; align-items: center; justify-content: space-between; font-weight: 500; font-size: 13px; cursor: pointer; padding: 10px; background-color: var(--input-bg); border-radius: 8px; border: 1px solid var(--border-color);">
-                        <span>Standaard Overige taak ervoor zetten</span>
+                        <span>Bij vulopdracht: Standaard Overige taak ervoor zetten</span>
                         <input type="checkbox" id="modal-prepend-other-enabled"
                             style="width: 16px; height: 16px; accent-color: var(--accent-color-sidemenu); cursor: pointer;">
                     </label>
