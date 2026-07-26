@@ -98,14 +98,23 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
         });
     };
 
-    const addFillerRow = (nameVal = '', startVal = '', endVal = '', pauseVal = '') => {
+    const addFillerRow = (nameVal = '', startVal = '', endVal = '', pauseVal = '', matchInfo = null) => {
         if (!manualFillersList) return null;
         const row = document.createElement('div');
         row.className = 'manual-filler-row';
         row.style.cssText = 'display: flex; gap: 8px; align-items: center; margin-bottom: 8px; position: relative;';
+
+        const isMatched = matchInfo && matchInfo.matched;
+        const origName = matchInfo ? matchInfo.originalName : '';
+
         row.innerHTML = `
             <div style="flex: 2; position: relative;">
-                <input type="text" class="manual-filler-name form-input" placeholder="Naam medewerker..." value="${nameVal}" style="width: 100%;">
+                <div style="display: flex; align-items: center; gap: 4px;">
+                    <input type="text" class="manual-filler-name form-input" placeholder="Naam medewerker..." value="${nameVal}" style="width: 100%; ${isMatched ? 'background-color: rgba(46, 204, 113, 0.15); border-color: #2ecc71;' : ''}">
+                    <button type="button" class="match-toggle-btn" style="padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--input-bg); cursor: pointer; display: ${matchInfo ? 'inline-flex' : 'none'}; align-items: center; justify-content: center;" title="${isMatched ? 'Gekoppeld met gebruiker (klik voor undo)' : 'Niet gekoppeld (klik om te koppelen)'}">
+                        <i class="material-icons match-icon" style="font-size: 16px; color: ${isMatched ? '#2ecc71' : 'var(--text-color-muted)'};">${isMatched ? 'check_circle' : 'cancel'}</i>
+                    </button>
+                </div>
                 <div class="filler-autocomplete-list" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px; z-index: 100; max-height: 160px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"></div>
             </div>
             <input type="text" class="manual-filler-start form-input" placeholder="00:00" value="${startVal}" style="flex: 1; text-align: center;" maxlength="5">
@@ -113,6 +122,32 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
             <input type="number" class="manual-filler-pause form-input" placeholder="0" value="${pauseVal}" style="flex: 0.8; text-align: center;" min="0">
             <button type="button" class="action-btn remove-filler-btn" style="padding: 6px; color: var(--danger-color); background: none; border: none; cursor: pointer;" title="Verwijderen"><i class="material-icons">delete</i></button>
         `;
+
+        const nameInput = row.querySelector('.manual-filler-name');
+        const matchToggleBtn = row.querySelector('.match-toggle-btn');
+        const matchIcon = row.querySelector('.match-icon');
+        let currentMatchedState = isMatched;
+
+        if (matchToggleBtn) {
+            matchToggleBtn.addEventListener('click', () => {
+                currentMatchedState = !currentMatchedState;
+                if (currentMatchedState) {
+                    matchIcon.textContent = 'check_circle';
+                    matchIcon.style.color = '#2ecc71';
+                    nameInput.style.backgroundColor = 'rgba(46, 204, 113, 0.15)';
+                    nameInput.style.borderColor = '#2ecc71';
+                    if (nameVal) nameInput.value = nameVal;
+                    matchToggleBtn.title = 'Gekoppeld met gebruiker (klik voor undo)';
+                } else {
+                    matchIcon.textContent = 'cancel';
+                    matchIcon.style.color = 'var(--text-color-muted)';
+                    nameInput.style.backgroundColor = '';
+                    nameInput.style.borderColor = '';
+                    if (origName) nameInput.value = origName;
+                    matchToggleBtn.title = 'Niet gekoppeld (klik om te herstellen)';
+                }
+            });
+        }
 
         const removeBtn = row.querySelector('.remove-filler-btn');
         removeBtn.addEventListener('click', () => {
@@ -122,7 +157,6 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
             }
         });
 
-        const nameInput = row.querySelector('.manual-filler-name');
         const startInput = row.querySelector('.manual-filler-start');
         const endInput = row.querySelector('.manual-filler-end');
         const pauseInput = row.querySelector('.manual-filler-pause');

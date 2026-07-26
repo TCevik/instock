@@ -165,12 +165,32 @@ import { renderWorkspace } from './vulplanning/workspace.js';
                     if (pendingFillers && pendingFillers.length > 0) {
                         pendingFillers.forEach(displayName => {
                             const match = displayName.match(/^(.+?)\s*-\s*(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})$/);
-                            const pause = state.fillerBreaks && state.fillerBreaks[displayName] !== undefined ? state.fillerBreaks[displayName] : '';
-                            if (match) {
-                                addFillerRow(match[1], match[2], match[3], pause);
-                            } else {
-                                addFillerRow(displayName, '', '', pause);
+                            let rawName = match ? match[1].trim() : displayName.trim();
+                            let matchedUser = null;
+
+                            if (storeEmployees && storeEmployees.length > 0) {
+                                const cleanPdfName = rawName.toLowerCase();
+                                const exactMatches = storeEmployees.filter(emp => emp.toLowerCase().includes(cleanPdfName));
+                                if (exactMatches.length === 1) {
+                                    matchedUser = exactMatches[0];
+                                } else {
+                                    const pdfParts = cleanPdfName.split(/\s+/).filter(Boolean);
+                                    const partMatches = storeEmployees.filter(emp => {
+                                        const empLower = emp.toLowerCase();
+                                        return pdfParts.every(part => empLower.includes(part));
+                                    });
+                                    if (partMatches.length === 1) {
+                                        matchedUser = partMatches[0];
+                                    }
+                                }
                             }
+
+                            const nameToUse = matchedUser || rawName;
+                            const startVal = match ? match[2] : '';
+                            const endVal = match ? match[3] : '';
+                            const pause = state.fillerBreaks && state.fillerBreaks[displayName] !== undefined ? state.fillerBreaks[displayName] : '';
+
+                            addFillerRow(nameToUse, startVal, endVal, pause, { matched: !!matchedUser, originalName: rawName });
                         });
                     }
                 }
@@ -207,12 +227,32 @@ import { renderWorkspace } from './vulplanning/workspace.js';
                             if (pendingFillers && pendingFillers.length > 0) {
                                 pendingFillers.forEach(displayName => {
                                     const match = displayName.match(/^(.+?)\s*-\s*(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})$/);
-                                    const pause = state.fillerBreaks && state.fillerBreaks[displayName] !== undefined ? state.fillerBreaks[displayName] : '';
-                                    if (match) {
-                                        addFillerRow(match[1], match[2], match[3], pause);
-                                    } else {
-                                        addFillerRow(displayName, '', '', pause);
+                                    let rawName = match ? match[1].trim() : displayName.trim();
+                                    let matchedUser = null;
+
+                                    if (storeEmployees && storeEmployees.length > 0) {
+                                        const cleanPdfName = rawName.toLowerCase();
+                                        const exactMatches = storeEmployees.filter(emp => emp.toLowerCase().includes(cleanPdfName));
+                                        if (exactMatches.length === 1) {
+                                            matchedUser = exactMatches[0];
+                                        } else {
+                                            const pdfParts = cleanPdfName.split(/\s+/).filter(Boolean);
+                                            const partMatches = storeEmployees.filter(emp => {
+                                                const empLower = emp.toLowerCase();
+                                                return pdfParts.every(part => empLower.includes(part));
+                                            });
+                                            if (partMatches.length === 1) {
+                                                matchedUser = partMatches[0];
+                                            }
+                                        }
                                     }
+
+                                    const nameToUse = matchedUser || rawName;
+                                    const startVal = match ? match[2] : '';
+                                    const endVal = match ? match[3] : '';
+                                    const pause = state.fillerBreaks && state.fillerBreaks[displayName] !== undefined ? state.fillerBreaks[displayName] : '';
+
+                                    addFillerRow(nameToUse, startVal, endVal, pause, { matched: !!matchedUser, originalName: rawName });
                                 });
                             }
                         }
