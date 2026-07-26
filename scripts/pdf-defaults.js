@@ -10,7 +10,8 @@ export const HARDCODED_PATHS_MAPPING = {
     "Diepvries": ["Diepvries"],
     "Zuivel": ["Zuivel", "Geelvetten"],
     "Vlees": ["Vers vlees", "Vis"],
-    "Vleeswaren, Kaas": ["Vleeswaren AV/AVA", "Vleeswaren ZB", "Kaas AV/AVA", "Kaas ZB"]
+    "Vleeswaren": ["Vleeswaren AV/AVA", "Vleeswaren ZB"],
+    "Kaas": ["Kaas AV/AVA", "Kaas ZB"]
 };
 
 export const HARDCODED_NORMS = {
@@ -70,5 +71,6 @@ export const HARDCODED_MIRROR_TIMES = {
     "Diepvries": 21,
     "Zuivel": 21,
     "Vlees": 21,
-    "Vleeswaren, Kaas": 21
+    "Vleeswaren": 21,
+    "Kaas": 21
 };
