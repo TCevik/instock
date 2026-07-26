@@ -106,7 +106,7 @@ export const generatePrintablePlanning = () => {
                 padName = pName;
                 role = pType === 'fill' ? 'Vullen' : pType === 'mirror' ? 'Spiegelen' : 'Overig';
             }
-            if (padName) {
+            if (padName && role !== 'Overig') {
                 if (!padMap[padName]) padMap[padName] = [];
                 padMap[padName].push({ cleanName, role, startTimeStr: formatTimeOfDay(tStart), endTimeStr: formatTimeOfDay(currentTime), durationMins: duration });
             }
