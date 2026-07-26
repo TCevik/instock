@@ -7,6 +7,8 @@ import {
     getFillerColli as logicGetFillerColli,
     getFillerTotalTime as logicGetFillerTotalTime,
     getFillerProductivity as logicGetFillerProductivity,
+    getProductivityStatusClass,
+    formatTimeInputValue,
     getTaskAssignment as logicGetTaskAssignment
 } from '../planning-logic.js';
 
@@ -64,6 +66,7 @@ export const getTaskDuration = (taskId) => logicGetTaskDuration(taskId, state);
 export const getFillerColli = (displayName) => logicGetFillerColli(displayName, state);
 export const getFillerTotalTime = (filler) => logicGetFillerTotalTime(filler, state);
 export const getFillerProductivity = (displayName) => logicGetFillerProductivity(displayName, state);
+export { getProductivityStatusClass, formatTimeInputValue };
 export const getTaskAssignment = (taskId) => logicGetTaskAssignment(taskId, state);
 
 export const removeTaskFromAll = (taskId) => {

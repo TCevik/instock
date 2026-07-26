@@ -76,6 +76,18 @@ html {
     --status-missing-bg: rgba(255, 82, 82, 0.2);
     --status-missing-color: #ff5252;
     --gem-verk-bg: rgba(128, 189, 29, 0.15);
+    --prod-healthy-bg: rgba(128, 189, 29, 0.2);
+    --prod-healthy-color: var(--accent-color);
+    --prod-healthy-border: rgba(128, 189, 29, 0.4);
+    --prod-moderate-bg: rgba(255, 235, 59, 0.2);
+    --prod-moderate-color: #fbc02d;
+    --prod-moderate-border: rgba(255, 235, 59, 0.4);
+    --prod-warning-bg: rgba(255, 183, 77, 0.2);
+    --prod-warning-color: var(--warning-color);
+    --prod-warning-border: rgba(255, 183, 77, 0.4);
+    --prod-danger-bg: rgba(255, 82, 82, 0.2);
+    --prod-danger-color: var(--danger-color);
+    --prod-danger-border: rgba(255, 82, 82, 0.4);
 }
 
 body {

@@ -675,6 +675,30 @@
     background-color: var(--vullen-bg);
 }
 
+.filler-stat-item.prod.prod-healthy {
+    color: var(--prod-healthy-color);
+    border-color: var(--prod-healthy-border);
+    background-color: var(--prod-healthy-bg);
+}
+
+.filler-stat-item.prod.prod-moderate {
+    color: var(--prod-moderate-color);
+    border-color: var(--prod-moderate-border);
+    background-color: var(--prod-moderate-bg);
+}
+
+.filler-stat-item.prod.prod-warning {
+    color: var(--prod-warning-color);
+    border-color: var(--prod-warning-border);
+    background-color: var(--prod-warning-bg);
+}
+
+.filler-stat-item.prod.prod-danger {
+    color: var(--prod-danger-color);
+    border-color: var(--prod-danger-border);
+    background-color: var(--prod-danger-bg);
+}
+
 .task-card-meta {
     display: flex;
     align-items: center;

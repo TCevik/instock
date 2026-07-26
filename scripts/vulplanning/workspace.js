@@ -5,6 +5,8 @@ import {
     getTaskDuration,
     getFillerTotalTime,
     getFillerProductivity,
+    getProductivityStatusClass,
+    formatTimeInputValue,
     getTaskAssignment,
     removeTaskFromAll,
     getClosestTask,
@@ -397,8 +399,11 @@ export const renderWorkspace = () => {
         endContainer.className = 'end-container';
 
         const endInput = document.createElement('input');
-        endInput.type = 'time';
+        endInput.type = 'text';
+        endInput.placeholder = '00:00';
+        endInput.maxLength = 5;
         endInput.className = 'actual-end-input end-input-custom';
+        endInput.style.textAlign = 'center';
 
         const plannedEndMin = getFillerEndTime(filler);
         const plannedEndStr = isFinite(plannedEndMin) ? formatTimeOfDay(plannedEndMin) : '';
@@ -411,24 +416,27 @@ export const renderWorkspace = () => {
             prodContainer.innerHTML = '';
             const pVal = getFillerProductivity(filler);
             if (pVal !== null) {
+                const statusClass = getProductivityStatusClass(pVal);
                 const pSpan = document.createElement('span');
-                pSpan.className = 'filler-stat-item prod';
+                pSpan.className = `filler-stat-item prod ${statusClass}`.trim();
                 pSpan.textContent = `Prod: ${pVal}%`;
                 prodContainer.appendChild(pSpan);
             }
         };
         updateFillerProdDisplay();
 
-        endInput.addEventListener('input', (e) => {
-            state.actualEndTimes[filler] = e.target.value;
+        const handleInput = (e) => {
+            const val = formatTimeInputValue(e.target.value);
+            if (e.target.value !== val) {
+                endInput.value = val;
+            }
+            state.actualEndTimes[filler] = val;
             updateFillerProdDisplay();
             triggerSave();
-        });
-        endInput.addEventListener('change', (e) => {
-            state.actualEndTimes[filler] = e.target.value;
-            updateFillerProdDisplay();
-            triggerSave();
-        });
+        };
+
+        endInput.addEventListener('input', handleInput);
+        endInput.addEventListener('change', handleInput);
         endInput.addEventListener('click', (e) => e.stopPropagation());
 
         endContainer.appendChild(endInput);

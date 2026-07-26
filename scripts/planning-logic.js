@@ -181,11 +181,28 @@ export const getFillerProductivity = (displayName, state) => {
     return Math.round((plannedTime / workedNet) * 100);
 };
 
+export const getProductivityStatusClass = (pVal) => {
+    if (pVal === null || pVal === undefined) return '';
+    if (pVal >= 100) return 'prod-healthy';
+    if (pVal >= 80) return 'prod-moderate';
+    if (pVal >= 55) return 'prod-warning';
+    return 'prod-danger';
+};
+
 export const formatTimeOfDay = (totalMinutes) => {
     const rounded = Math.round(totalMinutes);
     const hours = Math.floor(rounded / 60) % 24;
     const mins = rounded % 60;
     return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+};
+
+export const formatTimeInputValue = (val) => {
+    let digits = (val || '').replace(/\D/g, '');
+    if (digits.length >= 3) {
+        digits = digits.substring(0, 2) + ':' + digits.substring(2, 4);
+    }
+    if (digits.length > 5) digits = digits.substring(0, 5);
+    return digits;
 };
 
 export const getTaskAssignment = (taskId, state) => {

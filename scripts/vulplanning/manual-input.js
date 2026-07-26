@@ -1,4 +1,4 @@
-import { state, createPersonNameElement } from './state.js';
+import { state, createPersonNameElement, formatTimeInputValue } from './state.js';
 import { showToast } from '../toast.js';
 import { showConfirmModal } from './modals.js';
 import { triggerSave } from './storage.js';
@@ -129,15 +129,11 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
 
         const formatTimeInput = (input, nextInput) => {
             input.addEventListener('input', (e) => {
-                let val = e.target.value.replace(/\D/g, '');
-                if (val.length >= 3) {
-                    val = val.substring(0, 2) + ':' + val.substring(2, 4);
-                }
-                if (val.length > 5) val = val.substring(0, 5);
+                const val = formatTimeInputValue(e.target.value);
                 if (e.target.value !== val) {
                     input.value = val;
                 }
-                if (val.length === 4 && nextInput && !nextInput.value) {
+                if (val.length === 5 && nextInput && !nextInput.value) {
                     nextInput.focus();
                 }
             });
