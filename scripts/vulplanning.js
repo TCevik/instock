@@ -116,6 +116,7 @@ import {
         const [pathName, type] = mainTaskId.split('_');
         const data = state.pathColli[pathName];
         if (!data && type !== 'other') return null;
+        if (getTaskDuration(taskId) <= 0) return null;
 
         const card = document.createElement('div');
         card.className = 'task-card ' + type + (isHelperTask ? ' helper' : '');
@@ -533,12 +534,7 @@ import {
         const tabMirror = document.getElementById('tab-mirror');
         const tabOther = document.getElementById('tab-other');
 
-        if (state.autoPairSettings && state.autoPairSettings.enabled) {
-            if (tabMirror) tabMirror.style.display = 'none';
-            if (state.activeTab === 'mirror') state.activeTab = 'fill';
-        } else {
-            if (tabMirror) tabMirror.style.display = '';
-        }
+        if (tabMirror) tabMirror.style.display = '';
 
         const addCustomBtn = document.getElementById('add-custom-task-btn');
         if (addCustomBtn) {
@@ -579,13 +575,19 @@ import {
 
         const allTaskIds = [];
         Object.keys(state.pathColli).forEach(pathName => {
-            allTaskIds.push(`${pathName}_fill`);
+            if (getTaskDuration(`${pathName}_fill`) > 0) {
+                allTaskIds.push(`${pathName}_fill`);
+            }
             if (HARDCODED_MIRROR_TIMES[pathName] !== undefined || (state.pathColli[pathName] && state.pathColli[pathName].mirrorDuration !== undefined)) {
-                allTaskIds.push(`${pathName}_mirror`);
+                if (getTaskDuration(`${pathName}_mirror`) > 0) {
+                    allTaskIds.push(`${pathName}_mirror`);
+                }
             }
         });
         Object.keys(state.otherTimes).forEach(pathName => {
-            allTaskIds.push(`${pathName}_other`);
+            if (getTaskDuration(`${pathName}_other`) > 0) {
+                allTaskIds.push(`${pathName}_other`);
+            }
         });
 
         if (!state.nonFillers) state.nonFillers = [];
