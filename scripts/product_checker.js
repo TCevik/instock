@@ -160,7 +160,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 editBtn.style.display = '';
                 editBtn.onclick = () => {
-                    window.location.href = `product_toevoegen.html?edit=${product.ean}`;
+                    window.location.href = `productenbeheer.html?edit=${product.ean}`;
                 };
             }
         }
@@ -319,8 +319,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const urlParams = new URLSearchParams(window.location.search);
     const initialEan = urlParams.get('ean');
+    const statusParam = urlParams.get('status');
+
+    if (statusParam === 'created') {
+        showMessage(null, null, null, 'Product succesvol aangemaakt!', 'success');
+    } else if (statusParam === 'updated') {
+        showMessage(null, null, null, 'Product succesvol bijgewerkt!', 'success');
+    }
+
     if (initialEan) {
         searchInput.value = initialEan;
         handleSearch();
+    } else {
+        searchInput.focus();
     }
 });

@@ -18,7 +18,66 @@ document.addEventListener('DOMContentLoaded', async () => {
     const inkoopprijsInput = document.getElementById('inkoopprijs');
     const thtInput = document.getElementById('tht');
     const locatiecodeInput = document.getElementById('locatiecode');
-    const afbeeldingInput = document.getElementById('afbeelding');
+    const btnUploadFile = document.getElementById('btn-upload-file');
+    const btnTakePhoto = document.getElementById('btn-take-photo');
+    const afbeeldingFile = document.getElementById('afbeelding-file');
+    const afbeeldingCamera = document.getElementById('afbeelding-camera');
+    const imagePreviewBox = document.getElementById('image-preview-box');
+    const imagePreview = document.getElementById('image-preview');
+    const placeholderIcon = imagePreviewBox.querySelector('.placeholder-icon');
+    const removeImgBtn = document.getElementById('remove-img-btn');
+
+    let currentImageData = null;
+
+    const setImageData = (dataUrl) => {
+        currentImageData = dataUrl;
+        if (dataUrl) {
+            imagePreview.src = dataUrl;
+            imagePreview.style.display = 'block';
+            placeholderIcon.style.display = 'none';
+            removeImgBtn.style.display = 'flex';
+        } else {
+            imagePreview.src = '';
+            imagePreview.style.display = 'none';
+            placeholderIcon.style.display = 'block';
+            removeImgBtn.style.display = 'none';
+            afbeeldingFile.value = '';
+            afbeeldingCamera.value = '';
+        }
+    };
+
+    btnUploadFile.addEventListener('click', () => afbeeldingFile.click());
+    btnTakePhoto.addEventListener('click', () => afbeeldingCamera.click());
+
+    const handleFileSelect = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 128;
+                canvas.height = 128;
+                const ctx = canvas.getContext('2d');
+
+                const minDim = Math.min(img.width, img.height);
+                const sx = (img.width - minDim) / 2;
+                const sy = (img.height - minDim) / 2;
+
+                ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, 128, 128);
+                const compressedUrl = canvas.toDataURL('image/webp', 0.85);
+                setImageData(compressedUrl);
+            };
+            img.src = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+    };
+
+    afbeeldingFile.addEventListener('change', handleFileSelect);
+    afbeeldingCamera.addEventListener('change', handleFileSelect);
+    removeImgBtn.addEventListener('click', () => setImageData(null));
 
     const supabase = await getSupabase();
 
@@ -27,7 +86,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const messageText = document.getElementById('message-text');
     const submitBtn = document.getElementById('submitBtn');
 
-    const inputs = Array.from(form.querySelectorAll('input'));
+    const inputs = Array.from(form.querySelectorAll('input:not([type="file"])'));
     inputs.forEach((input, index) => {
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
@@ -76,9 +135,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         const { data: existingProduct } = await supabase.from('producten').select('*').eq('ean', editEan).maybeSingle();
         if (existingProduct) {
             isEditMode = true;
+            document.title = 'Product Bewerken';
+            const pageHeaderIcon = document.querySelector('.page-header-icon');
+            if (pageHeaderIcon) pageHeaderIcon.textContent = 'edit';
             document.querySelector('.page-header-title').textContent = 'Product Bewerken';
-            document.querySelector('.page-header-subtitle').textContent = 'Pas productgegevens aan in de database';
-            submitBtn.querySelector('span').textContent = 'Product Opslaan';
+            document.querySelector('.page-header-subtitle').textContent = `Pas gegevens van ${existingProduct.naam || 'het product'} aan`;
+            
+            const submitBtnSpan = submitBtn.querySelector('span');
+            const submitBtnIcon = submitBtn.querySelector('.material-icons');
+            if (submitBtnSpan) submitBtnSpan.textContent = 'Wijzigingen Opslaan';
+            if (submitBtnIcon) submitBtnIcon.textContent = 'save';
 
             if (barcodeTypeSelect && existingProduct.barcode_type) barcodeTypeSelect.value = existingProduct.barcode_type;
             eanInput.value = existingProduct.ean || '';
@@ -87,14 +153,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             afdelingInput.value = existingProduct.afdeling || '';
             voorraadInput.value = existingProduct.voorraad !== null ? existingProduct.voorraad : '';
             minimaleVoorraadInput.value = existingProduct.minimale_voorraad !== null ? existingProduct.minimale_voorraad : '';
-            prijsInput.value = existingProduct.prijs !== null ? existingProduct.prijs : '';
-            inkoopprijsInput.value = existingProduct.inkoopprijs !== null ? existingProduct.inkoopprijs : '';
+            prijsInput.value = existingProduct.prijs !== null && existingProduct.prijs !== undefined ? Number(existingProduct.prijs).toFixed(2) : '';
+            inkoopprijsInput.value = existingProduct.inkoopprijs !== null && existingProduct.inkoopprijs !== undefined ? Number(existingProduct.inkoopprijs).toFixed(2) : '';
             thtInput.value = existingProduct.tht || '';
             locatiecodeInput.value = existingProduct.locatiecode || '';
-            afbeeldingInput.value = existingProduct.afbeelding || '';
+            if (existingProduct.afbeelding) {
+                setImageData(existingProduct.afbeelding);
+            }
+            naamInput.focus();
         }
     } else {
-        eanInput.focus();
+        requestAnimationFrame(() => eanInput.focus());
     }
 
     form.addEventListener('submit', async (e) => {
@@ -127,7 +196,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             inkoopprijs: inkoopprijsInput.value === '' ? null : parseFloat(inkoopprijsInput.value),
             tht: thtInput.value || null,
             locatiecode: locatiecodeInput.value.trim() || null,
-            afbeelding: afbeeldingInput.value.trim() || null
+            afbeelding: currentImageData || null
         };
 
         await handleFormSubmit(submitBtn, 'Bezig met opslaan...', messageBox, async () => {
@@ -138,16 +207,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (error) {
                 showMessage(messageBox, messageText, messageIcon, error.message || 'Er is een fout opgetreden bij het opslaan van het product.', 'error');
             } else {
-                showMessage(messageBox, messageText, messageIcon, isEditMode ? 'Product succesvol bijgewerkt!' : 'Product succesvol toegevoegd!', 'success');
-                if (isEditMode) {
-                    setTimeout(() => {
-                        window.location.href = `product_checker.html?ean=${productData.ean}`;
-                    }, 1000);
-                } else {
-                    form.reset();
-                    eanInput.focus();
-                }
+                const status = isEditMode ? 'updated' : 'created';
+                window.location.href = `product_checker.html?ean=${productData.ean}&status=${status}`;
             }
         });
     });
 });
+

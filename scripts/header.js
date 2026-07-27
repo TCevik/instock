@@ -49,12 +49,12 @@ export async function updateHeaderMenu() {
         "rapportages": "rapportages",
         "bakplan": "bakplan",
         "vulplanning maker": "vulplanning",
-        "product toevoegen": "product_toevoegen",
+        "productenbeheer": "productenbeheer",
         "gebruikersbeheer": "gebruikersbeheer",
         "instellingen winkel": "instellingen_winkel"
     };
 
-    const fixedHiddenForMedewerker = ["gebruikersbeheer", "instellingen_winkel", "bakplan", "vulplanning", "product_toevoegen"];
+    const fixedHiddenForMedewerker = ["gebruikersbeheer", "instellingen_winkel", "bakplan", "vulplanning", "productenbeheer"];
     const productRelatedKeys = ["product_checker", "voorraadmutaties", "tht_module", "tht_registratie", "tellen", "acties"];
     const allProductRelatedOff = productRelatedKeys.every(k => modules[k] === false);
 
@@ -65,7 +65,7 @@ export async function updateHeaderMenu() {
         let hide = false;
         if (userRole === "medewerker" && fixedHiddenForMedewerker.includes(moduleKey)) {
             hide = true;
-        } else if (allProductRelatedOff && (text === "producten" || moduleKey === "product_toevoegen")) {
+        } else if (allProductRelatedOff && (text === "producten" || moduleKey === "productenbeheer")) {
             hide = true;
         } else if (moduleKey && modules[moduleKey] === false) {
             hide = true;
