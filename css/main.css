@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter;:wght@300;400;500;600;700&display=swap');
 
 html {
     overflow-y: scroll;
@@ -8,7 +8,7 @@ html {
     -webkit-tap-highlight-color: transparent;
     margin: 0;
     box-sizing: border-box;
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Inter', sans-serif;
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) transparent;
 }
@@ -807,4 +807,4 @@ body.app-ready {
 
 .context-menu-item:hover {
     background-color: var(--input-bg);
-}
+}
