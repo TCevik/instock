@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         searchInput.focus();
     });
 
-    const PAGE_SIZE = 1;
+    const PAGE_SIZE = 50;
     let currentPage = 0;
     let currentQuery = '';
     let currentIsEan = false;
@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const subSpan = document.createElement('span');
             subSpan.className = 'search-result-sub';
-            subSpan.textContent = `${product.merk || 'Geen merk'} - EAN: ${product.ean}`;
+            subSpan.textContent = `${product.merk || '-'} - EAN: ${product.ean}`;
 
             infoDiv.appendChild(nameSpan);
             infoDiv.appendChild(subSpan);
