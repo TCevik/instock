@@ -179,6 +179,98 @@ document.addEventListener('DOMContentLoaded', async () => {
         searchInput.focus();
     });
 
+    const PAGE_SIZE = 1;
+    let currentPage = 0;
+    let currentQuery = '';
+    let currentIsEan = false;
+
+    const renderProducts = (products, append = false) => {
+        if (!append) {
+            resultsList.innerHTML = '';
+        }
+        
+        const oldBtn = document.getElementById('load-more-btn');
+        if (oldBtn) oldBtn.remove();
+
+        products.forEach(product => {
+            const item = document.createElement('div');
+            item.className = 'search-result-item';
+
+            const imgDiv = document.createElement('div');
+            imgDiv.className = 'search-result-img';
+            if (product.afbeelding) {
+                const img = document.createElement('img');
+                img.src = product.afbeelding;
+                img.alt = product.naam || '';
+                imgDiv.appendChild(img);
+            } else {
+                imgDiv.innerHTML = `<i class="material-icons">image</i>`;
+            }
+
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'search-result-info';
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'search-result-name';
+            nameSpan.textContent = product.naam;
+
+            const subSpan = document.createElement('span');
+            subSpan.className = 'search-result-sub';
+            subSpan.textContent = `${product.merk || 'Geen merk'} - EAN: ${product.ean}`;
+
+            infoDiv.appendChild(nameSpan);
+            infoDiv.appendChild(subSpan);
+
+            const priceDiv = document.createElement('div');
+            priceDiv.className = 'search-result-price';
+            priceDiv.textContent = formatPrice(product.prijs);
+
+            item.appendChild(imgDiv);
+            item.appendChild(infoDiv);
+            item.appendChild(priceDiv);
+            item.addEventListener('click', () => {
+                showProductDetails(product);
+                searchInput.value = product.ean;
+            });
+            resultsList.appendChild(item);
+        });
+
+        if (products.length === PAGE_SIZE && !currentIsEan) {
+            const loadMoreBtn = document.createElement('button');
+            loadMoreBtn.id = 'load-more-btn';
+            loadMoreBtn.className = 'submit-btn';
+            loadMoreBtn.style.marginTop = '16px';
+            loadMoreBtn.innerHTML = '<span>Meer resultaten laden...</span><i class="material-icons">expand_more</i>';
+            loadMoreBtn.addEventListener('click', () => loadNextPage());
+            resultsList.appendChild(loadMoreBtn);
+        }
+
+        resultsList.style.display = 'block';
+    };
+
+    const loadNextPage = async () => {
+        currentPage++;
+        const from = currentPage * PAGE_SIZE;
+        const to = from + PAGE_SIZE - 1;
+
+        try {
+            const { data, error } = await supabase
+                .from('producten')
+                .select('*')
+                .ilike('naam', `%${currentQuery}%`)
+                .range(from, to);
+
+            if (!error && data && data.length > 0) {
+                renderProducts(data, true);
+            } else {
+                const oldBtn = document.getElementById('load-more-btn');
+                if (oldBtn) oldBtn.remove();
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     const handleSearch = async () => {
         const query = searchInput.value.trim();
         if (!query) {
@@ -188,14 +280,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        const isEan = /^\d+$/.test(query) && query.length >= 8;
+        currentQuery = query;
+        currentPage = 0;
+        currentIsEan = /^\d+$/.test(query) && query.length >= 8;
 
         try {
             let req = supabase.from('producten').select('*');
-            if (isEan) {
+            if (currentIsEan) {
                 req = req.eq('ean', query);
             } else {
-                req = req.ilike('naam', `%${query}%`);
+                req = req.ilike('naam', `%${query}%`).range(0, PAGE_SIZE - 1);
             }
 
             const { data, error } = await req;
@@ -210,55 +304,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            if (isEan && data.length === 1) {
+            if (currentIsEan && data.length === 1) {
                 showProductDetails(data[0]);
             } else {
                 detailCard.style.display = 'none';
                 hideMessage();
-                resultsList.innerHTML = '';
-                data.forEach(product => {
-                    const item = document.createElement('div');
-                    item.className = 'search-result-item';
-
-                    const imgDiv = document.createElement('div');
-                    imgDiv.className = 'search-result-img';
-                    if (product.afbeelding) {
-                        const img = document.createElement('img');
-                        img.src = product.afbeelding;
-                        img.alt = product.naam || '';
-                        imgDiv.appendChild(img);
-                    } else {
-                        imgDiv.innerHTML = `<i class="material-icons">image</i>`;
-                    }
-
-                    const infoDiv = document.createElement('div');
-                    infoDiv.className = 'search-result-info';
-
-                    const nameSpan = document.createElement('span');
-                    nameSpan.className = 'search-result-name';
-                    nameSpan.textContent = product.naam;
-
-                    const subSpan = document.createElement('span');
-                    subSpan.className = 'search-result-sub';
-                    subSpan.textContent = `${product.merk || 'Geen merk'} - EAN: ${product.ean}`;
-
-                    infoDiv.appendChild(nameSpan);
-                    infoDiv.appendChild(subSpan);
-
-                    const priceDiv = document.createElement('div');
-                    priceDiv.className = 'search-result-price';
-                    priceDiv.textContent = formatPrice(product.prijs);
-
-                    item.appendChild(imgDiv);
-                    item.appendChild(infoDiv);
-                    item.appendChild(priceDiv);
-                    item.addEventListener('click', () => {
-                        showProductDetails(product);
-                        searchInput.value = product.ean;
-                    });
-                    resultsList.appendChild(item);
-                });
-                resultsList.style.display = 'block';
+                renderProducts(data, false);
             }
         } catch (err) {
             showMsg('Er is een onverwachte fout opgetreden.', 'error');
