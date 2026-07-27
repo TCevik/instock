@@ -2,22 +2,22 @@ export const fetchProductsPage = async (supabase, storeId, searchQuery, currentP
     const { department = '', location = '', thtFilter = '', sortBy = 'naam', sortOrder = 'asc' } = options;
     const from = currentPage * pageSize;
     const to = from + pageSize - 1;
-
     const fields = 'ean, naam, merk, inhoud, afdeling, voorraad, minimale_voorraad, prijs, tht, locatiecode, winkel_id';
+    
     let query = supabase.from('producten').select(fields, { count: 'exact' });
-
+    
     if (storeId) {
         query = query.eq('winkel_id', storeId);
     }
-
+    
     if (department) {
         query = query.ilike('afdeling', department);
     }
-
+    
     if (location) {
         query = query.ilike('locatiecode', location);
     }
-
+    
     if (thtFilter) {
         const today = new Date().toISOString().split('T')[0];
         if (thtFilter === 'verlopen') {
@@ -32,21 +32,21 @@ export const fetchProductsPage = async (supabase, storeId, searchQuery, currentP
             query = query.gte('tht', today).lte('tht', nextMonth);
         }
     }
-
+    
     const trimmed = searchQuery.trim();
     if (trimmed) {
         const isEan = /^\d+$/.test(trimmed) && trimmed.length >= 8;
         if (isEan) {
             query = query.eq('ean', trimmed);
         } else {
-            query = query.or(`naam.ilike.%${trimmed}%,merk.ilike.%${trimmed}%,inhoud.ilike.%${trimmed}%,afdeling.ilike.%${trimmed}%`);
+            query = query.or(`naam.ilike."%${trimmed}%",merk.ilike."%${trimmed}%",inhoud.ilike."%${trimmed}%",afdeling.ilike."%${trimmed}%"`);
         }
     }
-
+    
     const ascending = sortOrder === 'asc';
     query = query.order(sortBy, { ascending, nullsFirst: false });
-
     query = query.range(from, to);
+    
     return await query;
 };
 
