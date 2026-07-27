@@ -24,7 +24,8 @@ export const state = {
         "Bulk nalopen": 30,
         "Acties terugvullen": 15,
         "Magazijn opruimen": 45,
-        "Tellen": 30
+        "Tellen": 30,
+        "Pauze": 0
     },
     instanceTimes: {},
     fillerBreaks: {},

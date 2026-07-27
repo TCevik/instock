@@ -27,12 +27,12 @@ export const createTaskCard = (taskId, startTime, endTime) => {
     const isHelperTask = taskId.endsWith('_helper');
     const mainTaskId = isHelperTask ? taskId.replace('_helper', '') : taskId;
     const [pathName, type] = mainTaskId.split('_');
+    const isBreakTask = pathName === 'Pauze';
     const data = state.pathColli[pathName];
     if (!data && type !== 'other') return null;
-    if (getTaskDuration(taskId) <= 0) return null;
-
+    if (getTaskDuration(taskId) <= 0 && !isBreakTask) return null;
     const card = document.createElement('div');
-    card.className = 'task-card ' + type + (isHelperTask ? ' helper' : '');
+    card.className = 'task-card ' + type + (isBreakTask ? ' break-task' : '') + (isHelperTask ? ' helper' : '');
     card.draggable = true;
     card.id = `task-${taskId}`;
 
@@ -62,7 +62,7 @@ export const createTaskCard = (taskId, startTime, endTime) => {
         card.classList.add('helper');
         durationText = formatMin(duration);
     } else if (startTime === undefined) {
-        durationText = formatMin(duration);
+        durationText = (isBreakTask && duration === 0) ? '' : formatMin(duration);
     } else {
         const helperInfo = state.helpers[taskId];
         if (helperInfo && helperInfo.helperName) {
@@ -76,7 +76,7 @@ export const createTaskCard = (taskId, startTime, endTime) => {
     }
 
     const leftMetaSpan = document.createElement('span');
-    leftMetaSpan.textContent = durationText;
+    leftMetaSpan.textContent = durationText || '\u00A0';
     metaRow.appendChild(leftMetaSpan);
 
     if (startTime !== undefined && endTime !== undefined) {
@@ -87,7 +87,7 @@ export const createTaskCard = (taskId, startTime, endTime) => {
 
     card.appendChild(metaRow);
 
-    if (!isHelperTask) {
+    if (!isHelperTask && pathName !== 'Pauze') {
         const assignee = getTaskAssignment(taskId);
         if (assignee || type === 'other') {
             const menuBtn = document.createElement('button');
@@ -208,7 +208,9 @@ export const renderWorkspace = () => {
             }
         }
     });
-    Object.keys(state.otherTimes).forEach(pathName => {
+    const otherKeys = Object.keys(state.otherTimes).filter(k => k !== 'Pauze');
+    allTaskIds.push('Pauze_other');
+    otherKeys.forEach(pathName => {
         if (getTaskDuration(`${pathName}_other`) > 0) {
             allTaskIds.push(`${pathName}_other`);
         }
@@ -370,7 +372,16 @@ export const renderWorkspace = () => {
             bottomRow.className = 'bottom-row-stats';
             const pauseSpan = document.createElement('span');
             pauseSpan.className = 'filler-stat-item pause-span';
-            pauseSpan.textContent = `Pauze: ${formatMin(pauseMin)}`;
+            let taskBreaks = 0;
+            const fillerAssigned = state.fillerTasks[filler] || [];
+            fillerAssigned.forEach(tId => {
+                const [pName] = tId.replace('_helper', '').split('_');
+                if (pName === 'Pauze') {
+                    taskBreaks += getTaskDuration(tId);
+                }
+            });
+            const remainingPause = pauseMin - taskBreaks;
+            pauseSpan.textContent = remainingPause > 0 ? `Pauze: ${formatMin(remainingPause)}` : `Pauze: 0m`;
 
             const remainingSpan = document.createElement('span');
             remainingSpan.className = `filler-stat-item remaining remaining-span ${remainingMin >= 0 ? 'positive' : 'negative'}`;
@@ -525,10 +536,16 @@ export const renderWorkspace = () => {
 
             const isAlreadyAssigned = existingAssignee !== null;
 
+            let isNewPauseTask = false;
             if (taskId.includes('_other') && !taskId.includes('_inst-')) {
                 const uniqueId = `${taskId}_inst-${Date.now()}`;
                 const [pathName] = taskId.split('_');
-                state.instanceTimes[uniqueId] = state.otherTimes[pathName] || 30;
+                if (pathName === 'Pauze') {
+                    state.instanceTimes[uniqueId] = 0;
+                    isNewPauseTask = true;
+                } else {
+                    state.instanceTimes[uniqueId] = state.otherTimes[pathName] || 30;
+                }
                 taskId = uniqueId;
             } else {
                 removeTaskFromAll(taskId);
@@ -599,6 +616,9 @@ export const renderWorkspace = () => {
             }
             renderWorkspace();
             triggerSave();
+            if (isNewPauseTask) {
+                openDurationModal(taskId);
+            }
         });
 
         let currentTime = getFillerStartTime(filler);

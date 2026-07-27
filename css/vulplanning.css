@@ -474,6 +474,14 @@
     border-left: 3px solid var(--text-color-muted);
 }
 
+.task-card.break-task {
+    border-left: 3px solid #ff9800;
+}
+
+#unassigned-other-tasks > .task-card.break-task {
+    margin-bottom: 8px;
+}
+
 .task-card.helper {
     border-left: 3px solid #9c27b0;
 }

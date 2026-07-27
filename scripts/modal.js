@@ -46,7 +46,11 @@ export function showConfirmModal(title, message, btnTextOrCallback, onConfirmArg
     if (!modal || !titleEl || !msgEl || !cancelBtn || !okBtn) return;
 
     titleEl.textContent = title;
-    msgEl.textContent = message;
+    if (typeof message === 'string' && message.includes('<')) {
+        msgEl.innerHTML = message;
+    } else {
+        msgEl.textContent = message;
+    }
     okBtn.textContent = btnText;
     cancelBtn.textContent = cancelBtnText || 'Annuleren';
     modal.style.display = 'flex';

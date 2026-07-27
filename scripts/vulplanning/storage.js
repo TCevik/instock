@@ -45,6 +45,7 @@ export const loadData = async () => {
         if (vp.fillerTasks) state.fillerTasks = vp.fillerTasks;
         if (vp.helpers) state.helpers = vp.helpers;
         if (vp.otherTimes) state.otherTimes = vp.otherTimes;
+        state.otherTimes["Pauze"] = 0;
         if (vp.instanceTimes) state.instanceTimes = vp.instanceTimes;
         if (vp.fillerBreaks) state.fillerBreaks = vp.fillerBreaks;
         if (vp.actualEndTimes) state.actualEndTimes = vp.actualEndTimes;

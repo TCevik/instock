@@ -54,13 +54,13 @@
     justify-content: center;
     align-items: center;
     gap: 8px;
-    box-shadow: 0 4px 12px var(--vullen-border);
+    box-shadow: 0 4px 12px var(--accent-glow);
 }
 
 .login-btn:hover {
     filter: brightness(1.1);
     transform: translateY(-1px);
-    box-shadow: 0 6px 16px var(--vullen-border);
+    box-shadow: 0 6px 16px var(--accent-glow);
 }
 
 .login-btn:active {

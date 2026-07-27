@@ -8,6 +8,7 @@ import { parsePDFAndGetNames, parseColliPDF, getDefaultPDFPaden, doSettingsMatch
 import { createManualInputManager, renderPeopleList } from './vulplanning/manual-input.js';
 import { generatePrintablePlanning } from './vulplanning/printable-overview.js';
 import { renderWorkspace } from './vulplanning/workspace.js';
+import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration } from './planning-logic.js';
 
 (() => {
     setRenderWorkspaceCallback(renderWorkspace);
@@ -330,7 +331,55 @@ import { renderWorkspace } from './vulplanning/workspace.js';
 
         if (generateBtn) {
             generateBtn.addEventListener('click', () => {
-                generatePrintablePlanning();
+                const visibleFillers = state.selectedFillers.filter(f => !(state.hiddenFillers || []).includes(f));
+                const pauseDiscrepancies = [];
+
+                visibleFillers.forEach(filler => {
+                    const presetPause = getFillerPause(filler, state);
+                    let taskBreaks = 0;
+                    const tasks = state.fillerTasks[filler] || [];
+                    tasks.forEach(tId => {
+                        const [pName] = tId.replace('_helper', '').split('_');
+                        if (pName === 'Pauze') {
+                            taskBreaks += getTaskDuration(tId, state);
+                        }
+                    });
+                    const diff = taskBreaks - presetPause;
+                    if (diff !== 0) {
+                        const cleanName = parseNameAndSubtitle(filler).name;
+                        pauseDiscrepancies.push({
+                            name: cleanName,
+                            diff: diff,
+                            isMore: diff > 0,
+                            taskBreaks: taskBreaks,
+                            presetPause: presetPause
+                        });
+                    }
+                });
+
+                if (pauseDiscrepancies.length > 0) {
+                    const listItems = pauseDiscrepancies.map(d => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background-color: var(--input-bg); border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 6px;">
+                            <span style="font-weight: 600; color: var(--text-color); font-size: 13px;">${d.name}</span>
+                            <span style="font-size: 12px; color: ${d.isMore ? 'var(--warning-color)' : 'var(--danger-color)'}; font-weight: 500;">
+                                ${d.isMore ? '+' : '-'}${formatMin(Math.abs(d.diff))} (${formatMin(d.taskBreaks)} / ${formatMin(d.presetPause)})
+                            </span>
+                        </div>
+                    `).join('');
+                    const message = `<div style="font-size: 13px; color: var(--text-color-muted); margin-bottom: 12px;">Er zijn pauze-afwijkingen geconstateerd bij de volgende medewerkers:</div>
+                        <div style="max-height: 200px; overflow-y: auto; margin-bottom: 14px;">${listItems}</div>
+                        <div style="font-size: 13px; color: var(--text-color);">Wil je doorgaan met genereren of de planning aanpassen?</div>`;
+                    showConfirmModal(
+                        'Pauze-afwijkingen',
+                        message,
+                        'Doorgaan met genereren',
+                        () => { generatePrintablePlanning(); },
+                        null,
+                        'Aanpassen'
+                    );
+                } else {
+                    generatePrintablePlanning();
+                }
             });
         }
 

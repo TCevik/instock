@@ -70,6 +70,7 @@ export const generatePrintablePlanning = () => {
                     taskTitle = pName;
                     if (pType === 'fill') { taskBadge = 'Vul'; badgeClass = 'badge-fill'; }
                     else if (pType === 'mirror') { taskBadge = 'Spgl'; badgeClass = 'badge-mirror'; }
+                    else if (pName === 'Pauze') { taskBadge = 'Pauze'; badgeClass = 'badge-other'; }
                     else { taskBadge = 'Ovr'; badgeClass = 'badge-other'; }
                 }
                 tasksListHtml += `<div class="task-row"><span class="task-time">${startTimeStr}-${endTimeStr}</span><span class="task-name">${taskTitle}</span><span class="task-badge ${badgeClass}">${taskBadge}</span></div>`;

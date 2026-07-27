@@ -55,7 +55,7 @@ th.sortable:hover .sort-icon {
 .form-control:focus {
     border-color: var(--accent-color);
     background-color: #1e1e21;
-    box-shadow: 0 0 0 4px var(--vullen-border);
+    box-shadow: 0 0 0 4px var(--accent-glow);
 }
 
 .image-file-input {

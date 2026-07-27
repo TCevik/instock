@@ -154,6 +154,9 @@ export const getFillerTotalTime = (filler, state) => {
     let total = 0;
     const tasks = state.fillerTasks[filler] || [];
     tasks.forEach(taskId => {
+        const [pathName] = taskId.replace('_helper', '').split('_');
+        if (pathName === 'Pauze') return;
+
         if (taskId.endsWith('_helper')) {
             total += getTaskDuration(taskId, state);
         } else {
@@ -174,8 +177,20 @@ export const getFillerProductivity = (displayName, state) => {
     const startMin = getFillerStartTime(displayName);
     const endMin = getFillerActualEndTime(displayName, state);
     if (!isFinite(endMin) || endMin <= startMin) return null;
-    const pauseMin = getFillerPause(displayName, state);
-    const workedNet = Math.max(1, (endMin - startMin) - pauseMin);
+    const presetPause = getFillerPause(displayName, state);
+    let taskBreaks = 0;
+    let hasTaskBreaks = false;
+    if (state && state.fillerTasks && state.fillerTasks[displayName]) {
+        state.fillerTasks[displayName].forEach(taskId => {
+            const [pathName] = taskId.replace('_helper', '').split('_');
+            if (pathName === 'Pauze') {
+                taskBreaks += getTaskDuration(taskId, state);
+                hasTaskBreaks = true;
+            }
+        });
+    }
+    const effectivePause = hasTaskBreaks ? taskBreaks : presetPause;
+    const workedNet = Math.max(1, (endMin - startMin) - effectivePause);
     const plannedTime = getFillerTotalTime(displayName, state);
     if (plannedTime <= 0) return null;
     return Math.round((plannedTime / workedNet) * 100);

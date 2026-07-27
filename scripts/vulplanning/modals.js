@@ -54,28 +54,28 @@ export function updateDynamicDuration() {
         checkHelperValidity();
         return;
     }
-    
+
     errorMsg.style.display = 'none';
     if (!maxCheckbox.checked && !halfCheckbox.checked) {
         checkHelperValidity();
         return;
     }
-    
+
     const duration = getTaskDuration(activeTaskId.replace('_helper', ''));
     const assignee = getTaskAssignment(activeTaskId);
     if (assignee) {
         const existingHelper = state.helpers[activeTaskId];
         const curDur = existingHelper ? ((existingHelper.isMax || existingHelper.isHalf) ? (existingHelper.calculatedDuration || 0) : Math.min(duration, existingHelper.duration || 0)) : 0;
-        
+
         const limitA = getAvailableTime(assignee);
         const limitH = getAvailableTime(helperName);
-        
+
         const totalA = getFillerTotalTime(assignee) - (existingHelper ? (duration - curDur) : duration);
         const totalH = getFillerTotalTime(helperName) - (existingHelper && existingHelper.helperName === helperName ? curDur : 0);
-        
+
         const minHelperDur = isFinite(limitA) ? Math.max(0, totalA + duration - limitA) : 0;
         const maxHelperDur = isFinite(limitH) ? Math.max(0, limitH - totalH) : duration;
-        
+
         let optimal = duration / 2;
         if (maxCheckbox.checked) {
             optimal = Math.min(duration, maxHelperDur);
@@ -128,7 +128,7 @@ export const openHelperModal = (taskId) => {
     }
     errorMsg.style.display = 'none';
     durationInput.disabled = false;
-    
+
     if (maxCheckbox.checked || halfCheckbox.checked) {
         updateDynamicDuration();
     } else {
@@ -145,11 +145,13 @@ export const openDurationModal = (taskId) => {
     if (!modal || !input) return;
 
     const [pathName, type] = taskId.split('_');
-    
+
     if (taskId.includes('_inst-')) {
-        input.value = state.instanceTimes[taskId] !== undefined ? state.instanceTimes[taskId] : (state.otherTimes[pathName] || 30);
+        const dur = state.instanceTimes[taskId] !== undefined ? state.instanceTimes[taskId] : (state.otherTimes[pathName] || 0);
+        input.value = dur > 0 ? dur : '';
     } else {
-        input.value = state.otherTimes[pathName] || 30;
+        const dur = state.otherTimes[pathName] || 0;
+        input.value = dur > 0 ? dur : '';
     }
 
     modal.style.display = 'flex';
@@ -213,7 +215,7 @@ export const setupModals = () => {
                 const maxDuration = Math.round(getTaskDuration(activeTaskId));
                 const val = parseInt(helperDuration.value) || 0;
                 const clampedVal = Math.min(maxDuration, val);
-                
+
                 state.helpers[activeTaskId] = {
                     helperName: helperName,
                     duration: clampedVal,
@@ -235,7 +237,34 @@ export const setupModals = () => {
     const durationModal = document.getElementById('duration-modal');
     const durationCancelBtn = document.getElementById('duration-cancel-btn');
     const closeDurationModal = setupModal(durationModal, [durationCancelBtn], () => {
+        if (activeDurationTaskId && activeDurationTaskId.includes('_inst-')) {
+            const [pathName] = activeDurationTaskId.split('_');
+            if (pathName === 'Pauze' && (!state.instanceTimes[activeDurationTaskId] || state.instanceTimes[activeDurationTaskId] <= 0)) {
+                removeTaskFromAll(activeDurationTaskId);
+                delete state.instanceTimes[activeDurationTaskId];
+                renderWorkspace();
+                triggerSave();
+            }
+        }
         activeDurationTaskId = null;
+    });
+
+    document.querySelectorAll('.quick-duration-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (!activeDurationTaskId) return;
+            const val = parseInt(btn.dataset.min) || 0;
+            const [pathName] = activeDurationTaskId.split('_');
+            if (val > 0) {
+                if (activeDurationTaskId.includes('_inst-')) {
+                    state.instanceTimes[activeDurationTaskId] = val;
+                } else {
+                    state.otherTimes[pathName] = val;
+                }
+                closeDurationModal();
+                renderWorkspace();
+                triggerSave();
+            }
+        });
     });
 
     const durationSaveBtn = document.getElementById('duration-save-btn');
@@ -251,6 +280,12 @@ export const setupModals = () => {
                 } else {
                     state.otherTimes[pathName] = val;
                 }
+                closeDurationModal();
+                renderWorkspace();
+                triggerSave();
+            } else if (pathName === 'Pauze' && activeDurationTaskId.includes('_inst-')) {
+                removeTaskFromAll(activeDurationTaskId);
+                delete state.instanceTimes[activeDurationTaskId];
                 closeDurationModal();
                 renderWorkspace();
                 triggerSave();
@@ -303,7 +338,14 @@ export const setupModals = () => {
             const durInput = document.getElementById('custom-task-duration-input');
             const name = nameInput ? nameInput.value.trim() : '';
             const duration = durInput ? parseInt(durInput.value) || 0 : 0;
-            if (name && duration > 0) {
+            if (name.toLowerCase() === 'pauze') {
+                showToast('Het is niet toegestaan om een taak genaamd "Pauze" aan te maken', 'error');
+                return;
+            }
+            if (name.includes('_')) {
+                showToast('Een taaknaam mag geen liggend streepje (_) bevatten', 'error');
+                return;
+            } if (name && duration > 0) {
                 state.otherTimes[name] = duration;
                 closeCustomTaskModal();
                 renderWorkspace();
@@ -333,7 +375,7 @@ export const setupModals = () => {
             opt.textContent = `${key} (${state.otherTimes[key]} min)`;
             modalOtherTaskSelect.appendChild(opt);
         });
-        if (selectedVal && state.otherTimes[selectedVal]) {
+        if (selectedVal && state.otherTimes[selectedVal] !== undefined) {
             modalOtherTaskSelect.value = selectedVal;
         }
     };
@@ -362,6 +404,14 @@ export const setupModals = () => {
         modalAddOtherBtn.addEventListener('click', () => {
             const name = modalNewOtherName.value.trim();
             const min = parseInt(modalNewOtherMin.value, 10);
+            if (name.toLowerCase() === 'pauze') {
+                showToast('Het is niet toegestaan om een taak genaamd "Pauze" aan te maken', 'error');
+                return;
+            }
+            if (name.includes('_')) {
+                showToast('Een taaknaam mag geen liggend streepje (_) bevatten', 'error');
+                return;
+            }
             if (name && !isNaN(min) && min > 0) {
                 state.otherTimes[name] = min;
                 populateOtherTaskSelect(name);
