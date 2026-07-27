@@ -3,7 +3,7 @@ export const fetchProductsPage = async (supabase, storeId, searchQuery, currentP
     const from = currentPage * pageSize;
     const to = from + pageSize - 1;
 
-    const fields = 'ean, naam, merk, afdeling, voorraad, minimale_voorraad, prijs, tht, locatiecode, winkel_id';
+    const fields = 'ean, naam, merk, inhoud, afdeling, voorraad, minimale_voorraad, prijs, tht, locatiecode, winkel_id';
     let query = supabase.from('producten').select(fields, { count: 'exact' });
 
     if (storeId) {
@@ -39,7 +39,7 @@ export const fetchProductsPage = async (supabase, storeId, searchQuery, currentP
         if (isEan) {
             query = query.eq('ean', trimmed);
         } else {
-            query = query.or(`naam.ilike.%${trimmed}%,merk.ilike.%${trimmed}%,afdeling.ilike.%${trimmed}%`);
+            query = query.or(`naam.ilike.%${trimmed}%,merk.ilike.%${trimmed}%,inhoud.ilike.%${trimmed}%,afdeling.ilike.%${trimmed}%`);
         }
     }
 

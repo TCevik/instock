@@ -50,6 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const eanInput = document.getElementById('ean');
     const naamInput = document.getElementById('naam');
     const merkInput = document.getElementById('merk');
+    const inhoudInput = document.getElementById('inhoud');
     const afdelingInput = document.getElementById('afdeling');
     const voorraadInput = document.getElementById('voorraad');
     const minimaleVoorraadInput = document.getElementById('minimale_voorraad');
@@ -130,6 +131,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         eanInput.value = p.ean || '';
         naamInput.value = p.naam || '';
         merkInput.value = p.merk || '';
+        if (inhoudInput) inhoudInput.value = p.inhoud || '';
         afdelingInput.value = p.afdeling || '';
         voorraadInput.value = p.voorraad !== null && p.voorraad !== undefined ? p.voorraad : '';
         minimaleVoorraadInput.value = p.minimale_voorraad !== null && p.minimale_voorraad !== undefined ? p.minimale_voorraad : '';
@@ -176,6 +178,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 barcode_type: barcodeType,
                 naam: naam,
                 merk: merkInput.value.trim() || null,
+                inhoud: inhoudInput ? (inhoudInput.value.trim() || null) : null,
                 afdeling: afdelingInput.value.trim() || null,
                 voorraad: voorraadInput.value === '' ? null : parseInt(voorraadInput.value, 10),
                 minimale_voorraad: minimaleVoorraadInput.value === '' ? null : parseInt(minimaleVoorraadInput.value, 10),
@@ -222,6 +225,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         detailBrand.textContent = product.merk || 'ONBEKEND MERK';
         detailName.textContent = product.naam;
         detailEan.textContent = product.ean;
+
+        const inhoudBadge = document.getElementById('detail-inhoud-badge');
+        const detailInhoud = document.getElementById('detail-inhoud');
+        if (inhoudBadge && detailInhoud) {
+            if (product.inhoud) {
+                detailInhoud.textContent = product.inhoud;
+                inhoudBadge.style.display = 'inline-flex';
+            } else {
+                inhoudBadge.style.display = 'none';
+            }
+        }
 
         const minVoorraad = product.minimale_voorraad || 0;
         const voorraad = product.voorraad || 0;
@@ -311,8 +325,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const urlParams = new URLSearchParams(window.location.search);
+        const returnUrlParam = urlParams.get('return_url');
         const fromParam = urlParams.get('from');
-        const newUrl = fromParam ? `${window.location.pathname}?ean=${product.ean}&from=${fromParam}` : `${window.location.pathname}?ean=${product.ean}`;
+        let newUrl = `${window.location.pathname}?ean=${product.ean}`;
+        if (returnUrlParam) {
+            newUrl += `&return_url=${encodeURIComponent(returnUrlParam)}`;
+        } else if (fromParam) {
+            newUrl += `&from=${fromParam}`;
+        }
         window.history.pushState({ ean: product.ean }, '', newUrl);
 
         const editBtn = document.getElementById('edit-product-btn');
@@ -333,6 +353,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     backBtn.addEventListener('click', () => {
         const urlParams = new URLSearchParams(window.location.search);
+        const returnUrl = urlParams.get('return_url');
+        if (returnUrl) {
+            window.location.href = returnUrl;
+            return;
+        }
         if (urlParams.get('from') === 'beheer') {
             window.location.href = 'productenbeheer.html';
             return;
@@ -385,7 +410,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const subSpan = document.createElement('span');
             subSpan.className = 'search-result-sub';
-            subSpan.textContent = `${product.merk || '-'} - EAN: ${product.ean}`;
+            const subDetails = [product.merk || '-', product.inhoud].filter(Boolean).join(' • ');
+            subSpan.textContent = `${subDetails} - EAN: ${product.ean}`;
 
             infoDiv.appendChild(nameSpan);
             infoDiv.appendChild(subSpan);

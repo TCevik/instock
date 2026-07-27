@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const eanInput = document.getElementById('ean');
     const naamInput = document.getElementById('naam');
     const merkInput = document.getElementById('merk');
+    const inhoudInput = document.getElementById('inhoud');
     const afdelingInput = document.getElementById('afdeling');
     const voorraadInput = document.getElementById('voorraad');
     const minimaleVoorraadInput = document.getElementById('minimale_voorraad');
@@ -170,6 +171,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         eanInput.value = p.ean || '';
         naamInput.value = p.naam || '';
         merkInput.value = p.merk || '';
+        if (inhoudInput) inhoudInput.value = p.inhoud || '';
         afdelingInput.value = p.afdeling || '';
         voorraadInput.value = p.voorraad !== null ? p.voorraad : '';
         minimaleVoorraadInput.value = p.minimale_voorraad !== null ? p.minimale_voorraad : '';
@@ -401,6 +403,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             barcode_type: barcodeType,
             naam: naam,
             merk: merkInput.value.trim() || null,
+            inhoud: inhoudInput ? (inhoudInput.value.trim() || null) : null,
             afdeling: afdelingInput.value.trim() || null,
             voorraad: voorraadInput.value === '' ? null : parseInt(voorraadInput.value, 10),
             minimale_voorraad: minimaleVoorraadInput.value === '' ? null : parseInt(minimaleVoorraadInput.value, 10),

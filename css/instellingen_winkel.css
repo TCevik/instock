@@ -46,10 +46,43 @@
     font-size: 22px;
 }
 
-.module-info span {
+.module-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.module-text > span {
     font-size: 15px;
     font-weight: 500;
     color: var(--text-color);
+}
+
+.module-text span.module-status-text {
+    font-size: 12px;
+    color: var(--danger-color) !important;
+    font-weight: 500;
+}
+
+.module-card-disabled {
+    cursor: not-allowed;
+}
+
+.module-card-disabled .module-info i,
+.module-card-disabled .module-text > span:not(.module-status-text) {
+    opacity: 0.6;
+}
+
+.module-card-disabled:hover {
+    border-color: var(--border-color);
+}
+
+.module-card-disabled .switch {
+    pointer-events: none;
+}
+
+.module-card-disabled .slider {
+    background-color: var(--border-color);
+    opacity: 0.5;
 }
 
 .switch {

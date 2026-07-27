@@ -2,15 +2,15 @@ import { getSupabase, checkAuth, showMessage, handleFormSubmit } from './main.js
 import { loadHeader, updateHeaderMenu, applyStoreTheme } from './header.js';
 
 const AVAILABLE_MODULES = [
-    { key: "product_checker", label: "Product Checker", icon: "find_in_page" },
-    { key: "voorraadmutaties", label: "Voorraadmutaties", icon: "import_export" },
-    { key: "tht_module", label: "THT Module", icon: "calendar_today" },
-    { key: "tht_registratie", label: "THT Registratie", icon: "event_note" },
-    { key: "tellen", label: "Tellen", icon: "calculate" },
-    { key: "acties", label: "Acties", icon: "local_offer" },
-    { key: "rapportages", label: "Rapportages", icon: "bar_chart" },
-    { key: "bakplan", label: "Bakplan", icon: "bakery_dining" },
-    { key: "vulplanning", label: "Vulplanning Maker", icon: "assignment" }
+    { key: "product_checker", label: "Product Checker", icon: "find_in_page", isFinished: true },
+    { key: "voorraadmutaties", label: "Voorraadmutaties", icon: "import_export", isFinished: false },
+    { key: "tht_module", label: "THT Module", icon: "calendar_today", isFinished: false },
+    { key: "tht_registratie", label: "THT Registratie", icon: "event_note", isFinished: false },
+    { key: "tellen", label: "Tellen", icon: "calculate", isFinished: false },
+    { key: "acties", label: "Acties", icon: "local_offer", isFinished: false },
+    { key: "rapportages", label: "Rapportages", icon: "bar_chart", isFinished: false },
+    { key: "bakplan", label: "Bakplan", icon: "bakery_dining", isFinished: true },
+    { key: "vulplanning", label: "Vulplanning Maker", icon: "assignment", isFinished: true }
 ];
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -59,14 +59,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!modulesContainer) return;
         modulesContainer.innerHTML = AVAILABLE_MODULES.map(mod => {
             const isEnabled = currentModulesState[mod.key];
+            const isFinished = mod.isFinished;
+            const disabledAttr = isFinished ? '' : 'disabled';
+            const cardClass = isFinished ? 'module-card' : 'module-card module-card-disabled';
+            const subtitleHtml = !isFinished ? '<span class="module-status-text">Nog niet beschikbaar</span>' : '';
+
             return `
-                <label class="module-card">
+                <label class="${cardClass}">
                     <div class="module-info">
                         <i class="material-icons">${mod.icon}</i>
-                        <span>${mod.label}</span>
+                        <div class="module-text">
+                            <span>${mod.label}</span>
+                            ${subtitleHtml}
+                        </div>
                     </div>
                     <div class="switch">
-                        <input type="checkbox" name="module-${mod.key}" data-key="${mod.key}" ${isEnabled ? 'checked' : ''}>
+                        <input type="checkbox" name="module-${mod.key}" data-key="${mod.key}" ${isEnabled && isFinished ? 'checked' : ''} ${disabledAttr}>
                         <span class="slider"></span>
                     </div>
                 </label>
@@ -81,7 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const updatedModules = {};
         AVAILABLE_MODULES.forEach(mod => {
             const checkbox = form.querySelector(`input[data-key="${mod.key}"]`);
-            updatedModules[mod.key] = checkbox ? checkbox.checked : true;
+            updatedModules[mod.key] = (mod.isFinished && checkbox) ? checkbox.checked : false;
         });
 
         const selectedColorInput = form.querySelector('input[name="store_color"]:checked');

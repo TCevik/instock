@@ -2,7 +2,7 @@ import { formatPrice, formatDate, calculateThtStatus } from '../product_checker-
 
 export const renderProductTableRows = (data, tableBody, openModalForEdit, openDeleteConfirm) => {
     if (!data || data.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="7" class="loading-cell">Geen producten gevonden.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="8" class="loading-cell">Geen producten gevonden.</td></tr>`;
         return;
     }
 
@@ -26,6 +26,10 @@ export const renderProductTableRows = (data, tableBody, openModalForEdit, openDe
         const tdEan = document.createElement('td');
         tdEan.setAttribute('data-label', 'EAN');
         tdEan.textContent = product.ean || '-';
+
+        const tdInhoud = document.createElement('td');
+        tdInhoud.setAttribute('data-label', 'Inhoud');
+        tdInhoud.textContent = product.inhoud || '-';
 
         const tdAfdeling = document.createElement('td');
         tdAfdeling.setAttribute('data-label', 'Afdeling / Locatie');
@@ -71,13 +75,16 @@ export const renderProductTableRows = (data, tableBody, openModalForEdit, openDe
 
         tr.style.cursor = 'pointer';
         tr.addEventListener('click', () => {
-            window.location.href = `product_checker.html?ean=${product.ean}&from=beheer`;
+            const currentSearch = window.location.search;
+            const returnUrl = encodeURIComponent(`productenbeheer.html${currentSearch}`);
+            window.location.href = `product_checker.html?ean=${product.ean}&return_url=${returnUrl}`;
         });
 
         tr.appendChild(tdNaam);
         tr.appendChild(tdEan);
         tr.appendChild(tdAfdeling);
         tr.appendChild(tdVoorraad);
+        tr.appendChild(tdInhoud);
         tr.appendChild(tdTht);
         tr.appendChild(tdPrijs);
         tr.appendChild(tdActions);
