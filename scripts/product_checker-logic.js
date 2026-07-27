@@ -46,3 +46,62 @@ export const calculateStockStatus = (voorraad = 0, minVoorraad = 0) => {
         valueClass: 'widget-value-large'
     };
 };
+
+export const calculateThtStatus = (dateStr) => {
+    if (!dateStr) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const thtDate = new Date(dateStr);
+    thtDate.setHours(0, 0, 0, 0);
+
+    const diffTime = thtDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+        const absDays = Math.abs(diffDays);
+        return {
+            text: `${absDays} ${absDays === 1 ? 'dag' : 'dagen'} verlopen`,
+            color: 'var(--danger-color)'
+        };
+    } else if (diffDays === 0) {
+        return {
+            text: 'Verloopt vandaag',
+            color: 'var(--warning-color)'
+        };
+    } else {
+        return {
+            text: `Nog ${diffDays} ${diffDays === 1 ? 'dag' : 'dagen'}`,
+            color: 'var(--accent-color)'
+        };
+    }
+};
+
+export const formatDateInputValue = (val) => {
+    let digits = (val || '').replace(/\D/g, '');
+    if (digits.length > 8) digits = digits.substring(0, 8);
+    if (digits.length >= 5) {
+        return digits.substring(0, 2) + '-' + digits.substring(2, 4) + '-' + digits.substring(4);
+    } else if (digits.length >= 3) {
+        return digits.substring(0, 2) + '-' + digits.substring(2);
+    }
+    return digits;
+};
+
+export const parseDateInputToIso = (formattedVal) => {
+    if (!formattedVal) return null;
+    const parts = formattedVal.split('-');
+    if (parts.length === 3 && parts[0].length === 2 && parts[1].length === 2 && (parts[2].length === 2 || parts[2].length === 4)) {
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10);
+        let year = parseInt(parts[2], 10);
+        if (parts[2].length === 2) {
+            year += 2000;
+        }
+        if (day >= 1 && day <= 31 && month >= 1 && month <= 12 && year >= 2000 && year <= 2100) {
+            const mm = String(month).padStart(2, '0');
+            const dd = String(day).padStart(2, '0');
+            return `${year}-${mm}-${dd}`;
+        }
+    }
+    return null;
+};

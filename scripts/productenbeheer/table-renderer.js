@@ -1,8 +1,8 @@
-import { formatPrice } from '../product_checker-logic.js';
+import { formatPrice, formatDate, calculateThtStatus } from '../product_checker-logic.js';
 
-export const renderProductTableRows = (data, tableBody, openModalForEdit) => {
+export const renderProductTableRows = (data, tableBody, openModalForEdit, openDeleteConfirm) => {
     if (!data || data.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="8" class="loading-cell">Geen producten gevonden.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="7" class="loading-cell">Geen producten gevonden.</td></tr>`;
         return;
     }
 
@@ -10,19 +10,14 @@ export const renderProductTableRows = (data, tableBody, openModalForEdit) => {
     data.forEach(product => {
         const tr = document.createElement('tr');
 
-        const tdImg = document.createElement('td');
-        tdImg.setAttribute('data-label', 'Afbeelding');
-        const thumbDiv = document.createElement('div');
-        thumbDiv.className = 'table-thumb';
-        if (product.afbeelding) {
-            const img = document.createElement('img');
-            img.src = product.afbeelding;
-            img.alt = product.naam || '';
-            thumbDiv.appendChild(img);
+        const tdTht = document.createElement('td');
+        tdTht.setAttribute('data-label', 'THT Datum');
+        const thtStatus = calculateThtStatus(product.tht);
+        if (thtStatus) {
+            tdTht.innerHTML = `<strong>${formatDate(product.tht)}</strong><br><small style="color:${thtStatus.color};font-weight:600;">${thtStatus.text}</small>`;
         } else {
-            thumbDiv.innerHTML = `<i class="material-icons">image</i>`;
+            tdTht.textContent = '-';
         }
-        tdImg.appendChild(thumbDiv);
 
         const tdNaam = document.createElement('td');
         tdNaam.setAttribute('data-label', 'Naam / Merk');
@@ -33,20 +28,18 @@ export const renderProductTableRows = (data, tableBody, openModalForEdit) => {
         tdEan.textContent = product.ean || '-';
 
         const tdAfdeling = document.createElement('td');
-        tdAfdeling.setAttribute('data-label', 'Afdeling');
-        tdAfdeling.textContent = product.afdeling || '-';
+        tdAfdeling.setAttribute('data-label', 'Afdeling / Locatie');
+        tdAfdeling.innerHTML = `<strong>${product.afdeling || '-'}</strong><br><small style="color:var(--text-color-muted);">${product.locatiecode || '-'}</small>`;
 
         const tdVoorraad = document.createElement('td');
         tdVoorraad.setAttribute('data-label', 'Voorraad');
-        tdVoorraad.textContent = `${product.voorraad !== null ? product.voorraad : 0} (${product.minimale_voorraad !== null ? product.minimale_voorraad : 0})`;
+        const vr = product.voorraad !== null ? product.voorraad : 0;
+        const minVr = product.minimale_voorraad !== null ? product.minimale_voorraad : 0;
+        tdVoorraad.innerHTML = `<strong>${vr}</strong><br><small style="color:var(--text-color-muted);">Min: ${minVr}</small>`;
 
         const tdPrijs = document.createElement('td');
         tdPrijs.setAttribute('data-label', 'Prijs');
         tdPrijs.textContent = formatPrice(product.prijs);
-
-        const tdLocatie = document.createElement('td');
-        tdLocatie.setAttribute('data-label', 'Locatie');
-        tdLocatie.textContent = product.locatiecode || '-';
 
         const tdActions = document.createElement('td');
         tdActions.setAttribute('data-label', 'Acties');
@@ -58,18 +51,35 @@ export const renderProductTableRows = (data, tableBody, openModalForEdit) => {
         editBtn.className = 'action-btn edit';
         editBtn.title = 'Bewerken';
         editBtn.innerHTML = `<i class="material-icons">edit</i>`;
-        editBtn.addEventListener('click', () => openModalForEdit(product));
+        editBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openModalForEdit(product);
+        });
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'action-btn delete';
+        deleteBtn.title = 'Verwijderen';
+        deleteBtn.innerHTML = `<i class="material-icons">delete</i>`;
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openDeleteConfirm(product);
+        });
 
         actionBtns.appendChild(editBtn);
+        actionBtns.appendChild(deleteBtn);
         tdActions.appendChild(actionBtns);
 
-        tr.appendChild(tdImg);
+        tr.style.cursor = 'pointer';
+        tr.addEventListener('click', () => {
+            window.location.href = `product_checker.html?ean=${product.ean}&from=beheer`;
+        });
+
         tr.appendChild(tdNaam);
         tr.appendChild(tdEan);
         tr.appendChild(tdAfdeling);
         tr.appendChild(tdVoorraad);
+        tr.appendChild(tdTht);
         tr.appendChild(tdPrijs);
-        tr.appendChild(tdLocatie);
         tr.appendChild(tdActions);
 
         tableBody.appendChild(tr);

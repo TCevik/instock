@@ -1,9 +1,11 @@
-import { getSupabase, checkAuth, showMessage, handleFormSubmit } from '../main.js';
+import { getSupabase, checkAuth, showMessage, handleFormSubmit, showConfirmModal } from '../main.js';
 import { loadHeader } from '../header.js';
 import { showToast } from '../toast.js';
 import { validateBarcode, resizeAndCompressImage } from './image-utils.js';
 import { renderProductTableRows } from './table-renderer.js';
-import { fetchProductsPage, saveProduct } from './product-service.js';
+import { fetchProductsPage, fetchDepartments, fetchSingleProduct, saveProduct, deleteProduct } from './product-service.js';
+
+import { formatDateInputValue, parseDateInputToIso, formatDate } from '../product_checker-logic.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const auth = await checkAuth(['beheerder']);
@@ -43,6 +45,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const productModalTitle = document.getElementById('product-modal-title');
 
     const searchInput = document.getElementById('product-search-input');
+    const departmentFilter = document.getElementById('department-filter');
+    const thtFilter = document.getElementById('tht-filter');
+    const sortSelect = document.getElementById('sort-select');
+
     const tableBody = document.getElementById('products-table-body');
     const prevPageBtn = document.getElementById('prev-page-btn');
     const nextPageBtn = document.getElementById('next-page-btn');
@@ -57,11 +63,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     let isEditMode = false;
     let editingEan = null;
 
-    let currentPage = 0;
+    const urlParams = new URLSearchParams(window.location.search);
+
+    let currentPage = parseInt(urlParams.get('page') || '1', 10) - 1;
+    if (isNaN(currentPage) || currentPage < 0) currentPage = 0;
+
     const PAGE_SIZE = 50;
-    let searchQuery = '';
+    let searchQuery = urlParams.get('q') || '';
+    let selectedDepartment = urlParams.get('dept') || '';
+    let selectedThtFilter = urlParams.get('tht') || '';
+    let currentSortBy = urlParams.get('sort') || 'naam';
+    let currentSortOrder = urlParams.get('order') || 'asc';
     let totalCount = 0;
     let debounceTimer = null;
+
+    if (searchInput && searchQuery) searchInput.value = searchQuery;
+    if (departmentFilter && selectedDepartment) departmentFilter.value = selectedDepartment;
+    if (thtFilter && selectedThtFilter) thtFilter.value = selectedThtFilter;
+    if (sortSelect) sortSelect.value = `${currentSortBy}-${currentSortOrder}`;
+
+    const updateUrlParams = () => {
+        const params = new URLSearchParams();
+        if (currentPage > 0) params.set('page', currentPage + 1);
+        if (searchQuery) params.set('q', searchQuery);
+        if (selectedDepartment) params.set('dept', selectedDepartment);
+        if (selectedThtFilter) params.set('tht', selectedThtFilter);
+        if (currentSortBy !== 'naam') params.set('sort', currentSortBy);
+        if (currentSortOrder !== 'asc') params.set('order', currentSortOrder);
+        const queryStr = params.toString();
+        const newUrl = queryStr ? `${window.location.pathname}?${queryStr}` : window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+    };
 
     const setImageData = (dataUrl) => {
         currentImageData = dataUrl;
@@ -92,7 +124,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     afbeeldingFile.addEventListener('change', handleFileSelect);
     afbeeldingCamera.addEventListener('change', handleFileSelect);
-    removeImgBtn.addEventListener('click', () => setImageData(null));
+    if (thtInput) {
+        thtInput.addEventListener('input', (e) => {
+            e.target.value = formatDateInputValue(e.target.value);
+        });
+    }
 
     const resetForm = () => {
         form.reset();
@@ -115,7 +151,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         requestAnimationFrame(() => eanInput.focus());
     };
 
-    const openModalForEdit = (product) => {
+    const openModalForEdit = async (product) => {
         resetForm();
         isEditMode = true;
         editingEan = product.ean;
@@ -127,19 +163,31 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (submitBtnIcon) submitBtnIcon.textContent = 'save';
         }
 
-        if (barcodeTypeSelect && product.barcode_type) barcodeTypeSelect.value = product.barcode_type;
-        eanInput.value = product.ean || '';
-        naamInput.value = product.naam || '';
-        merkInput.value = product.merk || '';
-        afdelingInput.value = product.afdeling || '';
-        voorraadInput.value = product.voorraad !== null ? product.voorraad : '';
-        minimaleVoorraadInput.value = product.minimale_voorraad !== null ? product.minimale_voorraad : '';
-        prijsInput.value = product.prijs !== null && product.prijs !== undefined ? Number(product.prijs).toFixed(2) : '';
-        inkoopprijsInput.value = product.inkoopprijs !== null && product.inkoopprijs !== undefined ? Number(product.inkoopprijs).toFixed(2) : '';
-        thtInput.value = product.tht || '';
-        locatiecodeInput.value = product.locatiecode || '';
-        if (product.afbeelding) {
-            setImageData(product.afbeelding);
+        const { data: fullProduct } = await fetchSingleProduct(supabase, product.ean);
+        const p = fullProduct || product;
+
+        if (barcodeTypeSelect && p.barcode_type) barcodeTypeSelect.value = p.barcode_type;
+        eanInput.value = p.ean || '';
+        naamInput.value = p.naam || '';
+        merkInput.value = p.merk || '';
+        afdelingInput.value = p.afdeling || '';
+        voorraadInput.value = p.voorraad !== null ? p.voorraad : '';
+        minimaleVoorraadInput.value = p.minimale_voorraad !== null ? p.minimale_voorraad : '';
+        prijsInput.value = p.prijs !== null && p.prijs !== undefined ? Number(p.prijs).toFixed(2) : '';
+        inkoopprijsInput.value = p.inkoopprijs !== null && p.inkoopprijs !== undefined ? Number(p.inkoopprijs).toFixed(2) : '';
+
+        if (p.tht) {
+            const d = new Date(p.tht);
+            const dd = String(d.getDate()).padStart(2, '0');
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const yyyy = d.getFullYear();
+            thtInput.value = `${dd}-${mm}-${yyyy}`;
+        } else {
+            thtInput.value = '';
+        }
+        locatiecodeInput.value = p.locatiecode || '';
+        if (p.afbeelding) {
+            setImageData(p.afbeelding);
         }
 
         productModal.classList.add('open');
@@ -190,13 +238,44 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    const loadProductsTable = async () => {
-        tableBody.innerHTML = `<tr><td colspan="8" class="loading-cell">Bezig met laden...</td></tr>`;
+    const initDepartments = async () => {
+        if (!departmentFilter) return;
+        const departments = await fetchDepartments(supabase, storeId);
+        departments.forEach(dept => {
+            const opt = document.createElement('option');
+            opt.value = dept;
+            opt.textContent = dept;
+            departmentFilter.appendChild(opt);
+        });
+    };
 
-        const { data, count, error } = await fetchProductsPage(supabase, storeId, searchQuery, currentPage, PAGE_SIZE);
+    const openDeleteConfirm = (product) => {
+        showConfirmModal(
+            'Product Verwijderen',
+            `Weet je zeker dat je "${product.naam}" (EAN: ${product.ean}) wilt verwijderen? Dit kan niet ongedaan worden gemaakt.`,
+            'Verwijderen',
+            async () => {
+                const { error } = await deleteProduct(supabase, product.ean);
+                if (error) {
+                    showToast(error.message || 'Er is een fout opgetreden bij het verwijderen van het product.', 'error');
+                } else {
+                    showToast('Product succesvol verwijderd!', 'success');
+                    await loadProductsTable();
+                }
+            }
+        );
+    };
+
+    const loadProductsTable = async () => {
+        tableBody.innerHTML = `<tr><td colspan="7" class="loading-cell">Bezig met laden...</td></tr>`;
+
+        const { data, count, error } = await fetchProductsPage(
+            supabase, storeId, searchQuery, currentPage, PAGE_SIZE,
+            { department: selectedDepartment, thtFilter: selectedThtFilter, sortBy: currentSortBy, sortOrder: currentSortOrder }
+        );
 
         if (error) {
-            tableBody.innerHTML = `<tr><td colspan="8" class="loading-cell">Er is een fout opgetreden bij het laden van de producten.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="7" class="loading-cell">Er is een fout opgetreden bij het laden van de producten.</td></tr>`;
             return;
         }
 
@@ -204,48 +283,98 @@ document.addEventListener('DOMContentLoaded', async () => {
         const totalPages = Math.ceil(totalCount / PAGE_SIZE) || 1;
 
         updatePaginationControls(totalPages);
-        renderProductTableRows(data, tableBody, openModalForEdit);
+        renderProductTableRows(data, tableBody, openModalForEdit, openDeleteConfirm);
+        updateSortIcons();
+        updateUrlParams();
     };
 
-    if (firstPageBtn) firstPageBtn.addEventListener('click', () => goToPage(0, Math.ceil(totalCount / PAGE_SIZE) || 1));
-    if (prev10PageBtn) prev10PageBtn.addEventListener('click', () => goToPage(currentPage - 10, Math.ceil(totalCount / PAGE_SIZE) || 1));
-    if (prevPageBtn) prevPageBtn.addEventListener('click', () => goToPage(currentPage - 1, Math.ceil(totalCount / PAGE_SIZE) || 1));
-    if (nextPageBtn) nextPageBtn.addEventListener('click', () => goToPage(currentPage + 1, Math.ceil(totalCount / PAGE_SIZE) || 1));
-    if (next10PageBtn) next10PageBtn.addEventListener('click', () => goToPage(currentPage + 10, Math.ceil(totalCount / PAGE_SIZE) || 1));
-    if (lastPageBtn) lastPageBtn.addEventListener('click', () => {
-        const totalPages = Math.ceil(totalCount / PAGE_SIZE) || 1;
-        goToPage(totalPages - 1, totalPages);
-    });
-
-    if (pageJumpInput) {
-        const handlePageJump = () => {
-            const totalPages = Math.ceil(totalCount / PAGE_SIZE) || 1;
-            const val = parseInt(pageJumpInput.value, 10);
-            if (isNaN(val) || val < 1 || val > totalPages) {
-                showToast(`Pagina ${pageJumpInput.value} bestaat niet. Kies een pagina tussen 1 en ${totalPages}.`, 'error');
-                pageJumpInput.value = currentPage + 1;
-                return;
-            }
-            goToPage(val - 1, totalPages);
-        };
-        pageJumpInput.addEventListener('change', handlePageJump);
-        pageJumpInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                handlePageJump();
-                pageJumpInput.blur();
+    const updateSortIcons = () => {
+        document.querySelectorAll('th.sortable').forEach(th => {
+            const sortField = th.getAttribute('data-sort');
+            const icon = th.querySelector('.sort-icon');
+            if (!icon) return;
+            if (sortField === currentSortBy) {
+                icon.textContent = currentSortOrder === 'asc' ? 'arrow_upward' : 'arrow_downward';
+            } else {
+                icon.textContent = 'unfold_more';
             }
         });
-    }
+    };
 
     if (searchInput) {
         searchInput.addEventListener('input', () => {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
-                searchQuery = searchInput.value;
+                searchQuery = searchInput.value.trim();
                 currentPage = 0;
                 loadProductsTable();
             }, 300);
+        });
+    }
+
+    if (departmentFilter) {
+        departmentFilter.addEventListener('change', () => {
+            selectedDepartment = departmentFilter.value;
+            currentPage = 0;
+            loadProductsTable();
+        });
+    }
+
+    if (thtFilter) {
+        thtFilter.addEventListener('change', () => {
+            selectedThtFilter = thtFilter.value;
+            currentPage = 0;
+            loadProductsTable();
+        });
+    }
+
+    if (sortSelect) {
+        sortSelect.addEventListener('change', () => {
+            const [field, order] = sortSelect.value.split('-');
+            currentSortBy = field;
+            currentSortOrder = order;
+            currentPage = 0;
+            loadProductsTable();
+        });
+    }
+
+    document.querySelectorAll('th.sortable').forEach(th => {
+        th.addEventListener('click', () => {
+            const sortField = th.getAttribute('data-sort');
+            if (currentSortBy === sortField) {
+                currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortBy = sortField;
+                currentSortOrder = 'asc';
+            }
+            if (sortSelect) sortSelect.value = `${currentSortBy}-${currentSortOrder}`;
+            currentPage = 0;
+            loadProductsTable();
+        });
+    });
+
+    if (prevPageBtn) prevPageBtn.addEventListener('click', () => goToPage(currentPage - 1, Math.ceil(totalCount / PAGE_SIZE) || 1));
+    if (nextPageBtn) nextPageBtn.addEventListener('click', () => goToPage(currentPage + 1, Math.ceil(totalCount / PAGE_SIZE) || 1));
+    if (firstPageBtn) firstPageBtn.addEventListener('click', () => goToPage(0, Math.ceil(totalCount / PAGE_SIZE) || 1));
+    if (prev10PageBtn) prev10PageBtn.addEventListener('click', () => goToPage(currentPage - 10, Math.ceil(totalCount / PAGE_SIZE) || 1));
+    if (next10PageBtn) next10PageBtn.addEventListener('click', () => goToPage(currentPage + 10, Math.ceil(totalCount / PAGE_SIZE) || 1));
+    if (lastPageBtn) lastPageBtn.addEventListener('click', () => goToPage(Math.ceil(totalCount / PAGE_SIZE) - 1, Math.ceil(totalCount / PAGE_SIZE) || 1));
+
+    if (pageJumpInput) {
+        pageJumpInput.addEventListener('change', () => {
+            const val = parseInt(pageJumpInput.value, 10);
+            if (!isNaN(val)) {
+                goToPage(val - 1, Math.ceil(totalCount / PAGE_SIZE) || 1);
+            }
+        });
+        pageJumpInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const val = parseInt(pageJumpInput.value, 10);
+                if (!isNaN(val)) {
+                    goToPage(val - 1, Math.ceil(totalCount / PAGE_SIZE) || 1);
+                }
+            }
         });
     }
 
@@ -277,7 +406,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             minimale_voorraad: minimaleVoorraadInput.value === '' ? null : parseInt(minimaleVoorraadInput.value, 10),
             prijs: prijsInput.value === '' ? null : parseFloat(prijsInput.value),
             inkoopprijs: inkoopprijsInput.value === '' ? null : parseFloat(inkoopprijsInput.value),
-            tht: thtInput.value || null,
+            tht: parseDateInputToIso(thtInput.value),
             locatiecode: locatiecodeInput.value.trim() || null,
             afbeelding: currentImageData || null
         };
@@ -292,21 +421,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (error) {
                 showMessage(messageBox, messageText, messageIcon, error.message || 'Er is een fout opgetreden bij het opslaan van het product.', 'error');
             } else {
-                const status = isEditMode ? 'updated' : 'created';
-                window.location.href = `product_checker.html?ean=${productData.ean}&status=${status}`;
+                const urlParams = new URLSearchParams(window.location.search);
+                const source = urlParams.get('source');
+                if (source === 'checker') {
+                    const status = isEditMode ? 'updated' : 'created';
+                    window.location.href = `product_checker.html?ean=${productData.ean}&status=${status}`;
+                } else {
+                    showToast(isEditMode ? 'Product succesvol bijgewerkt!' : 'Product succesvol aangemaakt!', 'success');
+                    closeModal();
+                    await loadProductsTable();
+                }
             }
         });
     });
 
-    const urlParams = new URLSearchParams(window.location.search);
     const editEanParam = urlParams.get('edit');
-
     if (editEanParam) {
-        const { data: existingProduct } = await supabase.from('producten').select('*').eq('ean', editEanParam).maybeSingle();
+        const { data: existingProduct } = await fetchSingleProduct(supabase, editEanParam);
         if (existingProduct) {
             openModalForEdit(existingProduct);
         }
     }
 
+    await initDepartments();
     await loadProductsTable();
 });

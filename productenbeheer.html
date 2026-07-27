@@ -30,12 +30,38 @@
             </div>
         </div>
 
-        <div class="product-search-container" style="margin-bottom: 24px;">
-            <div class="form-group search-form-group" style="margin-bottom: 0;">
+        <div class="product-search-container" style="margin-bottom: 24px; display: flex; gap: 12px; flex-wrap: wrap;">
+            <div class="form-group search-form-group" style="margin-bottom: 0; flex: 2; min-width: 250px;">
                 <div class="input-wrapper">
                     <input type="text" id="product-search-input" placeholder="Zoek op naam, merk, afdeling of EAN barcode..." autocomplete="off">
                     <i class="material-icons">search</i>
                 </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 140px;">
+                <select id="department-filter" class="form-control">
+                    <option value="">Alle afdelingen</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 140px;">
+                <select id="tht-filter" class="form-control">
+                    <option value="">Alle THT datums</option>
+                    <option value="verlopen">Verlopen</option>
+                    <option value="vandaag">Verloopt vandaag</option>
+                    <option value="week">Verloopt deze week</option>
+                    <option value="maand">Verloopt deze maand</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 160px;">
+                <select id="sort-select" class="form-control">
+                    <option value="naam-asc">Naam (A-Z)</option>
+                    <option value="naam-desc">Naam (Z-A)</option>
+                    <option value="tht-asc">THT Datum (Oud-Nieuw)</option>
+                    <option value="tht-desc">THT Datum (Nieuw-Oud)</option>
+                    <option value="voorraad-asc">Voorraad (Laag-Hoog)</option>
+                    <option value="voorraad-desc">Voorraad (Hoog-Laag)</option>
+                    <option value="prijs-asc">Prijs (Laag-Hoog)</option>
+                    <option value="prijs-desc">Prijs (Hoog-Laag)</option>
+                </select>
             </div>
         </div>
 
@@ -43,19 +69,18 @@
             <table class="users-table">
                 <thead>
                     <tr>
-                        <th>Afbeelding</th>
-                        <th>Naam / Merk</th>
+                        <th class="sortable" data-sort="naam">Naam / Merk <i class="material-icons sort-icon">unfold_more</i></th>
                         <th>EAN / Barcode</th>
-                        <th>Afdeling</th>
-                        <th>Voorraad (Min)</th>
-                        <th>Prijs</th>
-                        <th>Locatie</th>
+                        <th>Afdeling / Locatie</th>
+                        <th class="sortable" data-sort="voorraad">Voorraad (Min) <i class="material-icons sort-icon">unfold_more</i></th>
+                        <th class="sortable" data-sort="tht">THT Datum <i class="material-icons sort-icon">unfold_more</i></th>
+                        <th class="sortable" data-sort="prijs">Prijs <i class="material-icons sort-icon">unfold_more</i></th>
                         <th>Acties</th>
                     </tr>
                 </thead>
                 <tbody id="products-table-body">
                     <tr>
-                        <td colspan="8" class="loading-cell">Bezig met laden...</td>
+                        <td colspan="7" class="loading-cell">Bezig met laden...</td>
                     </tr>
                 </tbody>
             </table>
@@ -90,143 +115,155 @@
                 </button>
             </div>
         </div>
+    </main>
 
-        <div class="modal-overlay" id="productModal">
-            <div class="management-card modal-card">
-                <div class="modal-header">
-                    <h2 id="product-modal-title">Nieuw Product Toevoegen</h2>
-                    <button class="close-modal-btn" id="closeProductModalBtn">
-                        <i class="material-icons">close</i>
-                    </button>
-                </div>
-                <div class="message" id="message-box">
-                    <i class="material-icons" id="message-icon"></i>
-                    <span id="message-text"></span>
-                </div>
-                <form id="add-product-form" autocomplete="off" novalidate>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="barcode_type">Barcode Type</label>
-                            <div class="input-wrapper">
-                                <select id="barcode_type">
-                                    <option value="EAN-13" selected>EAN-13</option>
-                                    <option value="EAN-8">EAN-8</option>
-                                    <option value="UPC-A">UPC-A</option>
-                                    <option value="Modified Plessy">Modified Plessy</option>
-                                </select>
-                                <i class="material-icons">barcode_reader</i>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="ean">Barcode / EAN *</label>
-                            <div class="input-wrapper">
-                                <input type="text" id="ean" required placeholder="bijv. 8710400311234" autocomplete="off">
-                                <i class="material-icons">qr_code</i>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="naam">Naam *</label>
-                            <div class="input-wrapper">
-                                <input type="text" id="naam" required placeholder="bijv. Halfvolle Melk 1L" autocomplete="off">
-                                <i class="material-icons">label</i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="merk">Merk</label>
-                            <div class="input-wrapper">
-                                <input type="text" id="merk" placeholder="bijv. Huismerk" autocomplete="off">
-                                <i class="material-icons">branding_watermark</i>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="afdeling">Afdeling</label>
-                            <div class="input-wrapper">
-                                <input type="text" id="afdeling" placeholder="bijv. Zuivel" autocomplete="off">
-                                <i class="material-icons">category</i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="voorraad">Voorraad</label>
-                            <div class="input-wrapper">
-                                <input type="number" id="voorraad" min="0" placeholder="bijv. 10" autocomplete="off">
-                                <i class="material-icons">inventory_2</i>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="minimale_voorraad">Minimale voorraad</label>
-                            <div class="input-wrapper">
-                                <input type="number" id="minimale_voorraad" min="0" placeholder="bijv. 2" autocomplete="off">
-                                <i class="material-icons">warning</i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="prijs">Prijs</label>
-                            <div class="input-wrapper">
-                                <input type="number" id="prijs" step="0.01" min="0" placeholder="bijv. 1.49" autocomplete="off">
-                                <i class="material-icons">euro</i>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="inkoopprijs">Inkoopprijs</label>
-                            <div class="input-wrapper">
-                                <input type="number" id="inkoopprijs" step="0.01" min="0" placeholder="bijv. 0.95" autocomplete="off">
-                                <i class="material-icons">shopping_cart</i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="tht">THT Datum</label>
-                            <div class="input-wrapper">
-                                <input type="date" id="tht" autocomplete="off">
-                                <i class="material-icons">calendar_today</i>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="locatiecode">Locatiecode</label>
-                            <div class="input-wrapper">
-                                <input type="text" id="locatiecode" placeholder="bijv. 3/2/8" autocomplete="off">
-                                <i class="material-icons">place</i>
-                            </div>
+    <div class="modal-overlay" id="productModal">
+        <div class="management-card modal-card">
+            <div class="modal-header">
+                <h2 id="product-modal-title">Nieuw Product Toevoegen</h2>
+                <button class="close-modal-btn" id="closeProductModalBtn">
+                    <i class="material-icons">close</i>
+                </button>
+            </div>
+            <div class="message" id="message-box">
+                <i class="material-icons" id="message-icon"></i>
+                <span id="message-text"></span>
+            </div>
+            <form id="add-product-form" autocomplete="off" novalidate>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="barcode_type">Barcode Type</label>
+                        <div class="input-wrapper">
+                            <select id="barcode_type">
+                                <option value="EAN-13" selected>EAN-13</option>
+                                <option value="EAN-8">EAN-8</option>
+                                <option value="UPC-A">UPC-A</option>
+                                <option value="Modified Plessy">Modified Plessy</option>
+                            </select>
+                            <i class="material-icons">barcode_reader</i>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Product Afbeelding</label>
-                        <div class="image-upload-wrapper">
-                            <input type="file" id="afbeelding-file" accept="image/*" class="image-file-input">
-                            <input type="file" id="afbeelding-camera" accept="image/*" capture="environment" class="image-file-input">
-                            <div class="image-action-buttons">
-                                <button type="button" class="img-btn" id="btn-upload-file">
-                                    <i class="material-icons">upload_file</i>
-                                    <span>Bestand kiezen</span>
-                                </button>
-                                <button type="button" class="img-btn" id="btn-take-photo">
-                                    <i class="material-icons">photo_camera</i>
-                                    <span>Foto maken</span>
-                                </button>
-                            </div>
-                            <div class="image-preview-box" id="image-preview-box">
-                                <i class="material-icons placeholder-icon">image</i>
-                                <img id="image-preview" src="" alt="Preview" class="image-preview-img" style="display: none;">
-                                <button type="button" class="remove-img-btn" id="remove-img-btn" style="display: none;" title="Verwijder afbeelding">
-                                    <i class="material-icons">close</i>
-                                </button>
-                            </div>
+                        <label for="ean">Barcode / EAN *</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="ean" required placeholder="bijv. 8710400311234" autocomplete="off">
+                            <i class="material-icons">qr_code</i>
                         </div>
                     </div>
-                    <button type="submit" class="submit-btn" id="submitBtn">
-                        <span>Product Opslaan</span>
-                        <i class="material-icons">add_box</i>
-                    </button>
-                </form>
+                </div>
+                <div class="form-group">
+                    <label for="naam">Naam *</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="naam" required placeholder="bijv. Halfvolle Melk 1L" autocomplete="off">
+                        <i class="material-icons">label</i>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="merk">Merk</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="merk" placeholder="bijv. Huismerk" autocomplete="off">
+                            <i class="material-icons">branding_watermark</i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="afdeling">Afdeling</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="afdeling" placeholder="bijv. Zuivel" autocomplete="off">
+                            <i class="material-icons">category</i>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="voorraad">Voorraad</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="voorraad" min="0" placeholder="bijv. 10" autocomplete="off">
+                            <i class="material-icons">inventory_2</i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="minimale_voorraad">Minimale voorraad</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="minimale_voorraad" min="0" placeholder="bijv. 2" autocomplete="off">
+                            <i class="material-icons">warning</i>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="prijs">Prijs</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="prijs" step="0.01" min="0" placeholder="bijv. 1.49" autocomplete="off">
+                            <i class="material-icons">euro</i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="inkoopprijs">Inkoopprijs</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="inkoopprijs" step="0.01" min="0" placeholder="bijv. 0.95" autocomplete="off">
+                            <i class="material-icons">shopping_cart</i>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="tht">THT Datum</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="tht" placeholder="DD-MM-YYYY" maxlength="10" autocomplete="off">
+                            <i class="material-icons">calendar_today</i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="locatiecode">Locatiecode</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="locatiecode" placeholder="bijv. 3/2/8" autocomplete="off">
+                            <i class="material-icons">place</i>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Product Afbeelding</label>
+                    <div class="image-upload-wrapper">
+                        <input type="file" id="afbeelding-file" accept="image/*" class="image-file-input">
+                        <input type="file" id="afbeelding-camera" accept="image/*" capture="environment" class="image-file-input">
+                        <div class="image-action-buttons">
+                            <button type="button" class="img-btn" id="btn-upload-file">
+                                <i class="material-icons">upload_file</i>
+                                <span>Bestand kiezen</span>
+                            </button>
+                            <button type="button" class="img-btn" id="btn-take-photo">
+                                <i class="material-icons">photo_camera</i>
+                                <span>Foto maken</span>
+                            </button>
+                            <button type="button" class="img-btn remove-btn" id="remove-img-btn" style="display: none;">
+                                <i class="material-icons">delete</i>
+                                <span>Foto verwijderen</span>
+                            </button>
+                        </div>
+                        <div class="image-preview-box" id="image-preview-box">
+                            <i class="material-icons placeholder-icon">image</i>
+                            <img id="image-preview" src="" alt="Preview" class="image-preview-img" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    <span>Product Opslaan</span>
+                    <i class="material-icons">add_box</i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="confirm-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content modal-content-sm" style="background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; max-width: 400px; width: 90%;">
+            <h3 id="confirm-modal-title" class="modal-title" style="margin-bottom: 12px; font-size: 18px;">Verwijderen Bevestigen</h3>
+            <p id="confirm-modal-message" class="modal-desc" style="color: var(--text-color-muted); margin-bottom: 20px; font-size: 14px;"></p>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 12px;">
+                <button id="confirm-cancel-btn" class="action-btn" style="padding: 10px 18px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-color); cursor: pointer;">Annuleren</button>
+                <button id="confirm-ok-btn" class="action-btn delete" style="padding: 10px 18px; background-color: var(--danger-color); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">Verwijderen</button>
             </div>
         </div>
-    </main>
+    </div>
 </body>
 </html>

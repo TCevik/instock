@@ -118,7 +118,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const saveStoreDepartments = async (newDepts) => {
-        const uniqueDepts = Array.from(new Set(newDepts.map(d => d.trim()).filter(Boolean))).sort();
+        const map = new Map();
+        newDepts.forEach(d => {
+            if (!d) return;
+            const trimmed = d.trim();
+            const key = trimmed.toLowerCase();
+            if (!map.has(key)) {
+                const formatted = trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+                map.set(key, formatted);
+            }
+        });
+        const uniqueDepts = Array.from(map.values()).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
         const afdelingenString = uniqueDepts.join(', ');
         
         const { error } = await supabase
