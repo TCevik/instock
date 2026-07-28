@@ -1,9 +1,6 @@
-import { extractTextLinesFromPage } from '../pdf-utils.js';
-import { HARDCODED_PATHS_MAPPING, HARDCODED_NORMS, HARDCODED_MIRROR_TIMES } from '../pdf-defaults.js';
-import { state } from './state.js';
-import { getSupabase } from '../main.js';
-import { getStoreId } from './storage.js';
-import { showConfirmModal } from './modals.js';
+import { extractTextLinesFromPage } from '../../pdf-utils.js';
+import { HARDCODED_PATHS_MAPPING, HARDCODED_NORMS, HARDCODED_MIRROR_TIMES } from './pdf-defaults.js';
+import { state } from '../state.js';
 
 export const parsePDFAndGetNames = async (file) => {
     const arrayBuffer = await file.arrayBuffer();

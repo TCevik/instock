@@ -1,15 +1,14 @@
 import {
     state,
     getFillerPause,
-    getAvailableTime,
-    getTaskDuration
+    getEffectiveTaskDuration
 } from './state.js';
 import {
     formatTimeOfDay,
     getFillerStartTime,
     getFillerEndTime,
     parseNameAndSubtitle
-} from '../planning-logic.js';
+} from './planning-logic.js';
 
 export const generatePrintablePlanning = () => {
     const printWin = window.open('about:blank', '_blank');
@@ -45,14 +44,7 @@ export const generatePrintablePlanning = () => {
         } else {
             let tasksListHtml = '';
             tasks.forEach(taskId => {
-                let duration = getTaskDuration(taskId);
-                if (!taskId.endsWith('_helper')) {
-                    const helperInfo = state.helpers[taskId];
-                    if (helperInfo && helperInfo.helperName) {
-                        const rawDur = (helperInfo.isMax || helperInfo.isHalf) ? (helperInfo.calculatedDuration || 0) : (helperInfo.duration || 0);
-                        duration = Math.max(0, duration - Math.min(duration, Math.max(0, rawDur)));
-                    }
-                }
+                const duration = getEffectiveTaskDuration(taskId);
                 const tStart = currentTime;
                 currentTime += duration;
                 const startTimeStr = formatTimeOfDay(tStart);
@@ -87,14 +79,7 @@ export const generatePrintablePlanning = () => {
         let currentTime = isFinite(startMin) ? startMin : 0;
         const cleanName = parseNameAndSubtitle(filler).name;
         tasks.forEach(taskId => {
-            let duration = getTaskDuration(taskId);
-            if (!taskId.endsWith('_helper')) {
-                const helperInfo = state.helpers[taskId];
-                if (helperInfo && helperInfo.helperName) {
-                    const rawDur = (helperInfo.isMax || helperInfo.isHalf) ? (helperInfo.calculatedDuration || 0) : (helperInfo.duration || 0);
-                    duration = Math.max(0, duration - Math.min(duration, Math.max(0, rawDur)));
-                }
-            }
+            const duration = getEffectiveTaskDuration(taskId);
             const tStart = currentTime;
             currentTime += duration;
             let padName = '';

@@ -22,8 +22,6 @@ const renderWorkspace = () => {
     if (renderWorkspaceCallback) renderWorkspaceCallback();
 };
 
-export { showConfirmModal };
-
 export function checkHelperValidity() {
     const select = document.getElementById('helper-select');
     const durationInput = document.getElementById('helper-duration');
@@ -32,8 +30,7 @@ export function checkHelperValidity() {
     const hasHelper = !!select.value;
     const hasDuration = parseInt(durationInput.value) > 0;
     saveBtn.disabled = hasHelper && !hasDuration;
-    saveBtn.style.opacity = saveBtn.disabled ? '0.5' : '1';
-    saveBtn.style.cursor = saveBtn.disabled ? 'not-allowed' : 'pointer';
+    saveBtn.classList.toggle('disabled', saveBtn.disabled);
 }
 
 export function updateDynamicDuration() {

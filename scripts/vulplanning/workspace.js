@@ -18,10 +18,11 @@ import {
     getFillerStartTime,
     getFillerEndTime,
     parseNameAndSubtitle
-} from '../planning-logic.js';
-import { openDurationModal, openHelperModal, showConfirmModal } from './modals.js';
+} from './planning-logic.js';
+import { openDurationModal, openHelperModal } from './modals.js';
+import { showConfirmModal } from '../modal.js';
 import { triggerSave } from './storage.js';
-import { HARDCODED_MIRROR_TIMES } from '../pdf-defaults.js';
+import { HARDCODED_MIRROR_TIMES } from './plus/pdf-defaults.js';
 
 export const createTaskCard = (taskId, startTime, endTime) => {
     const isHelperTask = taskId.endsWith('_helper');
@@ -247,7 +248,6 @@ export const renderWorkspace = () => {
                 const nameEl = createPersonNameElement(filler, 'person-name', 'person-subtitle', 'person-info');
                 const icon = document.createElement('i');
                 icon.className = 'material-icons';
-                icon.textContent = 'restore';
                 icon.textContent = 'restore';
                 badge.appendChild(nameEl);
                 badge.appendChild(icon);

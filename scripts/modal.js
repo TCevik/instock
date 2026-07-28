@@ -160,16 +160,8 @@ export function initPadenModal(supabase, storeId, onSaved) {
             pathRes.addCategoryRow();
             return;
         }
-        let paden = null;
         const { data: vpData } = await supabase.from('vulplanningen').select('instellingen').eq('id', storeId).maybeSingle();
-        if (vpData?.instellingen?.paden_categorieen && vpData.instellingen.paden_categorieen.length > 0) {
-            paden = vpData.instellingen.paden_categorieen;
-        } else {
-            const { data: storeData } = await supabase.from('stores_info').select('paden_categorieen').eq('store_id', storeId).maybeSingle();
-            if (storeData?.paden_categorieen && storeData.paden_categorieen.length > 0) {
-                paden = storeData.paden_categorieen;
-            }
-        }
+        let paden = vpData?.instellingen?.paden_categorieen || null;
         if (!paden || paden.length === 0) {
             const pathRes = addPathBlock();
             pathRes.addCategoryRow();
@@ -249,11 +241,6 @@ export function initPadenModal(supabase, storeId, onSaved) {
                 await supabase.from('vulplanningen').upsert({
                     id: storeId,
                     instellingen: { paden_categorieen: padenData }
-                });
-
-                await supabase.from('stores_info').upsert({
-                    store_id: storeId,
-                    paden_categorieen: padenData
                 });
             }
 

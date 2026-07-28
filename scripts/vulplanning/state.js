@@ -4,13 +4,14 @@ import {
     getAvailableTime as logicGetAvailableTime,
     getFillerActualEndTime as logicGetFillerActualEndTime,
     getTaskDuration as logicGetTaskDuration,
+    getEffectiveTaskDuration as logicGetEffectiveTaskDuration,
     getFillerColli as logicGetFillerColli,
     getFillerTotalTime as logicGetFillerTotalTime,
     getFillerProductivity as logicGetFillerProductivity,
     getProductivityStatusClass,
     formatTimeInputValue,
     getTaskAssignment as logicGetTaskAssignment
-} from '../planning-logic.js';
+} from './planning-logic.js';
 
 export const state = {
     selectedFillers: [],
@@ -41,6 +42,20 @@ export const state = {
     }
 };
 
+export const resetState = () => {
+    state.selectedFillers = [];
+    state.pathColli = {};
+    state.fillerTasks = {};
+    state.helpers = {};
+    state.instanceTimes = {};
+    state.fillerBreaks = {};
+    state.actualEndTimes = {};
+    state.nonFillers = [];
+    state.hiddenFillers = [];
+    state.showNonFillers = false;
+    state.showReallyHidden = false;
+};
+
 export const createPersonNameElement = (fullName, titleClass = 'person-name', subtitleClass = 'person-subtitle', containerClass = 'person-info') => {
     const { name, subtitle } = parseNameAndSubtitle(fullName);
     const container = document.createElement('div');
@@ -64,6 +79,7 @@ export const getFillerPause = (displayName) => logicGetFillerPause(displayName, 
 export const getAvailableTime = (displayName) => logicGetAvailableTime(displayName, state);
 export const getFillerActualEndTime = (displayName) => logicGetFillerActualEndTime(displayName, state);
 export const getTaskDuration = (taskId) => logicGetTaskDuration(taskId, state);
+export const getEffectiveTaskDuration = (taskId) => logicGetEffectiveTaskDuration(taskId, state);
 export const getFillerColli = (displayName) => logicGetFillerColli(displayName, state);
 export const getFillerTotalTime = (filler) => logicGetFillerTotalTime(filler, state);
 export const getFillerProductivity = (displayName) => logicGetFillerProductivity(displayName, state);

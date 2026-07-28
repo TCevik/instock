@@ -1,13 +1,14 @@
-import { loadHeader } from './header.js';
-import { checkAuth, getSupabase } from './main.js';
-import { showToast } from './toast.js';
-import { state, removeTaskFromAll } from './vulplanning/state.js';
-import { setStoreId, getStoreId, triggerSave, loadData } from './vulplanning/storage.js';
-import { setupModals, showConfirmModal, setRenderWorkspaceCallback } from './vulplanning/modals.js';
-import { parsePDFAndGetNames, parseColliPDF, getDefaultPDFPaden, doSettingsMatchPDF } from './vulplanning/pdf-handler.js';
-import { createManualInputManager, renderPeopleList } from './vulplanning/manual-input.js';
-import { generatePrintablePlanning } from './vulplanning/printable-overview.js';
-import { renderWorkspace } from './vulplanning/workspace.js';
+import { loadHeader } from '../header.js';
+import { checkAuth, getSupabase } from '../main.js';
+import { showToast } from '../toast.js';
+import { state, removeTaskFromAll, resetState } from './state.js';
+import { setStoreId, getStoreId, triggerSave, loadData } from './storage.js';
+import { setupModals, setRenderWorkspaceCallback } from './modals.js';
+import { showConfirmModal } from '../modal.js';
+import { parsePDFAndGetNames, parseColliPDF, getDefaultPDFPaden, doSettingsMatchPDF } from './plus/pdf-handler.js';
+import { createManualInputManager, renderPeopleList } from './manual-input.js';
+import { generatePrintablePlanning } from './printable-overview.js';
+import { renderWorkspace } from './workspace.js';
 import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration } from './planning-logic.js';
 
 (() => {
@@ -57,16 +58,7 @@ import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration } from
                 .eq('id', storeId)
                 .maybeSingle();
 
-            if (vpData?.instellingen?.paden_categorieen && vpData.instellingen.paden_categorieen.length > 0) {
-                storeDefaultPaden = vpData.instellingen.paden_categorieen;
-            } else {
-                const { data: storeData } = await supabase
-                    .from('stores_info')
-                    .select('paden_categorieen')
-                    .eq('store_id', storeId)
-                    .maybeSingle();
-                storeDefaultPaden = storeData?.paden_categorieen || [];
-            }
+            storeDefaultPaden = vpData?.instellingen?.paden_categorieen || [];
         }
 
         setupModals();
@@ -94,15 +86,7 @@ import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration } from
                     'Opnieuw Beginnen',
                     'Weet je zeker dat je opnieuw wilt beginnen? De huidige planning wordt overschreven.',
                     () => {
-                        state.hiddenFillers = [];
-                        state.nonFillers = [];
-                        state.selectedFillers = [];
-                        state.pathColli = {};
-                        state.fillerTasks = {};
-                        state.helpers = {};
-                        state.instanceTimes = {};
-                        state.fillerBreaks = {};
-                        state.actualEndTimes = {};
+                        resetState();
 
                         const manualFillersList = document.getElementById('manual-fillers-list');
                         if (manualFillersList) manualFillersList.innerHTML = '';

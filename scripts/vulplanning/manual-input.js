@@ -1,6 +1,6 @@
 import { state, createPersonNameElement, formatTimeInputValue } from './state.js';
 import { showToast } from '../toast.js';
-import { showConfirmModal } from './modals.js';
+import { showConfirmModal } from '../modal.js';
 import { triggerSave } from './storage.js';
 import { initPadenModal } from '../main.js';
 
@@ -110,9 +110,9 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
         row.innerHTML = `
             <div style="flex: 2; position: relative;">
                 <div style="display: flex; align-items: center; gap: 4px;">
-                    <input type="text" class="manual-filler-name form-input" placeholder="Naam medewerker..." value="${nameVal}" style="width: 100%; ${isMatched ? 'background-color: rgba(46, 204, 113, 0.15); border-color: #2ecc71;' : ''}">
+                    <input type="text" class="manual-filler-name form-input" placeholder="Naam medewerker..." value="${nameVal}" style="width: 100%; ${isMatched ? 'background-color: var(--success-bg); border-color: var(--success-color);' : ''}">
                     <button type="button" class="match-toggle-btn" style="padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--input-bg); cursor: pointer; display: ${matchInfo ? 'inline-flex' : 'none'}; align-items: center; justify-content: center;" title="${isMatched ? 'Gekoppeld met gebruiker (klik voor undo)' : 'Niet gekoppeld (klik om te koppelen)'}">
-                        <i class="material-icons match-icon" style="font-size: 16px; color: ${isMatched ? '#2ecc71' : 'var(--text-color-muted)'};">${isMatched ? 'check_circle' : 'cancel'}</i>
+                        <i class="material-icons match-icon" style="font-size: 16px; color: ${isMatched ? 'var(--success-color)' : 'var(--text-color-muted)'};">${isMatched ? 'check_circle' : 'cancel'}</i>
                     </button>
                 </div>
                 <div class="filler-autocomplete-list" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px; z-index: 100; max-height: 160px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"></div>
@@ -133,9 +133,9 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
                 currentMatchedState = !currentMatchedState;
                 if (currentMatchedState) {
                     matchIcon.textContent = 'check_circle';
-                    matchIcon.style.color = '#2ecc71';
-                    nameInput.style.backgroundColor = 'rgba(46, 204, 113, 0.15)';
-                    nameInput.style.borderColor = '#2ecc71';
+                    matchIcon.style.color = 'var(--success-color)';
+                    nameInput.style.backgroundColor = 'var(--success-bg)';
+                    nameInput.style.borderColor = 'var(--success-color)';
                     if (nameVal) nameInput.value = nameVal;
                     matchToggleBtn.title = 'Gekoppeld met gebruiker (klik voor undo)';
                 } else {

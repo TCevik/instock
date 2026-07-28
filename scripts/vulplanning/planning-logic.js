@@ -44,6 +44,18 @@ export const getTaskDuration = (taskId, state) => {
     return 0;
 };
 
+export const getEffectiveTaskDuration = (taskId, state) => {
+    let duration = getTaskDuration(taskId, state);
+    if (!taskId.endsWith('_helper')) {
+        const helperInfo = state.helpers[taskId];
+        if (helperInfo && helperInfo.helperName) {
+            const helperDuration = (helperInfo.isMax || helperInfo.isHalf) ? (helperInfo.calculatedDuration || 0) : Math.min(duration, helperInfo.duration || 0);
+            duration = Math.max(0, duration - Math.min(duration, Math.max(0, helperDuration)));
+        }
+    }
+    return duration;
+};
+
 export const formatMin = (min) => {
     const hours = Math.floor(min / 60);
     const mins = Math.round(min % 60);
@@ -156,19 +168,7 @@ export const getFillerTotalTime = (filler, state) => {
     tasks.forEach(taskId => {
         const [pathName] = taskId.replace('_helper', '').split('_');
         if (pathName === 'Pauze') return;
-
-        if (taskId.endsWith('_helper')) {
-            total += getTaskDuration(taskId, state);
-        } else {
-            const duration = getTaskDuration(taskId, state);
-            const helperInfo = state.helpers[taskId];
-            if (helperInfo && helperInfo.helperName) {
-                const helperDuration = (helperInfo.isMax || helperInfo.isHalf) ? (helperInfo.calculatedDuration || 0) : Math.min(duration, helperInfo.duration || 0);
-                total += (duration - helperDuration);
-            } else {
-                total += duration;
-            }
-        }
+        total += getEffectiveTaskDuration(taskId, state);
     });
     return total;
 };

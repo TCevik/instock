@@ -34,6 +34,8 @@ html {
 :root {
     --danger-color: #ff5252;
     --warning-color: #ffb74d;
+    --success-color: #2ecc71;
+    --success-bg: rgba(46, 204, 113, 0.15);
     --background-color: #121212;
     --text-color: #ffffff;
     --text-color-muted: #888888;
