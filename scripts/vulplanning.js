@@ -435,7 +435,7 @@ import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration } from
             globalDragCounter = 0;
             const tasksContainerEl = document.getElementById('tasks-container');
             if (tasksContainerEl) tasksContainerEl.classList.remove('drag-delete');
-            
+
             const taskId = e.dataTransfer.getData('text/plain');
             if (!taskId || !document.getElementById(`task-${taskId}`)) return;
 
@@ -451,8 +451,10 @@ import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration } from
                     removeTaskFromAll(taskId);
                     removeTaskFromAll(taskId + '_helper');
                     delete state.helpers[taskId];
-                }
-                renderWorkspace();
+                    if (taskId.includes('_inst-')) {
+                        delete state.instanceTimes[taskId];
+                    }
+                } renderWorkspace();
                 triggerSave();
             } else if (!e.target.closest('.filler-card')) {
                 e.preventDefault();
