@@ -174,8 +174,17 @@ export const generateBakplanSchedule = (dayCategories, productPlateConfig, custo
             }
         }
 
-        const remainingPool = [...poolItems];
-
+        const remainingPool = [...poolItems].sort((a, b) => {
+            // Sorteer eerst op categorie
+            if (a.category !== b.category) {
+                return (a.category || '').localeCompare(b.category || '');
+            }
+            // Sorteer daarna op de omschrijving van het (hoofd)product op de plaat
+            const descA = (a.plate && a.plate.products && a.plate.products[0]) ? a.plate.products[0].description.toLowerCase() : '';
+            const descB = (b.plate && b.plate.products && b.plate.products[0]) ? b.plate.products[0].description.toLowerCase() : '';
+            return descA.localeCompare(descB);
+        });
+        
         const reservedCategorySet = new Set(
             cartsConfig
                 .filter(c => c.oven && c.type === 'single' && c.reservedCategory)
