@@ -28,9 +28,9 @@
                         <i class="material-icons">directions_bus</i>
                         <span>Karren Beheren</span>
                     </button>
-                    <button id="bakplan-settings-btn" class="action-btn btn-header-action" title="Instellingen">
-                        <i class="material-icons">settings</i>
-                        <span>Instellingen</span>
+                    <button id="bakplan-settings-btn" class="action-btn btn-header-action" title="Oude Producten">
+                        <i class="material-icons">history</i>
+                        <span>Oude Producten</span>
                     </button>
                     <button id="generate-bakplan-btn" class="action-btn btn-header-action btn-accent">
                         <i class="material-icons">print</i>
@@ -62,7 +62,8 @@
             <table class="users-table">
                 <thead>
                     <tr>
-                         <th class="col-desc">Productomschrijving</th>
+                        <th class="col-desc">Productomschrijving</th>
+                        <th style="width: 130px;">Aantal op 1 plaat</th>
                         <th class="col-price">Prijs</th>
                         <th class="col-promo">Promo</th>
                         <th class="col-sales">Opleggen</th>
@@ -73,7 +74,7 @@
                 </thead>
                 <tbody id="bakplan-table-body">
                     <tr>
-                        <td colspan="7" class="loading-cell">Geen gegevens beschikbaar. Voeg een product toe.</td>
+                        <td colspan="8" class="loading-cell">Geen gegevens beschikbaar. Voeg een product toe.</td>
                     </tr>
                 </tbody>
             </table>
@@ -87,8 +88,9 @@
                 <table class="users-table">
                     <thead>
                         <tr>
-                            <th>Naam / Nr</th>
-                            <th>Type</th>
+                            <th style="min-width: 180px;">Naam / Nr</th>
+                            <th>Samenvoegen</th>
+                            <th>Categorie</th>
                             <th>Capaciteit</th>
                             <th>Oven / Ontdooi</th>
                             <th style="width: 40px;"></th>
@@ -111,7 +113,7 @@
 
     <div id="bakplan-settings-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content modal-content-md flex-col">
-            <h3 class="modal-title">Plaathoeveelheden Instellingen</h3>
+            <h3 class="modal-title">Oude Producten</h3>
             <div class="modal-body-scroll">
                 <table class="users-table">
                     <thead>

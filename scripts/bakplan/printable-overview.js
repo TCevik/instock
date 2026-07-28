@@ -28,6 +28,9 @@ export const openPrintableBakplan = (daysData, productPlateConfig, customCarts) 
         
         .batch-section { margin-bottom: 8px; }
         .batch-header { font-size: 11px; font-weight: 700; background: #658d24; color: #fff; padding: 2px 6px; border-radius: 2px; margin-bottom: 4px; text-transform: uppercase; break-after: avoid; }
+
+        .print-repeating-header th {
+            background: #658d24; color: #fff; font-size: 12px; font-weight: 700; text-transform: uppercase; text-align: left; border: 1px solid #658d24; }
         
         .baktable { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: auto; }
         .baktable th { background: #f0f4e8; color: #2d3e10; border: 1px solid #658d24; padding: 4px 6px; text-align: left; font-weight: 700; white-space: nowrap; }
@@ -77,9 +80,11 @@ export const openPrintableBakplan = (daysData, productPlateConfig, customCarts) 
             batches.forEach(batch => {
                 html += `
                     <div class="batch-section">
-                        <div class="batch-header">Batch ${batch.batchNumber}</div>
                         <table class="baktable">
                             <thead>
+                                <tr class="print-repeating-header">
+                                    <th colspan="4">${day} - BATCH ${batch.batchNumber}</th>
+                                </tr>
                                 <tr>
                                     <th>Kar</th>
                                     <th>Categorie</th>
@@ -89,7 +94,7 @@ export const openPrintableBakplan = (daysData, productPlateConfig, customCarts) 
                             </thead>
                             <tbody>
                 `;
-
+                
                 let hasCarts = false;
                 batch.carts.forEach(cart => {
                     if (cart.items.length === 0) return;

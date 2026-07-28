@@ -147,3 +147,60 @@ td[contenteditable="true"]:focus {
     color: var(--text-color-muted);
     margin-top: 2px;
 }
+
+.custom-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 12px;
+    color: var(--text-color-muted);
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.custom-toggle:hover {
+    color: var(--text-color);
+}
+
+.custom-toggle input {
+    display: none;
+}
+
+.toggle-slider {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    transition: background-color 0.25s, border-color 0.25s;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    background-color: var(--text-color-muted);
+    border-radius: 50%;
+    transition: transform 0.25s, background-color 0.25s;
+}
+
+.custom-toggle input:checked + .toggle-slider {
+    background-color: var(--vullen-bg);
+    border-color: var(--vullen-border);
+}
+
+.custom-toggle input:checked + .toggle-slider::before {
+    transform: translateX(16px);
+    background-color: var(--accent-color);
+}
+
+.custom-toggle input:checked ~ .toggle-label {
+    color: var(--accent-color-sidemenu);
+    font-weight: 600;
+}

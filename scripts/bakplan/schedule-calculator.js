@@ -98,7 +98,7 @@ export const generateBakplanSchedule = (dayCategories, productPlateConfig, custo
     bakeCatNames.forEach(catName => {
         const plates = catPhysicalPlates[catName];
         const uniqueDescsInCat = Array.from(new Set(plates.flatMap(p => p.products.map(pr => pr.description))));
-        
+
         const reservedIndices = new Set();
         uniqueDescsInCat.forEach(desc => {
             const idx = plates.findIndex((p, i) => !reservedIndices.has(i) && p.products.some(pr => pr.description === desc));
@@ -138,9 +138,9 @@ export const generateBakplanSchedule = (dayCategories, productPlateConfig, custo
             oven: c.oven,
             desc: c.desc || '',
             items: [],
-            usedCapacity: 0
+            usedCapacity: 0,
+            reservedCategory: c.reservedCategory
         }));
-
         if (batchNumber === 1 && thawProds.length > 0) {
             const thawCarts = batchCarts.filter(c => !c.oven || c.type === 'thaw');
             if (thawCarts.length > 0) {
@@ -176,16 +176,31 @@ export const generateBakplanSchedule = (dayCategories, productPlateConfig, custo
 
         const remainingPool = [...poolItems];
 
+        const reservedCategorySet = new Set(
+            cartsConfig
+                .filter(c => c.oven && c.type === 'single' && c.reservedCategory)
+                .map(c => c.reservedCategory)
+        );
+
         const singleCarts = batchCarts.filter(c => c.oven && c.type === 'single');
+
         singleCarts.forEach(cart => {
             if (remainingPool.length === 0) return;
-            const catCounts = {};
-            remainingPool.forEach(i => {
-                catCounts[i.category] = (catCounts[i.category] || 0) + 1;
-            });
-            const sortedCats = Object.keys(catCounts).sort((a, b) => catCounts[b] - catCounts[a]);
 
-            const selectedCat = sortedCats.find(c => catCounts[c] >= cart.capacity) || sortedCats[0];
+            let selectedCat = null;
+            if (cart.reservedCategory) {
+                selectedCat = cart.reservedCategory;
+            } else {
+                const catCounts = {};
+                remainingPool.forEach(i => {
+                    if (!reservedCategorySet.has(i.category)) {
+                        catCounts[i.category] = (catCounts[i.category] || 0) + 1;
+                    }
+                });
+                const sortedCats = Object.keys(catCounts).sort((a, b) => catCounts[b] - catCounts[a]);
+                selectedCat = sortedCats.find(c => catCounts[c] >= cart.capacity) || sortedCats[0];
+            }
+
             if (selectedCat) {
                 let capacityLeft = cart.capacity;
                 let i = 0;
@@ -215,8 +230,14 @@ export const generateBakplanSchedule = (dayCategories, productPlateConfig, custo
         const mixedCarts = batchCarts.filter(c => c.oven && c.type === 'mixed');
         mixedCarts.forEach(cart => {
             let capacityLeft = cart.capacity - cart.usedCapacity;
-            while (remainingPool.length > 0 && capacityLeft > 0) {
-                const poolItem = remainingPool.shift();
+            let i = 0;
+            while (i < remainingPool.length && capacityLeft > 0) {
+                const poolItem = remainingPool[i];
+                if (reservedCategorySet.has(poolItem.category)) {
+                    i++;
+                    continue;
+                }
+                remainingPool.splice(i, 1);
                 const existing = cart.items.find(it => it.category === poolItem.category);
                 if (existing) {
                     existing.platen += 1;

@@ -217,37 +217,10 @@ export const uiRenderer = {
         const activeProds = new Set(products.map(p => p.description.trim()));
         const oldKeys = Object.keys(tempConfig).filter(k => k.trim() && !activeProds.has(k.trim()));
 
-        let html = `
-            <tr class="category-header-row">
-                <td colspan="2">Huidige producten</td>
-            </tr>
-        `;
-
-        if (products.length === 0) {
-            html += '<tr><td colspan="2" class="loading-cell">Geen huidige producten in bakplan.</td></tr>';
-        } else {
-            products.forEach(prod => {
-                const desc = prod.description.trim();
-                const plateQty = (!isNaN(parseInt(tempConfig[desc])) && parseInt(tempConfig[desc]) > 0) ? parseInt(tempConfig[desc]) : getPlateQuantity(desc, state.productPlateConfig);
-                html += `
-                    <tr>
-                        <td>${desc}</td>
-                        <td>
-                            <input type="number" min="1" class="plate-input" data-desc="${desc}" value="${plateQty}" style="width: 100%; padding: 6px 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-
-        html += `
-            <tr class="category-header-row">
-                <td colspan="2">Oude producten (niet in bakplan)</td>
-            </tr>
-        `;
+        let html = '';
 
         if (oldKeys.length === 0) {
-            html += '<tr><td colspan="2" class="loading-cell">Geen oude producten.</td></tr>';
+            html = '<tr><td colspan="2" class="loading-cell">Geen oude producten.</td></tr>';
         } else {
             oldKeys.forEach(desc => {
                 const plateQty = (!isNaN(parseInt(tempConfig[desc])) && parseInt(tempConfig[desc]) > 0) ? parseInt(tempConfig[desc]) : 12;
@@ -314,12 +287,27 @@ export const uiRenderer = {
         if (!tbody) return;
 
         if (tempCarts.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="loading-cell">Geen karren aanwezig. Voeg een kar toe.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="loading-cell">Geen karren aanwezig. Voeg een kar toe.</td></tr>';
             return;
         }
 
+        const categoriesSet = new Set();
+        DAYS.forEach(day => {
+            (state.daysData[day] || []).forEach(catObj => {
+                if (catObj.category) categoriesSet.add(catObj.category.trim());
+            });
+        });
+        const categories = Array.from(categoriesSet);
+
         let html = '';
         tempCarts.forEach((cart, idx) => {
+            const isSingle = cart.type === 'single';
+            let catOptionsHtml = `<option value="">Alle categorieën</option>`;
+            categories.forEach(catName => {
+                const selected = cart.reservedCategory === catName ? 'selected' : '';
+                catOptionsHtml += `<option value="${catName}" ${selected}>${catName}</option>`;
+            });
+
             html += `
                 <tr>
                     <td>
@@ -329,16 +317,22 @@ export const uiRenderer = {
                         <select class="cart-type-select" data-idx="${idx}" style="padding: 6px 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
                             <option value="single" ${cart.type === 'single' ? 'selected' : ''}>1 Categorie</option>
                             <option value="mixed" ${cart.type === 'mixed' ? 'selected' : ''}>Gemixt</option>
-                            <option value="thaw" ${cart.type === 'thaw' ? 'selected' : ''}>Ontdooien</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select class="cart-cat-select" data-idx="${idx}" ${!isSingle ? 'disabled style="opacity: 0.4; cursor: not-allowed; padding: 6px 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);"' : 'style="padding: 6px 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);"'}>
+                            ${catOptionsHtml}
                         </select>
                     </td>
                     <td>
                         <input type="number" min="1" max="50" class="cart-capacity-input" data-idx="${idx}" value="${cart.capacity || 18}" style="width: 70px; padding: 6px 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
                     </td>
                     <td>
-                        <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer;">
+                        <label class="custom-toggle">
+                            <span class="toggle-left-label" style="font-size: 12px; font-weight: ${!cart.oven ? '600' : 'normal'}; color: ${!cart.oven ? 'var(--warning-color)' : 'var(--text-color-muted)'};">Ontdooien</span>
                             <input type="checkbox" class="cart-oven-check" data-idx="${idx}" ${cart.oven ? 'checked' : ''}>
-                            <span>Oven</span>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label" style="font-size: 12px; font-weight: ${cart.oven ? '600' : 'normal'}; color: ${cart.oven ? 'var(--accent-color-sidemenu)' : 'var(--text-color-muted)'};">Oven</span>
                         </label>
                     </td>
                     <td style="text-align: right;">
@@ -364,12 +358,23 @@ export const uiRenderer = {
                 const idx = parseInt(e.target.dataset.idx);
                 if (tempCarts[idx]) {
                     tempCarts[idx].type = e.target.value;
-                    if (e.target.value === 'thaw') {
-                        tempCarts[idx].oven = false;
-                    } else {
-                        tempCarts[idx].oven = true;
+                    if (e.target.value !== 'single') {
+                        delete tempCarts[idx].reservedCategory;
                     }
                     this.renderCartsTable(tempCarts);
+                }
+            });
+        });
+
+        tbody.querySelectorAll('.cart-cat-select').forEach(select => {
+            select.addEventListener('change', (e) => {
+                const idx = parseInt(e.target.dataset.idx);
+                if (tempCarts[idx]) {
+                    if (e.target.value) {
+                        tempCarts[idx].reservedCategory = e.target.value;
+                    } else {
+                        delete tempCarts[idx].reservedCategory;
+                    }
                 }
             });
         });
@@ -385,7 +390,10 @@ export const uiRenderer = {
         tbody.querySelectorAll('.cart-oven-check').forEach(check => {
             check.addEventListener('change', (e) => {
                 const idx = parseInt(e.target.dataset.idx);
-                if (tempCarts[idx]) tempCarts[idx].oven = e.target.checked;
+                if (tempCarts[idx]) {
+                    tempCarts[idx].oven = e.target.checked;
+                    this.renderCartsTable(tempCarts);
+                }
             });
         });
 
@@ -415,13 +423,14 @@ export const uiRenderer = {
             const isThawChecked = !!catObj.thawInBatch1;
             html += `
                 <tr class="category-header-row">
-                    <td colspan="4" contenteditable="true" data-catidx="${catIdx}">
+                    <td colspan="5" contenteditable="true" data-catidx="${catIdx}">
                         ${cat}
                     </td>
                     <td colspan="2" style="text-align: right; min-width: 160px; white-space: nowrap;">
-                        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: normal; text-transform: none; cursor: pointer; color: var(--text-color-muted);" title="Plaats deze categorie in Batch 1 op de ontdooikar">
+                        <label class="custom-toggle" title="Plaats deze categorie in Batch 1 op de ontdooikar">
                             <input type="checkbox" class="cat-thaw-check" data-catidx="${catIdx}" ${isThawChecked ? 'checked' : ''}>
-                            <span>Ontdooien Batch 1</span>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">Ontdooien Batch 1</span>
                         </label>
                     </td>
                     <td style="text-align: right; display: flex; gap: 4px; justify-content: flex-end; align-items: center;">
@@ -474,6 +483,7 @@ export const uiRenderer = {
                 html += `
                     <tr class="${rowClass}" ${titleText ? `title="${titleText}"` : ''}>
                         <td data-label="Productomschrijving"><span contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="description">${prod.description}</span> ${badgeHtml}</td>
+                        <td data-label="Aantal op 1 plaat" contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="plateQty">${plateQty}</td>
                         <td data-label="Prijs" contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="price">€ ${prod.price}</td>
                         <td data-label="Promo" contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="promo">${prod.promo ? '€ ' + prod.promo : '-'}</td>
                         <td data-label="Opleggen" contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="gemVerk">${prod.gemVerk}</td>
@@ -662,11 +672,21 @@ export const uiRenderer = {
 
                 const catObj = state.daysData[state.selectedDay][catIdx];
                 if (catObj && catObj.products && catObj.products[idx]) {
-                    catObj.products[idx][field] = text;
+                    if (field === 'plateQty') {
+                        const val = parseInt(text);
+                        const desc = (catObj.products[idx].description || '').trim();
+                        if (desc) {
+                            state.productPlateConfig[desc] = (!isNaN(val) && val > 0) ? val : 12;
+                        }
+                    } else {
+                        catObj.products[idx][field] = text;
+                    }
+
                     if (field === 'description') {
                         syncStructureAcrossDays(state);
                     }
-                    if (field === 'gemVerk' || field === 'description') {
+
+                    if (field === 'gemVerk' || field === 'description' || field === 'plateQty') {
                         const currentProd = catObj.products[idx];
                         const gemVerkNum = parseInt(currentProd.gemVerk) || 0;
                         const plateQty = getPlateQuantity(currentProd.description, state.productPlateConfig);
