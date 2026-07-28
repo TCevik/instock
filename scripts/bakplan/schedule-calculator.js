@@ -106,16 +106,17 @@ export const generateBakplanSchedule = (dayCategories, productPlateConfig, custo
                 reservedIndices.add(idx);
                 batch1Pool.push({
                     category: catName,
-                    plate: plates[idx]
+                    plate: plates[idx],
+                    isFirstPlate: true
                 });
             }
         });
-
         plates.forEach((p, i) => {
             if (!reservedIndices.has(i)) {
                 restPool.push({
                     category: catName,
-                    plate: p
+                    plate: p,
+                    isFirstPlate: false
                 });
             }
         });
@@ -175,13 +176,16 @@ export const generateBakplanSchedule = (dayCategories, productPlateConfig, custo
         }
 
         const remainingPool = [...poolItems].sort((a, b) => {
-            // Sorteer eerst op categorie
+            if (a.isFirstPlate && !b.isFirstPlate) return -1;
+            if (!a.isFirstPlate && b.isFirstPlate) return 1;
+
             if (a.category !== b.category) {
                 return (a.category || '').localeCompare(b.category || '');
             }
-            // Sorteer daarna op de omschrijving van het (hoofd)product op de plaat
+
             const descA = (a.plate && a.plate.products && a.plate.products[0]) ? a.plate.products[0].description.toLowerCase() : '';
             const descB = (b.plate && b.plate.products && b.plate.products[0]) ? b.plate.products[0].description.toLowerCase() : '';
+
             return descA.localeCompare(descB);
         });
         
