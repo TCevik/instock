@@ -1,20 +1,5 @@
 import { getSupabase, setAppReady } from './main.js';
 
-export function applyStoreTheme(hex) {
-    if (!hex) return;
-    document.documentElement.style.setProperty('--accent-color', hex);
-    const r = parseInt(hex.slice(1, 3), 16) || 101;
-    const g = parseInt(hex.slice(3, 5), 16) || 141;
-    const b = parseInt(hex.slice(5, 7), 16) || 36;
-    document.documentElement.style.setProperty('--vullen-bg', `rgba(${r}, ${g}, ${b}, 0.15)`);
-    document.documentElement.style.setProperty('--vullen-card-bg', `rgba(${r}, ${g}, ${b}, 0.05)`);
-    document.documentElement.style.setProperty('--vullen-border', `rgba(${r}, ${g}, ${b}, 0.3)`);
-    document.documentElement.style.setProperty('--pdf-new-bg', `rgba(${r}, ${g}, ${b}, 0.15)`);
-    document.documentElement.style.setProperty('--pdf-new-border', `rgba(${r}, ${g}, ${b}, 0.5)`);
-    document.documentElement.style.setProperty('--status-new-bg', `rgba(${r}, ${g}, ${b}, 0.2)`);
-    document.documentElement.style.setProperty('--gem-verk-bg', `rgba(${r}, ${g}, ${b}, 0.15)`);
-}
-
 export async function updateHeaderMenu() {
     const supabase = await getSupabase();
     const { data: { session } } = await supabase.auth.getSession();
@@ -26,18 +11,8 @@ export async function updateHeaderMenu() {
     const userRole = data[0].role;
     const storeId = data[0].winkel;
 
-    const { data: storeInfo } = await supabase.from('stores_info').select('modules, color').eq('store_id', storeId).maybeSingle();
+    const { data: storeInfo } = await supabase.from('stores_info').select('modules').eq('store_id', storeId).maybeSingle();
     const modules = storeInfo?.modules || {};
-
-    let hex = localStorage.getItem('store_primary_color');
-    if (storeInfo?.color && storeInfo.color.primary) {
-        hex = storeInfo.color.primary;
-        localStorage.setItem('store_primary_color', hex);
-    }
-
-    if (hex) {
-        applyStoreTheme(hex);
-    }
 
     const moduleMap = {
         "product checker": "product_checker",

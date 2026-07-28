@@ -2,22 +2,7 @@ import { supabasePromise } from './supabase.js';
 import { showToast } from './toast.js';
 export { setupModal, initPadenModal, showConfirmModal } from './modal.js';
 
-(function initCachedTheme() {
-    const hex = localStorage.getItem('store_primary_color');
-    if (hex) {
-        document.documentElement.style.setProperty('--accent-color', hex);
-        const r = parseInt(hex.slice(1, 3), 16) || 101;
-        const g = parseInt(hex.slice(3, 5), 16) || 141;
-        const b = parseInt(hex.slice(5, 7), 16) || 36;
-        document.documentElement.style.setProperty('--vullen-bg', `rgba(${r}, ${g}, ${b}, 0.15)`);
-        document.documentElement.style.setProperty('--vullen-card-bg', `rgba(${r}, ${g}, ${b}, 0.05)`);
-        document.documentElement.style.setProperty('--vullen-border', `rgba(${r}, ${g}, ${b}, 0.3)`);
-        document.documentElement.style.setProperty('--pdf-new-bg', `rgba(${r}, ${g}, ${b}, 0.15)`);
-        document.documentElement.style.setProperty('--pdf-new-border', `rgba(${r}, ${g}, ${b}, 0.5)`);
-        document.documentElement.style.setProperty('--status-new-bg', `rgba(${r}, ${g}, ${b}, 0.2)`);
-        document.documentElement.style.setProperty('--gem-verk-bg', `rgba(${r}, ${g}, ${b}, 0.15)`);
-    }
-})();
+
 
 export async function getSupabase() {
     return supabasePromise;
