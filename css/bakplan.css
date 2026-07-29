@@ -204,3 +204,40 @@ td[contenteditable="true"]:focus {
     color: var(--accent-color-sidemenu);
     font-weight: 600;
 }
+
+#undo-pdf-btn {
+    display: none;
+    height: 42px;
+    padding: 0 14px;
+    align-items: center;
+    gap: 6px;
+}
+
+.users-table th.col-items-per-plate {
+    width: 130px;
+}
+
+.users-table th.col-items-per-plate-settings {
+    width: 200px;
+}
+
+.users-table th.col-name-nr {
+    min-width: 180px;
+}
+
+.users-table th.col-actions {
+    width: 40px;
+}
+
+#add-cart-row-btn {
+    margin-top: 12px;
+    padding: 6px 12px;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#add-cart-row-btn .material-icons {
+    font-size: 16px;
+}

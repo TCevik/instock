@@ -576,7 +576,7 @@ body.app-ready {
     right: 0;
     bottom: 0;
     background-color: rgba(0, 0, 0, 0.6);
-    display: flex;
+    display: none;
     justify-content: center;
     align-items: center;
     z-index: 1000;
@@ -779,6 +779,10 @@ body.app-ready {
     justify-content: flex-end;
 }
 
+.modal-footer .action-btn {
+    padding: 8px 16px;
+}
+
 .modal-desc {
     font-size: 14px;
     color: var(--text-color-muted);
@@ -795,6 +799,7 @@ body.app-ready {
     padding: 6px 0;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
     min-width: 180px;
+    display: none;
 }
 
 .context-menu-item {
@@ -805,6 +810,11 @@ body.app-ready {
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+.context-menu-item .material-icons {
+    font-size: 16px;
+    color: var(--accent-color-sidemenu);
 }
 
 .context-menu-item:hover {
