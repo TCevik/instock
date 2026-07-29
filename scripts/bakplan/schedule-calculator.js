@@ -121,14 +121,56 @@ export const generateBakplanSchedule = (dayCategories, productPlateConfig, custo
             }
         });
     });
-
     const batch1OvenCapacity = cartsConfig.filter(c => c.oven).reduce((sum, c) => sum + c.capacity, 0);
 
+    const groupedRestPool = {};
+    restPool.forEach(item => {
+        const desc = (item.plate && item.plate.products && item.plate.products[0]) ? item.plate.products[0].description : item.category;
+        if (!groupedRestPool[desc]) groupedRestPool[desc] = [];
+        groupedRestPool[desc].push(item);
+    });
+
+    const groupKeys = Object.keys(groupedRestPool);
+    let keyIdx = 0;
+
     while (batch1Pool.length < batch1OvenCapacity && restPool.length > 0) {
-        batch1Pool.push(restPool.shift());
+        let found = false;
+        for (let i = 0; i < groupKeys.length; i++) {
+            const key = groupKeys[(keyIdx + i) % groupKeys.length];
+            if (groupedRestPool[key].length > 0) {
+                const item = groupedRestPool[key].shift();
+                batch1Pool.push(item);
+
+                const restIdx = restPool.indexOf(item);
+                if (restIdx > -1) restPool.splice(restIdx, 1);
+
+                keyIdx = (keyIdx + i + 1) % groupKeys.length;
+                found = true;
+                break;
+            }
+        }
+        if (!found) break;
     }
 
-    const batch2Pool = [...restPool];
+    const unrollUniqueFirst = (pool) => {
+        const uniqueItems = [];
+        const extraItems = [];
+        const seen = new Set();
+        pool.forEach(item => {
+            const descKey = (item.plate && item.plate.products)
+                ? item.plate.products.map(p => p.description).sort().join('|')
+                : item.category;
+            if (!seen.has(descKey)) {
+                seen.add(descKey);
+                uniqueItems.push(item);
+            } else {
+                extraItems.push(item);
+            }
+        });
+        return [...uniqueItems, ...extraItems];
+    };
+
+    const batch2Pool = unrollUniqueFirst(restPool);
 
     const fillCartsForBatchPool = (batchNumber, poolItems, thawProds) => {
         const batchCarts = cartsConfig.map(c => ({
@@ -188,7 +230,7 @@ export const generateBakplanSchedule = (dayCategories, productPlateConfig, custo
 
             return descA.localeCompare(descB);
         });
-        
+
         const reservedCategorySet = new Set(
             cartsConfig
                 .filter(c => c.oven && c.type === 'single' && c.reservedCategory)
