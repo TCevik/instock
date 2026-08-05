@@ -85,8 +85,10 @@ export const generatePrintablePlanning = () => {
             let padName = '';
             let role = '';
             if (taskId.endsWith('_helper')) {
-                padName = taskId.replace('_helper', '').split('_')[0];
-                role = 'Hulp';
+                const mainTaskId = taskId.replace('_helper', '');
+                const [pName, pType] = mainTaskId.split('_');
+                padName = pName;
+                role = pType === 'mirror' ? 'Hulp Spiegelen' : 'Hulp Vullen';
             } else {
                 const [pName, pType] = taskId.split('_');
                 padName = pName;
@@ -106,14 +108,14 @@ export const generatePrintablePlanning = () => {
         const colli = pathData.colli || 0;
         let fillMins = 0, mirrorMins = 0;
         assignments.forEach(a => {
-            if (a.role === 'Vullen' || a.role === 'Hulp') fillMins += a.durationMins || 0;
-            else if (a.role === 'Spiegelen') mirrorMins += a.durationMins || 0;
+            if (a.role === 'Vullen' || a.role === 'Hulp Vullen') fillMins += a.durationMins || 0;
+            else if (a.role === 'Spiegelen' || a.role === 'Hulp Spiegelen') mirrorMins += a.durationMins || 0;
         });
         const fmtM = m => m <= 0 ? '-' : `${Math.floor(m/60)}:${String(Math.round(m%60)).padStart(2,'0')}`;
         const fillHours = fillMins / 60;
         const norm = (colli > 0 && fillHours > 0) ? Math.round(colli / fillHours) : '-';
-        const fillersList = assignments.filter(a => a.role === 'Vullen' || a.role === 'Hulp').map(a => `${a.cleanName}`).join(', ');
-        const mirrorersList = assignments.filter(a => a.role === 'Spiegelen').map(a => `${a.cleanName}`).join(', ');
+        const fillersList = assignments.filter(a => a.role === 'Vullen' || a.role === 'Hulp Vullen').map(a => `${a.cleanName}`).join(', ');
+        const mirrorersList = assignments.filter(a => a.role === 'Spiegelen' || a.role === 'Hulp Spiegelen').map(a => `${a.cleanName}`).join(', ');
         padTableRowsHtml += `<tr><td>${padName}</td><td>${fillersList || '-'}</td><td>${mirrorersList || '-'}</td><td>${uniquePersons}</td><td>${colli}</td><td>${norm}</td><td>${fmtM(fillMins)}</td><td>${fmtM(mirrorMins)}</td></tr>`;
     });
 
