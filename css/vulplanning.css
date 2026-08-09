@@ -545,13 +545,19 @@
     }
 }
 
+.tasks-scroll-area {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    padding-right: 2px;
+}
+
 .tasks-grid {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    overflow-y: auto;
-    padding-right: 2px;
-    flex-grow: 1;
 }
 
 .tasks-grid .task-card {

@@ -213,17 +213,19 @@
                         <button class="tab-btn" id="tab-mirror" autocomplete="off">Spiegelen</button>
                         <button class="tab-btn" id="tab-other" autocomplete="off">Overige</button>
                     </div>
-                    <div class="tasks-grid" id="unassigned-fill-tasks"></div>
-                    <div class="tasks-grid" id="unassigned-mirror-tasks" style="display: none;"></div>
-                    <div class="tasks-grid" id="unassigned-other-tasks" style="display: none;"></div>
-                    <button id="add-custom-task-btn" class="submit-btn"
-                        style="margin-top: 4px; font-size: 12px; padding: 4px 8px; height: auto; display: none;">+
-                        Custom taak toevoegen</button>
-                    <div id="assigned-tasks-section"
-                        style="margin-top: 8px; border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; flex-direction: column; gap: 4px;">
-                        <h3 style="font-size: 13px; font-weight: 600; margin: 0; color: var(--text-color-muted);">
-                            Verdeelde Taken</h3>
-                        <div class="tasks-grid" id="assigned-tasks-grid"></div>
+                    <div class="tasks-scroll-area">
+                        <div class="tasks-grid" id="unassigned-fill-tasks"></div>
+                        <div class="tasks-grid" id="unassigned-mirror-tasks" style="display: none;"></div>
+                        <div class="tasks-grid" id="unassigned-other-tasks" style="display: none;"></div>
+                        <button id="add-custom-task-btn" class="submit-btn"
+                            style="margin-top: 4px; font-size: 12px; padding: 4px 8px; height: auto; display: none;">+
+                            Custom taak toevoegen</button>
+                        <div id="assigned-tasks-section"
+                            style="margin-top: 8px; border-top: 1px solid var(--border-color); padding-top: 6px; display: flex; flex-direction: column; gap: 4px;">
+                            <h3 style="font-size: 13px; font-weight: 600; margin: 0; color: var(--text-color-muted);">
+                                Verdeelde Taken</h3>
+                            <div class="tasks-grid" id="assigned-tasks-grid"></div>
+                        </div>
                     </div>
                 </div>
             </div>
