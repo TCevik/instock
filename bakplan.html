@@ -57,18 +57,25 @@
                 <span>Undo Upload</span>
             </button>
         </div>
-        <div class="day-navigation"></div>
+        <div class="bakplan-top-controls">
+            <div class="day-navigation"></div>
+            <div class="bakplan-legend">
+                <span class="legend-title">Legenda:</span>
+                <span class="legend-chip sync-chip"><i class="material-icons">sync</i>per product</span>
+                <span class="legend-chip daily-chip"><i class="material-icons">today</i>voor de dag</span>
+            </div>
+        </div>
         <div class="table-container">
-            <table class="users-table">
+            <table class="users-table bakplan-table">
                 <thead>
                     <tr>
                         <th class="col-desc">Productomschrijving</th>
-                        <th class="col-items-per-plate">Aantal op 1 plaat</th>
-                        <th class="col-price">Prijs</th>
-                        <th class="col-promo">Promo</th>
-                        <th class="col-sales">Opleggen</th>
-                        <th class="col-plates">Platen</th>
-                        <th class="col-derving">Derving</th>
+                        <th class="col-items-per-plate col-sync">Aantal op 1 plaat</th>
+                        <th class="col-price col-sync">Prijs</th>
+                        <th class="col-promo col-sync">Promo</th>
+                        <th class="col-sales col-daily">Opleggen</th>
+                        <th class="col-plates col-daily">Platen</th>
+                        <th class="col-derving col-daily">Derving</th>
                         <th class="col-actions"></th>
                     </tr>
                 </thead>
@@ -155,17 +162,6 @@
                 <button id="confirm-cancel-btn" class="action-btn btn-input-bg">Annuleren</button>
                 <button id="confirm-ok-btn" class="action-btn delete btn-danger">Verwijderen</button>
             </div>
-        </div>
-    </div>
-
-    <div id="context-menu" class="context-menu">
-        <div id="ctx-sync-field" class="context-menu-item">
-            <i class="material-icons">sync</i>
-            <span id="ctx-field-text">Sync alleen dit type</span>
-        </div>
-        <div id="ctx-sync-product" class="context-menu-item">
-            <i class="material-icons">sync_alt</i>
-            <span>Sync heel product</span>
         </div>
     </div>
 </body>

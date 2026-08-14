@@ -1,9 +1,54 @@
+.bakplan-top-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
 .day-navigation {
     display: flex;
     gap: 8px;
-    margin-bottom: 20px;
     overflow-x: auto;
-    padding-bottom: 8px;
+}
+
+.bakplan-legend {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.legend-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-color-muted);
+}
+
+.legend-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+}
+
+.legend-chip .material-icons {
+    font-size: 14px;
+}
+
+.legend-chip.sync-chip {
+    background-color: var(--input-bg);
+    color: var(--text-color-muted);
+}
+
+.legend-chip.daily-chip {
+    background-color: var(--gem-verk-bg);
+    color: var(--accent-color-sidemenu);
+    border-color: rgba(101, 141, 36, 0.25);
 }
 
 .day-nav-btn {
@@ -55,29 +100,64 @@
 }
 
 .users-table th.col-desc {
-    width: 38%;
+    width: 32%;
+}
+
+.users-table th.col-items-per-plate {
+    width: 140px;
 }
 
 .users-table th.col-price {
-    width: 12%;
+    width: 9%;
 }
 
 .users-table th.col-promo {
-    width: 12%;
+    width: 9%;
 }
 
 .users-table th.col-sales {
-    width: 12%;
+    width: 11%;
     color: var(--accent-color-sidemenu);
     font-weight: 700;
 }
 
 .users-table th.col-plates {
-    width: 12%;
+    width: 10%;
 }
 
 .users-table th.col-derving {
-    width: 14%;
+    width: 11%;
+}
+
+.users-table th.col-sync {
+    background-color: rgba(255, 255, 255, 0.015);
+}
+
+.users-table th.col-daily {
+    background-color: rgba(101, 141, 36, 0.04);
+}
+
+.bakplan-row td.col-sync {
+    background-color: rgba(255, 255, 255, 0.01);
+}
+
+.bakplan-row td.col-daily {
+    background-color: rgba(101, 141, 36, 0.02);
+}
+
+.users-table th.col-items-per-plate,
+.bakplan-row td[data-label="Aantal op 1 plaat"] {
+    border-left: 1px dashed var(--border-color);
+}
+
+.users-table th.col-sales,
+.bakplan-row td[data-label="Opleggen"] {
+    border-left: 1px solid var(--border-color);
+}
+
+.users-table th.col-derving,
+.bakplan-row td[data-label="Derving"] {
+    border-right: 1px solid var(--border-color);
 }
 
 .bakplan-row td[data-label="Productomschrijving"] {

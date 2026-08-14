@@ -1,6 +1,6 @@
 import { setupModal } from '../main.js';
 import { DAYS, state, previousStateData, setPreviousStateData } from './state.js';
-import { getPlateQuantity, syncStructureAcrossDays } from './logic.js';
+import { getPlateQuantity, syncProductFieldAcrossDays } from './logic.js';
 import { triggerSave } from './storage.js';
 import { pdfParser } from './pdf-handler.js';
 import { showConfirmModal } from './modals.js';
@@ -84,10 +84,13 @@ export const uiRenderer = {
                         derving: '0'
                     }]
                 });
-                syncStructureAcrossDays(state);
                 this.renderTabs();
                 this.renderTable();
                 triggerSave();
+                const newRow = document.querySelector(`[data-catidx="${dayList.length - 1}"]`)?.closest('tr');
+                if (newRow) {
+                    newRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
             });
         }
 
@@ -301,6 +304,10 @@ export const uiRenderer = {
 
         let html = '';
         tempCarts.forEach((cart, idx) => {
+            if (!cart.oven) {
+                cart.type = 'mixed';
+                delete cart.reservedCategory;
+            }
             const isSingle = cart.type === 'single';
             let catOptionsHtml = `<option value="">Alle categorieën</option>`;
             categories.forEach(catName => {
@@ -314,13 +321,13 @@ export const uiRenderer = {
                         <input type="text" class="cart-name-input" data-idx="${idx}" value="${cart.name || 'Kar ' + (idx + 1)}" style="width: 100%; padding: 6px 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
                     </td>
                     <td>
-                        <select class="cart-type-select" data-idx="${idx}" style="padding: 6px 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
+                        <select class="cart-type-select" data-idx="${idx}" ${!cart.oven ? 'disabled style="opacity: 0.4; cursor: not-allowed; padding: 6px 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);"' : 'style="padding: 6px 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);"'}>
                             <option value="single" ${cart.type === 'single' ? 'selected' : ''}>1 Categorie</option>
                             <option value="mixed" ${cart.type === 'mixed' ? 'selected' : ''}>Gemixt</option>
                         </select>
                     </td>
                     <td>
-                        <select class="cart-cat-select" data-idx="${idx}" ${!isSingle ? 'disabled style="opacity: 0.4; cursor: not-allowed; padding: 6px 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);"' : 'style="padding: 6px 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);"'}>
+                        <select class="cart-cat-select" data-idx="${idx}" ${(!isSingle || !cart.oven) ? 'disabled style="opacity: 0.4; cursor: not-allowed; padding: 6px 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);"' : 'style="padding: 6px 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);"'}>
                             ${catOptionsHtml}
                         </select>
                     </td>
@@ -392,6 +399,10 @@ export const uiRenderer = {
                 const idx = parseInt(e.target.dataset.idx);
                 if (tempCarts[idx]) {
                     tempCarts[idx].oven = e.target.checked;
+                    if (!e.target.checked) {
+                        tempCarts[idx].type = 'mixed';
+                        delete tempCarts[idx].reservedCategory;
+                    }
                     this.renderCartsTable(tempCarts);
                 }
             });
@@ -427,10 +438,10 @@ export const uiRenderer = {
                         ${cat}
                     </td>
                     <td colspan="2" style="text-align: right; min-width: 160px; white-space: nowrap;">
-                        <label class="custom-toggle" title="Plaats deze categorie in Batch 1 op de ontdooikar">
+                        <label class="custom-toggle" title="Plaats deze categorie op de ontdooikar">
                             <input type="checkbox" class="cat-thaw-check" data-catidx="${catIdx}" ${isThawChecked ? 'checked' : ''}>
                             <span class="toggle-slider"></span>
-                            <span class="toggle-label">Ontdooien Batch 1</span>
+                            <span class="toggle-label">Ontdooiproducten</span>
                         </label>
                     </td>
                     <td style="text-align: right; display: flex; gap: 4px; justify-content: flex-end; align-items: center;">
@@ -483,12 +494,12 @@ export const uiRenderer = {
                 html += `
                     <tr class="${rowClass}" ${titleText ? `title="${titleText}"` : ''}>
                         <td data-label="Productomschrijving"><span contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="description">${prod.description}</span> ${badgeHtml}</td>
-                        <td data-label="Aantal op 1 plaat" contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="plateQty">${plateQty}</td>
-                        <td data-label="Prijs" contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="price">€ ${prod.price}</td>
-                        <td data-label="Promo" contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="promo">${prod.promo ? '€ ' + prod.promo : '-'}</td>
-                        <td data-label="Opleggen" contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="gemVerk">${prod.gemVerk}</td>
-                        <td data-label="Platen">${platen}</td>
-                        <td data-label="Derving" contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="derving" ${dervingClass}>${prod.derving}</td>
+                        <td data-label="Aantal op 1 plaat" class="col-sync" contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="plateQty">${plateQty}</td>
+                        <td data-label="Prijs" class="col-sync" contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="price">€ ${prod.price}</td>
+                        <td data-label="Promo" class="col-sync" contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="promo">${prod.promo ? '€ ' + prod.promo : '-'}</td>
+                        <td data-label="Opleggen" class="col-daily" contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="gemVerk">${prod.gemVerk}</td>
+                        <td data-label="Platen" class="col-daily">${platen}</td>
+                        <td data-label="Derving" class="col-daily" contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="derving" ${dervingClass}>${prod.derving}</td>
                         <td data-label="Actie" style="display: flex; gap: 6px; align-items: center; justify-content: flex-end; min-height: 44px;">
                             ${actionButtonsHtml}
                         </td>
@@ -505,7 +516,6 @@ export const uiRenderer = {
                 const catObj = state.daysData[state.selectedDay][catIdx];
                 if (catObj) {
                     catObj.thawInBatch1 = e.target.checked;
-                    syncStructureAcrossDays(state);
                     triggerSave();
                 }
             });
@@ -526,7 +536,6 @@ export const uiRenderer = {
                         gemVerk: '0',
                         derving: '0'
                     });
-                    syncStructureAcrossDays(state);
                     this.renderTabs();
                     this.renderTable();
                     triggerSave();
@@ -569,10 +578,9 @@ export const uiRenderer = {
                 if (catObj) {
                     showConfirmModal(
                         'Categorie Verwijderen',
-                        `Weet je zeker dat je categorie "${catObj.category}" wilt verwijderen voor alle dagen?`,
+                        `Weet je zeker dat je categorie "${catObj.category}" wilt verwijderen?`,
                         () => {
                             state.daysData[state.selectedDay].splice(catIdx, 1);
-                            syncStructureAcrossDays(state);
                             this.renderTabs();
                             this.renderTable();
                             triggerSave();
@@ -595,7 +603,6 @@ export const uiRenderer = {
                 const newCat = e.target.textContent.trim().replace(/[\r\n]+/g, ' ');
                 if (state.daysData[state.selectedDay][catIdx]) {
                     state.daysData[state.selectedDay][catIdx].category = newCat;
-                    syncStructureAcrossDays(state);
                     triggerSave();
                 }
             });
@@ -625,7 +632,6 @@ export const uiRenderer = {
                         if (catObj.products.length === 0) {
                             state.daysData[state.selectedDay].splice(catIdx, 1);
                         }
-                        syncStructureAcrossDays(state);
                         this.renderTabs();
                         this.renderTable();
                         triggerSave();
@@ -637,7 +643,7 @@ export const uiRenderer = {
                         const prodName = targetProd.description || 'dit product';
                         showConfirmModal(
                             'Product Verwijderen',
-                            `Weet je zeker dat je "${prodName}" wilt verwijderen voor alle dagen?`,
+                            `Weet je zeker dat je "${prodName}" wilt verwijderen?`,
                             doDelete
                         );
                     }
@@ -680,10 +686,9 @@ export const uiRenderer = {
                         }
                     } else {
                         catObj.products[idx][field] = text;
-                    }
-
-                    if (field === 'description') {
-                        syncStructureAcrossDays(state);
+                        if (field === 'price' || field === 'promo') {
+                            syncProductFieldAcrossDays(state, catObj.products[idx], field, text);
+                        }
                     }
 
                     if (field === 'gemVerk' || field === 'description' || field === 'plateQty') {
@@ -698,15 +703,6 @@ export const uiRenderer = {
                         }
                     }
                     triggerSave();
-                }
-            });
-
-            cell.addEventListener('contextmenu', (e) => {
-                const catIdx = parseInt(e.target.dataset.catidx);
-                const prodIdx = parseInt(e.target.dataset.idx);
-                const field = e.target.dataset.field;
-                if (!isNaN(catIdx) && !isNaN(prodIdx) && field) {
-                    window.openContextMenu(e, catIdx, prodIdx, field);
                 }
             });
         });

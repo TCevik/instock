@@ -52,40 +52,15 @@ export const normalizeDaysData = (data, state) => {
     }
 };
 
-export const syncStructureAcrossDays = (state) => {
-    const baseDay = state.daysData[state.selectedDay] || [];
+export const syncProductFieldAcrossDays = (state, targetProd, field, value) => {
+    if (!targetProd) return;
     DAYS.forEach(day => {
-        if (day === state.selectedDay) return;
-        const targetDayList = state.daysData[day] || [];
-        const newDayList = [];
-
-        baseDay.forEach((baseCat, catIdx) => {
-            const existingTargetCat = targetDayList[catIdx] || targetDayList.find(c => c.category === baseCat.category);
-            const newProducts = [];
-
-            baseCat.products.forEach((baseProd, prodIdx) => {
-                const existingTargetProd = existingTargetCat ? (
-                    (existingTargetCat.products || [])[prodIdx] ||
-                    (existingTargetCat.products || []).find(p => p.ceNr === baseProd.ceNr)
-                ) : null;
-
-                newProducts.push({
-                    ceNr: baseProd.ceNr,
-                    description: baseProd.description,
-                    price: existingTargetProd ? existingTargetProd.price : baseProd.price,
-                    promo: existingTargetProd ? existingTargetProd.promo : baseProd.promo,
-                    gemVerk: existingTargetProd ? existingTargetProd.gemVerk : '0',
-                    derving: existingTargetProd ? existingTargetProd.derving : '0'
-                });
-            });
-
-            newDayList.push({
-                category: baseCat.category,
-                thawInBatch1: !!baseCat.thawInBatch1,
-                products: newProducts
+        (state.daysData[day] || []).forEach(cat => {
+            (cat.products || []).forEach(prod => {
+                if (prod.ceNr === targetProd.ceNr || (prod.description && targetProd.description && prod.description.trim() === targetProd.description.trim())) {
+                    prod[field] = value;
+                }
             });
         });
-
-        state.daysData[day] = newDayList;
     });
 };
