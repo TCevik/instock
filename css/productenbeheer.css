@@ -180,11 +180,22 @@ th.sortable:hover .sort-icon {
     display: flex;
 }
 
-.modal-card {
+.modal-card,
+.modal-overlay .management-card.modal-card {
     width: 100%;
-    max-width: 650px;
+    max-width: 880px;
     max-height: 90vh;
     overflow-y: auto;
+}
+
+.modal-card .form-row:has(> .form-group:nth-child(3):last-child) {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 600px) {
+    .modal-card .form-row:has(> .form-group:nth-child(3):last-child) {
+        grid-template-columns: 1fr;
+    }
 }
 
 .modal-header {

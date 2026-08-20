@@ -204,7 +204,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        if (viewMode === 'alphabetical') {
+        if (viewMode === 'alphabetical' || searchQuery) {
             const sortedAlphabetical = sortUsersByRole(filteredUsers);
 
             const rowsHtml = sortedAlphabetical.map(u => {
@@ -247,27 +247,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        const departmentMap = {};
-        filteredUsers.forEach(u => {
-            let deptList = [];
-            if (Array.isArray(u.afdeling)) {
-                deptList = u.afdeling;
-            } else if (typeof u.afdeling === 'string' && u.afdeling.trim()) {
-                deptList = u.afdeling.split(',').map(s => s.trim()).filter(Boolean);
-            }
-            if (deptList.length === 0) {
-                deptList = ['Overig'];
-            }
-
-            deptList.forEach(dept => {
-                if (!departmentMap[dept]) {
-                    departmentMap[dept] = [];
-                }
-                departmentMap[dept].push(u);
-            });
-        });
-
-        const allDeptKeys = Array.from(new Set([...currentStoreDepartments, ...Object.keys(departmentMap)])).sort();
+        const { departmentMap, allDeptKeys } = groupUsersByDepartment(filteredUsers, currentStoreDepartments);
 
         container.innerHTML = allDeptKeys.map(deptName => {
             const deptUsers = sortUsersByRole(departmentMap[deptName] || []);

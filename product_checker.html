@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/header.css">
-    <link rel="stylesheet" href="css/gebruikersbeheer.css">
     <link rel="stylesheet" href="css/productenbeheer.css">
     <link rel="stylesheet" href="css/product_checker.css">
     <script src="scripts/product_checker.js" type="module"></script>
@@ -15,11 +14,21 @@
 <body>
     <main class="dashboard-container">
         <div class="page-header page-header-col small-margin">
-            <div class="page-header-row">
-                <i class="material-icons page-header-icon">find_in_page</i>
-                <h1 class="page-header-title">Product Checker</h1>
+            <div class="header-wrapper">
+                <div class="page-header-col">
+                    <div class="page-header-row">
+                        <i class="material-icons page-header-icon">find_in_page</i>
+                        <h1 class="page-header-title">Product Checker</h1>
+                    </div>
+                    <p class="page-header-subtitle">Scan barcodes of typ productnamen voor directe details</p>
+                </div>
+                <div class="header-actions" id="checker-header-actions" style="display: none;">
+                    <button class="add-user-btn" id="openProductModalBtn">
+                        <i class="material-icons">add_box</i>
+                        <span>Nieuw Product</span>
+                    </button>
+                </div>
             </div>
-            <p class="page-header-subtitle">Scan barcodes of typ productnamen voor directe details</p>
         </div>
         
         <div class="checker-search-container">
@@ -245,7 +254,7 @@
                     <div class="form-group">
                         <label for="locatiecode">Locatiecode</label>
                         <div class="input-wrapper">
-                            <input type="text" id="locatiecode" placeholder="bijv. 3/2/8" autocomplete="off">
+                            <input type="text" id="locatiecode" placeholder="Meter/Plank/Schap" autocomplete="off">
                             <i class="material-icons">place</i>
                         </div>
                     </div>

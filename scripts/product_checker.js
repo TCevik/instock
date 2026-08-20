@@ -1,15 +1,19 @@
-import { checkAuth, getSupabase, showMessage, handleFormSubmit } from './main.js';
+import { checkAuth, getSupabase, showMessage } from './main.js';
 import { loadHeader } from './header.js';
 import { showToast } from './toast.js';
-import { formatPrice, formatDate, calculateStockStatus, formatDateInputValue, parseDateInputToIso } from './product_checker-logic.js';
-import { saveProduct, fetchSingleProduct } from './productenbeheer/product-service.js';
-import { validateBarcode, resizeAndCompressImage } from './productenbeheer/image-utils.js';
+import { formatPrice, formatDate, calculateStockStatus } from './product_checker-logic.js';
+import { fetchSingleProduct } from './productenbeheer/product-service.js';
+import { initProductModal } from './product-modal.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const auth = await checkAuth();
     if (!auth) return;
 
     loadHeader();
+
+    const { userData } = auth;
+    const storeId = userData?.winkel;
+    const isMedewerker = userData?.role === 'medewerker';
 
     const supabase = await getSupabase();
     const searchInput = document.getElementById('search-input');
@@ -21,6 +25,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const searchContainer = document.querySelector('.checker-search-container');
     const backBtn = document.getElementById('back-to-search-btn');
     const pageHeader = document.querySelector('.page-header');
+    const checkerHeaderActions = document.getElementById('checker-header-actions');
+    const openProductModalBtn = document.getElementById('openProductModalBtn');
 
     const detailBrand = document.getElementById('detail-brand');
     const detailName = document.getElementById('detail-name');
@@ -33,176 +39,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     const detailLocatie = document.getElementById('detail-locatie');
     const detailTht = document.getElementById('detail-tht');
     const productImageBox = document.getElementById('product-image-box');
+    const editBtn = document.getElementById('edit-product-btn');
 
-    const { data: { session } } = await supabase.auth.getSession();
-    let isMedewerker = false;
-    if (session?.user) {
-        const { data: userData } = await supabase.from('user_data').select('role').eq('id', session.user.id).maybeSingle();
-        if (userData?.role === 'medewerker') {
-            isMedewerker = true;
-        }
+    if (!isMedewerker && checkerHeaderActions) {
+        checkerHeaderActions.style.display = 'flex';
     }
 
     const productModal = document.getElementById('productModal');
-    const closeProductModalBtn = document.getElementById('closeProductModalBtn');
-    const addProductForm = document.getElementById('add-product-form');
-    const barcodeTypeSelect = document.getElementById('barcode_type');
-    const eanInput = document.getElementById('ean');
-    const naamInput = document.getElementById('naam');
-    const merkInput = document.getElementById('merk');
-    const inhoudInput = document.getElementById('inhoud');
-    const afdelingInput = document.getElementById('afdeling');
-    const voorraadInput = document.getElementById('voorraad');
-    const minimaleVoorraadInput = document.getElementById('minimale_voorraad');
-    const prijsInput = document.getElementById('prijs');
-    const inkoopprijsInput = document.getElementById('inkoopprijs');
-    const thtInput = document.getElementById('tht');
-    const locatiecodeInput = document.getElementById('locatiecode');
-    const afbeeldingFile = document.getElementById('afbeelding-file');
-    const afbeeldingCamera = document.getElementById('afbeelding-camera');
-    const btnUploadFile = document.getElementById('btn-upload-file');
-    const btnTakePhoto = document.getElementById('btn-take-photo');
-    const removeImgBtn = document.getElementById('remove-img-btn');
-    const imagePreview = document.getElementById('image-preview');
-    const placeholderIcon = document.querySelector('#image-preview-box .placeholder-icon');
-    const modalMessageBox = document.getElementById('modal-message-box');
-    const modalMessageIcon = document.getElementById('modal-message-icon');
-    const modalMessageText = document.getElementById('modal-message-text');
-    const submitBtn = document.getElementById('submitBtn');
 
-    let currentImageData = null;
-    let currentEditingEan = null;
+    let currentProductData = null;
     let debounceTimer = null;
 
-    const setImageData = (dataUrl) => {
-        currentImageData = dataUrl;
-        if (dataUrl) {
-            imagePreview.src = dataUrl;
-            imagePreview.style.display = 'block';
-            if (placeholderIcon) placeholderIcon.style.display = 'none';
-            if (removeImgBtn) removeImgBtn.style.display = 'flex';
-        } else {
-            imagePreview.src = '';
-            imagePreview.style.display = 'none';
-            if (placeholderIcon) placeholderIcon.style.display = 'block';
-            if (removeImgBtn) removeImgBtn.style.display = 'none';
-            if (afbeeldingFile) afbeeldingFile.value = '';
-            if (afbeeldingCamera) afbeeldingCamera.value = '';
-        }
-    };
-
-    if (btnUploadFile) btnUploadFile.addEventListener('click', () => afbeeldingFile.click());
-    if (btnTakePhoto) btnTakePhoto.addEventListener('click', () => afbeeldingCamera.click());
-
-    const handleFileSelect = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const compressedUrl = await resizeAndCompressImage(file);
-        setImageData(compressedUrl);
-    };
-
-    if (afbeeldingFile) afbeeldingFile.addEventListener('change', handleFileSelect);
-    if (afbeeldingCamera) afbeeldingCamera.addEventListener('change', handleFileSelect);
-    if (removeImgBtn) removeImgBtn.addEventListener('click', () => setImageData(null));
-
-    if (thtInput) {
-        thtInput.addEventListener('input', (e) => {
-            e.target.value = formatDateInputValue(e.target.value);
-        });
-    }
-
-    const closeEditModal = () => {
-        if (productModal) productModal.classList.remove('open');
-    };
-
-    if (closeProductModalBtn) closeProductModalBtn.addEventListener('click', closeEditModal);
-    if (productModal) {
-        productModal.addEventListener('click', (e) => {
-            if (e.target === productModal) closeEditModal();
-        });
-    }
-
-    const openEditModal = async (product) => {
-        const { data: fullProduct } = await fetchSingleProduct(supabase, product.ean);
-        const p = fullProduct || product;
-        currentEditingEan = p.ean;
-
-        if (barcodeTypeSelect && p.barcode_type) barcodeTypeSelect.value = p.barcode_type;
-        eanInput.value = p.ean || '';
-        naamInput.value = p.naam || '';
-        merkInput.value = p.merk || '';
-        if (inhoudInput) inhoudInput.value = p.inhoud || '';
-        afdelingInput.value = p.afdeling || '';
-        voorraadInput.value = p.voorraad !== null && p.voorraad !== undefined ? p.voorraad : '';
-        minimaleVoorraadInput.value = p.minimale_voorraad !== null && p.minimale_voorraad !== undefined ? p.minimale_voorraad : '';
-        prijsInput.value = p.prijs !== null && p.prijs !== undefined ? Number(p.prijs).toFixed(2) : '';
-        inkoopprijsInput.value = p.inkoopprijs !== null && p.inkoopprijs !== undefined ? Number(p.inkoopprijs).toFixed(2) : '';
-        
-        if (p.tht) {
-            const d = new Date(p.tht);
-            const dd = String(d.getDate()).padStart(2, '0');
-            const mm = String(d.getMonth() + 1).padStart(2, '0');
-            const yyyy = d.getFullYear();
-            thtInput.value = `${dd}-${mm}-${yyyy}`;
-        } else {
-            thtInput.value = '';
-        }
-
-        locatiecodeInput.value = p.locatiecode || '';
-        setImageData(p.afbeelding || null);
-
-        if (modalMessageBox) modalMessageBox.style.display = 'none';
-        if (productModal) productModal.classList.add('open');
-    };
-
-    if (addProductForm) {
-        addProductForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const ean = eanInput.value.trim();
-            const naam = naamInput.value.trim();
-            const barcodeType = barcodeTypeSelect ? barcodeTypeSelect.value : 'EAN-13';
-
-            if (!ean || !naam) {
-                showMessage(modalMessageBox, modalMessageText, modalMessageIcon, 'EAN en Naam zijn verplichte velden.', 'error');
-                return;
+    const modalManager = initProductModal({
+        supabase,
+        storeId,
+        modalElement: productModal,
+        onSuccess: async ({ isEditMode, productData }) => {
+            showToast(isEditMode ? 'Product succesvol bijgewerkt!' : 'Product succesvol aangemaakt!', 'success');
+            const { data: updatedProduct } = await fetchSingleProduct(supabase, productData.ean);
+            if (updatedProduct) {
+                showProductDetails(updatedProduct);
             }
+        }
+    });
 
-            const barcodeValidation = validateBarcode(ean, barcodeType);
-            if (!barcodeValidation.valid) {
-                showMessage(modalMessageBox, modalMessageText, modalMessageIcon, barcodeValidation.error, 'error');
-                return;
-            }
-
-            const productData = {
-                ean: ean,
-                barcode_type: barcodeType,
-                naam: naam,
-                merk: merkInput.value.trim() || null,
-                inhoud: inhoudInput ? (inhoudInput.value.trim() || null) : null,
-                afdeling: afdelingInput.value.trim() || null,
-                voorraad: voorraadInput.value === '' ? null : parseInt(voorraadInput.value, 10),
-                minimale_voorraad: minimaleVoorraadInput.value === '' ? null : parseInt(minimaleVoorraadInput.value, 10),
-                prijs: prijsInput.value === '' ? null : parseFloat(prijsInput.value),
-                inkoopprijs: inkoopprijsInput.value === '' ? null : parseFloat(inkoopprijsInput.value),
-                tht: parseDateInputToIso(thtInput.value),
-                locatiecode: locatiecodeInput.value.trim() || null,
-                afbeelding: currentImageData || null
-            };
-
-            await handleFormSubmit(submitBtn, 'Bezig met opslaan...', modalMessageBox, async () => {
-                const { error } = await saveProduct(supabase, true, currentEditingEan, productData);
-                if (error) {
-                    showMessage(modalMessageBox, modalMessageText, modalMessageIcon, error.message || 'Er is een fout opgetreden bij het opslaan.', 'error');
-                } else {
-                    showToast('Product succesvol bijgewerkt!', 'success');
-                    closeEditModal();
-                    const { data: updatedProduct } = await fetchSingleProduct(supabase, productData.ean);
-                    if (updatedProduct) {
-                        showProductDetails(updatedProduct);
-                    }
-                }
-            });
-        });
+    if (openProductModalBtn && modalManager) {
+        openProductModalBtn.addEventListener('click', () => modalManager.openForCreate());
     }
 
     const showMsg = (text, type) => {
@@ -218,6 +80,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const showProductDetails = (product) => {
+        currentProductData = product;
         hideMessage();
         resultsList.style.display = 'none';
         searchContainer.style.display = 'none';
@@ -335,14 +198,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         window.history.pushState({ ean: product.ean }, '', newUrl);
 
-        const editBtn = document.getElementById('edit-product-btn');
         if (editBtn) {
             if (isMedewerker) {
                 editBtn.style.display = 'none';
             } else {
                 editBtn.style.display = '';
                 editBtn.onclick = () => {
-                    openEditModal(product);
+                    if (modalManager && currentProductData) {
+                        modalManager.openForEdit(currentProductData);
+                    }
                 };
             }
         }
@@ -511,9 +375,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const isValidBarcode = (code) => {
-        if (/^\d{13}$/.test(code)) return true; // EAN-13
-        if (/^\d{8}$/.test(code)) return true;  // EAN-8
-        if (/^\d{12}$/.test(code)) return true; // UPC-A
+        if (/^\d{13}$/.test(code)) return true;
+        if (/^\d{8}$/.test(code)) return true;
+        if (/^\d{12}$/.test(code)) return true;
         return false;
     };
 
@@ -567,9 +431,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const statusParam = urlParams.get('status');
 
     if (statusParam === 'created') {
-        showMessage(null, null, null, 'Product succesvol aangemaakt!', 'success');
+        showToast('Product succesvol aangemaakt!', 'success');
     } else if (statusParam === 'updated') {
-        showMessage(null, null, null, 'Product succesvol bijgewerkt!', 'success');
+        showToast('Product succesvol bijgewerkt!', 'success');
     }
 
     if (initialEan) {

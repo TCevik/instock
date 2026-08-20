@@ -1,11 +1,9 @@
-import { getSupabase, checkAuth, showMessage, handleFormSubmit, showConfirmModal } from '../main.js';
+import { getSupabase, checkAuth, showConfirmModal } from '../main.js';
 import { loadHeader } from '../header.js';
 import { showToast } from '../toast.js';
-import { validateBarcode, resizeAndCompressImage } from './image-utils.js';
 import { renderProductTableRows } from './table-renderer.js';
-import { fetchProductsPage, fetchDepartments, fetchSingleProduct, saveProduct, deleteProduct } from './product-service.js';
-
-import { formatDateInputValue, parseDateInputToIso, formatDate } from '../product_checker-logic.js';
+import { fetchProductsPage, fetchDepartments, fetchSingleProduct, deleteProduct } from './product-service.js';
+import { initProductModal } from '../product-modal.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const auth = await checkAuth(['beheerder']);
@@ -17,33 +15,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const storeId = userData?.winkel;
     const supabase = await getSupabase();
 
-    const form = document.getElementById('add-product-form');
-    const eanInput = document.getElementById('ean');
-    const naamInput = document.getElementById('naam');
-    const merkInput = document.getElementById('merk');
-    const inhoudInput = document.getElementById('inhoud');
-    const afdelingInput = document.getElementById('afdeling');
-    const voorraadInput = document.getElementById('voorraad');
-    const minimaleVoorraadInput = document.getElementById('minimale_voorraad');
-    const prijsInput = document.getElementById('prijs');
-    const inkoopprijsInput = document.getElementById('inkoopprijs');
-    const thtInput = document.getElementById('tht');
-    const locatiecodeInput = document.getElementById('locatiecode');
-    const barcodeTypeSelect = document.getElementById('barcode_type');
-
-    const btnUploadFile = document.getElementById('btn-upload-file');
-    const btnTakePhoto = document.getElementById('btn-take-photo');
-    const afbeeldingFile = document.getElementById('afbeelding-file');
-    const afbeeldingCamera = document.getElementById('afbeelding-camera');
-    const imagePreviewBox = document.getElementById('image-preview-box');
-    const imagePreview = document.getElementById('image-preview');
-    const placeholderIcon = imagePreviewBox.querySelector('.placeholder-icon');
-    const removeImgBtn = document.getElementById('remove-img-btn');
-
     const productModal = document.getElementById('productModal');
     const openProductModalBtn = document.getElementById('openProductModalBtn');
-    const closeProductModalBtn = document.getElementById('closeProductModalBtn');
-    const productModalTitle = document.getElementById('product-modal-title');
 
     const searchInput = document.getElementById('product-search-input');
     const departmentFilter = document.getElementById('department-filter');
@@ -53,16 +26,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const tableBody = document.getElementById('products-table-body');
     const prevPageBtn = document.getElementById('prev-page-btn');
     const nextPageBtn = document.getElementById('next-page-btn');
-    const paginationInfo = document.getElementById('pagination-info');
-
-    const messageBox = document.getElementById('message-box');
-    const messageIcon = document.getElementById('message-icon');
-    const messageText = document.getElementById('message-text');
-    const submitBtn = document.getElementById('submitBtn');
-
-    let currentImageData = null;
-    let isEditMode = false;
-    let editingEan = null;
 
     const urlParams = new URLSearchParams(window.location.search);
 
@@ -96,117 +59,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.history.replaceState({}, '', newUrl);
     };
 
-    const setImageData = (dataUrl) => {
-        currentImageData = dataUrl;
-        if (dataUrl) {
-            imagePreview.src = dataUrl;
-            imagePreview.style.display = 'block';
-            placeholderIcon.style.display = 'none';
-            removeImgBtn.style.display = 'flex';
-        } else {
-            imagePreview.src = '';
-            imagePreview.style.display = 'none';
-            placeholderIcon.style.display = 'block';
-            removeImgBtn.style.display = 'none';
-            afbeeldingFile.value = '';
-            afbeeldingCamera.value = '';
+    const modalManager = initProductModal({
+        supabase,
+        storeId,
+        modalElement: productModal,
+        onSuccess: async ({ isEditMode, productData }) => {
+            const currentParams = new URLSearchParams(window.location.search);
+            const source = currentParams.get('source');
+            if (source === 'checker') {
+                const status = isEditMode ? 'updated' : 'created';
+                window.location.href = `product_checker.html?ean=${productData.ean}&status=${status}`;
+            } else {
+                showToast(isEditMode ? 'Product succesvol bijgewerkt!' : 'Product succesvol aangemaakt!', 'success');
+                await loadProductsTable();
+            }
         }
-    };
+    });
 
-    btnUploadFile.addEventListener('click', () => afbeeldingFile.click());
-    btnTakePhoto.addEventListener('click', () => afbeeldingCamera.click());
-
-    const handleFileSelect = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const compressedUrl = await resizeAndCompressImage(file);
-        setImageData(compressedUrl);
-    };
-
-    afbeeldingFile.addEventListener('change', handleFileSelect);
-    afbeeldingCamera.addEventListener('change', handleFileSelect);
-    if (thtInput) {
-        thtInput.addEventListener('input', (e) => {
-            e.target.value = formatDateInputValue(e.target.value);
-        });
-    }
-
-    const resetForm = () => {
-        form.reset();
-        setImageData(null);
-        isEditMode = false;
-        editingEan = null;
-        if (productModalTitle) productModalTitle.textContent = 'Nieuw Product Toevoegen';
-        if (submitBtn) {
-            const submitBtnSpan = submitBtn.querySelector('span');
-            const submitBtnIcon = submitBtn.querySelector('.material-icons');
-            if (submitBtnSpan) submitBtnSpan.textContent = 'Product Opslaan';
-            if (submitBtnIcon) submitBtnIcon.textContent = 'add_box';
-        }
-        if (messageBox) messageBox.style.display = 'none';
-    };
-
-    const openModalForCreate = () => {
-        resetForm();
-        productModal.classList.add('open');
-        requestAnimationFrame(() => eanInput.focus());
-    };
-
-    const openModalForEdit = async (product) => {
-        resetForm();
-        isEditMode = true;
-        editingEan = product.ean;
-        if (productModalTitle) productModalTitle.textContent = `Product Bewerken: ${product.naam || ''}`;
-        if (submitBtn) {
-            const submitBtnSpan = submitBtn.querySelector('span');
-            const submitBtnIcon = submitBtn.querySelector('.material-icons');
-            if (submitBtnSpan) submitBtnSpan.textContent = 'Wijzigingen Opslaan';
-            if (submitBtnIcon) submitBtnIcon.textContent = 'save';
-        }
-
-        const { data: fullProduct } = await fetchSingleProduct(supabase, product.ean);
-        const p = fullProduct || product;
-
-        if (barcodeTypeSelect && p.barcode_type) barcodeTypeSelect.value = p.barcode_type;
-        eanInput.value = p.ean || '';
-        naamInput.value = p.naam || '';
-        merkInput.value = p.merk || '';
-        if (inhoudInput) inhoudInput.value = p.inhoud || '';
-        afdelingInput.value = p.afdeling || '';
-        voorraadInput.value = p.voorraad !== null ? p.voorraad : '';
-        minimaleVoorraadInput.value = p.minimale_voorraad !== null ? p.minimale_voorraad : '';
-        prijsInput.value = p.prijs !== null && p.prijs !== undefined ? Number(p.prijs).toFixed(2) : '';
-        inkoopprijsInput.value = p.inkoopprijs !== null && p.inkoopprijs !== undefined ? Number(p.inkoopprijs).toFixed(2) : '';
-
-        if (p.tht) {
-            const d = new Date(p.tht);
-            const dd = String(d.getDate()).padStart(2, '0');
-            const mm = String(d.getMonth() + 1).padStart(2, '0');
-            const yyyy = d.getFullYear();
-            thtInput.value = `${dd}-${mm}-${yyyy}`;
-        } else {
-            thtInput.value = '';
-        }
-        locatiecodeInput.value = p.locatiecode || '';
-        if (p.afbeelding) {
-            setImageData(p.afbeelding);
-        }
-
-        productModal.classList.add('open');
-        requestAnimationFrame(() => naamInput.focus());
-    };
-
-    const closeModal = () => {
-        productModal.classList.remove('open');
-        resetForm();
-    };
-
-    if (openProductModalBtn) openProductModalBtn.addEventListener('click', openModalForCreate);
-    if (closeProductModalBtn) closeProductModalBtn.addEventListener('click', closeModal);
-    if (productModal) {
-        productModal.addEventListener('click', (e) => {
-            if (e.target === productModal) closeModal();
-        });
+    if (openProductModalBtn && modalManager) {
+        openProductModalBtn.addEventListener('click', () => modalManager.openForCreate());
     }
 
     const firstPageBtn = document.getElementById('first-page-btn');
@@ -269,7 +140,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const loadProductsTable = async () => {
-        tableBody.innerHTML = `<tr><td colspan="7" class="loading-cell">Bezig met laden...</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="8" class="loading-cell">Bezig met laden...</td></tr>`;
 
         const { data, count, error } = await fetchProductsPage(
             supabase, storeId, searchQuery, currentPage, PAGE_SIZE,
@@ -277,7 +148,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         );
 
         if (error) {
-            tableBody.innerHTML = `<tr><td colspan="7" class="loading-cell">Er is een fout opgetreden bij het laden van de producten.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="8" class="loading-cell">Er is een fout opgetreden bij het laden van de producten.</td></tr>`;
             return;
         }
 
@@ -285,7 +156,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const totalPages = Math.ceil(totalCount / PAGE_SIZE) || 1;
 
         updatePaginationControls(totalPages);
-        renderProductTableRows(data, tableBody, openModalForEdit, openDeleteConfirm);
+        renderProductTableRows(data, tableBody, (prod) => modalManager && modalManager.openForEdit(prod), openDeleteConfirm);
         updateSortIcons();
         updateUrlParams();
     };
@@ -380,69 +251,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const ean = eanInput.value.trim();
-        const naam = naamInput.value.trim();
-        const barcodeType = barcodeTypeSelect ? barcodeTypeSelect.value : 'EAN-13';
-
-        if (!ean || !naam) {
-            showMessage(messageBox, messageText, messageIcon, 'EAN en Naam zijn verplichte velden.', 'error');
-            return;
-        }
-
-        const barcodeValidation = validateBarcode(ean, barcodeType);
-        if (!barcodeValidation.valid) {
-            showMessage(messageBox, messageText, messageIcon, barcodeValidation.error, 'error');
-            return;
-        }
-
-        const productData = {
-            ean: ean,
-            barcode_type: barcodeType,
-            naam: naam,
-            merk: merkInput.value.trim() || null,
-            inhoud: inhoudInput ? (inhoudInput.value.trim() || null) : null,
-            afdeling: afdelingInput.value.trim() || null,
-            voorraad: voorraadInput.value === '' ? null : parseInt(voorraadInput.value, 10),
-            minimale_voorraad: minimaleVoorraadInput.value === '' ? null : parseInt(minimaleVoorraadInput.value, 10),
-            prijs: prijsInput.value === '' ? null : parseFloat(prijsInput.value),
-            inkoopprijs: inkoopprijsInput.value === '' ? null : parseFloat(inkoopprijsInput.value),
-            tht: parseDateInputToIso(thtInput.value),
-            locatiecode: locatiecodeInput.value.trim() || null,
-            afbeelding: currentImageData || null
-        };
-
-        if (storeId) {
-            productData.winkel_id = storeId;
-        }
-
-        await handleFormSubmit(submitBtn, 'Bezig met opslaan...', messageBox, async () => {
-            const { error } = await saveProduct(supabase, isEditMode, editingEan, productData);
-
-            if (error) {
-                showMessage(messageBox, messageText, messageIcon, error.message || 'Er is een fout opgetreden bij het opslaan van het product.', 'error');
-            } else {
-                const urlParams = new URLSearchParams(window.location.search);
-                const source = urlParams.get('source');
-                if (source === 'checker') {
-                    const status = isEditMode ? 'updated' : 'created';
-                    window.location.href = `product_checker.html?ean=${productData.ean}&status=${status}`;
-                } else {
-                    showToast(isEditMode ? 'Product succesvol bijgewerkt!' : 'Product succesvol aangemaakt!', 'success');
-                    closeModal();
-                    await loadProductsTable();
-                }
-            }
-        });
-    });
-
     const editEanParam = urlParams.get('edit');
     if (editEanParam) {
         const { data: existingProduct } = await fetchSingleProduct(supabase, editEanParam);
-        if (existingProduct) {
-            openModalForEdit(existingProduct);
+        if (existingProduct && modalManager) {
+            modalManager.openForEdit(existingProduct);
         }
     }
 
