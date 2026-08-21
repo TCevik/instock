@@ -228,3 +228,33 @@ export const getTaskAssignment = (taskId, state) => {
     }
     return null;
 };
+
+export const matchEmployeeName = (rawName, storeEmployees) => {
+    if (!storeEmployees || !storeEmployees.length || !rawName) {
+        return { matchedUser: null, hasMultipleMatches: false, candidateMatches: [] };
+    }
+    const cleanPdfName = rawName.toLowerCase().trim();
+    const exactMatches = storeEmployees.filter(emp => emp.toLowerCase().trim() === cleanPdfName);
+    if (exactMatches.length === 1) {
+        return { matchedUser: exactMatches[0], hasMultipleMatches: false, candidateMatches: exactMatches };
+    }
+    const includesMatches = storeEmployees.filter(emp => emp.toLowerCase().includes(cleanPdfName));
+    if (includesMatches.length === 1) {
+        return { matchedUser: includesMatches[0], hasMultipleMatches: false, candidateMatches: includesMatches };
+    }
+    if (includesMatches.length > 1) {
+        return { matchedUser: null, hasMultipleMatches: true, candidateMatches: includesMatches };
+    }
+    const pdfParts = cleanPdfName.split(/\s+/).filter(Boolean);
+    const partMatches = storeEmployees.filter(emp => {
+        const empLower = emp.toLowerCase();
+        return pdfParts.every(part => empLower.includes(part));
+    });
+    if (partMatches.length === 1) {
+        return { matchedUser: partMatches[0], hasMultipleMatches: false, candidateMatches: partMatches };
+    }
+    if (partMatches.length > 1) {
+        return { matchedUser: null, hasMultipleMatches: true, candidateMatches: partMatches };
+    }
+    return { matchedUser: null, hasMultipleMatches: false, candidateMatches: [] };
+};

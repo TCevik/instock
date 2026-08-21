@@ -9,7 +9,7 @@ import { parsePDFAndGetNames, parseColliPDF, getDefaultPDFPaden, doSettingsMatch
 import { createManualInputManager, renderPeopleList } from './manual-input.js';
 import { generatePrintablePlanning } from './printable-overview.js';
 import { renderWorkspace } from './workspace.js';
-import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration } from './planning-logic.js';
+import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration, matchEmployeeName } from './planning-logic.js';
 
 (() => {
     setRenderWorkspaceCallback(renderWorkspace);
@@ -139,47 +139,35 @@ import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration } from
         const checkAndApplyBothUploads = async () => {
             if (!pendingFillers || !pendingColli) return;
 
+            const populateFillersUI = () => {
+                const manualFillersList = document.getElementById('manual-fillers-list');
+                if (!manualFillersList) return;
+                manualFillersList.innerHTML = '';
+                if (pendingFillers && pendingFillers.length > 0) {
+                    pendingFillers.forEach(displayName => {
+                        const match = displayName.match(/^(.+?)\s*-\s*(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})$/);
+                        const rawName = match ? match[1].trim() : displayName.trim();
+                        const { matchedUser, hasMultipleMatches, candidateMatches } = matchEmployeeName(rawName, storeEmployees);
+                        const nameToUse = matchedUser || rawName;
+                        const startVal = match ? match[2] : '';
+                        const endVal = match ? match[3] : '';
+                        const pause = state.fillerBreaks && state.fillerBreaks[displayName] !== undefined ? state.fillerBreaks[displayName] : '';
+
+                        addFillerRow(nameToUse, startVal, endVal, pause, {
+                            matched: !!matchedUser,
+                            originalName: rawName,
+                            hasMultipleMatches,
+                            candidateMatches
+                        });
+                    });
+                }
+            };
+
             const fillManualScreen = (padenToUse) => {
                 document.querySelectorAll('.upload-group').forEach(el => el.style.display = 'none');
                 const manualContainerEl = document.getElementById('manual-input-container');
                 if (manualContainerEl) manualContainerEl.style.display = 'flex';
-
-                const manualFillersList = document.getElementById('manual-fillers-list');
-                if (manualFillersList) {
-                    manualFillersList.innerHTML = '';
-                    if (pendingFillers && pendingFillers.length > 0) {
-                        pendingFillers.forEach(displayName => {
-                            const match = displayName.match(/^(.+?)\s*-\s*(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})$/);
-                            let rawName = match ? match[1].trim() : displayName.trim();
-                            let matchedUser = null;
-
-                            if (storeEmployees && storeEmployees.length > 0) {
-                                const cleanPdfName = rawName.toLowerCase();
-                                const exactMatches = storeEmployees.filter(emp => emp.toLowerCase().includes(cleanPdfName));
-                                if (exactMatches.length === 1) {
-                                    matchedUser = exactMatches[0];
-                                } else {
-                                    const pdfParts = cleanPdfName.split(/\s+/).filter(Boolean);
-                                    const partMatches = storeEmployees.filter(emp => {
-                                        const empLower = emp.toLowerCase();
-                                        return pdfParts.every(part => empLower.includes(part));
-                                    });
-                                    if (partMatches.length === 1) {
-                                        matchedUser = partMatches[0];
-                                    }
-                                }
-                            }
-
-                            const nameToUse = matchedUser || rawName;
-                            const startVal = match ? match[2] : '';
-                            const endVal = match ? match[3] : '';
-                            const pause = state.fillerBreaks && state.fillerBreaks[displayName] !== undefined ? state.fillerBreaks[displayName] : '';
-
-                            addFillerRow(nameToUse, startVal, endVal, pause, { matched: !!matchedUser, originalName: rawName });
-                        });
-                    }
-                }
-
+                populateFillersUI();
                 populatePaths(padenToUse, pendingColli.categoryColli || {});
             };
 
@@ -205,43 +193,7 @@ import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration } from
                         document.querySelectorAll('.upload-group').forEach(el => el.style.display = 'none');
                         const manualContainerEl = document.getElementById('manual-input-container');
                         if (manualContainerEl) manualContainerEl.style.display = 'flex';
-
-                        const manualFillersList = document.getElementById('manual-fillers-list');
-                        if (manualFillersList) {
-                            manualFillersList.innerHTML = '';
-                            if (pendingFillers && pendingFillers.length > 0) {
-                                pendingFillers.forEach(displayName => {
-                                    const match = displayName.match(/^(.+?)\s*-\s*(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})$/);
-                                    let rawName = match ? match[1].trim() : displayName.trim();
-                                    let matchedUser = null;
-
-                                    if (storeEmployees && storeEmployees.length > 0) {
-                                        const cleanPdfName = rawName.toLowerCase();
-                                        const exactMatches = storeEmployees.filter(emp => emp.toLowerCase().includes(cleanPdfName));
-                                        if (exactMatches.length === 1) {
-                                            matchedUser = exactMatches[0];
-                                        } else {
-                                            const pdfParts = cleanPdfName.split(/\s+/).filter(Boolean);
-                                            const partMatches = storeEmployees.filter(emp => {
-                                                const empLower = emp.toLowerCase();
-                                                return pdfParts.every(part => empLower.includes(part));
-                                            });
-                                            if (partMatches.length === 1) {
-                                                matchedUser = partMatches[0];
-                                            }
-                                        }
-                                    }
-
-                                    const nameToUse = matchedUser || rawName;
-                                    const startVal = match ? match[2] : '';
-                                    const endVal = match ? match[3] : '';
-                                    const pause = state.fillerBreaks && state.fillerBreaks[displayName] !== undefined ? state.fillerBreaks[displayName] : '';
-
-                                    addFillerRow(nameToUse, startVal, endVal, pause, { matched: !!matchedUser, originalName: rawName });
-                                });
-                            }
-                        }
-
+                        populateFillersUI();
                         pendingFillers = null;
                         pendingColli = null;
                         const file1 = document.getElementById('vulplanning-input');

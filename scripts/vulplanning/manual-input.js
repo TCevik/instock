@@ -3,6 +3,7 @@ import { showToast } from '../toast.js';
 import { showConfirmModal } from '../modal.js';
 import { triggerSave } from './storage.js';
 import { initPadenModal } from '../main.js';
+import { matchEmployeeName } from './planning-logic.js';
 
 export const renderPeopleList = (names) => {
     const card = document.getElementById('people-card');
@@ -48,7 +49,7 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
     const addFillerBtn = document.getElementById('add-manual-filler-btn');
     const startManualBtn = document.getElementById('start-manual-planning-btn');
 
-    const setupFillerAutocomplete = (inputEl, listEl) => {
+    const setupFillerAutocomplete = (inputEl, listEl, onSelect) => {
         let currentMatches = [];
         const render = () => {
             const val = inputEl.value.trim().toLowerCase();
@@ -80,6 +81,7 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
                     e.preventDefault();
                     inputEl.value = empName;
                     listEl.style.display = 'none';
+                    if (onSelect) onSelect(empName);
                     const row = inputEl.closest('.manual-filler-row');
                     if (row) {
                         const startInput = row.querySelector('.manual-filler-start');
@@ -96,6 +98,8 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
         inputEl.addEventListener('blur', () => {
             setTimeout(() => { listEl.style.display = 'none'; }, 200);
         });
+
+        return { render };
     };
 
     const addFillerRow = (nameVal = '', startVal = '', endVal = '', pauseVal = '', matchInfo = null) => {
@@ -104,15 +108,14 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
         row.className = 'manual-filler-row';
         row.style.cssText = 'display: flex; gap: 8px; align-items: center; margin-bottom: 8px; position: relative;';
 
-        const isMatched = matchInfo && matchInfo.matched;
         const origName = matchInfo ? matchInfo.originalName : '';
 
         row.innerHTML = `
             <div style="flex: 2; position: relative;">
                 <div style="display: flex; align-items: center; gap: 4px;">
-                    <input type="text" class="manual-filler-name form-input" placeholder="Naam medewerker..." value="${nameVal}" style="width: 100%; ${isMatched ? 'background-color: var(--success-bg); border-color: var(--success-color);' : ''}">
-                    <button type="button" class="match-toggle-btn" style="padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--input-bg); cursor: pointer; display: ${matchInfo ? 'inline-flex' : 'none'}; align-items: center; justify-content: center;" title="${isMatched ? 'Gekoppeld met gebruiker (klik voor undo)' : 'Niet gekoppeld (klik om te koppelen)'}">
-                        <i class="material-icons match-icon" style="font-size: 16px; color: ${isMatched ? 'var(--success-color)' : 'var(--text-color-muted)'};">${isMatched ? 'check_circle' : 'cancel'}</i>
+                    <input type="text" class="manual-filler-name form-input" placeholder="Naam medewerker..." value="${nameVal}" style="width: 100%;">
+                    <button type="button" class="match-toggle-btn" style="padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--input-bg); cursor: pointer; display: none; align-items: center; justify-content: center;">
+                        <i class="material-icons match-icon" style="font-size: 16px;">cancel</i>
                     </button>
                 </div>
                 <div class="filler-autocomplete-list" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px; z-index: 100; max-height: 160px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"></div>
@@ -126,28 +129,73 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
         const nameInput = row.querySelector('.manual-filler-name');
         const matchToggleBtn = row.querySelector('.match-toggle-btn');
         const matchIcon = row.querySelector('.match-icon');
-        let currentMatchedState = isMatched;
+        let currentMatchedState = false;
+
+        const updateUIState = (val) => {
+            const trimmed = (val || '').trim();
+            const { matchedUser, hasMultipleMatches, candidateMatches } = matchEmployeeName(trimmed, storeEmployees);
+            const isExactMatch = matchedUser && matchedUser.toLowerCase() === trimmed.toLowerCase();
+
+            if (isExactMatch) {
+                currentMatchedState = true;
+                matchIcon.textContent = 'check_circle';
+                matchIcon.style.color = 'var(--success-color)';
+                matchToggleBtn.style.display = 'inline-flex';
+                matchToggleBtn.style.background = 'var(--input-bg)';
+                matchToggleBtn.style.borderColor = 'var(--border-color)';
+                matchToggleBtn.title = 'Gekoppeld met account (klik voor undo)';
+                nameInput.style.backgroundColor = 'var(--success-bg)';
+                nameInput.style.borderColor = 'var(--success-color)';
+            } else if (hasMultipleMatches) {
+                currentMatchedState = false;
+                matchIcon.textContent = 'cancel';
+                matchIcon.style.color = 'var(--danger-color)';
+                matchToggleBtn.style.display = 'inline-flex';
+                matchToggleBtn.style.background = 'var(--danger-bg)';
+                matchToggleBtn.style.borderColor = 'var(--danger-color)';
+                const namesStr = candidateMatches && candidateMatches.length ? candidateMatches.join(', ') : '';
+                matchToggleBtn.title = namesStr ? `Meerdere accounts gevonden (${namesStr}). Klik om te koppelen.` : 'Meerdere accounts gevonden. Klik om te koppelen.';
+                nameInput.style.backgroundColor = 'var(--danger-bg)';
+                nameInput.style.borderColor = 'var(--danger-color)';
+            } else {
+                currentMatchedState = false;
+                matchIcon.textContent = 'cancel';
+                matchIcon.style.color = 'var(--text-color-muted)';
+                matchToggleBtn.style.display = matchInfo ? 'inline-flex' : 'none';
+                matchToggleBtn.style.background = 'var(--input-bg)';
+                matchToggleBtn.style.borderColor = 'var(--border-color)';
+                matchToggleBtn.title = 'Niet gekoppeld (klik om te koppelen)';
+                nameInput.style.backgroundColor = '';
+                nameInput.style.borderColor = '';
+            }
+        };
+
+        const autocompleteManager = setupFillerAutocomplete(nameInput, row.querySelector('.filler-autocomplete-list'), (selectedName) => {
+            updateUIState(selectedName);
+        });
+
+        nameInput.addEventListener('input', () => {
+            updateUIState(nameInput.value);
+        });
 
         if (matchToggleBtn) {
             matchToggleBtn.addEventListener('click', () => {
-                currentMatchedState = !currentMatchedState;
                 if (currentMatchedState) {
-                    matchIcon.textContent = 'check_circle';
-                    matchIcon.style.color = 'var(--success-color)';
-                    nameInput.style.backgroundColor = 'var(--success-bg)';
-                    nameInput.style.borderColor = 'var(--success-color)';
-                    if (nameVal) nameInput.value = nameVal;
-                    matchToggleBtn.title = 'Gekoppeld met gebruiker (klik voor undo)';
+                    currentMatchedState = false;
+                    if (origName) {
+                        nameInput.value = origName;
+                    }
+                    updateUIState(nameInput.value);
                 } else {
-                    matchIcon.textContent = 'cancel';
-                    matchIcon.style.color = 'var(--text-color-muted)';
-                    nameInput.style.backgroundColor = '';
-                    nameInput.style.borderColor = '';
-                    if (origName) nameInput.value = origName;
-                    matchToggleBtn.title = 'Niet gekoppeld (klik om te herstellen)';
+                    nameInput.focus();
+                    if (autocompleteManager) {
+                        autocompleteManager.render();
+                    }
                 }
             });
         }
+
+        updateUIState(nameVal);
 
         const removeBtn = row.querySelector('.remove-filler-btn');
         removeBtn.addEventListener('click', () => {
@@ -477,23 +525,48 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
                 return;
             }
 
-            state.selectedFillers = newFillers;
-            state.pathColli = newPathColli;
-            state.fillerTasks = {};
-            state.helpers = {};
-            state.instanceTimes = {};
-            state.actualEndTimes = {};
+            const unlinkedFillers = [];
+            newFillers.forEach(displayName => {
+                const name = displayName.split(' - ')[0].trim();
+                const isLinked = Array.isArray(storeEmployees) && storeEmployees.some(emp => emp.trim().toLowerCase() === name.toLowerCase());
+                if (!isLinked) {
+                    unlinkedFillers.push(name);
+                }
+            });
 
-            document.getElementById('step-1-container').style.display = 'none';
-            document.getElementById('step-2-container').style.display = 'block';
-            const manualContainer = document.getElementById('manual-input-container');
-            if (manualContainer) manualContainer.style.display = 'none';
-            renderWorkspace();
-            const resetBtn = document.getElementById('reset-planning-btn');
-            const generateBtn = document.getElementById('generate-planning-btn');
-            if (resetBtn) resetBtn.style.display = 'inline-block';
-            if (generateBtn) generateBtn.style.display = 'flex';
-            triggerSave();
+            const proceedWithPlanning = () => {
+                state.selectedFillers = newFillers;
+                state.pathColli = newPathColli;
+                state.fillerTasks = {};
+                state.helpers = {};
+                state.instanceTimes = {};
+                state.actualEndTimes = {};
+
+                document.getElementById('step-1-container').style.display = 'none';
+                document.getElementById('step-2-container').style.display = 'block';
+                const manualContainer = document.getElementById('manual-input-container');
+                if (manualContainer) manualContainer.style.display = 'none';
+                renderWorkspace();
+                const resetBtn = document.getElementById('reset-planning-btn');
+                const generateBtn = document.getElementById('generate-planning-btn');
+                if (resetBtn) resetBtn.style.display = 'inline-block';
+                if (generateBtn) generateBtn.style.display = 'flex';
+                triggerSave();
+            };
+
+            if (unlinkedFillers.length > 0) {
+                const namesList = unlinkedFillers.map(n => `<li>${n}</li>`).join('');
+                showConfirmModal(
+                    'Niet-gekoppelde Vullers',
+                    `<p>De volgende vullers zijn niet gekoppeld aan een account:</p><ul style="margin: 8px 0; padding-left: 20px;">${namesList}</ul><p>Hier worden de eindtijden <strong>niet</strong> van opgeslagen.</p><p style="margin-top: 8px;">Wil je toch doorgaan met de planning?</p>`,
+                    'Planning Starten',
+                    proceedWithPlanning,
+                    null,
+                    'Aanpassen'
+                );
+            } else {
+                proceedWithPlanning();
+            }
         });
     }
 
