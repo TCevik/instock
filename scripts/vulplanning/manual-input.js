@@ -549,8 +549,10 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
                 renderWorkspace();
                 const resetBtn = document.getElementById('reset-planning-btn');
                 const generateBtn = document.getElementById('generate-planning-btn');
+                const finalizeBtn = document.getElementById('finalize-planning-btn');
                 if (resetBtn) resetBtn.style.display = 'inline-block';
                 if (generateBtn) generateBtn.style.display = 'flex';
+                if (finalizeBtn) finalizeBtn.style.display = 'flex';
                 triggerSave();
             };
 

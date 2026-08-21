@@ -91,6 +91,15 @@ html {
     --prod-danger-bg: rgba(255, 82, 82, 0.2);
     --prod-danger-color: var(--danger-color);
     --prod-danger-border: rgba(255, 82, 82, 0.4);
+    --rank-gold: #ffd700;
+    --rank-gold-bg: rgba(255, 215, 0, 0.15);
+    --rank-gold-border: rgba(255, 215, 0, 0.4);
+    --rank-silver: #c0c0c0;
+    --rank-silver-bg: rgba(192, 192, 192, 0.15);
+    --rank-silver-border: rgba(192, 192, 192, 0.4);
+    --rank-bronze: #cd7f32;
+    --rank-bronze-bg: rgba(205, 127, 50, 0.15);
+    --rank-bronze-border: rgba(205, 127, 50, 0.4);
 }
 
 body {
@@ -407,6 +416,11 @@ body.app-ready {
 .action-btn.edit:hover {
     border-color: var(--accent-color-sidemenu);
     color: var(--accent-color-sidemenu);
+}
+
+.action-btn.info:hover {
+    border-color: var(--other-color);
+    color: var(--other-color);
 }
 
 .action-btn.delete:hover {

@@ -1,5 +1,5 @@
 import { loadHeader } from '../header.js';
-import { checkAuth, getSupabase } from '../main.js';
+import { checkAuth, getSupabase, invokeFunction } from '../main.js';
 import { showToast } from '../toast.js';
 import { state, removeTaskFromAll, resetState } from './state.js';
 import { setStoreId, getStoreId, triggerSave, loadData } from './storage.js';
@@ -9,7 +9,7 @@ import { parsePDFAndGetNames, parseColliPDF, getDefaultPDFPaden, doSettingsMatch
 import { createManualInputManager, renderPeopleList } from './manual-input.js';
 import { generatePrintablePlanning } from './printable-overview.js';
 import { renderWorkspace } from './workspace.js';
-import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration, matchEmployeeName } from './planning-logic.js';
+import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration, matchEmployeeName, getFillerProductivity, formatTaskDisplayName } from './planning-logic.js';
 
 (() => {
     setRenderWorkspaceCallback(renderWorkspace);
@@ -80,6 +80,7 @@ import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration, match
 
         const resetBtn = document.getElementById('reset-planning-btn');
         const generateBtn = document.getElementById('generate-planning-btn');
+        const finalizeBtn = document.getElementById('finalize-planning-btn');
         if (resetBtn) {
             resetBtn.addEventListener('click', () => {
                 showConfirmModal(
@@ -96,6 +97,7 @@ import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration, match
                         document.getElementById('step-2-container').style.display = 'none';
                         resetBtn.style.display = 'none';
                         if (generateBtn) generateBtn.style.display = 'none';
+                        if (finalizeBtn) finalizeBtn.style.display = 'none';
                         const peopleCard = document.getElementById('people-card');
                         if (peopleCard) peopleCard.style.display = 'none';
                         const manualContainerEl = document.getElementById('manual-input-container');
@@ -131,6 +133,193 @@ import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration, match
             renderWorkspace();
             if (resetBtn) resetBtn.style.display = 'inline-block';
             if (generateBtn) generateBtn.style.display = 'flex';
+            if (finalizeBtn) finalizeBtn.style.display = 'flex';
+        }
+
+        if (finalizeBtn) {
+            finalizeBtn.addEventListener('click', async () => {
+                finalizeBtn.disabled = true;
+                try {
+                    const supabaseClient = await getSupabase();
+                    if (!supabaseClient || !storeId) {
+                        showToast('Geen databaseverbinding', 'error');
+                        finalizeBtn.disabled = false;
+                        return;
+                    }
+
+                    const { data: users, error } = await supabaseClient
+                        .from('user_data')
+                        .select('id, full_name, history_productivity')
+                        .eq('winkel', storeId);
+
+                    if (error || !users) {
+                        showToast('Kon gebruikersgegevens niet ophalen', 'error');
+                        finalizeBtn.disabled = false;
+                        return;
+                    }
+
+                    const today = new Date().toISOString().split('T')[0];
+                    const matchedEmployees = [];
+
+                    (state.selectedFillers || []).forEach(filler => {
+                        const { name } = parseNameAndSubtitle(filler);
+                        const user = users.find(u => u.full_name && u.full_name.trim().toLowerCase() === name.trim().toLowerCase());
+                        if (user) {
+                            matchedEmployees.push({
+                                user,
+                                filler,
+                                productivity: getFillerProductivity(filler, state),
+                                tasks: state.fillerTasks[filler] || []
+                            });
+                        }
+                    });
+
+                    if (matchedEmployees.length === 0) {
+                        showToast('Geen gekoppelde gebruikers gevonden', 'warning');
+                        finalizeBtn.disabled = false;
+                        return;
+                    }
+
+                    const approvedPayload = [];
+
+                    const askConfirmationForEmployee = (index) => {
+                        return new Promise((resolve) => {
+                            if (index >= matchedEmployees.length) {
+                                resolve();
+                                return;
+                            }
+
+                            const emp = matchedEmployees[index];
+                            const history = Array.isArray(emp.user.history_productivity) ? emp.user.history_productivity : [];
+                            const existingEntry = history.find(entry => entry && entry.date === today);
+
+                            if (existingEntry) {
+                                const oldProdVal = existingEntry.productivity ?? null;
+                                const newProdVal = emp.productivity ?? null;
+                                const prodChanged = oldProdVal !== newProdVal;
+
+                                const oldTasksArr = Array.isArray(existingEntry.tasks) ? existingEntry.tasks : [];
+                                const newTasksArr = Array.isArray(emp.tasks) ? emp.tasks : [];
+                                const tasksChanged = oldTasksArr.length !== newTasksArr.length || oldTasksArr.some((t, i) => t !== newTasksArr[i]);
+
+                                if (!prodChanged && !tasksChanged) {
+                                    approvedPayload.push({
+                                        userId: emp.user.id,
+                                        date: today,
+                                        productivity: emp.productivity,
+                                        tasks: emp.tasks
+                                    });
+                                    askConfirmationForEmployee(index + 1).then(resolve);
+                                    return;
+                                }
+
+                                const changeLines = [];
+                                if (prodChanged) {
+                                    const oldProdStr = oldProdVal !== null ? `${oldProdVal}%` : 'Geen';
+                                    const newProdStr = newProdVal !== null ? `${newProdVal}%` : 'Geen';
+                                    changeLines.push(`Productiviteit gewijzigd: ${oldProdStr} &rarr; <strong>${newProdStr}</strong>`);
+                                }
+                                if (tasksChanged) {
+                                    const oldTasksStr = oldTasksArr.length > 0 ? oldTasksArr.map(formatTaskDisplayName).join(', ') : 'Geen';
+                                    const newTasksStr = newTasksArr.length > 0 ? newTasksArr.map(formatTaskDisplayName).join(', ') : 'Geen';
+                                    changeLines.push(`Taken gewijzigd:<br>&bull; Oud: ${oldTasksStr}<br>&bull; Nieuw: <strong>${newTasksStr}</strong>`);
+                                }
+
+                                const message = `Voor <strong>${emp.user.full_name}</strong> zijn er wijzigingen ten opzichte van de eerdere registratie vandaag:<br><br>` +
+                                    changeLines.join('<br><br>') +
+                                    `<br><br>Wil je deze gegevens overschrijven?`;
+
+                                showConfirmModal(
+                                    'Registratie Overschrijven',
+                                    message,
+                                    'Overschrijven',
+                                    () => {
+                                        approvedPayload.push({
+                                            userId: emp.user.id,
+                                            date: today,
+                                            productivity: emp.productivity,
+                                            tasks: emp.tasks
+                                        });
+                                        askConfirmationForEmployee(index + 1).then(resolve);
+                                    },
+                                    () => {
+                                        askConfirmationForEmployee(index + 1).then(resolve);
+                                    },
+                                    'Overslaan'
+                                );
+                            } else {
+                                approvedPayload.push({
+                                    userId: emp.user.id,
+                                    date: today,
+                                    productivity: emp.productivity,
+                                    tasks: emp.tasks
+                                });
+                                askConfirmationForEmployee(index + 1).then(resolve);
+                            }
+                        });
+                    };
+
+                    await askConfirmationForEmployee(0);
+
+                    if (approvedPayload.length > 0) {
+                        const { data: { session } } = await supabaseClient.auth.getSession();
+                        const headers = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
+                        const { data: invokeData, error: invokeError, detailedError } = await invokeFunction('save_productivity', {
+                            productivityData: approvedPayload
+                        }, headers);
+
+                        if (invokeError || (invokeData && invokeData.error)) {
+                            let failedDirectly = false;
+                            for (const item of approvedPayload) {
+                                const { data: currentUser, error: selectErr } = await supabaseClient
+                                    .from('user_data')
+                                    .select('history_productivity')
+                                    .eq('id', item.userId)
+                                    .single();
+
+                                if (selectErr) {
+                                    failedDirectly = true;
+                                    break;
+                                }
+
+                                const history = Array.isArray(currentUser?.history_productivity)
+                                    ? currentUser.history_productivity.filter(h => h && h.date !== item.date)
+                                    : [];
+
+                                const newEntry = {
+                                    date: item.date,
+                                    productivity: item.productivity,
+                                    tasks: item.tasks
+                                };
+                                history.push(newEntry);
+
+                                const { error: updateError } = await supabaseClient
+                                    .from('user_data')
+                                    .update({ history_productivity: history })
+                                    .eq('id', item.userId);
+
+                                if (updateError) {
+                                    failedDirectly = true;
+                                    break;
+                                }
+                            }
+
+                            if (failedDirectly) {
+                                const errDetail = invokeData?.error || detailedError || invokeError?.message || 'Fout bij opslaan';
+                                showToast(errDetail, 'error');
+                            } else {
+                                showToast('Productiviteit opgeslagen', 'success');
+                            }
+                        } else {
+                            showToast('Productiviteit opgeslagen', 'success');
+                        }
+                    }
+                } catch (err) {
+                    showToast('Er is een fout opgetreden', 'error');
+                } finally {
+                    finalizeBtn.disabled = false;
+                }
+            });
         }
 
         let pendingFillers = null;

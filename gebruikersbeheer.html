@@ -22,6 +22,10 @@
                     <p class="page-header-subtitle">Beheer systeemgebruikers en hun rechten</p>
                 </div>
                 <div class="header-actions">
+                    <button class="action-btn-secondary" id="openLeaderboardModalBtn">
+                        <i class="material-icons">leaderboard</i>
+                        <span>Productiviteiten</span>
+                    </button>
                     <button class="action-btn-secondary" id="toggleViewBtn">
                         <i class="material-icons">sort_by_alpha</i>
                         <span>Alfabetische weergave</span>
@@ -148,6 +152,50 @@
                     <button class="action-btn" id="cancelDeleteBtn">Annuleren</button>
                     <button class="delete-btn" id="confirmDeleteBtn">Verwijderen</button>
                 </div>
+            </div>
+        </div>
+        <div class="modal-overlay" id="productivityModal">
+            <div class="management-card productivity-card">
+                <div class="modal-header">
+                    <div class="productivity-modal-title-group">
+                        <h2 id="prod-user-name">Productiviteit</h2>
+                        <span class="user-subtitle" id="prod-user-role"></span>
+                    </div>
+                    <button class="close-modal-btn" id="closeProdModalBtn">
+                        <i class="material-icons">close</i>
+                    </button>
+                </div>
+                <div class="productivity-summary-grid">
+                    <div class="prod-stat-box">
+                        <span class="prod-stat-label">Totaal gemiddelde</span>
+                        <div class="prod-stat-value-row">
+                            <span class="prod-stat-number" id="prod-stat-avg">-</span>
+                            <span class="prod-badge" id="prod-stat-avg-badge" style="display: none;"></span>
+                        </div>
+                    </div>
+                    <div class="prod-stat-box">
+                        <span class="prod-stat-label">Aantal registraties</span>
+                        <span class="prod-stat-number" id="prod-stat-count">0</span>
+                    </div>
+                </div>
+                <div class="prod-history-section">
+                    <h3 class="prod-history-title">Historie per dag</h3>
+                    <div class="prod-history-list" id="prod-history-list"></div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-overlay" id="leaderboardModal">
+            <div class="management-card leaderboard-card">
+                <div class="modal-header">
+                    <div class="productivity-modal-title-group">
+                        <h2>Productiviteit Leaderboard</h2>
+                        <span class="user-subtitle">Ranglijst op basis van gemiddelde score</span>
+                    </div>
+                    <button class="close-modal-btn" id="closeLeaderboardModalBtn">
+                        <i class="material-icons">close</i>
+                    </button>
+                </div>
+                <div class="leaderboard-list-container" id="leaderboard-list"></div>
             </div>
         </div>
         <div id="department-sections-container"></div>

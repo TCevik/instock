@@ -61,7 +61,54 @@ export function showMessage(messageBox, messageText, messageIcon, text, type) {
     }
 }
 
+export async function invokeFunction(functionName, body, headers = {}) {
+    const supabase = await getSupabase();
+    let currentHeaders = { ...headers };
+    let result = await supabase.functions.invoke(functionName, { body, headers: currentHeaders });
+    if (result.error) {
+        let detailedError = '';
+        if (result.error.context) {
+            try {
+                if (typeof result.error.context.json === 'function') {
+                    const errorBody = await result.error.context.json();
+                    detailedError = errorBody.error || errorBody.message || JSON.stringify(errorBody);
+                } else if (typeof result.error.context.text === 'function') {
+                    detailedError = await result.error.context.text();
+                }
+            } catch (e) {}
+        }
+        if (!detailedError) {
+            detailedError = result.error.message || String(result.error);
+        }
+        result.detailedError = detailedError;
 
+        const lowerErr = String(detailedError).toLowerCase();
+        const isJwtErr = lowerErr.includes('jwt') || lowerErr.includes('signature') || result.error.status === 401;
+        if (isJwtErr) {
+            const { data: refreshed } = await supabase.auth.refreshSession();
+            const newToken = refreshed?.session?.access_token;
+            if (newToken) {
+                currentHeaders.Authorization = `Bearer ${newToken}`;
+            }
+            result = await supabase.functions.invoke(functionName, { body, headers: currentHeaders });
+            if (result.error) {
+                let retryDetailed = '';
+                if (result.error.context) {
+                    try {
+                        if (typeof result.error.context.json === 'function') {
+                            const errorBody = await result.error.context.json();
+                            retryDetailed = errorBody.error || errorBody.message || JSON.stringify(errorBody);
+                        } else if (typeof result.error.context.text === 'function') {
+                            retryDetailed = await result.error.context.text();
+                        }
+                    } catch (e) {}
+                }
+                result.detailedError = retryDetailed || result.error.message || String(result.error);
+            }
+        }
+    }
+    return result;
+}
 
 export async function handleFormSubmit(submitBtn, loadingText, messageBox, actionFn) {
     if (!submitBtn) return;

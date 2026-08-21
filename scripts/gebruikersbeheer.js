@@ -1,6 +1,7 @@
-import { getSupabase, checkAuth, showMessage, setupModal, handleFormSubmit } from './main.js';
+import { getSupabase, checkAuth, showMessage, setupModal, handleFormSubmit, invokeFunction } from './main.js';
 import { loadHeader } from './header.js';
-import { parseStoreDepartments, sortUsersByRole, groupUsersByDepartment } from './gebruikersbeheer-logic.js';
+import { parseStoreDepartments, sortUsersByRole, groupUsersByDepartment, calculateProductivityStats, sortHistoryByDate, formatDateDisplay, getLeaderboardData, parseTaskInput } from './gebruikersbeheer-logic.js';
+import { getProductivityStatusClass, formatTaskDisplayName } from './vulplanning/planning-logic.js';
 import { showToast } from './toast.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -31,35 +32,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     const deptMessageIcon = document.getElementById('dept-message-icon');
     const deptMessageText = document.getElementById('dept-message-text');
 
+    const prodModal = document.getElementById('productivityModal');
+    const closeProdModalBtn = document.getElementById('closeProdModalBtn');
+    const prodUserName = document.getElementById('prod-user-name');
+    const prodUserRole = document.getElementById('prod-user-role');
+    const prodStatAvg = document.getElementById('prod-stat-avg');
+    const prodStatAvgBadge = document.getElementById('prod-stat-avg-badge');
+    const prodStatCount = document.getElementById('prod-stat-count');
+    const prodHistoryList = document.getElementById('prod-history-list');
+
+    const openLeaderboardModalBtn = document.getElementById('openLeaderboardModalBtn');
+    const leaderboardModal = document.getElementById('leaderboardModal');
+    const closeLeaderboardModalBtn = document.getElementById('closeLeaderboardModalBtn');
+    const leaderboardList = document.getElementById('leaderboard-list');
+
     const { session, userData } = auth;
     const loggedInUserId = session.user.id;
     const currentWinkelId = userData.winkel;
     const supabase = await getSupabase();
-
-    async function invokeFunctionWithRetry(functionName, body, headers) {
-        let currentHeaders = { ...headers };
-        let result = await supabase.functions.invoke(functionName, { body, headers: currentHeaders });
-        if (result.error) {
-            let errorText = String(result.error.message || result.error);
-            if (result.error.context && typeof result.error.context.clone === 'function') {
-                try {
-                    const errorBody = await result.error.context.clone().json();
-                    errorText += ' ' + JSON.stringify(errorBody);
-                } catch (e) {}
-            }
-            const lowerErr = errorText.toLowerCase();
-            const isJwtErr = lowerErr.includes('jwt') || lowerErr.includes('signature') || result.error.status === 401;
-            if (isJwtErr) {
-                const { data: refreshed } = await supabase.auth.refreshSession();
-                const newToken = refreshed?.session?.access_token;
-                if (newToken) {
-                    currentHeaders.Authorization = `Bearer ${newToken}`;
-                }
-                result = await supabase.functions.invoke(functionName, { body, headers: currentHeaders });
-            }
-        }
-        return result;
-    }
 
     const toggleViewBtn = document.getElementById('toggleViewBtn');
 
@@ -204,6 +194,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        const renderActionBtns = (u, isSelf) => `
+            <div class="action-btns">
+                <button class="action-btn info info-user-btn" data-id="${u.id}" title="Productiviteit bekijken"><i class="material-icons">info</i></button>
+                <button class="action-btn edit" data-id="${u.id}"><i class="material-icons">edit</i></button>
+                <button class="action-btn delete" data-id="${u.id}" ${isSelf ? 'disabled' : ''}><i class="material-icons">delete</i></button>
+            </div>
+        `;
+
         if (viewMode === 'alphabetical' || searchQuery) {
             const sortedAlphabetical = sortUsersByRole(filteredUsers);
 
@@ -217,10 +215,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <td data-label="Rol">${u.role || ''}</td>
                         <td data-label="Afdeling">${formattedAfdeling}</td>
                         <td data-label="Acties">
-                            <div class="action-btns">
-                                <button class="action-btn edit" data-id="${u.id}"><i class="material-icons">edit</i></button>
-                                <button class="action-btn delete" data-id="${u.id}" ${isSelf ? 'disabled' : ''}><i class="material-icons">delete</i></button>
-                            </div>
+                            ${renderActionBtns(u, isSelf)}
                         </td>
                     </tr>
                 `;
@@ -261,10 +256,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <td data-label="Rol">${u.role || ''}</td>
                         <td data-label="Afdeling">${formattedAfdeling}</td>
                         <td data-label="Acties">
-                            <div class="action-btns">
-                                <button class="action-btn edit" data-id="${u.id}"><i class="material-icons">edit</i></button>
-                                <button class="action-btn delete" data-id="${u.id}" ${isSelf ? 'disabled' : ''}><i class="material-icons">delete</i></button>
-                            </div>
+                            ${renderActionBtns(u, isSelf)}
                         </td>
                     </tr>
                 `;
@@ -305,7 +297,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const container = document.getElementById('department-sections-container');
         const { data: users, error } = await supabase
             .from('user_data')
-            .select('id, full_name, role, gebruikersnaam, afdeling')
+            .select('id, full_name, role, gebruikersnaam, afdeling, history_productivity')
             .eq('winkel', currentWinkelId);
 
         if (error || !users) {
@@ -348,9 +340,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (password) {
                     userData.password = password;
                 }
-                result = await invokeFunctionWithRetry('manage_users', { action: 'update', targetUserId: editingUserId, userData }, headers);
+                result = await invokeFunction('manage_users', { action: 'update', targetUserId: editingUserId, userData }, headers);
             } else {
-                result = await invokeFunctionWithRetry('manage_users', { action: 'create', userData: { full_name, role, gebruikersnaam, password, afdeling } }, headers);
+                result = await invokeFunction('manage_users', { action: 'create', userData: { full_name, role, gebruikersnaam, password, afdeling } }, headers);
             }
 
             const { data, error } = result;
@@ -461,7 +453,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             const headers = currentSession?.access_token ? { Authorization: `Bearer ${currentSession.access_token}` } : {};
 
-            const { data, error } = await invokeFunctionWithRetry('manage_users', { action: 'delete', targetUserId: userToDeleteId }, headers);
+            const { data, error } = await invokeFunction('manage_users', { action: 'delete', targetUserId: userToDeleteId }, headers);
 
             if (error) {
                 let errorMsg = error.message;
@@ -478,10 +470,253 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
+    let activeProdUser = null;
+
+    const renderProdHistory = () => {
+        if (!activeProdUser) return;
+        const stats = calculateProductivityStats(activeProdUser.history_productivity);
+        if (stats.average !== null) {
+            prodStatAvg.textContent = `${stats.average}%`;
+            const statusClass = getProductivityStatusClass(stats.average);
+            prodStatAvgBadge.className = `prod-badge ${statusClass}`.trim();
+            prodStatAvgBadge.textContent = `${stats.average}%`;
+            prodStatAvgBadge.style.display = 'inline-flex';
+        } else {
+            prodStatAvg.textContent = '-';
+            prodStatAvgBadge.style.display = 'none';
+        }
+
+        prodStatCount.textContent = `${stats.count} ${stats.count === 1 ? 'meting' : 'metingen'}`;
+
+        const sortedHistory = sortHistoryByDate(activeProdUser.history_productivity);
+        if (sortedHistory.length === 0) {
+            prodHistoryList.innerHTML = '<div class="prod-history-empty">Geen productiviteitsmetingen geregistreerd.</div>';
+            return;
+        }
+
+        prodHistoryList.innerHTML = sortedHistory.map(item => {
+            const pVal = typeof item.productivity === 'number' ? item.productivity : null;
+            const statusClass = getProductivityStatusClass(pVal);
+            const badgeText = pVal !== null ? `${pVal}%` : '-';
+            const formattedDate = formatDateDisplay(item.date);
+
+            let rawTasksJoined = '';
+            let tasksText = '';
+            if (Array.isArray(item.tasks) && item.tasks.length > 0) {
+                rawTasksJoined = item.tasks.join(', ');
+                tasksText = item.tasks.map(formatTaskDisplayName).join(', ');
+            }
+
+            return `
+                <div class="prod-history-item" data-date="${item.date}">
+                    <div class="prod-history-date-info">
+                        <span class="prod-history-date">${formattedDate}</span>
+                        ${tasksText ? `<span class="prod-history-tasks" title="${tasksText}">${tasksText}</span>` : ''}
+                    </div>
+                    <div class="prod-history-actions">
+                        <span class="prod-badge ${statusClass}">${badgeText}</span>
+                        <button class="prod-history-btn edit-prod-entry-btn" title="Bewerken" data-date="${item.date}" data-prod="${pVal !== null ? pVal : ''}" data-tasks="${rawTasksJoined.replace(/"/g, '&quot;')}">
+                            <i class="material-icons">edit</i>
+                        </button>
+                        <button class="prod-history-btn delete-btn delete-prod-entry-btn" title="Verwijderen" data-date="${item.date}">
+                            <i class="material-icons">delete</i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    };
+
+    const saveUserProductivityEntry = async (date, productivity, tasks) => {
+        if (!activeProdUser) return false;
+        const payload = [{
+            userId: activeProdUser.id,
+            date,
+            productivity,
+            tasks: Array.isArray(tasks) ? tasks : []
+        }];
+
+        const { data: resData, error: invokeErr, detailedError } = await invokeFunction('save_productivity', {
+            productivityData: payload
+        });
+
+        if (invokeErr || (resData && resData.error)) {
+            const msg = resData?.error || detailedError || invokeErr?.message || 'Kon wijziging niet opslaan';
+            showToast(msg, 'error');
+            return false;
+        }
+
+        const isDeleteOrEmpty =
+            (productivity === null || productivity === undefined || productivity === '') &&
+            (!Array.isArray(tasks) || tasks.length === 0);
+
+        const currentHistory = Array.isArray(activeProdUser.history_productivity)
+            ? activeProdUser.history_productivity.filter(h => h && h.date !== date)
+            : [];
+
+        const newHistoryList = isDeleteOrEmpty
+            ? currentHistory
+            : [...currentHistory, { date, productivity, tasks: Array.isArray(tasks) ? tasks : [] }];
+
+        const updatedHistory = newHistoryList.length > 0 ? newHistoryList : null;
+
+        activeProdUser.history_productivity = updatedHistory;
+        const userInList = currentUsers.find(u => u.id === activeProdUser.id);
+        if (userInList) {
+            userInList.history_productivity = updatedHistory;
+        }
+        renderProdHistory();
+        showToast(isDeleteOrEmpty ? 'Productiviteit verwijderd' : 'Productiviteit bijgewerkt', 'success');
+        return true;
+    };
+
+    prodHistoryList.addEventListener('click', async (e) => {
+        const editBtn = e.target.closest('.edit-prod-entry-btn');
+        const deleteBtn = e.target.closest('.delete-prod-entry-btn');
+        const saveBtn = e.target.closest('.save-prod-entry-btn');
+        const cancelBtn = e.target.closest('.cancel-prod-entry-btn');
+
+        if (editBtn) {
+            const date = editBtn.getAttribute('data-date');
+            const itemEl = editBtn.closest('.prod-history-item');
+            if (!itemEl || !activeProdUser) return;
+
+            const entry = (activeProdUser.history_productivity || []).find(h => h && h.date === date);
+            if (!entry) return;
+
+            const currentProd = typeof entry.productivity === 'number' ? entry.productivity : '';
+            const currentTasksFormatted = Array.isArray(entry.tasks) ? entry.tasks.map(formatTaskDisplayName).join(', ') : '';
+            const formattedDate = formatDateDisplay(date);
+
+            itemEl.classList.add('prod-history-edit-mode');
+            itemEl.innerHTML = `
+                <div class="prod-history-date">${formattedDate}</div>
+                <div class="prod-history-edit-row">
+                    <input type="number" class="prod-edit-input prod-edit-prod" min="0" max="500" placeholder="%" value="${currentProd}">
+                    <input type="text" class="prod-edit-input prod-edit-tasks" placeholder="Paden (bijv: Pad 1 (Vullen), Diepvries (Spiegelen))" value="${currentTasksFormatted.replace(/"/g, '&quot;')}">
+                    <button class="prod-history-btn save-btn save-prod-entry-btn" title="Opslaan" data-date="${date}">
+                        <i class="material-icons">check</i>
+                    </button>
+                    <button class="prod-history-btn cancel-btn cancel-prod-entry-btn" title="Annuleren">
+                        <i class="material-icons">close</i>
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        if (cancelBtn) {
+            renderProdHistory();
+            return;
+        }
+
+        if (saveBtn) {
+            const date = saveBtn.getAttribute('data-date');
+            const itemEl = saveBtn.closest('.prod-history-item');
+            if (!itemEl || !activeProdUser) return;
+
+            const prodInput = itemEl.querySelector('.prod-edit-prod');
+            const tasksInput = itemEl.querySelector('.prod-edit-tasks');
+
+            const prodValStr = prodInput ? prodInput.value.trim() : '';
+            const newProd = prodValStr !== '' ? Number(prodValStr) : null;
+            const newTasks = tasksInput ? parseTaskInput(tasksInput.value) : [];
+
+            saveBtn.disabled = true;
+            await saveUserProductivityEntry(date, newProd, newTasks);
+            return;
+        }
+
+        if (deleteBtn) {
+            const date = deleteBtn.getAttribute('data-date');
+            if (!date || !activeProdUser) return;
+
+            deleteBtn.disabled = true;
+            await saveUserProductivityEntry(date, null, []);
+            return;
+        }
+    });
+
+    const openProductivityModal = (user) => {
+        if (!user) return;
+        activeProdUser = user;
+        prodUserName.textContent = user.full_name || 'Onbekend';
+        prodUserRole.textContent = `${user.role || 'Medewerker'}${user.gebruikersnaam ? ` (@${user.gebruikersnaam})` : ''}`;
+
+        renderProdHistory();
+        prodModal.classList.add('open');
+    };
+
+    setupModal(prodModal, [closeProdModalBtn]);
+
+    const renderLeaderboard = () => {
+        const leaderboard = getLeaderboardData(currentUsers);
+        if (leaderboard.length === 0) {
+            leaderboardList.innerHTML = '<div class="leaderboard-empty">Nog geen productiviteitsgegevens bekend om een leaderboard te tonen.</div>';
+            return;
+        }
+
+        leaderboardList.innerHTML = leaderboard.map((item, idx) => {
+            const rank = idx + 1;
+            const rankClass = rank <= 3 ? `rank-${rank}` : '';
+            const statusClass = getProductivityStatusClass(item.average);
+            const user = item.user;
+            const formattedAfdeling = Array.isArray(user.afdeling) ? user.afdeling.join(', ') : (user.afdeling || 'Geen afdeling');
+            const countsText = `${item.count} ${item.count === 1 ? 'dag' : 'dagen'}`;
+
+            return `
+                <div class="leaderboard-item ${rankClass}" data-user-id="${user.id}">
+                    <div class="leaderboard-left">
+                        <div class="leaderboard-rank ${rankClass}">${rank}</div>
+                        <div class="leaderboard-user-info">
+                            <span class="leaderboard-user-name">${user.full_name || 'Onbekend'}</span>
+                            <span class="leaderboard-user-meta">${formattedAfdeling} &bull; ${user.role || 'Medewerker'}</span>
+                        </div>
+                    </div>
+                    <div class="leaderboard-right">
+                        <span class="leaderboard-counts">${countsText}</span>
+                        <span class="prod-badge ${statusClass}">${item.average}%</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    };
+
+    setupModal(leaderboardModal, [closeLeaderboardModalBtn]);
+
+    if (openLeaderboardModalBtn) {
+        openLeaderboardModalBtn.addEventListener('click', () => {
+            renderLeaderboard();
+            leaderboardModal.classList.add('open');
+        });
+    }
+
+    if (leaderboardList) {
+        leaderboardList.addEventListener('click', (e) => {
+            const item = e.target.closest('.leaderboard-item');
+            if (!item) return;
+            const userId = item.getAttribute('data-user-id');
+            const user = currentUsers.find(u => u.id === userId);
+            if (user) {
+                leaderboardModal.classList.remove('open');
+                openProductivityModal(user);
+            }
+        });
+    }
+
     const container = document.getElementById('department-sections-container');
     container.addEventListener('click', async (e) => {
+        const infoBtn = e.target.closest('.action-btn.info');
         const editBtn = e.target.closest('.action-btn.edit');
         const deleteBtn = e.target.closest('.action-btn.delete');
+
+        if (infoBtn) {
+            const userId = infoBtn.getAttribute('data-id');
+            const user = currentUsers.find(u => u.id === userId);
+            if (!user) return;
+            openProductivityModal(user);
+            return;
+        }
 
         if (deleteBtn) {
             const userId = deleteBtn.getAttribute('data-id');

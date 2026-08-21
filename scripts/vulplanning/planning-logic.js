@@ -258,3 +258,24 @@ export const matchEmployeeName = (rawName, storeEmployees) => {
     }
     return { matchedUser: null, hasMultipleMatches: false, candidateMatches: [] };
 };
+
+export const formatTaskDisplayName = (taskId) => {
+    if (!taskId) return '';
+    const isHelper = taskId.endsWith('_helper');
+    const cleanId = isHelper ? taskId.replace('_helper', '') : taskId;
+    const [pathName, rawType] = cleanId.split('_');
+    const type = (rawType || '').split('-')[0];
+    let typeLabel = '';
+    if (type === 'fill') typeLabel = 'Vullen';
+    else if (type === 'mirror') typeLabel = 'Spiegelen';
+    else if (type === 'other') typeLabel = 'Overig';
+    
+    let result = pathName;
+    if (typeLabel && pathName !== 'Pauze') {
+        result += ` (${typeLabel})`;
+    }
+    if (isHelper) {
+        result += ' (Hulp)';
+    }
+    return result;
+};
