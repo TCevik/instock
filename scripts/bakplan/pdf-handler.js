@@ -129,7 +129,11 @@ export const pdfParser = {
 
                 let catObj = parsedDataByDay[currentDay].find(c => c.category === currentCategory);
                 if (!catObj) {
-                    catObj = { category: currentCategory, products: [] };
+                    const isThawed = Boolean(
+                        (previousStateData[currentDay] || []).find(c => c.category === currentCategory)?.thawInBatch1 ||
+                        Object.values(previousStateData).some(dayCats => (dayCats || []).some(c => c.category === currentCategory && c.thawInBatch1))
+                    );
+                    catObj = { category: currentCategory, thawInBatch1: isThawed, products: [] };
                     parsedDataByDay[currentDay].push(catObj);
                 }
 
@@ -168,7 +172,7 @@ export const pdfParser = {
                         if (!pdfCeNrs.has(oldProd.ceNr)) {
                             let catObj = state.daysData[d].find(c => c.category === oldCat.category);
                             if (!catObj) {
-                                catObj = { category: oldCat.category, products: [] };
+                                catObj = { category: oldCat.category, thawInBatch1: !!oldCat.thawInBatch1, products: [] };
                                 state.daysData[d].push(catObj);
                             }
                             const missingProd = JSON.parse(JSON.stringify(oldProd));
@@ -183,7 +187,7 @@ export const pdfParser = {
                 (parsedDataByDay[d] || []).forEach(newCat => {
                     let catObj = state.daysData[d].find(c => c.category === newCat.category);
                     if (!catObj) {
-                        catObj = { category: newCat.category, products: [] };
+                        catObj = { category: newCat.category, thawInBatch1: !!newCat.thawInBatch1, products: [] };
                         state.daysData[d].push(catObj);
                     }
                     (newCat.products || []).forEach(newProd => {
