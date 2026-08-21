@@ -1,21 +1,21 @@
 import {
     state,
     getFillerPause,
-    getEffectiveTaskDuration
+    getAvailableTime,
+    getEffectiveTaskDuration,
+    getFillerTotalTime,
+    getTaskDuration
 } from './state.js';
 import {
+    formatMin,
     formatTimeOfDay,
     getFillerStartTime,
     getFillerEndTime,
     parseNameAndSubtitle
 } from './planning-logic.js';
 
-export const generatePrintablePlanning = () => {
-    const printWin = window.open('about:blank', '_blank');
-    if (!printWin) return;
-
-    const visibleFillers = state.selectedFillers.filter(f => !(state.hiddenFillers || []).includes(f));
-    const sortedFillers = [...visibleFillers].sort((a, b) => {
+const sortFillers = (list) => {
+    return [...list].sort((a, b) => {
         if (state.fillerSortOrder === 'name-asc') return a.localeCompare(b);
         if (state.fillerSortOrder === 'name-desc') return b.localeCompare(a);
         if (state.fillerSortOrder === 'start-asc') return getFillerStartTime(a) - getFillerStartTime(b);
@@ -24,100 +24,174 @@ export const generatePrintablePlanning = () => {
         if (state.fillerSortOrder === 'end-desc') return getFillerEndTime(b) - getFillerEndTime(a);
         return a.localeCompare(b);
     });
+};
+
+const buildRowHtml = (filler) => {
+    const { name, subtitle } = parseNameAndSubtitle(filler);
+    const tasks = state.fillerTasks[filler] || [];
+    const startMin = getFillerStartTime(filler);
+    const maxMin = getAvailableTime(filler);
+    const pauseMin = getFillerPause(filler);
+    const totalTime = getFillerTotalTime(filler);
+    const roundedTotal = Math.round(totalTime);
+    const isExceeded = isFinite(maxMin) && roundedTotal > maxMin;
+    const remainingMin = isFinite(maxMin) ? maxMin - roundedTotal : 0;
+
+    let taskBreaks = 0;
+    tasks.forEach(tId => {
+        const [pName] = tId.replace('_helper', '').split('_');
+        if (pName === 'Pauze') {
+            taskBreaks += getTaskDuration(tId);
+        }
+    });
+    const remainingPause = pauseMin - taskBreaks;
+
+    let currentTime = isFinite(startMin) ? startMin : 0;
+    let tasksHtml = '';
+
+    if (tasks.length === 0) {
+        tasksHtml = `<div class="empty-tasks-label">Geen taken toegewezen</div>`;
+    } else {
+        tasks.forEach(taskId => {
+            const isHelperTask = taskId.endsWith('_helper');
+            const mainTaskId = isHelperTask ? taskId.replace('_helper', '') : taskId;
+            const [pathName, type] = mainTaskId.split('_');
+            const isBreakTask = pathName === 'Pauze';
+            const duration = getEffectiveTaskDuration(taskId);
+            const tStart = currentTime;
+            currentTime += duration;
+
+            const data = state.pathColli[pathName];
+            const colliSuffix = (type === 'fill' && data && data.colli) ? ` (${data.colli} c)` : '';
+            const title = isHelperTask ? `${pathName} (Hulp)` : `${pathName}${colliSuffix}`;
+            const timeStr = `${formatTimeOfDay(tStart)} - ${formatTimeOfDay(currentTime)}`;
+            const durationText = formatMin(duration);
+
+            let cardTypeClass = type;
+            if (isBreakTask) cardTypeClass += ' break-task';
+            if (isHelperTask) cardTypeClass += ' helper';
+
+            tasksHtml += `
+                <div class="task-card ${cardTypeClass}">
+                    <div class="task-card-title">${title}</div>
+                    <div class="task-card-meta">
+                        <span>${durationText}</span>
+                        <span>${timeStr}</span>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    const pauseText = remainingPause > 0 ? `Pauze: ${formatMin(remainingPause)}` : 'Pauze: 0m';
+    const overText = isFinite(maxMin) ? (remainingMin >= 0 ? `Over: ${formatMin(remainingMin)}` : `Te veel: ${formatMin(Math.abs(remainingMin))}`) : '';
+    const overClass = remainingMin >= 0 ? 'positive' : 'negative';
+
+    return `
+        <tr class="filler-row ${isExceeded ? 'exceeded' : ''}">
+            <td class="td-info">
+                <div class="info-container">
+                    <span class="filler-name">${name}</span>
+                    ${subtitle ? `<span class="filler-subtitle">${subtitle}</span>` : ''}
+                </div>
+            </td>
+            <td class="td-stats">
+                <div class="stats-container">
+                    <div class="stats-row">
+                        <span class="stat-badge ${isExceeded ? 'exceeded' : ''}">Tijd: ${formatMin(roundedTotal)}${isFinite(maxMin) ? ` / ${formatMin(maxMin)}` : ''}</span>
+                    </div>
+                    <div class="stats-row">
+                        <span class="stat-badge">${pauseText}</span>
+                        ${overText ? `<span class="stat-badge ${overClass}">${overText}</span>` : ''}
+                    </div>
+                </div>
+            </td>
+            <td class="td-end">
+                <span class="end-time-box"></span>
+            </td>
+            <td class="td-tasks">
+                <div class="tasks-wrapper">${tasksHtml}</div>
+            </td>
+        </tr>
+    `;
+};
+
+const renderTable = (rows) => `
+    <table class="fillers-table">
+        <colgroup>
+            <col class="col-name">
+            <col class="col-stats">
+            <col class="col-end">
+            <col class="col-tasks">
+        </colgroup>
+        <thead>
+            <tr>
+                <th>Medewerker</th>
+                <th>Tijd & Pauze</th>
+                <th class="th-end">Eindtijd</th>
+                <th>Toegewezen Taken</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${rows.map(buildRowHtml).join('')}
+        </tbody>
+    </table>
+`;
+
+const executePrint = (notes = []) => {
+    let iframe = document.getElementById('print-vulplanning-iframe');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'print-vulplanning-iframe';
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+    }
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+
+    const nonFillers = state.nonFillers || [];
+    const hiddenFillers = state.hiddenFillers || [];
+    const activeFillers = state.selectedFillers.filter(f => !nonFillers.includes(f) && !hiddenFillers.includes(f));
+    const nonFillersList = state.selectedFillers.filter(f => nonFillers.includes(f) && !hiddenFillers.includes(f));
+
+    const sortedActive = sortFillers(activeFillers);
+    const sortedNon = sortFillers(nonFillersList);
 
     const now = new Date();
     const dateStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-    let cardsHtml = '';
-    sortedFillers.forEach(filler => {
-        const tasks = state.fillerTasks[filler] || [];
-        const startMin = getFillerStartTime(filler);
-        const startStr = isFinite(startMin) ? formatTimeOfDay(startMin) : '--:--';
-        const pauseMin = getFillerPause(filler);
-        const plannedEndMin = getFillerEndTime(filler);
-        const plannedEndStr = isFinite(plannedEndMin) ? formatTimeOfDay(plannedEndMin) : '--:--';
+    let sectionsHtml = '';
+    if (sortedActive.length > 0) {
+        sectionsHtml += `
+            <div class="table-section">
+                ${sortedNon.length > 0 ? `<div class="section-title">Vullers</div>` : ''}
+                ${renderTable(sortedActive)}
+            </div>
+        `;
+    }
+    if (sortedNon.length > 0) {
+        sectionsHtml += `
+            <div class="table-section">
+                <div class="section-title">Niet-vullers</div>
+                ${renderTable(sortedNon)}
+            </div>
+        `;
+    }
 
-        let currentTime = isFinite(startMin) ? startMin : 0;
-
-        if (tasks.length === 0) {
-            cardsHtml += `<div class="printable-card empty-card"><div class="card-header"><span class="filler-name">${parseNameAndSubtitle(filler).name}</span><span class="time-compact">${startStr} - ${plannedEndStr} | Pauze: ${pauseMin}m</span></div><div class="empty-label">Geen taken</div></div>`;
-        } else {
-            let tasksListHtml = '';
-            tasks.forEach(taskId => {
-                const duration = getEffectiveTaskDuration(taskId);
-                const tStart = currentTime;
-                currentTime += duration;
-                const startTimeStr = formatTimeOfDay(tStart);
-                const endTimeStr = formatTimeOfDay(currentTime);
-                let taskTitle = '';
-                let taskBadge = '';
-                let badgeClass = '';
-                if (taskId.endsWith('_helper')) {
-                    const mainTaskId = taskId.replace('_helper', '');
-                    taskTitle = `${mainTaskId.split('_')[0]} (Hulp)`;
-                    taskBadge = 'Hulp';
-                    badgeClass = 'badge-helper';
-                } else {
-                    const [pName, pType] = taskId.split('_');
-                    taskTitle = pName;
-                    if (pType === 'fill') { taskBadge = 'Vul'; badgeClass = 'badge-fill'; }
-                    else if (pType === 'mirror') { taskBadge = 'Spgl'; badgeClass = 'badge-mirror'; }
-                    else if (pName === 'Pauze') { taskBadge = 'Pauze'; badgeClass = 'badge-other'; }
-                    else { taskBadge = 'Ovr'; badgeClass = 'badge-other'; }
-                }
-                tasksListHtml += `<div class="task-row"><span class="task-time">${startTimeStr}-${endTimeStr}</span><span class="task-name">${taskTitle}</span><span class="task-badge ${badgeClass}">${taskBadge}</span></div>`;
-            });
-            cardsHtml += `<div class="printable-card"><div class="card-header"><span class="filler-name">${parseNameAndSubtitle(filler).name}</span><span class="time-compact">${startStr} - ${plannedEndStr} | Pauze: ${pauseMin}m</span></div><div class="card-body">${tasksListHtml}</div></div>`;
-        }
-    });
-
-    let padTableRowsHtml = '';
-    const padMap = {};
-    sortedFillers.forEach(filler => {
-        const tasks = state.fillerTasks[filler] || [];
-        const startMin = getFillerStartTime(filler);
-        let currentTime = isFinite(startMin) ? startMin : 0;
-        const cleanName = parseNameAndSubtitle(filler).name;
-        tasks.forEach(taskId => {
-            const duration = getEffectiveTaskDuration(taskId);
-            const tStart = currentTime;
-            currentTime += duration;
-            let padName = '';
-            let role = '';
-            if (taskId.endsWith('_helper')) {
-                const mainTaskId = taskId.replace('_helper', '');
-                const [pName, pType] = mainTaskId.split('_');
-                padName = pName;
-                role = pType === 'mirror' ? 'Hulp Spiegelen' : 'Hulp Vullen';
-            } else {
-                const [pName, pType] = taskId.split('_');
-                padName = pName;
-                role = pType === 'fill' ? 'Vullen' : pType === 'mirror' ? 'Spiegelen' : 'Overig';
-            }
-            if (padName && role !== 'Overig') {
-                if (!padMap[padName]) padMap[padName] = [];
-                padMap[padName].push({ cleanName, role, startTimeStr: formatTimeOfDay(tStart), endTimeStr: formatTimeOfDay(currentTime), durationMins: duration });
-            }
-        });
-    });
-
-    Object.keys(padMap).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })).forEach(padName => {
-        const assignments = padMap[padName];
-        const uniquePersons = new Set(assignments.map(a => a.cleanName)).size;
-        const pathData = state.pathColli[padName] || { colli: 0 };
-        const colli = pathData.colli || 0;
-        let fillMins = 0, mirrorMins = 0;
-        assignments.forEach(a => {
-            if (a.role === 'Vullen' || a.role === 'Hulp Vullen') fillMins += a.durationMins || 0;
-            else if (a.role === 'Spiegelen' || a.role === 'Hulp Spiegelen') mirrorMins += a.durationMins || 0;
-        });
-        const fmtM = m => m <= 0 ? '-' : `${Math.floor(m/60)}:${String(Math.round(m%60)).padStart(2,'0')}`;
-        const fillHours = fillMins / 60;
-        const norm = (colli > 0 && fillHours > 0) ? Math.round(colli / fillHours) : '-';
-        const fillersList = assignments.filter(a => a.role === 'Vullen' || a.role === 'Hulp Vullen').map(a => `${a.cleanName}`).join(', ');
-        const mirrorersList = assignments.filter(a => a.role === 'Spiegelen' || a.role === 'Hulp Spiegelen').map(a => `${a.cleanName}`).join(', ');
-        padTableRowsHtml += `<tr><td>${padName}</td><td>${fillersList || '-'}</td><td>${mirrorersList || '-'}</td><td>${uniquePersons}</td><td>${colli}</td><td>${norm}</td><td>${fmtM(fillMins)}</td><td>${fmtM(mirrorMins)}</td></tr>`;
-    });
+    const notesHtml = notes.length > 0 ? `
+        <div class="print-notes-section">
+            <div class="notes-header">Notities</div>
+            <div class="notes-list">
+                ${notes.map(n => `<div class="note-row"><span class="note-dot">&#8226;</span><span class="note-text">${n}</span></div>`).join('')}
+            </div>
+        </div>
+    ` : '';
 
     const htmlContent = `<!DOCTYPE html>
 <html lang="nl">
@@ -125,59 +199,407 @@ export const generatePrintablePlanning = () => {
 <meta charset="UTF-8">
 <title>Vulplanning ${dateStr}</title>
 <style>
-@page{size:A4 landscape;margin:5mm}
-*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;font-size:0.85rem;line-height:1.3}
-body{background:#fff;color:#1e293b;padding:6px 10px}
-.header{display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid #658d24;padding-bottom:4px;margin-bottom:6px}
-.header h1{font-size:14px;font-weight:700;color:#0f172a}
-.header .date{font-size:10px;color:#64748b}
-.print-btn{background:#658d24;color:#fff;border:none;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer}
-.no-print-bar{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.grid-container{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
-.printable-card{border:1px solid #d1d5db;border-radius:4px;overflow:hidden}
-.printable-card.empty-card{max-height:35px;display:flex;align-items:center}
-.empty-card .card-header{border-bottom:none;padding:2px 6px;flex:1}
-.empty-label{font-size:10px;color:#94a3b8;font-style:italic;padding-right:6px;white-space:nowrap}
-.card-header{background:#f8fafc;border-bottom:1px solid #e5e7eb;padding:3px 6px;display:flex;justify-content:space-between;align-items:center}
-.filler-name{font-size:11px;font-weight:700;color:#0f172a}
-.time-compact{font-size:9px;color:#475569;white-space:nowrap}
-.card-body{padding:2px 4px;display:flex;flex-direction:column;gap:1px}
-.task-row{display:flex;align-items:center;gap:4px;padding:1px 4px;border-bottom:1px solid #f1f5f9}
-.task-row:last-child{border-bottom:none}
-.task-time{font-size:9px;font-weight:600;color:#334155;min-width:65px;flex-shrink:0}
-.task-name{font-size:10px;font-weight:500;color:#334155;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.task-badge{font-size:8px;font-weight:700;padding:1px 4px;border-radius:3px;white-space:nowrap;text-transform:uppercase;flex-shrink:0}
-.badge-fill{background:#dbeafe;color:#1d4ed8}
-.badge-mirror{background:#fef3c7;color:#b45309}
-.badge-other{background:#ede9fe;color:#6b21a8}
-.badge-helper{background:#fce7f3;color:#be185d}
-.page-break{page-break-before:always;break-before:page}
-.section-title{font-size:13px;font-weight:700;color:#0f172a;border-bottom:1.5px solid #658d24;padding-bottom:3px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
-.section-title .date{font-size:10px;color:#64748b;font-weight:400}
-.pad-table{width:100%;border-collapse:collapse;font-size:11px}
-.pad-table th,.pad-table td{border:1px solid #d1d5db;padding:3px 5px}
-.pad-table th{background:#f1f5f9;font-weight:700;font-size:10px;text-align:left;white-space:nowrap}
-.pad-table td{font-size:10px}
-.pad-table td:nth-child(n+4){text-align:center}
-.pad-table tr:nth-child(even){background:#fafbfc}
-.notes-box{margin-top:8px;border:1px solid #d1d5db;border-radius:4px;padding:4px 6px;page-break-inside:avoid}
-.notes-box h4{font-size:10px;font-weight:700;color:#475569;margin-bottom:2px}
-.notes-lines{height:36px}
-.notes-lines div{border-bottom:1px dashed #d1d5db;height:12px}
-@media print{.no-print-bar{display:none!important}body{padding:5mm;background:#fff}.printable-card{break-inside:avoid}}
+@page {
+    size: A4 landscape;
+    margin: 4mm;
+}
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+body {
+    background: #ffffff;
+    color: #1e293b;
+    padding: 2px;
+}
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #658d24;
+    padding-bottom: 3px;
+    margin-bottom: 4px;
+}
+.header h1 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+}
+.header .date {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 500;
+}
+.table-section {
+    margin-bottom: 4px;
+}
+.section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #0f172a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 3px;
+    margin-bottom: 2px;
+    border-bottom: 1.5px solid #658d24;
+    padding-bottom: 1px;
+}
+.fillers-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 1.5px;
+    table-layout: fixed;
+}
+.fillers-table col.col-name { width: 130px; }
+.fillers-table col.col-stats { width: 150px; }
+.fillers-table col.col-end { width: 65px; }
+.fillers-table col.col-tasks { width: auto; }
+
+.fillers-table th {
+    padding: 2px 4px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1.5px solid #cbd5e1;
+    text-align: left;
+}
+.fillers-table th.th-end {
+    text-align: center;
+}
+.filler-row {
+    background: #ffffff;
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+.filler-row td {
+    padding: 1.5px 4px;
+    vertical-align: middle;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+}
+.filler-row td:first-child {
+    border-left: 1px solid #e2e8f0;
+    border-top-left-radius: 5px;
+    border-bottom-left-radius: 5px;
+}
+.filler-row td:last-child {
+    border-right: 1px solid #e2e8f0;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+}
+.info-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+.filler-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.15;
+}
+.filler-subtitle {
+    font-size: 10px;
+    color: #64748b;
+    font-weight: 500;
+    line-height: 1.1;
+}
+.stats-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+.stats-row {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+}
+.stat-badge {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 3px;
+    padding: 0 3px;
+    font-size: 9px;
+    font-weight: 600;
+    color: #475569;
+    white-space: nowrap;
+    line-height: 1.3;
+}
+.stat-badge.positive {
+    color: #658d24;
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+.stat-badge.negative,
+.stat-badge.exceeded {
+    color: #dc2626;
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+.td-end {
+    text-align: center;
+}
+.end-time-box {
+    display: inline-block;
+    width: 44px;
+    height: 18px;
+    border: 1.5px solid #94a3b8;
+    border-radius: 3px;
+    background: #ffffff;
+    box-sizing: border-box;
+}
+.td-tasks {
+    border-left: 1px solid #e2e8f0;
+}
+.tasks-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 3px;
+    min-height: 20px;
+}
+.empty-tasks-label {
+    font-size: 10px;
+    color: #94a3b8;
+    font-style: italic;
+}
+.task-card {
+    border-radius: 3px;
+    padding: 1px 4px;
+    min-width: 85px;
+    box-sizing: border-box;
+    display: inline-flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+.task-card.fill {
+    background: #f4f8ec;
+    border-color: #c7dc9c;
+    border-left: 3px solid #658d24;
+}
+.task-card.mirror {
+    background: #fffbeb;
+    border-color: #fde68a;
+    border-left: 3px solid #d97706;
+}
+.task-card.helper {
+    background: #fdf2f8;
+    border-color: #fbcfe8;
+    border-left: 3px solid #db2777;
+}
+.task-card.break-task {
+    background: #fff7ed;
+    border-color: #ffedd5;
+    border-left: 3px solid #ea580c;
+}
+.task-card.other {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    border-left: 3px solid #2563eb;
+}
+.task-card-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.15;
+}
+.task-card-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 4px;
+    font-size: 8.5px;
+    font-weight: 600;
+    color: #475569;
+    line-height: 1.05;
+}
+.print-notes-section {
+    margin-top: 5px;
+    border: 1px solid #cbd5e1;
+    border-radius: 5px;
+    padding: 3px 8px;
+    background: #ffffff;
+}
+.notes-header {
+    font-size: 10px;
+    font-weight: 700;
+    color: #0f172a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 1px;
+}
+.notes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5px;
+}
+.note-row {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    font-size: 10px;
+    color: #1e293b;
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+.note-dot {
+    font-size: 11px;
+    color: #658d24;
+    font-weight: 700;
+}
+.note-text {
+    font-size: 10px;
+    line-height: 1.15;
+}
+@media print {
+    body {
+        padding: 0;
+        background: #ffffff;
+    }
+    .filler-row {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+    .task-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+    .note-row {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+}
 </style>
 </head>
 <body>
-<div class="no-print-bar"><button class="print-btn" onclick="window.print()">Afdrukken / Opslaan als PDF</button><span class="date">${dateStr}</span></div>
-<div class="header"><h1>Vulplanning Overzicht</h1><span class="date">${dateStr}</span></div>
-<div class="grid-container">${cardsHtml}</div>
-<div class="page-break"></div>
-<div class="section-title"><span>Overzicht per Pad / Afdeling</span><span class="date">${dateStr}</span></div>
-<table class="pad-table"><thead><tr><th>Pad</th><th>Vullers</th><th>Spiegelaars</th><th>Pers.</th><th>Colli</th><th>Norm</th><th>Vultijd</th><th>Spgl.tijd</th></tr></thead><tbody>${padTableRowsHtml}</tbody></table>
-<div class="notes-box"><h4>Aantekeningen</h4><div class="notes-lines"><div></div><div></div><div></div></div></div>
+<div class="header">
+    <h1>Vulplanning</h1>
+    <span class="date">${dateStr}</span>
+</div>
+${sectionsHtml}
+${notesHtml}
 </body>
 </html>`;
 
-    printWin.document.write(htmlContent);
-    printWin.document.close();
+    doc.write(htmlContent);
+    doc.close();
+
+    setTimeout(() => {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+    }, 250);
+};
+
+export const generatePrintablePlanning = () => {
+    let modal = document.getElementById('print-notes-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'print-notes-modal';
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <style>
+                .modal-note-input:focus {
+                    outline: none !important;
+                    box-shadow: none !important;
+                    border-color: var(--accent-color-sidemenu) !important;
+                }
+            </style>
+            <div class="modal-content" style="max-width: 480px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                    <h3 style="font-size: 16px; font-weight: 600; margin: 0; color: var(--text-color);">Notities voor Vulplanning</h3>
+                    <button type="button" id="close-print-notes-x-btn" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-color-muted);">&times;</button>
+                </div>
+                <div id="print-notes-list" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; max-height: 250px; overflow-y: auto;"></div>
+                <button type="button" id="add-print-note-btn" class="action-btn" style="padding: 6px 12px; font-size: 12px; background-color: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 6px; align-self: flex-start; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                    <i class="material-icons" style="font-size: 16px;">add</i>
+                    <span>Regel Toevoegen</span>
+                </button>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
+                    <button type="button" id="cancel-print-notes-btn" class="submit-btn" style="background: var(--border-color); color: var(--text-color); max-width: 100px; box-shadow: none;">Annuleren</button>
+                    <button type="button" id="confirm-print-notes-btn" class="submit-btn" style="max-width: 120px;">Afdrukken</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        const closeModal = () => {
+            modal.style.display = 'none';
+        };
+
+        document.getElementById('close-print-notes-x-btn').addEventListener('click', closeModal);
+        document.getElementById('cancel-print-notes-btn').addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        document.getElementById('add-print-note-btn').addEventListener('click', () => {
+            addNoteRow();
+        });
+
+        document.getElementById('confirm-print-notes-btn').addEventListener('click', () => {
+            const list = document.getElementById('print-notes-list');
+            const noteInputs = list.querySelectorAll('.modal-note-input');
+            const notes = Array.from(noteInputs).map(inp => inp.value.trim()).filter(Boolean);
+            closeModal();
+            executePrint(notes);
+        });
+    }
+
+    const list = document.getElementById('print-notes-list');
+    list.innerHTML = '';
+
+    const addNoteRow = (val = '') => {
+        const row = document.createElement('div');
+        row.className = 'print-note-row';
+        row.style.cssText = 'display: flex; gap: 6px; align-items: center;';
+        row.innerHTML = `
+            <input type="text" placeholder="Typ een notitie..." value="${val}" class="modal-note-input form-input" style="flex: 1; padding: 6px 10px; font-size: 13px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
+            <button type="button" class="remove-note-btn action-btn delete" style="padding: 6px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Regel Verwijderen">
+                <i class="material-icons" style="font-size: 16px;">delete</i>
+            </button>
+        `;
+        row.querySelector('.remove-note-btn').addEventListener('click', () => {
+            if (list.querySelectorAll('.print-note-row').length > 1) {
+                row.remove();
+            } else {
+                const input = row.querySelector('.modal-note-input');
+                if (input) {
+                    input.value = '';
+                    input.focus();
+                }
+            }
+        });
+        list.appendChild(row);
+        const input = row.querySelector('.modal-note-input');
+        if (input) {
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addNoteRow();
+                }
+            });
+            input.focus();
+        }
+    };
+
+    addNoteRow();
+    modal.style.display = 'flex';
+    requestAnimationFrame(() => {
+        const firstInput = list.querySelector('.modal-note-input');
+        if (firstInput) firstInput.focus();
+    });
 };
