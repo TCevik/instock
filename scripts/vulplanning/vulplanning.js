@@ -492,7 +492,12 @@ import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration, match
                         </div>
                     `).join('');
                     const message = `<div style="font-size: 13px; color: var(--text-color-muted); margin-bottom: 12px;">Er zijn pauze-afwijkingen geconstateerd bij de volgende medewerkers:</div>
-                        <div style="max-height: 200px; overflow-y: auto; margin-bottom: 14px;">${listItems}</div>
+                        <div style="max-height: 200px; overflow-y: auto; margin-bottom: 12px;">${listItems}</div>
+                        <div style="font-size: 12px; color: var(--warning-color); background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; margin-bottom: 14px; line-height: 1.4;">
+                            <strong>Let op hoe pauzes werken:</strong><br>
+                            • Heb je <strong>wel een pauzetaak ingepland</strong> (ook al is het minder dan ingesteld)? Dan wordt er op het overzicht volledig rekening gehouden met wat je hebt ingepland en vervalt de vooraf ingestelde pauze.<br>
+                            • Heb je <strong>helemaal geen pauzetaak ingepland</strong>? Dan wordt automatisch de vooraf ingestelde pauze afgetrokken van de productieve tijd, waardoor de berekende tijden niet meer kunnen aansluiten op de daadwerkelijke dienst.
+                        </div>
                         <div style="font-size: 13px; color: var(--text-color);">Wil je doorgaan met genereren of de planning aanpassen?</div>`;
                     showConfirmModal(
                         'Pauze-afwijkingen',

@@ -380,8 +380,7 @@ export const renderWorkspace = () => {
                     taskBreaks += getTaskDuration(tId);
                 }
             });
-            const remainingPause = pauseMin - taskBreaks;
-            pauseSpan.textContent = remainingPause > 0 ? `Pauze: ${formatMin(remainingPause)}` : `Pauze: 0m`;
+            pauseSpan.textContent = `Pauze: ${formatMin(taskBreaks)} / ${formatMin(pauseMin)}`;
 
             const remainingSpan = document.createElement('span');
             remainingSpan.className = `filler-stat-item remaining remaining-span ${remainingMin >= 0 ? 'positive' : 'negative'}`;

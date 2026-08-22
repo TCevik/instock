@@ -83,9 +83,7 @@ const buildRowHtml = (filler) => {
         });
     }
 
-    const pauseText = remainingPause > 0 ? `Pauze: ${formatMin(remainingPause)}` : 'Pauze: 0m';
-    const overText = isFinite(maxMin) ? (remainingMin >= 0 ? `Over: ${formatMin(remainingMin)}` : `Te veel: ${formatMin(Math.abs(remainingMin))}`) : '';
-    const overClass = remainingMin >= 0 ? 'positive' : 'negative';
+    const pauseText = `Pauze: ${formatMin(taskBreaks)} / ${formatMin(pauseMin)}`;
 
     return `
         <tr class="filler-row ${isExceeded ? 'exceeded' : ''}">
@@ -102,7 +100,6 @@ const buildRowHtml = (filler) => {
                     </div>
                     <div class="stats-row">
                         <span class="stat-badge">${pauseText}</span>
-                        ${overText ? `<span class="stat-badge ${overClass}">${overText}</span>` : ''}
                     </div>
                 </div>
             </td>
@@ -255,8 +252,8 @@ body {
     table-layout: fixed;
 }
 .fillers-table col.col-name { width: 130px; }
-.fillers-table col.col-stats { width: 150px; }
-.fillers-table col.col-end { width: 65px; }
+.fillers-table col.col-stats { width: 110px; }
+.fillers-table col.col-end { width: 60px; }
 .fillers-table col.col-tasks { width: auto; }
 
 .fillers-table th {
