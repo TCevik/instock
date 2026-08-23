@@ -367,35 +367,10 @@
     height: auto;
 }
 
-.drop-indicator-line {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background-color: var(--accent-color-sidemenu);
-    border-radius: 2px;
+.task-card.task-card-placeholder {
+    opacity: 0.7;
+    border: 1.5px dashed var(--accent-color-sidemenu);
     pointer-events: none;
-    display: none;
-    z-index: 10;
-}
-
-.drop-indicator-line::before,
-.drop-indicator-line::after {
-    content: '';
-    position: absolute;
-    left: -3px;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background-color: var(--accent-color-sidemenu);
-}
-
-.drop-indicator-line::before {
-    top: -4px;
-}
-
-.drop-indicator-line::after {
-    bottom: -4px;
 }
 
 .task-card {
@@ -898,5 +873,13 @@
     padding: 2px 4px;
     font-size: 11px;
     width: 70px;
+}
+
+.prod-container {
+    min-height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
 }
 

@@ -471,7 +471,7 @@ import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration, getEf
                     let taskBreaks = 0;
                     const tasks = state.fillerTasks[filler] || [];
                     tasks.forEach(tId => {
-                        const [pName] = tId.replace('_helper', '').split('_');
+                        const [pName] = (tId.includes('_helper') ? tId.split('_helper')[0] : tId).split('_');
                         if (pName === 'Pauze') {
                             taskBreaks += getTaskDuration(tId, state);
                         }
@@ -580,18 +580,15 @@ import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration, getEf
 
             if (e.target.closest('#tasks-container')) {
                 e.preventDefault();
-                if (taskId.endsWith('_helper')) {
-                    const mainTaskId = taskId.replace('_helper', '');
+                if (taskId.includes('_helper')) {
                     removeTaskFromAll(taskId);
-                    delete state.helpers[mainTaskId];
                 } else if (!isFromAssigned) {
                     removeTaskFromAll(taskId);
-                    removeTaskFromAll(taskId + '_helper');
-                    delete state.helpers[taskId];
                     if (taskId.includes('_inst-')) {
                         delete state.instanceTimes[taskId];
                     }
-                } renderWorkspace();
+                }
+                renderWorkspace();
                 triggerSave();
             } else if (!e.target.closest('.filler-card')) {
                 e.preventDefault();

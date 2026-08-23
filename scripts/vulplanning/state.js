@@ -10,7 +10,9 @@ import {
     getFillerProductivity as logicGetFillerProductivity,
     getProductivityStatusClass,
     formatTimeInputValue,
-    getTaskAssignment as logicGetTaskAssignment
+    getTaskAssignment as logicGetTaskAssignment,
+    getBaseTaskDuration as logicGetBaseTaskDuration,
+    getHelperTaskIdsForMainTask as logicGetHelperTaskIdsForMainTask
 } from './planning-logic.js';
 
 export const state = {
@@ -85,15 +87,21 @@ export const getFillerTotalTime = (filler) => logicGetFillerTotalTime(filler, st
 export const getFillerProductivity = (displayName) => logicGetFillerProductivity(displayName, state);
 export { getProductivityStatusClass, formatTimeInputValue };
 export const getTaskAssignment = (taskId) => logicGetTaskAssignment(taskId, state);
+export const getBaseTaskDuration = (taskId) => logicGetBaseTaskDuration(taskId, state);
+export const getHelperTaskIdsForMainTask = (mainTaskId) => logicGetHelperTaskIdsForMainTask(mainTaskId, state);
 
 export const removeTaskFromAll = (taskId) => {
     Object.keys(state.fillerTasks).forEach(filler => {
-        state.fillerTasks[filler] = state.fillerTasks[filler].filter(id => id !== taskId);
+        state.fillerTasks[filler] = state.fillerTasks[filler].filter(id => {
+            if (id === taskId) return false;
+            if (!taskId.includes('_helper') && id.startsWith(`${taskId}_helper`)) return false;
+            return true;
+        });
     });
 };
 
 export const getClosestTask = (container, x, y) => {
-    const cards = [...container.querySelectorAll('.task-card:not(.dragging)')];
+    const cards = [...container.querySelectorAll('.task-card:not(.dragging):not(.task-card-placeholder)')];
     if (cards.length === 0) return null;
     let closest = null;
     let minDistance = Infinity;

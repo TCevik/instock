@@ -19,41 +19,82 @@ export const parsePadenData = (padenData) => {
     return { pathsMapping, normsMapping, mirrorNormsMapping };
 };
 
-export const getTaskDuration = (taskId, state) => {
-    if (taskId.endsWith('_helper')) {
-        const mainTaskId = taskId.replace('_helper', '');
-        const helperInfo = state.helpers[mainTaskId];
-        if (!helperInfo) return 0;
-        if (helperInfo.isMax || helperInfo.isHalf) {
-            return helperInfo.calculatedDuration || 0;
+export const getAutoTasksForFillTask = (taskId, autoPairSettings, pathColli) => {
+    let prepended = null;
+    let appended = null;
+    if (taskId && taskId.endsWith('_fill') && autoPairSettings) {
+        if (autoPairSettings.prependOtherTask && autoPairSettings.selectedOtherTask) {
+            prepended = `${autoPairSettings.selectedOtherTask}_other`;
         }
-        const mainDuration = getTaskDuration(mainTaskId, state);
-        return Math.min(mainDuration, helperInfo.duration || 0);
+        if (autoPairSettings.enabled) {
+            const pKey = taskId.replace('_fill', '');
+            if (pathColli && pathColli[pKey]) {
+                appended = `${pKey}_mirror`;
+            }
+        }
     }
-    if (state.instanceTimes && state.instanceTimes[taskId] !== undefined) {
+    return { prepended, appended };
+};
+
+export const getHelperTaskIdsForMainTask = (mainTaskId, state) => {
+    const list = [];
+    if (!state || !state.fillerTasks) return list;
+    Object.values(state.fillerTasks).forEach(tasks => {
+        if (Array.isArray(tasks)) {
+            tasks.forEach(tId => {
+                if (typeof tId === 'string' && tId.includes('_helper') && tId.split('_helper')[0] === mainTaskId) {
+                    list.push(tId);
+                }
+            });
+        }
+    });
+    return list;
+};
+
+export const getBaseTaskDuration = (taskId, state) => {
+    if (!taskId) return 0;
+    const mainTaskId = taskId.includes('_helper') ? taskId.split('_helper')[0] : taskId;
+    if (state && state.instanceTimes && state.instanceTimes[mainTaskId] !== undefined) {
+        return state.instanceTimes[mainTaskId];
+    }
+    if (state && state.instanceTimes && state.instanceTimes[taskId] !== undefined) {
         return state.instanceTimes[taskId];
     }
-    const [pathName, type] = taskId.split('_');
+    const [pathName, type] = mainTaskId.split('_');
     if (type === 'other') {
-        return state.otherTimes[pathName] || 0;
+        return (state && state.otherTimes && state.otherTimes[pathName]) || 0;
     }
-    const data = state.pathColli[pathName];
+    const data = state && state.pathColli && state.pathColli[pathName];
     if (!data) return 0;
     if (type === 'fill') return data.duration;
     if (type === 'mirror') return data.mirrorDuration !== undefined ? data.mirrorDuration : 21;
     return 0;
 };
 
-export const getEffectiveTaskDuration = (taskId, state) => {
-    let duration = getTaskDuration(taskId, state);
-    if (!taskId.endsWith('_helper')) {
-        const helperInfo = state.helpers[taskId];
-        if (helperInfo && helperInfo.helperName) {
-            const helperDuration = (helperInfo.isMax || helperInfo.isHalf) ? (helperInfo.calculatedDuration || 0) : Math.min(duration, helperInfo.duration || 0);
-            duration = Math.max(0, duration - Math.min(duration, Math.max(0, helperDuration)));
-        }
+export const getTaskDuration = (taskId, state) => {
+    if (!taskId) return 0;
+    if (taskId.includes('_helper')) {
+        const mainTaskId = taskId.split('_helper')[0];
+        const helperIds = getHelperTaskIdsForMainTask(mainTaskId, state);
+        const totalWorkers = 1 + Math.max(1, helperIds.length);
+        const baseDuration = getBaseTaskDuration(mainTaskId, state);
+        return Math.floor(baseDuration / totalWorkers);
     }
-    return duration;
+    return getBaseTaskDuration(taskId, state);
+};
+
+export const getEffectiveTaskDuration = (taskId, state) => {
+    if (!taskId) return 0;
+    if (taskId.includes('_helper')) {
+        return getTaskDuration(taskId, state);
+    }
+    const helperIds = getHelperTaskIdsForMainTask(taskId, state);
+    if (helperIds.length > 0) {
+        const totalWorkers = 1 + helperIds.length;
+        const baseDuration = getBaseTaskDuration(taskId, state);
+        return Math.floor(baseDuration / totalWorkers);
+    }
+    return getTaskDuration(taskId, state);
 };
 
 export const formatMin = (min) => {
@@ -132,31 +173,14 @@ export const getFillerColli = (displayName, state) => {
     let total = 0;
     const tasks = state.fillerTasks[displayName] || [];
     tasks.forEach(taskId => {
-        if (taskId.endsWith('_helper')) {
-            const mainTaskId = taskId.replace('_helper', '');
-            const [pathName, type] = mainTaskId.split('_');
-            if (type === 'fill' && state.pathColli[pathName]) {
-                const colli = state.pathColli[pathName].colli || 0;
-                const duration = getTaskDuration(mainTaskId, state);
-                const helperInfo = state.helpers[mainTaskId];
-                if (helperInfo && duration > 0) {
-                    const hDur = (helperInfo.isMax || helperInfo.isHalf) ? (helperInfo.calculatedDuration || 0) : Math.min(duration, helperInfo.duration || 0);
-                    total += (hDur / duration) * colli;
-                }
-            }
-        } else {
-            const [pathName, type] = taskId.split('_');
-            if (type === 'fill' && state.pathColli[pathName]) {
-                const colli = state.pathColli[pathName].colli || 0;
-                const duration = getTaskDuration(taskId, state);
-                const helperInfo = state.helpers[taskId];
-                if (helperInfo && helperInfo.helperName && duration > 0) {
-                    const hDur = (helperInfo.isMax || helperInfo.isHalf) ? (helperInfo.calculatedDuration || 0) : Math.min(duration, helperInfo.duration || 0);
-                    total += ((duration - hDur) / duration) * colli;
-                } else {
-                    total += colli;
-                }
-            }
+        const isHelper = taskId.includes('_helper');
+        const mainTaskId = isHelper ? taskId.split('_helper')[0] : taskId;
+        const [pathName, type] = mainTaskId.split('_');
+        if (type === 'fill' && state.pathColli[pathName]) {
+            const colli = state.pathColli[pathName].colli || 0;
+            const helperIds = getHelperTaskIdsForMainTask(mainTaskId, state);
+            const totalWorkers = 1 + helperIds.length;
+            total += colli / totalWorkers;
         }
     });
     return Math.round(total);
@@ -279,8 +303,8 @@ export const formatTaskDisplayName = (task) => {
     }
 
     if (!taskId) return '';
-    const isHelper = taskId.endsWith('_helper');
-    const cleanId = isHelper ? taskId.replace('_helper', '') : taskId;
+    const isHelper = taskId.includes('_helper');
+    const cleanId = isHelper ? taskId.split('_helper')[0] : taskId;
     const [pathName, rawType] = cleanId.split('_');
     const type = (rawType || '').split('-')[0];
     let typeLabel = '';

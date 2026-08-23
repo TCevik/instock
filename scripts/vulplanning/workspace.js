@@ -11,23 +11,40 @@ import {
     getTaskAssignment,
     removeTaskFromAll,
     getClosestTask,
-    createPersonNameElement
+    createPersonNameElement,
+    getBaseTaskDuration,
+    getHelperTaskIdsForMainTask
 } from './state.js';
 import {
     formatMin,
     formatTimeOfDay,
     getFillerStartTime,
     getFillerEndTime,
-    parseNameAndSubtitle
+    parseNameAndSubtitle,
+    getAutoTasksForFillTask
 } from './planning-logic.js';
 import { openDurationModal, openHelperModal } from './modals.js';
 import { showConfirmModal } from '../modal.js';
 import { triggerSave } from './storage.js';
 import { HARDCODED_MIRROR_TIMES } from './plus/pdf-defaults.js';
 
+let currentDraggedTaskId = null;
+
+const getDraggedTaskSequence = (draggedId) => {
+    if (!draggedId) return [];
+    const isAlreadyAssigned = getTaskAssignment(draggedId) !== null;
+    if (isAlreadyAssigned || draggedId.includes('_helper')) return [draggedId];
+    const { prepended, appended } = getAutoTasksForFillTask(draggedId, state.autoPairSettings, state.pathColli);
+    const list = [];
+    if (prepended) list.push(prepended);
+    list.push(draggedId);
+    if (appended) list.push(appended);
+    return list;
+};
+
 export const createTaskCard = (taskId, startTime, endTime, maxMin, totalInTimePlanned, totalOvertimePlanned, fillerStartTime) => {
-    const isHelperTask = taskId.endsWith('_helper');
-    const mainTaskId = isHelperTask ? taskId.replace('_helper', '') : taskId;
+    const isHelperTask = taskId.includes('_helper');
+    const mainTaskId = isHelperTask ? taskId.split('_helper')[0] : taskId;
     const [pathName, type] = mainTaskId.split('_');
     const isBreakTask = pathName === 'Pauze';
     const data = state.pathColli[pathName];
@@ -39,6 +56,7 @@ export const createTaskCard = (taskId, startTime, endTime, maxMin, totalInTimePl
     card.id = `task-${taskId}`;
 
     card.addEventListener('dragstart', (e) => {
+        currentDraggedTaskId = taskId;
         e.dataTransfer.setData('text/plain', taskId);
         const isFromAssigned = card.closest('#assigned-tasks-grid') !== null;
         e.dataTransfer.setData('is-from-assigned', isFromAssigned ? 'true' : 'false');
@@ -46,7 +64,9 @@ export const createTaskCard = (taskId, startTime, endTime, maxMin, totalInTimePl
     });
 
     card.addEventListener('dragend', () => {
+        currentDraggedTaskId = null;
         card.classList.remove('dragging');
+        document.querySelectorAll('.task-card-placeholder').forEach(el => el.remove());
     });
 
     const colliSuffix = (type === 'fill' && data && data.colli) ? ` (${data.colli} c)` : '';
@@ -415,7 +435,7 @@ export const renderWorkspace = () => {
             let taskBreaks = 0;
             const fillerAssigned = state.fillerTasks[filler] || [];
             fillerAssigned.forEach(tId => {
-                const [pName] = tId.replace('_helper', '').split('_');
+                const [pName] = (tId.includes('_helper') ? tId.split('_helper')[0] : tId).split('_');
                 if (pName === 'Pauze') {
                     taskBreaks += getTaskDuration(tId);
                 }
@@ -461,6 +481,7 @@ export const renderWorkspace = () => {
         endInput.value = currentActual;
 
         const prodContainer = document.createElement('div');
+        prodContainer.className = 'prod-container';
 
         const updateFillerProdDisplay = () => {
             prodContainer.innerHTML = '';
@@ -502,10 +523,6 @@ export const renderWorkspace = () => {
         timelineSep.className = 'timeline-separator';
         tasksList.appendChild(timelineSep);
 
-        const indicator = document.createElement('div');
-        indicator.className = 'drop-indicator-line';
-        tasksList.appendChild(indicator);
-
         tasksList.addEventListener('scroll', (e) => {
             const scrollLeft = e.target.scrollLeft;
             const allLists = document.querySelectorAll('.filler-tasks-list');
@@ -518,65 +535,82 @@ export const renderWorkspace = () => {
 
         tr.addEventListener('dragover', (e) => {
             e.preventDefault();
+            const draggedId = currentDraggedTaskId;
+            if (!draggedId) return;
+
+            let placeholders = [...tasksList.querySelectorAll('.task-card-placeholder')];
+            if (placeholders.length === 0) {
+                document.querySelectorAll('.task-card-placeholder').forEach(el => el.remove());
+                const existingAssignee = getTaskAssignment(draggedId);
+                const isCreatingHelper = existingAssignee && existingAssignee !== filler && !draggedId.includes('_other');
+                const seq = isCreatingHelper ? [draggedId] : getDraggedTaskSequence(draggedId);
+                placeholders = seq.map(tId => {
+                    const card = createTaskCard(tId);
+                    if (!card) return null;
+                    card.classList.add('task-card-placeholder');
+                    card.removeAttribute('id');
+                    card.draggable = false;
+                    const menuBtn = card.querySelector('.task-menu-btn');
+                    if (menuBtn) menuBtn.remove();
+                    let effectiveDuration = getEffectiveTaskDuration(tId);
+                    if (isCreatingHelper) {
+                        card.classList.add('helper');
+                        const mainTaskId = tId.split('_helper')[0];
+                        const currentHelpers = getHelperTaskIdsForMainTask(mainTaskId);
+                        const targetWorkers = 1 + currentHelpers.length + 1;
+                        const baseDur = getBaseTaskDuration(mainTaskId);
+                        effectiveDuration = Math.floor(baseDur / targetWorkers);
+                        const leftSpan = card.querySelector('.task-card-meta span:first-child');
+                        if (leftSpan) leftSpan.textContent = formatMin(effectiveDuration);
+                    }
+                    if (isFinite(maxMin) && maxMin > 0) {
+                        const totalWidthPct = (effectiveDuration / maxMin) * 75;
+                        card.style.width = `${totalWidthPct}%`;
+                        card.style.flexShrink = '0';
+                    }
+                    return card;
+                }).filter(Boolean);
+            }
+
+            if (placeholders.length === 0) return;
+
             const closest = getClosestTask(tasksList, e.clientX, e.clientY);
-            if (closest) {
+            if (closest && closest.card) {
                 tr.classList.remove('drag-over');
-                const targetCard = closest.card;
-                let targetLeft = 0;
                 if (closest.before) {
-                    const prevCard = targetCard.previousElementSibling;
-                    if (prevCard && prevCard.classList.contains('task-card')) {
-                        targetLeft = (prevCard.offsetLeft + prevCard.offsetWidth + targetCard.offsetLeft) / 2 - 2;
-                    } else {
-                        targetLeft = targetCard.offsetLeft - 2;
-                    }
+                    placeholders.forEach(p => tasksList.insertBefore(p, closest.card));
                 } else {
-                    const nextCard = targetCard.nextElementSibling;
-                    if (nextCard && nextCard.classList.contains('task-card')) {
-                        targetLeft = (targetCard.offsetLeft + targetCard.offsetWidth + nextCard.offsetLeft) / 2 - 2;
-                    } else {
-                        targetLeft = targetCard.offsetLeft + targetCard.offsetWidth - 2;
-                    }
+                    let ref = closest.card;
+                    placeholders.forEach(p => {
+                        ref.after(p);
+                        ref = p;
+                    });
                 }
-                indicator.style.left = `${targetLeft}px`;
-                indicator.style.top = '0';
-                indicator.style.height = '100%';
-                indicator.style.display = 'block';
             } else {
-                indicator.style.display = 'none';
-                if (tasksList.querySelectorAll('.task-card').length === 0) {
-                    tr.classList.add('drag-over');
-                }
+                placeholders.forEach(p => tasksList.appendChild(p));
             }
         });
 
         tr.addEventListener('dragleave', (e) => {
             if (!tr.contains(e.relatedTarget)) {
                 tr.classList.remove('drag-over');
-                indicator.style.display = 'none';
+                tasksList.querySelectorAll('.task-card-placeholder').forEach(el => el.remove());
             }
         });
 
         tr.addEventListener('drop', (e) => {
             e.preventDefault();
             tr.classList.remove('drag-over');
-            indicator.style.display = 'none';
+            document.querySelectorAll('.task-card-placeholder').forEach(el => el.remove());
             let taskId = e.dataTransfer.getData('text/plain');
             if (!taskId || !document.getElementById(`task-${taskId}`)) return;
             const existingAssignee = getTaskAssignment(taskId);
             const isFromAssigned = e.dataTransfer.getData('is-from-assigned') === 'true';
 
-            if (isFromAssigned && existingAssignee && existingAssignee !== filler && !taskId.endsWith('_helper') && !taskId.includes('_other')) {
-                const totalDur = getTaskDuration(taskId);
-                const halfDur = Math.floor(totalDur / 2);
-                const helperTaskId = `${taskId}_helper`;
-                state.helpers[taskId] = {
-                    helperName: filler,
-                    isHalf: true,
-                    calculatedDuration: halfDur
-                };
+            if (isFromAssigned && existingAssignee && existingAssignee !== filler && !taskId.includes('_other')) {
+                const mainTaskId = taskId.split('_helper')[0];
+                const helperTaskId = `${mainTaskId}_helper_inst-${Date.now()}`;
                 if (!state.fillerTasks[filler]) state.fillerTasks[filler] = [];
-                removeTaskFromAll(helperTaskId);
 
                 const tasks = state.fillerTasks[filler];
                 const closest = getClosestTask(tasksList, e.clientX, e.clientY);
@@ -613,43 +647,27 @@ export const renderWorkspace = () => {
             } else {
                 removeTaskFromAll(taskId);
             }
-            
-            if (taskId.endsWith('_helper')) {
-                const mainTaskId = taskId.replace('_helper', '');
-                if (state.helpers[mainTaskId]) {
-                    state.helpers[mainTaskId].helperName = filler;
-                }
-            } else {
-                const helperInfo = state.helpers[taskId];
-                if (helperInfo && helperInfo.helperName === filler) {
-                    delete state.helpers[taskId];
-                    removeTaskFromAll(taskId + '_helper');
-                }
-            }
 
             if (!state.fillerTasks[filler]) {
                 state.fillerTasks[filler] = [];
             }
 
-            let counterpartTaskId = null;
-            let extraOtherTaskId = null;
-            
-            if (!isAlreadyAssigned && taskId.endsWith('_fill') && state.autoPairSettings && state.autoPairSettings.enabled) {
-                const pKey = taskId.replace('_fill', '');
-                if (state.pathColli[pKey]) {
-                    counterpartTaskId = `${pKey}_mirror`;
+            const tasksToAdd = [];
+            if (!isAlreadyAssigned) {
+                const { prepended, appended } = getAutoTasksForFillTask(taskId, state.autoPairSettings, state.pathColli);
+                if (prepended) {
+                    const uniqueId = `${prepended}_inst-${Date.now()}`;
+                    const [pName] = prepended.split('_');
+                    state.instanceTimes[uniqueId] = state.otherTimes[pName] || 30;
+                    tasksToAdd.push(uniqueId);
                 }
-            }
-
-            if (!isAlreadyAssigned && taskId.endsWith('_fill') && state.autoPairSettings && state.autoPairSettings.prependOtherTask && state.autoPairSettings.selectedOtherTask) {
-                const otherName = state.autoPairSettings.selectedOtherTask;
-                const uniqueId = `${otherName}_other_inst-${Date.now()}`;
-                state.instanceTimes[uniqueId] = state.otherTimes[otherName] || 30;
-                extraOtherTaskId = uniqueId;
-            }
-
-            if (counterpartTaskId) {
-                removeTaskFromAll(counterpartTaskId);
+                tasksToAdd.push(taskId);
+                if (appended) {
+                    removeTaskFromAll(appended);
+                    tasksToAdd.push(appended);
+                }
+            } else {
+                tasksToAdd.push(taskId);
             }
 
             const tasks = state.fillerTasks[filler];
@@ -659,23 +677,12 @@ export const renderWorkspace = () => {
                 const targetIndex = tasks.indexOf(targetTaskId);
                 if (targetIndex !== -1) {
                     const insertIndex = closest.before ? targetIndex : targetIndex + 1;
-                    if (extraOtherTaskId) {
-                        tasks.splice(insertIndex, 0, extraOtherTaskId);
-                        tasks.splice(insertIndex + 1, 0, taskId);
-                        if (counterpartTaskId) tasks.splice(insertIndex + 2, 0, counterpartTaskId);
-                    } else {
-                        tasks.splice(insertIndex, 0, taskId);
-                        if (counterpartTaskId) tasks.splice(insertIndex + 1, 0, counterpartTaskId);
-                    }
+                    tasks.splice(insertIndex, 0, ...tasksToAdd);
                 } else {
-                    if (extraOtherTaskId) tasks.push(extraOtherTaskId);
-                    tasks.push(taskId);
-                    if (counterpartTaskId) tasks.push(counterpartTaskId);
+                    tasks.push(...tasksToAdd);
                 }
             } else {
-                if (extraOtherTaskId) tasks.push(extraOtherTaskId);
-                tasks.push(taskId);
-                if (counterpartTaskId) tasks.push(counterpartTaskId);
+                tasks.push(...tasksToAdd);
             }
             renderWorkspace();
             triggerSave();

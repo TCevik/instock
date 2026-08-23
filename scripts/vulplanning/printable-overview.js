@@ -39,7 +39,7 @@ const buildRowHtml = (filler) => {
 
     let taskBreaks = 0;
     tasks.forEach(tId => {
-        const [pName] = tId.replace('_helper', '').split('_');
+        const [pName] = (tId.includes('_helper') ? tId.split('_helper')[0] : tId).split('_');
         if (pName === 'Pauze') {
             taskBreaks += getTaskDuration(tId);
         }
@@ -53,8 +53,8 @@ const buildRowHtml = (filler) => {
         tasksHtml = `<div class="empty-tasks-label">Geen taken toegewezen</div>`;
     } else {
         tasks.forEach(taskId => {
-            const isHelperTask = taskId.endsWith('_helper');
-            const mainTaskId = isHelperTask ? taskId.replace('_helper', '') : taskId;
+            const isHelperTask = taskId.includes('_helper');
+            const mainTaskId = isHelperTask ? taskId.split('_helper')[0] : taskId;
             const [pathName, type] = mainTaskId.split('_');
             const isBreakTask = pathName === 'Pauze';
             const duration = getEffectiveTaskDuration(taskId);
