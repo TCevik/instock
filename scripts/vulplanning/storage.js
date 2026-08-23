@@ -1,5 +1,6 @@
 import { getSupabase } from '../main.js';
 import { state } from './state.js';
+import { pushHistory } from './history.js';
 
 let currentStoreId = null;
 let saveTimeout = null;
@@ -11,6 +12,7 @@ export const setStoreId = (id) => {
 export const getStoreId = () => currentStoreId;
 
 export const triggerSave = () => {
+    pushHistory();
     if (!currentStoreId) return;
     if (saveTimeout) clearTimeout(saveTimeout);
     saveTimeout = setTimeout(async () => {

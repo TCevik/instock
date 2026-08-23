@@ -4,6 +4,7 @@ import { showConfirmModal } from '../modal.js';
 import { triggerSave } from './storage.js';
 import { initPadenModal } from '../main.js';
 import { matchEmployeeName } from './planning-logic.js';
+import { initHistory } from './history.js';
 
 export const renderPeopleList = (names) => {
     const card = document.getElementById('people-card');
@@ -553,6 +554,7 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
                 if (resetBtn) resetBtn.style.display = 'inline-block';
                 if (generateBtn) generateBtn.style.display = 'flex';
                 if (finalizeBtn) finalizeBtn.style.display = 'flex';
+                initHistory();
                 triggerSave();
             };
 

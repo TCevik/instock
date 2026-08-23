@@ -29,6 +29,28 @@ import { triggerSave } from './storage.js';
 import { HARDCODED_MIRROR_TIMES } from './plus/pdf-defaults.js';
 
 let currentDraggedTaskId = null;
+let taskContextMenu = null;
+
+const getOrCreateTaskContextMenu = () => {
+    if (!taskContextMenu) {
+        taskContextMenu = document.createElement('div');
+        taskContextMenu.className = 'context-menu';
+        taskContextMenu.id = 'task-context-menu';
+        document.body.appendChild(taskContextMenu);
+
+        document.addEventListener('click', (e) => {
+            if (!taskContextMenu.contains(e.target)) {
+                taskContextMenu.style.display = 'none';
+            }
+        });
+        document.addEventListener('contextmenu', (e) => {
+            if (!e.target.closest('.task-card')) {
+                taskContextMenu.style.display = 'none';
+            }
+        });
+    }
+    return taskContextMenu;
+};
 
 const getDraggedTaskSequence = (draggedId) => {
     if (!draggedId) return [];
@@ -148,23 +170,65 @@ export const createTaskCard = (taskId, startTime, endTime, maxMin, totalInTimePl
     }
     card.title = tooltip;
 
-    if (!isHelperTask && pathName !== 'Pauze') {
+    card.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const menu = getOrCreateTaskContextMenu();
+        menu.innerHTML = '';
+
         const assignee = getTaskAssignment(taskId);
-        if (assignee || type === 'other') {
-            const menuBtn = document.createElement('button');
-            menuBtn.className = 'task-menu-btn';
-            menuBtn.innerHTML = '<i class="material-icons">more_vert</i>';
-            menuBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (type === 'other') {
-                    openDurationModal(taskId);
-                } else {
-                    openHelperModal(taskId);
-                }
+
+        if (type === 'other' || isBreakTask) {
+            const editItem = document.createElement('div');
+            editItem.className = 'context-menu-item';
+            editItem.innerHTML = '<i class="material-icons">schedule</i><span>Duur aanpassen</span>';
+            editItem.addEventListener('click', () => {
+                menu.style.display = 'none';
+                openDurationModal(taskId);
             });
-            card.appendChild(menuBtn);
+            menu.appendChild(editItem);
+        } else if (!isHelperTask) {
+            const helperItem = document.createElement('div');
+            helperItem.className = 'context-menu-item';
+            helperItem.innerHTML = '<i class="material-icons">person_add</i><span>Helper toewijzen</span>';
+            helperItem.addEventListener('click', () => {
+                menu.style.display = 'none';
+                openHelperModal(taskId);
+            });
+            menu.appendChild(helperItem);
         }
-    }
+
+        if (assignee) {
+            const removeItem = document.createElement('div');
+            removeItem.className = 'context-menu-item';
+            removeItem.innerHTML = '<i class="material-icons">delete_outline</i><span>Taak verwijderen</span>';
+            removeItem.addEventListener('click', () => {
+                menu.style.display = 'none';
+                removeTaskFromAll(taskId);
+                if (taskId.includes('_inst-')) {
+                    delete state.instanceTimes[taskId];
+                }
+                renderWorkspace();
+                triggerSave();
+            });
+            menu.appendChild(removeItem);
+        }
+
+        if (menu.children.length === 0) return;
+
+        menu.style.left = `${e.clientX}px`;
+        menu.style.top = `${e.clientY}px`;
+        menu.style.display = 'block';
+
+        const rect = menu.getBoundingClientRect();
+        if (rect.right > window.innerWidth) {
+            menu.style.left = `${window.innerWidth - rect.width - 8}px`;
+        }
+        if (rect.bottom > window.innerHeight) {
+            menu.style.top = `${window.innerHeight - rect.height - 8}px`;
+        }
+    });
 
     return card;
 };
@@ -550,8 +614,6 @@ export const renderWorkspace = () => {
                     card.classList.add('task-card-placeholder');
                     card.removeAttribute('id');
                     card.draggable = false;
-                    const menuBtn = card.querySelector('.task-menu-btn');
-                    if (menuBtn) menuBtn.remove();
                     let effectiveDuration = getEffectiveTaskDuration(tId);
                     if (isCreatingHelper) {
                         card.classList.add('helper');

@@ -404,11 +404,6 @@
     pointer-events: none;
 }
 
-.task-card .task-menu-btn,
-.task-card .task-menu-btn * {
-    pointer-events: auto;
-}
-
 .task-card:active {
     cursor: grabbing;
 }
@@ -602,32 +597,6 @@
     color: #000;
 }
 
-.task-card {
-    position: relative;
-    padding-right: 24px !important;
-}
-
-.task-menu-btn {
-    position: absolute;
-    top: 3px;
-    right: 3px;
-    background: none;
-    border: none;
-    color: var(--text-color-muted);
-    cursor: pointer;
-    padding: 2px;
-    border-radius: 4px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.2s, color 0.2s;
-}
-
-.task-menu-btn:hover {
-    color: var(--text-color);
-    background-color: rgba(255, 255, 255, 0.05);
-}
-
 .task-card.helper {
     border-color: var(--helper-border) !important;
     border-style: dashed;
@@ -722,10 +691,6 @@
     white-space: nowrap;
 }
 
-.task-menu-btn .material-icons {
-    font-size: 18px;
-}
-
 .really-hidden-badge {
     padding: 4px 8px;
     font-size: 12px;
@@ -734,9 +699,15 @@
     color: var(--text-color);
     border-radius: 6px;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    user-select: none;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+#undo-btn:disabled,
+#redo-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
 }
 
 .really-hidden-badge .material-icons {
@@ -881,5 +852,14 @@
     align-items: center;
     justify-content: center;
     width: 100%;
+}
+
+.undo-redo-group {
+    display: none;
+    align-items: center;
+    gap: 4px;
+    margin-left: 12px;
+    padding-left: 12px;
+    border-left: 1px solid var(--border-color);
 }
 

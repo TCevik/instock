@@ -10,6 +10,7 @@ import { createManualInputManager, renderPeopleList } from './manual-input.js';
 import { generatePrintablePlanning } from './printable-overview.js';
 import { renderWorkspace } from './workspace.js';
 import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration, getEffectiveTaskDuration, matchEmployeeName, getFillerProductivity, formatTaskDisplayName } from './planning-logic.js';
+import { initHistory, resetHistory, setupHistoryListeners } from './history.js';
 
 (() => {
     setRenderWorkspaceCallback(renderWorkspace);
@@ -18,6 +19,7 @@ import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration, getEf
         const auth = await checkAuth(['beheerder']);
         if (!auth) return;
         loadHeader();
+        setupHistoryListeners();
         const storeId = auth.userData.winkel;
         setStoreId(storeId);
         const isPlusLms = auth.storeCode === 'plus-lms';
@@ -88,6 +90,7 @@ import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration, getEf
                     'Weet je zeker dat je opnieuw wilt beginnen? De huidige planning wordt overschreven.',
                     () => {
                         resetState();
+                        resetHistory();
 
                         const manualFillersList = document.getElementById('manual-fillers-list');
                         if (manualFillersList) manualFillersList.innerHTML = '';
@@ -134,6 +137,7 @@ import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration, getEf
             if (resetBtn) resetBtn.style.display = 'inline-block';
             if (generateBtn) generateBtn.style.display = 'flex';
             if (finalizeBtn) finalizeBtn.style.display = 'flex';
+            initHistory();
         }
 
         if (finalizeBtn) {
