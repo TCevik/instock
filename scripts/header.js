@@ -26,10 +26,11 @@ export async function updateHeaderMenu() {
         "vulplanning maker": "vulplanning",
         "productenbeheer": "productenbeheer",
         "gebruikersbeheer": "gebruikersbeheer",
-        "instellingen winkel": "instellingen_winkel"
+        "instellingen winkel": "instellingen_winkel",
+        "systeem logs": "logs"
     };
 
-    const fixedHiddenForMedewerker = ["gebruikersbeheer", "instellingen_winkel", "bakplan", "vulplanning", "productenbeheer"];
+    const fixedHiddenForMedewerker = ["gebruikersbeheer", "instellingen_winkel", "bakplan", "vulplanning", "productenbeheer", "logs"];
     const productRelatedKeys = ["product_checker", "voorraadmutaties", "tht_module", "tht_registratie", "tellen", "acties"];
     const allProductRelatedOff = productRelatedKeys.every(k => modules[k] === false);
 

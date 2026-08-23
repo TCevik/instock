@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Systeem Logs</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/header.css">
+    <script src="scripts/logs.js" type="module"></script>
+</head>
+<body>
+    <main class="dashboard-container">
+        <div class="page-header page-header-col large-gap">
+            <div class="page-header-row">
+                <i class="material-icons page-header-icon">history</i>
+                <h1 class="page-header-title">Systeem Logs</h1>
+            </div>
+            <p class="page-header-subtitle">Bekijk alle database wijzigingen en activiteiten</p>
+        </div>
+
+        <div class="management-card" style="margin-bottom: 24px;">
+            <div class="filter-grid">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="log-type-filter">Type</label>
+                    <div class="input-wrapper">
+                        <select id="log-type-filter">
+                            <option value="">Alle types</option>
+                        </select>
+                        <i class="material-icons">category</i>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="log-action-filter">Actie</label>
+                    <div class="input-wrapper">
+                        <select id="log-action-filter">
+                            <option value="">Alle acties</option>
+                            <option value="create">Aangemaakt</option>
+                            <option value="update">Bijgewerkt</option>
+                            <option value="delete">Verwijderd</option>
+                        </select>
+                        <i class="material-icons">bolt</i>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="log-search-input">Zoek gebruiker</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="log-search-input" placeholder="Zoek op naam..." autocomplete="off">
+                        <i class="material-icons">search</i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container" style="margin-top: 0;">
+            <table class="users-table" id="logs-table">
+                <thead>
+                    <tr>
+                        <th>Datum & Tijd</th>
+                        <th>Gebruiker</th>
+                        <th>Actie</th>
+                        <th>Type</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody id="logs-table-body">
+                    <tr>
+                        <td colspan="5" class="loading-cell">Logs laden...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination-container" id="pagination-container">
+            <div class="pagination-buttons">
+                <button class="page-btn" id="first-page-btn" title="Eerste pagina" disabled>
+                    <i class="material-icons">first_page</i>
+                </button>
+                <button class="page-btn" id="prev10-page-btn" title="10 pagina's terug" disabled>
+                    <i class="material-icons">fast_rewind</i>
+                </button>
+                <button class="page-btn" id="prev-page-btn" title="Vorige pagina" disabled>
+                    <i class="material-icons">chevron_left</i>
+                </button>
+            </div>
+            <div class="pagination-input-wrapper">
+                <span>Pagina</span>
+                <input type="number" id="page-jump-input" min="1" value="1">
+                <span id="page-total-label">van 1</span>
+            </div>
+            <div class="pagination-buttons">
+                <button class="page-btn" id="next-page-btn" title="Volgende pagina" disabled>
+                    <i class="material-icons">chevron_right</i>
+                </button>
+                <button class="page-btn" id="next10-page-btn" title="10 pagina's verder" disabled>
+                    <i class="material-icons">fast_forward</i>
+                </button>
+                <button class="page-btn" id="last-page-btn" title="Laatste pagina" disabled>
+                    <i class="material-icons">last_page</i>
+                </button>
+            </div>
+        </div>
+
+        <div class="modal-overlay" id="logDetailsModal">
+            <div class="management-card modal-content-lg">
+                <div class="modal-header">
+                    <h2 id="modal-log-title">Log Details</h2>
+                    <button class="close-modal-btn" id="closeLogModalBtn">
+                        <i class="material-icons">close</i>
+                    </button>
+                </div>
+                <div id="modal-log-content"></div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

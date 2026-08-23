@@ -3,11 +3,8 @@ import { showToast } from './toast.js';
 export function setupModal(modal, closeButtons, onReset) {
     if (!modal) return;
     const closeModal = () => {
-        if (modal.classList.contains('open')) {
-            modal.classList.remove('open');
-        } else {
-            modal.style.display = 'none';
-        }
+        modal.classList.remove('open');
+        modal.style.display = '';
         if (onReset) onReset();
     };
 
