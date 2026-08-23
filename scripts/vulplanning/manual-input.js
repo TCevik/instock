@@ -121,9 +121,9 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
                 </div>
                 <div class="filler-autocomplete-list" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px; z-index: 100; max-height: 160px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"></div>
             </div>
-            <input type="text" class="manual-filler-start form-input" placeholder="00:00" value="${startVal}" style="flex: 1; text-align: center;" maxlength="5">
-            <input type="text" class="manual-filler-end form-input" placeholder="00:00" value="${endVal}" style="flex: 1; text-align: center;" maxlength="5">
-            <input type="number" class="manual-filler-pause form-input" placeholder="0" value="${pauseVal}" style="flex: 0.8; text-align: center;" min="0">
+            <input type="text" class="manual-filler-start form-input" placeholder="vanaf" value="${startVal}" style="flex: 1; text-align: center;" maxlength="5">
+            <input type="text" class="manual-filler-end form-input" placeholder="tot" value="${endVal}" style="flex: 1; text-align: center;" maxlength="5">
+            <input type="number" class="manual-filler-pause form-input" placeholder="pauze" value="${pauseVal}" style="flex: 0.8; text-align: center;" min="0">
             <button type="button" class="action-btn remove-filler-btn" style="padding: 6px; color: var(--danger-color); background: none; border: none; cursor: pointer;" title="Verwijderen"><i class="material-icons">delete</i></button>
         `;
 
