@@ -499,28 +499,42 @@ document.addEventListener('DOMContentLoaded', async () => {
             const statusClass = getProductivityStatusClass(pVal);
             const badgeText = pVal !== null ? `${pVal}%` : '-';
             const formattedDate = formatDateDisplay(item.date);
+            const tasksList = Array.isArray(item.tasks) ? item.tasks : [];
+            const taskCount = tasksList.length;
+            const taskCountLabel = taskCount === 1 ? '1 taak' : `${taskCount} taken`;
 
             let rawTasksJoined = '';
-            let tasksText = '';
-            if (Array.isArray(item.tasks) && item.tasks.length > 0) {
-                rawTasksJoined = item.tasks.join(', ');
-                tasksText = item.tasks.map(formatTaskDisplayName).join(', ');
+            let tasksTagsHtml = '';
+            if (taskCount > 0) {
+                rawTasksJoined = tasksList.map(formatTaskDisplayName).join('; ');
+                tasksTagsHtml = tasksList.map(t => {
+                    const formatted = formatTaskDisplayName(t);
+                    return `<span class="prod-task-pill">${formatted}</span>`;
+                }).join('');
             }
 
             return `
                 <div class="prod-history-item" data-date="${item.date}">
-                    <div class="prod-history-date-info">
-                        <span class="prod-history-date">${formattedDate}</span>
-                        ${tasksText ? `<span class="prod-history-tasks" title="${tasksText}">${tasksText}</span>` : ''}
+                    <div class="prod-history-header">
+                        <div class="prod-history-date-wrap">
+                            <i class="material-icons prod-history-toggle-icon">expand_more</i>
+                            <span class="prod-history-date">${formattedDate}</span>
+                            <span class="prod-history-tasks-count">${taskCountLabel}</span>
+                        </div>
+                        <div class="prod-history-actions">
+                            <span class="prod-badge ${statusClass}">${badgeText}</span>
+                            <button class="prod-history-btn edit-prod-entry-btn" title="Bewerken" data-date="${item.date}" data-prod="${pVal !== null ? pVal : ''}" data-tasks="${rawTasksJoined.replace(/"/g, '&quot;')}">
+                                <i class="material-icons">edit</i>
+                            </button>
+                            <button class="prod-history-btn delete-btn delete-prod-entry-btn" title="Verwijderen" data-date="${item.date}">
+                                <i class="material-icons">delete</i>
+                            </button>
+                        </div>
                     </div>
-                    <div class="prod-history-actions">
-                        <span class="prod-badge ${statusClass}">${badgeText}</span>
-                        <button class="prod-history-btn edit-prod-entry-btn" title="Bewerken" data-date="${item.date}" data-prod="${pVal !== null ? pVal : ''}" data-tasks="${rawTasksJoined.replace(/"/g, '&quot;')}">
-                            <i class="material-icons">edit</i>
-                        </button>
-                        <button class="prod-history-btn delete-btn delete-prod-entry-btn" title="Verwijderen" data-date="${item.date}">
-                            <i class="material-icons">delete</i>
-                        </button>
+                    <div class="prod-history-tasks-wrapper">
+                        <div class="prod-history-tasks-inner">
+                            ${tasksTagsHtml ? `<div class="prod-history-tasks-container">${tasksTagsHtml}</div>` : '<div class="prod-history-tasks-container"><span class="prod-history-tasks-empty-text">Geen taken geregistreerd</span></div>'}
+                        </div>
                     </div>
                 </div>
             `;
@@ -585,7 +599,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!entry) return;
 
             const currentProd = typeof entry.productivity === 'number' ? entry.productivity : '';
-            const currentTasksFormatted = Array.isArray(entry.tasks) ? entry.tasks.map(formatTaskDisplayName).join(', ') : '';
+            const currentTasksFormatted = Array.isArray(entry.tasks) ? entry.tasks.map(formatTaskDisplayName).join('; ') : '';
             const formattedDate = formatDateDisplay(date);
 
             itemEl.classList.add('prod-history-edit-mode');
@@ -593,7 +607,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="prod-history-date">${formattedDate}</div>
                 <div class="prod-history-edit-row">
                     <input type="number" class="prod-edit-input prod-edit-prod" min="0" max="500" placeholder="%" value="${currentProd}">
-                    <input type="text" class="prod-edit-input prod-edit-tasks" placeholder="Paden (bijv: Pad 1 (Vullen), Diepvries (Spiegelen))" value="${currentTasksFormatted.replace(/"/g, '&quot;')}">
+                    <input type="text" class="prod-edit-input prod-edit-tasks" placeholder="Paden (bijv: Koffie, Koek, Chocolade (Vullen) • 45m; Diepvries (Spiegelen) • 30m)" value="${currentTasksFormatted.replace(/"/g, '&quot;')}">
                     <button class="prod-history-btn save-btn save-prod-entry-btn" title="Opslaan" data-date="${date}">
                         <i class="material-icons">check</i>
                     </button>
@@ -634,6 +648,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             deleteBtn.disabled = true;
             await saveUserProductivityEntry(date, null, []);
             return;
+        }
+
+        const headerEl = e.target.closest('.prod-history-header');
+        if (headerEl && !e.target.closest('.prod-history-btn')) {
+            const itemEl = headerEl.closest('.prod-history-item');
+            if (itemEl && !itemEl.classList.contains('prod-history-edit-mode')) {
+                itemEl.classList.toggle('expanded');
+            }
         }
     });
 

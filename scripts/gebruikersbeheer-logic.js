@@ -101,12 +101,30 @@ export const getLeaderboardData = (users) => {
 export const parseTaskInput = (inputStr) => {
     if (!inputStr || typeof inputStr !== 'string') return [];
     return inputStr
-        .split(',')
+        .split(/[;\n\r]+/)
         .map(t => t.trim())
         .filter(Boolean)
         .map(task => {
-            const isHelper = task.toLowerCase().includes('(hulp)');
-            let clean = task.replace(/\s*\(Hulp\)/i, '').trim();
+            let duration = null;
+            let current = task;
+
+            if (current.includes('|')) {
+                const parts = current.split('|');
+                current = parts[0].trim();
+                const d = parseInt(parts[1], 10);
+                if (!isNaN(d)) duration = d;
+            } else {
+                const durMatch = current.match(/(?:[•\-\(]\s*)?(?:(\d+)\s*u(?:ur)?)?\s*(\d+)\s*m(?:in(?:uten)?)?\)?$/i);
+                if (durMatch) {
+                    const hours = parseInt(durMatch[1] || '0', 10);
+                    const mins = parseInt(durMatch[2] || '0', 10);
+                    duration = (hours * 60) + mins;
+                    current = current.replace(durMatch[0], '').trim();
+                }
+            }
+
+            const isHelper = current.toLowerCase().includes('(hulp)');
+            let clean = current.replace(/\s*\(Hulp\)/i, '').trim();
 
             let type = '';
             if (clean.toLowerCase().includes('(vullen)')) {
@@ -126,6 +144,9 @@ export const parseTaskInput = (inputStr) => {
             }
             if (isHelper && !result.endsWith('_helper')) {
                 result = `${result}_helper`;
+            }
+            if (duration !== null && duration > 0) {
+                result = `${result}|${duration}`;
             }
             return result;
         });

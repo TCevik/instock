@@ -4,12 +4,12 @@ import { showToast } from '../toast.js';
 import { state, removeTaskFromAll, resetState } from './state.js';
 import { setStoreId, getStoreId, triggerSave, loadData } from './storage.js';
 import { setupModals, setRenderWorkspaceCallback } from './modals.js';
-import { showConfirmModal } from '../modal.js';
+import { showConfirmModal, showLoadingOverlay, hideLoadingOverlay } from '../modal.js';
 import { parsePDFAndGetNames, parseColliPDF, getDefaultPDFPaden, doSettingsMatchPDF } from './plus/pdf-handler.js';
 import { createManualInputManager, renderPeopleList } from './manual-input.js';
 import { generatePrintablePlanning } from './printable-overview.js';
 import { renderWorkspace } from './workspace.js';
-import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration, matchEmployeeName, getFillerProductivity, formatTaskDisplayName } from './planning-logic.js';
+import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration, getEffectiveTaskDuration, matchEmployeeName, getFillerProductivity, formatTaskDisplayName } from './planning-logic.js';
 
 (() => {
     setRenderWorkspaceCallback(renderWorkspace);
@@ -165,11 +165,16 @@ import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration, match
                         const { name } = parseNameAndSubtitle(filler);
                         const user = users.find(u => u.full_name && u.full_name.trim().toLowerCase() === name.trim().toLowerCase());
                         if (user) {
+                            const rawTasks = state.fillerTasks[filler] || [];
+                            const tasksWithDurations = rawTasks.map(tId => {
+                                const dur = Math.round(getEffectiveTaskDuration(tId, state));
+                                return dur > 0 ? `${tId}|${dur}` : tId;
+                            });
                             matchedEmployees.push({
                                 user,
                                 filler,
                                 productivity: getFillerProductivity(filler, state),
-                                tasks: state.fillerTasks[filler] || []
+                                tasks: tasksWithDurations
                             });
                         }
                     });
@@ -220,8 +225,8 @@ import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration, match
                                     changeLines.push(`Productiviteit gewijzigd: ${oldProdStr} &rarr; <strong>${newProdStr}</strong>`);
                                 }
                                 if (tasksChanged) {
-                                    const oldTasksStr = oldTasksArr.length > 0 ? oldTasksArr.map(formatTaskDisplayName).join(', ') : 'Geen';
-                                    const newTasksStr = newTasksArr.length > 0 ? newTasksArr.map(formatTaskDisplayName).join(', ') : 'Geen';
+                                    const oldTasksStr = oldTasksArr.length > 0 ? oldTasksArr.map(formatTaskDisplayName).join('; ') : 'Geen';
+                                    const newTasksStr = newTasksArr.length > 0 ? newTasksArr.map(formatTaskDisplayName).join('; ') : 'Geen';
                                     changeLines.push(`Taken gewijzigd:<br>&bull; Oud: ${oldTasksStr}<br>&bull; Nieuw: <strong>${newTasksStr}</strong>`);
                                 }
 
@@ -262,6 +267,7 @@ import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration, match
                     await askConfirmationForEmployee(0);
 
                     if (approvedPayload.length > 0) {
+                        showLoadingOverlay('Opslaan...');
                         const { data: { session } } = await supabaseClient.auth.getSession();
                         const headers = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
                         const { data: invokeData, error: invokeError, detailedError } = await invokeFunction('save_productivity', {
@@ -317,6 +323,7 @@ import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration, match
                 } catch (err) {
                     showToast('Er is een fout opgetreden', 'error');
                 } finally {
+                    hideLoadingOverlay();
                     finalizeBtn.disabled = false;
                 }
             });

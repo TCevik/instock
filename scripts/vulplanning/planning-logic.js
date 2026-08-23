@@ -259,7 +259,25 @@ export const matchEmployeeName = (rawName, storeEmployees) => {
     return { matchedUser: null, hasMultipleMatches: false, candidateMatches: [] };
 };
 
-export const formatTaskDisplayName = (taskId) => {
+export const formatTaskDisplayName = (task) => {
+    if (!task) return '';
+    let taskId = '';
+    let duration = null;
+
+    if (typeof task === 'object') {
+        taskId = task.id || task.taskId || task.name || '';
+        duration = task.duration ?? task.minutes ?? null;
+    } else if (typeof task === 'string') {
+        if (task.includes('|')) {
+            const parts = task.split('|');
+            taskId = parts[0];
+            const parsedDur = parseInt(parts[1], 10);
+            if (!isNaN(parsedDur)) duration = parsedDur;
+        } else {
+            taskId = task;
+        }
+    }
+
     if (!taskId) return '';
     const isHelper = taskId.endsWith('_helper');
     const cleanId = isHelper ? taskId.replace('_helper', '') : taskId;
@@ -276,6 +294,9 @@ export const formatTaskDisplayName = (taskId) => {
     }
     if (isHelper) {
         result += ' (Hulp)';
+    }
+    if (duration !== null && duration > 0) {
+        result += ` • ${formatMin(duration)}`;
     }
     return result;
 };

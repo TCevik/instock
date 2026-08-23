@@ -250,3 +250,30 @@ export function initPadenModal(supabase, storeId, onSaved) {
         });
     }
 }
+
+export function showLoadingOverlay(text = 'Opslaan...') {
+    let overlay = document.getElementById('global-loading-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'global-loading-overlay';
+        overlay.className = 'loading-overlay';
+        overlay.innerHTML = `
+            <div class="loading-spinner"></div>
+            <span class="loading-overlay-text">${text}</span>
+        `;
+        document.body.appendChild(overlay);
+    } else {
+        const textEl = overlay.querySelector('.loading-overlay-text');
+        if (textEl) textEl.textContent = text;
+    }
+    requestAnimationFrame(() => {
+        overlay.classList.add('active');
+    });
+}
+
+export function hideLoadingOverlay() {
+    const overlay = document.getElementById('global-loading-overlay');
+    if (overlay) {
+        overlay.classList.remove('active');
+    }
+}

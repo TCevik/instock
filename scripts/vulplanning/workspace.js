@@ -3,6 +3,7 @@ import {
     getFillerPause,
     getAvailableTime,
     getTaskDuration,
+    getEffectiveTaskDuration,
     getFillerTotalTime,
     getFillerProductivity,
     getProductivityStatusClass,
@@ -24,7 +25,7 @@ import { showConfirmModal } from '../modal.js';
 import { triggerSave } from './storage.js';
 import { HARDCODED_MIRROR_TIMES } from './plus/pdf-defaults.js';
 
-export const createTaskCard = (taskId, startTime, endTime) => {
+export const createTaskCard = (taskId, startTime, endTime, maxMin, totalInTimePlanned, totalOvertimePlanned, fillerStartTime) => {
     const isHelperTask = taskId.endsWith('_helper');
     const mainTaskId = isHelperTask ? taskId.replace('_helper', '') : taskId;
     const [pathName, type] = mainTaskId.split('_');
@@ -52,41 +53,80 @@ export const createTaskCard = (taskId, startTime, endTime) => {
     const titleRow = document.createElement('div');
     titleRow.className = 'task-card-title';
     titleRow.textContent = `${pathName}${colliSuffix}`;
+    titleRow.style.position = 'relative';
+    titleRow.style.zIndex = '2';
     card.appendChild(titleRow);
 
     const metaRow = document.createElement('div');
     metaRow.className = 'task-card-meta';
 
-    const duration = getTaskDuration(taskId);
+    const effectiveDuration = getEffectiveTaskDuration(taskId);
     let durationText = '';
     if (isHelperTask) {
         card.classList.add('helper');
-        durationText = formatMin(duration);
+        durationText = formatMin(effectiveDuration);
     } else if (startTime === undefined) {
-        durationText = (isBreakTask && duration === 0) ? '' : formatMin(duration);
+        durationText = (isBreakTask && effectiveDuration === 0) ? '' : formatMin(effectiveDuration);
     } else {
-        const helperInfo = state.helpers[taskId];
-        if (helperInfo && helperInfo.helperName) {
-            const rawHelperDur = (helperInfo.isMax || helperInfo.isHalf) ? (helperInfo.calculatedDuration || 0) : (helperInfo.duration || 0);
-            const helperDuration = Math.min(duration, Math.max(0, rawHelperDur));
-            const remainingDuration = Math.max(0, duration - helperDuration);
-            durationText = formatMin(remainingDuration);
+        durationText = formatMin(effectiveDuration);
+    }
+
+    if (startTime !== undefined && endTime !== undefined && isFinite(maxMin) && maxMin > 0) {
+        const baseStart = fillerStartTime !== undefined ? fillerStartTime : (endTime - effectiveDuration);
+        const maxLimitTime = baseStart + maxMin;
+
+        let inTimeDur = 0;
+        let overDur = 0;
+
+        if (endTime <= maxLimitTime) {
+            inTimeDur = effectiveDuration;
+        } else if (startTime >= maxLimitTime) {
+            overDur = effectiveDuration;
         } else {
-            durationText = formatMin(duration);
+            inTimeDur = Math.max(0, maxLimitTime - startTime);
+            overDur = Math.max(0, endTime - maxLimitTime);
+        }
+
+        const totalDuration = inTimeDur + overDur;
+        const totalWidthPct = (totalDuration / maxMin) * 75;
+
+        card.style.width = `${totalWidthPct}%`;
+        card.style.flexShrink = '0';
+
+        if (overDur > 0) {
+            const overPortionPct = (overDur / totalDuration) * 100;
+            const overlay = document.createElement('div');
+            overlay.className = 'task-overtime-overlay';
+            overlay.style.width = `${overPortionPct}%`;
+            if (overPortionPct >= 99.9) {
+                overlay.style.borderLeft = 'none';
+            }
+            card.appendChild(overlay);
         }
     }
 
     const leftMetaSpan = document.createElement('span');
     leftMetaSpan.textContent = durationText || '\u00A0';
+    leftMetaSpan.style.position = 'relative';
+    leftMetaSpan.style.zIndex = '2';
     metaRow.appendChild(leftMetaSpan);
 
     if (startTime !== undefined && endTime !== undefined) {
         const rightMetaSpan = document.createElement('span');
         rightMetaSpan.textContent = `${formatTimeOfDay(startTime)} - ${formatTimeOfDay(endTime)}`;
+        rightMetaSpan.style.position = 'relative';
+        rightMetaSpan.style.zIndex = '2';
         metaRow.appendChild(rightMetaSpan);
     }
 
     card.appendChild(metaRow);
+
+    const typeLabel = type === 'fill' ? 'Vullen' : (type === 'mirror' ? 'Spiegelen' : (isBreakTask ? 'Pauze' : 'Overig'));
+    let tooltip = `${pathName}${colliSuffix} (${typeLabel})\nDuur: ${durationText || '0m'}`;
+    if (startTime !== undefined && endTime !== undefined) {
+        tooltip += `\nTijd: ${formatTimeOfDay(startTime)} - ${formatTimeOfDay(endTime)}`;
+    }
+    card.title = tooltip;
 
     if (!isHelperTask && pathName !== 'Pauze') {
         const assignee = getTaskAssignment(taskId);
@@ -458,9 +498,23 @@ export const renderWorkspace = () => {
         const tasksList = document.createElement('div');
         tasksList.className = 'filler-tasks-list';
 
+        const timelineSep = document.createElement('div');
+        timelineSep.className = 'timeline-separator';
+        tasksList.appendChild(timelineSep);
+
         const indicator = document.createElement('div');
         indicator.className = 'drop-indicator-line';
         tasksList.appendChild(indicator);
+
+        tasksList.addEventListener('scroll', (e) => {
+            const scrollLeft = e.target.scrollLeft;
+            const allLists = document.querySelectorAll('.filler-tasks-list');
+            allLists.forEach(list => {
+                if (list !== e.target && list.scrollLeft !== scrollLeft) {
+                    list.scrollLeft = scrollLeft;
+                }
+            });
+        });
 
         tr.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -470,9 +524,19 @@ export const renderWorkspace = () => {
                 const targetCard = closest.card;
                 let targetLeft = 0;
                 if (closest.before) {
-                    targetLeft = targetCard.offsetLeft - 4;
+                    const prevCard = targetCard.previousElementSibling;
+                    if (prevCard && prevCard.classList.contains('task-card')) {
+                        targetLeft = (prevCard.offsetLeft + prevCard.offsetWidth + targetCard.offsetLeft) / 2 - 2;
+                    } else {
+                        targetLeft = targetCard.offsetLeft - 2;
+                    }
                 } else {
-                    targetLeft = targetCard.offsetLeft + targetCard.offsetWidth + 2;
+                    const nextCard = targetCard.nextElementSibling;
+                    if (nextCard && nextCard.classList.contains('task-card')) {
+                        targetLeft = (targetCard.offsetLeft + targetCard.offsetWidth + nextCard.offsetLeft) / 2 - 2;
+                    } else {
+                        targetLeft = targetCard.offsetLeft + targetCard.offsetWidth - 2;
+                    }
                 }
                 indicator.style.left = `${targetLeft}px`;
                 indicator.style.top = '0';
@@ -620,22 +684,46 @@ export const renderWorkspace = () => {
             }
         });
 
-        let currentTime = getFillerStartTime(filler);
+        const fillerStartMin = getFillerStartTime(filler);
+        const maxLimitTime = fillerStartMin + maxMin;
+
+        let totalInTimePlanned = 0;
+        let totalOvertimePlanned = 0;
+        let runningCalcTime = fillerStartMin;
+
         (state.fillerTasks[filler] || []).forEach(taskId => {
-            let duration = getTaskDuration(taskId);
-            if (!taskId.endsWith('_helper')) {
-                const helperInfo = state.helpers[taskId];
-                if (helperInfo && helperInfo.helperName) {
-                    const helperDuration = (helperInfo.isMax || helperInfo.isHalf) ? (helperInfo.calculatedDuration || 0) : Math.min(duration, helperInfo.duration || 0);
-                    duration = duration - helperDuration;
-                }
+            const duration = getEffectiveTaskDuration(taskId);
+            const taskStart = runningCalcTime;
+            const taskEnd = runningCalcTime + duration;
+            runningCalcTime = taskEnd;
+
+            if (taskEnd <= maxLimitTime) {
+                totalInTimePlanned += duration;
+            } else if (taskStart >= maxLimitTime) {
+                totalOvertimePlanned += duration;
+            } else {
+                totalInTimePlanned += Math.max(0, maxLimitTime - taskStart);
+                totalOvertimePlanned += Math.max(0, taskEnd - maxLimitTime);
             }
+        });
+
+        let currentTime = fillerStartMin;
+        (state.fillerTasks[filler] || []).forEach(taskId => {
+            const duration = getEffectiveTaskDuration(taskId);
             const startTime = currentTime;
             const endTime = currentTime + duration;
             currentTime = endTime;
 
-            const card = createTaskCard(taskId, startTime, endTime);
-            if (card) tasksList.appendChild(card);
+            const card = createTaskCard(taskId, startTime, endTime, maxMin, totalInTimePlanned, totalOvertimePlanned, fillerStartMin);
+            if (card) {
+                tasksList.appendChild(card);
+            } else if (duration > 0 && maxMin > 0) {
+                const spacer = document.createElement('div');
+                spacer.style.width = `${(duration / maxMin) * 75}%`;
+                spacer.style.flexShrink = '0';
+                spacer.style.visibility = 'hidden';
+                tasksList.appendChild(spacer);
+            }
         });
 
         tdTasks.appendChild(tasksList);
