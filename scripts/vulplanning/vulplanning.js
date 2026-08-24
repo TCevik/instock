@@ -182,7 +182,7 @@ import { initHistory, resetHistory, setupHistoryListeners } from './history.js';
             if (finalizeSelectAll) {
                 finalizeSelectAll.addEventListener('change', () => {
                     if (!finalizeList) return;
-                    const checkboxes = finalizeList.querySelectorAll('.finalize-emp-checkbox');
+                    const checkboxes = finalizeList.querySelectorAll('.finalize-emp-checkbox:not(:disabled)');
                     checkboxes.forEach(cb => { cb.checked = finalizeSelectAll.checked; });
                     updateFinalizeCount();
                 });
@@ -245,19 +245,25 @@ import { initHistory, resetHistory, setupHistoryListeners } from './history.js';
 
                     if (finalizeList) {
                         finalizeList.innerHTML = matchedEmployees.map((emp, idx) => {
+                            const hasProd = emp.productivity !== null && emp.productivity !== undefined;
+                            const isSelectable = hasProd || emp.hasExisting;
                             const prodClass = getProductivityStatusClass(emp.productivity);
-                            const prodBadge = emp.productivity !== null
+                            const prodBadge = hasProd
                                 ? `<span class="filler-stat-item prod ${prodClass}" style="padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; border: 1px solid;">${emp.productivity}%</span>`
-                                : `<span style="font-size: 12px; color: var(--text-color-muted);">-</span>`;
+                                : `<span style="font-size: 12px; color: var(--text-color-muted); font-weight: 600;">-</span>`;
 
                             const overwriteBadge = emp.hasExisting
                                 ? `<span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background-color: var(--prod-warning-bg); color: var(--prod-warning-color); border: 1px solid var(--prod-warning-border); display: inline-flex; align-items: center; gap: 4px;"><i class="material-icons" style="font-size: 12px;">sync</i> Overschrijven${emp.oldProductivity !== null ? ` (${emp.oldProductivity}%)` : ''}</span>`
                                 : `<span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background-color: var(--prod-healthy-bg); color: var(--prod-healthy-color); border: 1px solid var(--prod-healthy-border);">Nieuw</span>`;
 
+                            const rowStyle = isSelectable
+                                ? 'display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; gap: 10px;'
+                                : 'display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; cursor: not-allowed; opacity: 0.5; gap: 10px;';
+
                             return `
-                                <label class="finalize-emp-row" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; gap: 10px;">
+                                <label class="finalize-emp-row" style="${rowStyle}" ${!isSelectable ? 'title="Geen productiviteit berekend"' : ''}>
                                     <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
-                                        <input type="checkbox" class="finalize-emp-checkbox" data-index="${idx}" checked style="accent-color: var(--accent-color); cursor: pointer; width: 16px; height: 16px; flex-shrink: 0;">
+                                        <input type="checkbox" class="finalize-emp-checkbox" data-index="${idx}" ${isSelectable ? 'checked' : 'disabled'} style="accent-color: var(--accent-color); cursor: ${isSelectable ? 'pointer' : 'not-allowed'}; width: 16px; height: 16px; flex-shrink: 0;">
                                         <span style="font-size: 14px; font-weight: 500; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${emp.user.full_name}</span>
                                     </div>
                                     <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
@@ -268,12 +274,16 @@ import { initHistory, resetHistory, setupHistoryListeners } from './history.js';
                             `;
                         }).join('');
 
-                        finalizeList.querySelectorAll('.finalize-emp-checkbox').forEach(cb => {
+                        finalizeList.querySelectorAll('.finalize-emp-checkbox:not(:disabled)').forEach(cb => {
                             cb.addEventListener('change', updateFinalizeCount);
                         });
                     }
 
-                    if (finalizeSelectAll) finalizeSelectAll.checked = true;
+                    if (finalizeSelectAll) {
+                        const enabledCheckboxes = finalizeList ? finalizeList.querySelectorAll('.finalize-emp-checkbox:not(:disabled)') : [];
+                        finalizeSelectAll.checked = enabledCheckboxes.length > 0;
+                        finalizeSelectAll.disabled = enabledCheckboxes.length === 0;
+                    }
                     updateFinalizeCount();
                     if (finalizeModal) finalizeModal.style.display = 'flex';
                 } catch (err) {
