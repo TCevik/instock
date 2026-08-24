@@ -126,7 +126,7 @@
 .drag-drop-workspace {
     display: grid;
     grid-template-columns: 1fr;
-    padding-right: 250px;
+    padding-right: 320px;
     gap: 6px;
     align-items: start;
 }
@@ -501,7 +501,7 @@
     position: fixed;
     right: 5px;
     top: 80px;
-    width: 240px;
+    width: 310px;
     height: calc(100vh - 90px);
     max-height: calc(100vh - 90px);
     display: flex;
@@ -604,6 +604,11 @@
     color: #000;
 }
 
+.tab-btn.active#tab-restanten {
+    background-color: var(--restanten-color);
+    color: #fff;
+}
+
 .task-card.helper {
     border-color: var(--helper-border) !important;
     border-style: dashed;
@@ -617,6 +622,17 @@
 
 .tab-btn.active#tab-other {
     background-color: var(--other-color);
+}
+
+.task-card.restanten {
+    background-color: var(--restanten-card-bg);
+    border-color: var(--restanten-border);
+    border-left: 3px solid var(--restanten-color);
+}
+
+.task-card.restanten .task-card-type {
+    background-color: var(--restanten-bg);
+    color: var(--restanten-color);
 }
 
 .task-card.other {

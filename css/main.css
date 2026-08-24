@@ -61,6 +61,11 @@ html {
     --helper-card-bg: rgba(236, 72, 153, 0.05);
     --helper-border: rgba(236, 72, 153, 0.3);
     
+    --restanten-color: #8b5cf6;
+    --restanten-bg: rgba(139, 92, 246, 0.15);
+    --restanten-card-bg: rgba(139, 92, 246, 0.05);
+    --restanten-border: rgba(139, 92, 246, 0.3);
+    
     --delete-zone-bg: rgba(255, 82, 82, 0.08);
     --delete-zone-border: #ff5252;
     --overlay-bg: rgba(24, 24, 27, 0.85);

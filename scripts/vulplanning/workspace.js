@@ -93,8 +93,9 @@ const getDraggedTaskSequence = (draggedId) => {
     if (!draggedId) return [];
     const isAlreadyAssigned = getTaskAssignment(draggedId) !== null;
     if (isAlreadyAssigned || draggedId.includes('_helper')) return [draggedId];
-    const { prepended, appended } = getAutoTasksForFillTask(draggedId, state.autoPairSettings, state.pathColli);
+    const { prepended, prependedRestanten, appended } = getAutoTasksForFillTask(draggedId, state.autoPairSettings, state.pathColli);
     const list = [];
+    if (prependedRestanten) list.push(prependedRestanten);
     if (prepended) list.push(prepended);
     list.push(draggedId);
     if (appended) list.push(appended);
@@ -199,7 +200,7 @@ export const createTaskCard = (taskId, startTime, endTime, maxMin, totalInTimePl
 
     card.appendChild(metaRow);
 
-    const typeLabel = type === 'fill' ? 'Vullen' : (type === 'mirror' ? 'Spiegelen' : (isBreakTask ? 'Pauze' : 'Overig'));
+    const typeLabel = type === 'fill' ? 'Vullen' : (type === 'mirror' ? 'Spiegelen' : (type === 'restanten' ? 'Restanten' : (isBreakTask ? 'Pauze' : 'Overig')));
     let tooltip = `${pathName}${colliSuffix} (${typeLabel})\nDuur: ${durationText || '0m'}`;
     if (startTime !== undefined && endTime !== undefined) {
         tooltip += `\nTijd: ${formatTimeOfDay(startTime)} - ${formatTimeOfDay(endTime)}`;
@@ -215,7 +216,7 @@ export const createTaskCard = (taskId, startTime, endTime, maxMin, totalInTimePl
 
         const assignee = getTaskAssignment(taskId);
 
-        if (type === 'other' || isBreakTask) {
+        if (type === 'other' || isBreakTask || type === 'restanten' || type === 'mirror') {
             const editItem = document.createElement('div');
             editItem.className = 'context-menu-item';
             editItem.innerHTML = '<i class="material-icons">schedule</i><span>Duur aanpassen</span>';
@@ -349,15 +350,22 @@ export const renderWorkspace = () => {
 
     const tabFill = document.getElementById('tab-fill');
     const tabMirror = document.getElementById('tab-mirror');
+    const tabRestanten = document.getElementById('tab-restanten');
     const tabOther = document.getElementById('tab-other');
+    const restantenContainer = document.getElementById('unassigned-restanten-tasks');
 
     if (tabMirror) tabMirror.style.display = '';
+    if (tabRestanten) tabRestanten.style.display = '';
 
     const addCustomBtn = document.getElementById('add-custom-task-btn');
     if (addCustomBtn) {
         addCustomBtn.style.display = state.activeTab === 'other' ? 'block' : 'none';
     }
     if (tabFill && tabMirror && tabOther) {
+        if (tabRestanten) {
+            tabRestanten.classList.remove('active');
+            if (restantenContainer) restantenContainer.style.display = 'none';
+        }
         if (state.activeTab === 'fill') {
             tabFill.classList.add('active');
             tabMirror.classList.remove('active');
@@ -372,6 +380,15 @@ export const renderWorkspace = () => {
             fillContainer.style.display = 'none';
             mirrorContainer.style.display = 'flex';
             otherContainer.style.display = 'none';
+        } else if (state.activeTab === 'restanten') {
+            tabFill.classList.remove('active');
+            tabMirror.classList.remove('active');
+            if (tabRestanten) tabRestanten.classList.add('active');
+            tabOther.classList.remove('active');
+            fillContainer.style.display = 'none';
+            mirrorContainer.style.display = 'none';
+            if (restantenContainer) restantenContainer.style.display = 'flex';
+            otherContainer.style.display = 'none';
         } else {
             tabFill.classList.remove('active');
             tabMirror.classList.remove('active');
@@ -385,6 +402,7 @@ export const renderWorkspace = () => {
     fillersTableBody.innerHTML = '';
     fillContainer.innerHTML = '';
     mirrorContainer.innerHTML = '';
+    if (restantenContainer) restantenContainer.innerHTML = '';
     otherContainer.innerHTML = '';
 
     const nonFillersTableBody = document.getElementById('non-fillers-table-body');
@@ -399,6 +417,9 @@ export const renderWorkspace = () => {
             if (getTaskDuration(`${pathName}_mirror`) > 0) {
                 allTaskIds.push(`${pathName}_mirror`);
             }
+        }
+        if (getTaskDuration(`${pathName}_restanten`) > 0) {
+            allTaskIds.push(`${pathName}_restanten`);
         }
     });
     const otherKeys = Object.keys(state.otherTimes).filter(k => k !== 'Pauze');
@@ -794,7 +815,11 @@ export const renderWorkspace = () => {
 
             const tasksToAdd = [];
             if (!isAlreadyAssigned) {
-                const { prepended, appended } = getAutoTasksForFillTask(taskId, state.autoPairSettings, state.pathColli);
+                const { prepended, prependedRestanten, appended } = getAutoTasksForFillTask(taskId, state.autoPairSettings, state.pathColli);
+                if (prependedRestanten) {
+                    removeTaskFromAll(prependedRestanten);
+                    tasksToAdd.push(prependedRestanten);
+                }
                 if (prepended) {
                     const uniqueId = `${prepended}_inst-${Date.now()}`;
                     const [pName] = prepended.split('_');
@@ -931,6 +956,7 @@ export const renderWorkspace = () => {
 
     let fillCount = 0;
     let mirrorCount = 0;
+    let restantenCount = 0;
     let otherCount = 0;
     let assignedCount = 0;
 
@@ -946,6 +972,9 @@ export const renderWorkspace = () => {
             } else if (taskId.endsWith('_mirror')) {
                 mirrorContainer.appendChild(card);
                 mirrorCount++;
+            } else if (taskId.endsWith('_restanten')) {
+                if (restantenContainer) restantenContainer.appendChild(card);
+                restantenCount++;
             } else {
                 otherContainer.appendChild(card);
                 otherCount++;
@@ -954,7 +983,8 @@ export const renderWorkspace = () => {
             if (assignedGrid) {
                 const isTabMatch = (state.activeTab === 'fill' && taskId.endsWith('_fill')) ||
                                    (state.activeTab === 'mirror' && taskId.endsWith('_mirror')) ||
-                                   (state.activeTab === 'other' && !taskId.endsWith('_fill') && !taskId.endsWith('_mirror'));
+                                   (state.activeTab === 'restanten' && taskId.endsWith('_restanten')) ||
+                                   (state.activeTab === 'other' && !taskId.endsWith('_fill') && !taskId.endsWith('_mirror') && !taskId.endsWith('_restanten'));
                 if (isTabMatch) {
                     assignedGrid.appendChild(card);
                     assignedCount++;
@@ -969,6 +999,7 @@ export const renderWorkspace = () => {
 
     if (tabFill) tabFill.textContent = `Vullen (${fillCount})`;
     if (tabMirror) tabMirror.textContent = `Spiegelen (${mirrorCount})`;
+    if (tabRestanten) tabRestanten.textContent = `Restanten (${restantenCount})`;
     if (tabOther) tabOther.textContent = 'Overige';
 
     setupZoomListeners();

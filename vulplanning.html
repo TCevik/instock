@@ -256,11 +256,13 @@
                     <div class="tasks-tabs">
                         <button class="tab-btn active" id="tab-fill" autocomplete="off">Vullen</button>
                         <button class="tab-btn" id="tab-mirror" autocomplete="off">Spiegelen</button>
+                        <button class="tab-btn" id="tab-restanten" autocomplete="off">Restanten</button>
                         <button class="tab-btn" id="tab-other" autocomplete="off">Overige</button>
                     </div>
                     <div class="tasks-scroll-area">
                         <div class="tasks-grid" id="unassigned-fill-tasks"></div>
                         <div class="tasks-grid" id="unassigned-mirror-tasks" style="display: none;"></div>
+                        <div class="tasks-grid" id="unassigned-restanten-tasks" style="display: none;"></div>
                         <div class="tasks-grid" id="unassigned-other-tasks" style="display: none;"></div>
                         <button id="add-custom-task-btn" class="submit-btn"
                             style="margin-top: 4px; font-size: 12px; padding: 4px 8px; height: auto; display: none;">+
@@ -493,7 +495,7 @@
     </div>
 
     <div id="paden-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-content" style="max-width: 650px; max-height: 85vh; display: flex; flex-direction: column;">
+        <div class="modal-content" style="max-width: 740px; max-height: 85vh; display: flex; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--vullen-bg); display: flex; align-items: center; justify-content: center;">
@@ -554,8 +556,18 @@
                 <label class="person-checkbox-label"
                     style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background-color: var(--input-bg); border-radius: 10px; border: 1px solid var(--border-color); cursor: pointer;">
                     <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="material-icons" style="font-size: 18px; color: var(--restanten-color);">inventory_2</i>
+                        <span style="font-size: 13px; font-weight: 500; color: var(--text-color);">Restanten automatisch ervoor zetten</span>
+                    </div>
+                    <input type="checkbox" id="modal-auto-pair-restanten"
+                        style="width: 16px; height: 16px; accent-color: var(--accent-color-sidemenu); cursor: pointer;">
+                </label>
+
+                <label class="person-checkbox-label"
+                    style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background-color: var(--input-bg); border-radius: 10px; border: 1px solid var(--border-color); cursor: pointer;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
                         <i class="material-icons" style="font-size: 18px; color: var(--spiegelen-border);">flip_to_back</i>
-                        <span style="font-size: 13px; font-weight: 500; color: var(--text-color);">Spiegelen automatisch toevoegen</span>
+                        <span style="font-size: 13px; font-weight: 500; color: var(--text-color);">Spiegelen automatisch ervoor zetten</span>
                     </div>
                     <input type="checkbox" id="modal-auto-pair-enabled"
                         style="width: 16px; height: 16px; accent-color: var(--accent-color-sidemenu); cursor: pointer;">
@@ -566,7 +578,7 @@
                         style="display: flex; align-items: center; justify-content: space-between; padding: 0; background: transparent; border: none; cursor: pointer;">
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <i class="material-icons" style="font-size: 18px; color: var(--accent-color-sidemenu);">playlist_add</i>
-                            <span style="font-size: 13px; font-weight: 500; color: var(--text-color);">Standaard Overige taak ervoor zetten</span>
+                            <span style="font-size: 13px; font-weight: 500; color: var(--text-color);">Overige taak automatisch ervoor zetten</span>
                         </div>
                         <input type="checkbox" id="modal-prepend-other-enabled"
                             style="width: 16px; height: 16px; accent-color: var(--accent-color-sidemenu); cursor: pointer;">

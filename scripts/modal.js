@@ -108,7 +108,7 @@ export function initPadenModal(supabase, storeId, onSaved) {
         catTbody.appendChild(tr);
     };
 
-    const addPathBlock = (pathName = '', mirrorNorm = '') => {
+    const addPathBlock = (pathName = '', mirrorNorm = '', restantenNorm = '') => {
         const pathIdx = Date.now() + Math.random();
 
         const card = document.createElement('div');
@@ -118,12 +118,16 @@ export function initPadenModal(supabase, storeId, onSaved) {
         header.className = 'modal-path-header modal-path-card-header';
         header.setAttribute('data-path-idx', pathIdx);
         header.innerHTML = `
-            <div style="display: flex; gap: 8px; align-items: center; flex: 1; min-width: 200px;">
+            <div style="display: flex; gap: 8px; align-items: center; flex: 1; min-width: 180px;">
                 <input type="text" placeholder="bijv. Frisdrank, Bier" value="${pathName}" class="modal-path-name modal-path-input" style="flex: 1; font-weight: 600;">
             </div>
-            <div style="display: flex; gap: 8px; align-items: center;">
-                <span class="modal-path-label" style="color: var(--text-color-muted);">SPIEGELNORM (MIN):</span>
-                <input type="number" placeholder="min" value="${mirrorNorm}" class="modal-path-mirror-norm modal-path-input" style="width: 75px;">
+            <div style="display: flex; gap: 6px; align-items: center;">
+                <span class="modal-path-label" style="color: var(--text-color-muted);">SPIEGELNORM:</span>
+                <input type="number" placeholder="min" value="${mirrorNorm}" class="modal-path-mirror-norm modal-path-input" style="width: 60px;">
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center;">
+                <span class="modal-path-label" style="color: var(--text-color-muted);">RESTANTENNORM:</span>
+                <input type="number" placeholder="min" value="${restantenNorm}" class="modal-path-restanten-norm modal-path-input" style="width: 60px;">
             </div>
             <div style="display: flex; gap: 6px; align-items: center; margin-left: auto;">
                 <button type="button" class="add-cat-btn action-btn" style="padding: 6px 10px; background-color: var(--accent-color); color: #fff; display: flex; align-items: center; border-radius: 6px;" title="Categorie Toevoegen"><i class="material-icons" style="font-size: 16px;">add</i></button>
@@ -172,7 +176,7 @@ export function initPadenModal(supabase, storeId, onSaved) {
             pathRes.addCategoryRow();
         } else {
             paden.forEach(p => {
-                const pathRes = addPathBlock(p.name || '', p.mirrorNorm !== undefined ? p.mirrorNorm : '');
+                const pathRes = addPathBlock(p.name || '', p.mirrorNorm !== undefined ? p.mirrorNorm : '', p.restantenNorm !== undefined ? p.restantenNorm : '');
                 if (Array.isArray(p.categories) && p.categories.length > 0) {
                     p.categories.forEach(c => pathRes.addCategoryRow(c.name || '', c.norm || ''));
                 } else {
@@ -222,6 +226,8 @@ export function initPadenModal(supabase, storeId, onSaved) {
                 const pathName = header.querySelector('.modal-path-name').value.trim();
                 const mirrorNormVal = header.querySelector('.modal-path-mirror-norm').value;
                 const mirrorNorm = mirrorNormVal !== '' ? parseInt(mirrorNormVal, 10) : 21;
+                const restantenNormVal = header.querySelector('.modal-path-restanten-norm')?.value;
+                const restantenNorm = restantenNormVal !== undefined && restantenNormVal !== '' ? parseInt(restantenNormVal, 10) : 20;
 
                 if (!pathName) missingName = true;
 
@@ -238,7 +244,7 @@ export function initPadenModal(supabase, storeId, onSaved) {
                 });
 
                 if (pathName) {
-                    padenData.push({ name: pathName, mirrorNorm, categories });
+                    padenData.push({ name: pathName, mirrorNorm, restantenNorm, categories });
                 }
             });
 

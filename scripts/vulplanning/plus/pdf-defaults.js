@@ -74,3 +74,19 @@ export const HARDCODED_MIRROR_TIMES = {
     "Vleeswaren": 21,
     "Kaas": 21
 };
+
+export const HARDCODED_RESTANTEN_TIMES = {
+    "Wijn, Chips, Nootjes": 20,
+    "Frisdrank, Bier": 20,
+    "Ontbijt": 20,
+    "Koffie, Koek, Chocolade": 20,
+    "Maaltijdstraat Conserven": 20,
+    "Maaltijdstraat Oosters": 20,
+    "Eieren, Afbakbrood": 20,
+    "Non Food": 20,
+    "Diepvries": 20,
+    "Zuivel": 20,
+    "Vlees": 20,
+    "Vleeswaren": 20,
+    "Kaas": 20
+};

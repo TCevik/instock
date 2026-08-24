@@ -23,7 +23,6 @@ export const state = {
     activeTab: 'fill',
     fillerSortOrder: 'start-asc',
     otherTimes: {
-        "Restanten nalopen": 20,
         "Bulk nalopen": 30,
         "Acties terugvullen": 15,
         "Magazijn opruimen": 45,
@@ -39,6 +38,7 @@ export const state = {
     showReallyHidden: false,
     autoPairSettings: {
         enabled: false,
+        prependRestanten: false,
         prependOtherTask: false,
         selectedOtherTask: ""
     },

@@ -3,10 +3,14 @@ export const parsePadenData = (padenData) => {
     const pathsMapping = {};
     const normsMapping = {};
     const mirrorNormsMapping = {};
+    const restantenNormsMapping = {};
     list.forEach(p => {
         if (!p.name) return;
         if (p.mirrorNorm !== undefined) {
             mirrorNormsMapping[p.name] = parseFloat(p.mirrorNorm) || 21;
+        }
+        if (p.restantenNorm !== undefined) {
+            restantenNormsMapping[p.name] = parseFloat(p.restantenNorm) || 20;
         }
         const cats = Array.isArray(p.categories) ? p.categories : [];
         pathsMapping[p.name] = cats.map(c => typeof c === 'string' ? c : c.name).filter(Boolean);
@@ -16,24 +20,30 @@ export const parsePadenData = (padenData) => {
             }
         });
     });
-    return { pathsMapping, normsMapping, mirrorNormsMapping };
+    return { pathsMapping, normsMapping, mirrorNormsMapping, restantenNormsMapping };
 };
 
 export const getAutoTasksForFillTask = (taskId, autoPairSettings, pathColli) => {
     let prepended = null;
+    let prependedRestanten = null;
     let appended = null;
     if (taskId && taskId.endsWith('_fill') && autoPairSettings) {
+        const pKey = taskId.replace('_fill', '');
+        if (autoPairSettings.prependRestanten) {
+            if (pathColli && pathColli[pKey]) {
+                prependedRestanten = `${pKey}_restanten`;
+            }
+        }
         if (autoPairSettings.prependOtherTask && autoPairSettings.selectedOtherTask) {
             prepended = `${autoPairSettings.selectedOtherTask}_other`;
         }
         if (autoPairSettings.enabled) {
-            const pKey = taskId.replace('_fill', '');
             if (pathColli && pathColli[pKey]) {
                 appended = `${pKey}_mirror`;
             }
         }
     }
-    return { prepended, appended };
+    return { prepended, prependedRestanten, appended };
 };
 
 export const getHelperTaskIdsForMainTask = (mainTaskId, state) => {
@@ -68,6 +78,7 @@ export const getBaseTaskDuration = (taskId, state) => {
     if (!data) return 0;
     if (type === 'fill') return data.duration;
     if (type === 'mirror') return data.mirrorDuration !== undefined ? data.mirrorDuration : 21;
+    if (type === 'restanten') return data.restantenDuration !== undefined ? data.restantenDuration : 20;
     return 0;
 };
 
@@ -310,6 +321,7 @@ export const formatTaskDisplayName = (task) => {
     let typeLabel = '';
     if (type === 'fill') typeLabel = 'Vullen';
     else if (type === 'mirror') typeLabel = 'Spiegelen';
+    else if (type === 'restanten') typeLabel = 'Restanten';
     else if (type === 'other') typeLabel = 'Overig';
     
     let result = pathName;

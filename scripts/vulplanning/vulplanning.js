@@ -65,7 +65,7 @@ import { initHistory, resetHistory, setupHistoryListeners } from './history.js';
 
         setupModals();
 
-        const { addFillerRow, populatePaths } = createManualInputManager({
+        const { addFillerRow, populatePaths, recalculateStep1 } = createManualInputManager({
             renderWorkspace,
             storeEmployees,
             getStoreDefaultPaden: () => storeDefaultPaden,
@@ -245,23 +245,35 @@ import { initHistory, resetHistory, setupHistoryListeners } from './history.js';
 
                     if (finalizeList) {
                         finalizeList.innerHTML = matchedEmployees.map((emp, idx) => {
-                            const hasProd = emp.productivity !== null && emp.productivity !== undefined;
-                            const isSelectable = hasProd || emp.hasExisting;
+                            const currentProd = emp.productivity !== undefined ? emp.productivity : null;
+                            const oldProd = emp.oldProductivity !== undefined ? emp.oldProductivity : null;
+                            const isIdentical = emp.hasExisting && currentProd === oldProd;
+                            const hasProd = currentProd !== null;
+                            const isSelectable = !isIdentical && (hasProd || emp.hasExisting);
                             const prodClass = getProductivityStatusClass(emp.productivity);
                             const prodBadge = hasProd
                                 ? `<span class="filler-stat-item prod ${prodClass}" style="padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; border: 1px solid;">${emp.productivity}%</span>`
                                 : `<span style="font-size: 12px; color: var(--text-color-muted); font-weight: 600;">-</span>`;
 
-                            const overwriteBadge = emp.hasExisting
-                                ? `<span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background-color: var(--prod-warning-bg); color: var(--prod-warning-color); border: 1px solid var(--prod-warning-border); display: inline-flex; align-items: center; gap: 4px;"><i class="material-icons" style="font-size: 12px;">sync</i> Overschrijven${emp.oldProductivity !== null ? ` (${emp.oldProductivity}%)` : ''}</span>`
-                                : `<span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background-color: var(--prod-healthy-bg); color: var(--prod-healthy-color); border: 1px solid var(--prod-healthy-border);">Nieuw</span>`;
+                            let overwriteBadge = '';
+                            if (isIdentical) {
+                                overwriteBadge = `<span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background-color: var(--border-color); color: var(--text-color-muted); border: 1px solid var(--border-color); display: inline-flex; align-items: center; gap: 4px;"><i class="material-icons" style="font-size: 12px;">check_circle</i> Reeds opgeslagen</span>`;
+                            } else if (emp.hasExisting) {
+                                overwriteBadge = `<span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background-color: var(--prod-warning-bg); color: var(--prod-warning-color); border: 1px solid var(--prod-warning-border); display: inline-flex; align-items: center; gap: 4px;"><i class="material-icons" style="font-size: 12px;">sync</i> Overschrijven${emp.oldProductivity !== null ? ` (${emp.oldProductivity}%)` : ''}</span>`;
+                            } else {
+                                overwriteBadge = `<span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background-color: var(--prod-healthy-bg); color: var(--prod-healthy-color); border: 1px solid var(--prod-healthy-border);">Nieuw</span>`;
+                            }
 
                             const rowStyle = isSelectable
                                 ? 'display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; gap: 10px;'
                                 : 'display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; cursor: not-allowed; opacity: 0.5; gap: 10px;';
 
+                            const tooltip = isIdentical
+                                ? 'Reeds opgeslagen met dezelfde productiviteit'
+                                : (!isSelectable ? 'Geen productiviteit berekend' : '');
+
                             return `
-                                <label class="finalize-emp-row" style="${rowStyle}" ${!isSelectable ? 'title="Geen productiviteit berekend"' : ''}>
+                                <label class="finalize-emp-row" style="${rowStyle}" ${tooltip ? `title="${tooltip}"` : ''}>
                                     <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
                                         <input type="checkbox" class="finalize-emp-checkbox" data-index="${idx}" ${isSelectable ? 'checked' : 'disabled'} style="accent-color: var(--accent-color); cursor: ${isSelectable ? 'pointer' : 'not-allowed'}; width: 16px; height: 16px; flex-shrink: 0;">
                                         <span style="font-size: 14px; font-weight: 500; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${emp.user.full_name}</span>
@@ -482,6 +494,7 @@ import { initHistory, resetHistory, setupHistoryListeners } from './history.js';
 
         const tabFill = document.getElementById('tab-fill');
         const tabMirror = document.getElementById('tab-mirror');
+        const tabRestanten = document.getElementById('tab-restanten');
         const tabOther = document.getElementById('tab-other');
         if (tabFill && tabMirror && tabOther) {
             tabFill.addEventListener('click', () => {
@@ -492,6 +505,12 @@ import { initHistory, resetHistory, setupHistoryListeners } from './history.js';
                 state.activeTab = 'mirror';
                 renderWorkspace();
             });
+            if (tabRestanten) {
+                tabRestanten.addEventListener('click', () => {
+                    state.activeTab = 'restanten';
+                    renderWorkspace();
+                });
+            }
             tabOther.addEventListener('click', () => {
                 state.activeTab = 'other';
                 renderWorkspace();
@@ -576,12 +595,13 @@ import { initHistory, resetHistory, setupHistoryListeners } from './history.js';
             clearPlanningBtn.addEventListener('click', () => {
                 showConfirmModal(
                     'Planning leegmaken',
-                    'Weet je zeker dat je alle toegewezen taken van alle medewerkers wilt verwijderen?',
+                    'Weet je zeker dat je alle toegewezen taken van alle medewerkers wilt verwijderen? De normen en tijden worden opnieuw berekend.',
                     'Leegmaken',
                     () => {
                         state.fillerTasks = {};
                         state.helpers = {};
                         state.instanceTimes = {};
+                        state.actualEndTimes = {};
                         renderWorkspace();
                         triggerSave();
                         showToast('Planning leeggemaakt', 'success');

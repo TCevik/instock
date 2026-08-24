@@ -308,7 +308,7 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
         }
     };
 
-    const addPathBlock = (pathName = '', mirrorNorm = '') => {
+    const addPathBlock = (pathName = '', mirrorNorm = '', restantenNorm = '') => {
         const tbody = document.getElementById('manual-paths-tbody') || manualPathsList;
         const pathIdx = Date.now() + Math.random();
 
@@ -317,10 +317,11 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
         headerTr.setAttribute('data-path-idx', pathIdx);
         headerTr.innerHTML = `
             <td colspan="3" style="padding: 8px 12px;">
-                <div style="display: flex; gap: 8px; align-items: center;">
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                     <input type="text" value="${pathName}" class="manual-path-name" readonly style="border: none; background: transparent; color: var(--text-color); font-weight: 700; font-size: 14px; outline: none; cursor: default; width: auto; max-width: 220px;">
-                    <span style="font-size: 11px; font-weight: 600; color: var(--text-color-muted); text-transform: uppercase; margin-left: 8px;">(Spiegelnorm: ${mirrorNorm} min)</span>
+                    <span style="font-size: 11px; font-weight: 600; color: var(--text-color-muted); text-transform: uppercase; margin-left: 8px;">(Spiegelen: ${mirrorNorm}m | Restanten: ${restantenNorm}m)</span>
                     <input type="hidden" value="${mirrorNorm}" class="manual-path-mirror-norm">
+                    <input type="hidden" value="${restantenNorm}" class="manual-path-restanten-norm">
                 </div>
             </td>
         `;
@@ -353,7 +354,7 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
         initPathsTable();
         if (Array.isArray(padenList) && padenList.length > 0) {
             padenList.forEach(p => {
-                const pathRes = addPathBlock(p.name || '', p.mirrorNorm !== undefined ? p.mirrorNorm : '');
+                const pathRes = addPathBlock(p.name || '', p.mirrorNorm !== undefined ? p.mirrorNorm : '', p.restantenNorm !== undefined ? p.restantenNorm : '');
                 if (Array.isArray(p.categories) && p.categories.length > 0) {
                     p.categories.forEach(c => {
                         const catKey = (c.name || '').toLowerCase();
@@ -367,15 +368,25 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
 
     if (addFillerBtn) addFillerBtn.addEventListener('click', () => addFillerRow());
 
+    const defaultPadenList = getStoreDefaultPaden();
+    populatePaths(defaultPadenList);
+
     if (Object.keys(state.pathColli).length > 0) {
-        initPathsTable();
-        Object.entries(state.pathColli).forEach(([pathName, obj]) => {
-            const pathRes = addPathBlock(pathName, obj.mirrorDuration !== undefined ? obj.mirrorDuration : '');
-            const norm = obj.colli && obj.duration ? Math.round((obj.colli / (obj.duration / 60))) : '';
-            pathRes.addCategoryRow(pathName, obj.colli || '', norm);
-        });
-    } else {
-        populatePaths(getStoreDefaultPaden());
+        const tbody = document.getElementById('manual-paths-tbody');
+        if (tbody) {
+            Object.entries(state.pathColli).forEach(([pathName, obj]) => {
+                const headerTrs = Array.from(tbody.querySelectorAll('.manual-path-header'));
+                const matchedHeader = headerTrs.find(h => h.querySelector('.manual-path-name')?.value.trim().toLowerCase() === pathName.toLowerCase());
+                if (matchedHeader) {
+                    const pIdx = matchedHeader.getAttribute('data-path-idx');
+                    const catRows = tbody.querySelectorAll(`tr.manual-category-row[data-path-idx="${pIdx}"]`);
+                    if (catRows.length === 1 && obj.colli !== undefined) {
+                        const colliInput = catRows[0].querySelector('.manual-cat-colli');
+                        if (colliInput) colliInput.value = obj.colli;
+                    }
+                }
+            });
+        }
     }
 
     initPadenModal(supabase, storeId, (newPaden) => {
@@ -476,6 +487,8 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
                 if (!pathName) missingPathName = true;
                 const mirrorNormVal = headerTr.querySelector('.manual-path-mirror-norm')?.value;
                 const mirrorDur = mirrorNormVal !== undefined && mirrorNormVal !== '' ? parseFloat(mirrorNormVal) : 21;
+                const restantenNormVal = headerTr.querySelector('.manual-path-restanten-norm')?.value;
+                const restantenDur = restantenNormVal !== undefined && restantenNormVal !== '' ? parseFloat(restantenNormVal) : 20;
 
                 const catRows = tbody.querySelectorAll(`tr.manual-category-row[data-path-idx="${pathIdx}"]`);
                 if (!catRows.length) missingCatName = true;
@@ -501,7 +514,8 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
                 newPathColli[pathName] = {
                     colli: totalColli,
                     duration: Math.round(weightedSumMinutes),
-                    mirrorDuration: mirrorDur
+                    mirrorDuration: mirrorDur,
+                    restantenDuration: restantenDur
                 };
             });
 
@@ -574,5 +588,45 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
         });
     }
 
-    return { addFillerRow, populatePaths };
+    const recalculateStep1 = () => {
+        const tbody = document.getElementById('manual-paths-tbody');
+        const headerRows = tbody ? tbody.querySelectorAll('.manual-path-header') : [];
+        if (headerRows.length > 0) {
+            const newPathColli = {};
+            headerRows.forEach(headerTr => {
+                const pathIdx = headerTr.getAttribute('data-path-idx');
+                const pathName = headerTr.querySelector('.manual-path-name')?.value.trim() || '';
+                if (!pathName) return;
+                const mirrorNormVal = headerTr.querySelector('.manual-path-mirror-norm')?.value;
+                const mirrorDur = mirrorNormVal !== undefined && mirrorNormVal !== '' ? parseFloat(mirrorNormVal) : 21;
+                const restantenNormVal = headerTr.querySelector('.manual-path-restanten-norm')?.value;
+                const restantenDur = restantenNormVal !== undefined && restantenNormVal !== '' ? parseFloat(restantenNormVal) : 20;
+
+                const catRows = tbody.querySelectorAll(`tr.manual-category-row[data-path-idx="${pathIdx}"]`);
+                let totalColli = 0;
+                let weightedSumMinutes = 0;
+
+                catRows.forEach(cr => {
+                    const colliVal = parseFloat(cr.querySelector('.manual-cat-colli')?.value) || 0;
+                    const normVal = parseFloat(cr.querySelector('.manual-cat-norm')?.value) || 0;
+                    totalColli += colliVal;
+                    if (normVal > 0) {
+                        weightedSumMinutes += (colliVal / normVal) * 60;
+                    }
+                });
+
+                newPathColli[pathName] = {
+                    colli: totalColli,
+                    duration: Math.round(weightedSumMinutes),
+                    mirrorDuration: mirrorDur,
+                    restantenDuration: restantenDur
+                };
+            });
+            if (Object.keys(newPathColli).length > 0) {
+                state.pathColli = newPathColli;
+            }
+        }
+    };
+
+    return { addFillerRow, populatePaths, recalculateStep1 };
 };

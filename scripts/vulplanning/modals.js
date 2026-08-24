@@ -143,11 +143,17 @@ export const openDurationModal = (taskId) => {
 
     const [pathName, type] = taskId.split('_');
 
-    if (taskId.includes('_inst-')) {
-        const dur = state.instanceTimes[taskId] !== undefined ? state.instanceTimes[taskId] : (state.otherTimes[pathName] || 0);
+    if (taskId.includes('_inst-') || state.instanceTimes[taskId] !== undefined) {
+        const dur = state.instanceTimes[taskId] !== undefined ? state.instanceTimes[taskId] : (state.otherTimes[pathName] || getTaskDuration(taskId));
+        input.value = dur > 0 ? dur : '';
+    } else if (type === 'mirror' && state.pathColli[pathName]) {
+        const dur = state.pathColli[pathName].mirrorDuration !== undefined ? state.pathColli[pathName].mirrorDuration : 21;
+        input.value = dur > 0 ? dur : '';
+    } else if (type === 'restanten' && state.pathColli[pathName]) {
+        const dur = state.pathColli[pathName].restantenDuration !== undefined ? state.pathColli[pathName].restantenDuration : 20;
         input.value = dur > 0 ? dur : '';
     } else {
-        const dur = state.otherTimes[pathName] || 0;
+        const dur = state.otherTimes[pathName] || getTaskDuration(taskId) || 0;
         input.value = dur > 0 ? dur : '';
     }
 
@@ -204,31 +210,26 @@ export const setupModals = () => {
     }
     if (helperSaveBtn) {
         helperSaveBtn.addEventListener('click', () => {
-            if (!activeTaskId || !helperSelect || !helperDuration || !helperMaxCheckbox || !helperHalfCheckbox) return;
+            if (!activeTaskId) return;
             const helperName = helperSelect.value;
-            Object.keys(state.fillerTasks).forEach(filler => {
-                state.fillerTasks[filler] = state.fillerTasks[filler].filter(id => id !== (activeTaskId + '_helper'));
-            });
-            if (helperName) {
-                const maxDuration = Math.round(getTaskDuration(activeTaskId));
-                const val = parseInt(helperDuration.value) || 0;
-                const clampedVal = Math.min(maxDuration, val);
+            const duration = parseInt(helperDuration.value) || 0;
+            const isMax = helperMaxCheckbox.checked;
+            const isHalf = helperHalfCheckbox.checked;
 
+            if (helperName && duration > 0) {
                 state.helpers[activeTaskId] = {
-                    helperName: helperName,
-                    duration: clampedVal,
-                    isMax: helperMaxCheckbox.checked,
-                    isHalf: helperHalfCheckbox.checked
+                    helperName,
+                    duration,
+                    isMax,
+                    isHalf,
+                    calculatedDuration: duration
                 };
-                if (!state.fillerTasks[helperName]) {
-                    state.fillerTasks[helperName] = [];
-                }
-                state.fillerTasks[helperName].push(activeTaskId + '_helper');
             } else {
                 delete state.helpers[activeTaskId];
             }
             closeHelperModal();
             renderWorkspace();
+            triggerSave();
         });
     }
 
@@ -236,7 +237,7 @@ export const setupModals = () => {
     const durationCancelBtn = document.getElementById('duration-cancel-btn');
     const durationCancelIconBtn = document.getElementById('duration-cancel-icon-btn');
     const closeDurationModal = setupModal(durationModal, [durationCancelBtn, durationCancelIconBtn], () => {
-        if (activeDurationTaskId && activeDurationTaskId.includes('_inst-')) {
+        if (activeDurationTaskId) {
             const [pathName] = activeDurationTaskId.split('_');
             if (pathName === 'Pauze' && (!state.instanceTimes[activeDurationTaskId] || state.instanceTimes[activeDurationTaskId] <= 0)) {
                 removeTaskFromAll(activeDurationTaskId);
@@ -252,10 +253,14 @@ export const setupModals = () => {
         btn.addEventListener('click', () => {
             if (!activeDurationTaskId) return;
             const val = parseInt(btn.dataset.min) || 0;
-            const [pathName] = activeDurationTaskId.split('_');
+            const [pathName, type] = activeDurationTaskId.split('_');
             if (val > 0) {
                 if (activeDurationTaskId.includes('_inst-')) {
                     state.instanceTimes[activeDurationTaskId] = val;
+                } else if (type === 'mirror' && state.pathColli[pathName]) {
+                    state.pathColli[pathName].mirrorDuration = val;
+                } else if (type === 'restanten' && state.pathColli[pathName]) {
+                    state.pathColli[pathName].restantenDuration = val;
                 } else {
                     state.otherTimes[pathName] = val;
                 }
@@ -276,6 +281,10 @@ export const setupModals = () => {
             if (val > 0) {
                 if (activeDurationTaskId.includes('_inst-')) {
                     state.instanceTimes[activeDurationTaskId] = val;
+                } else if (type === 'mirror' && state.pathColli[pathName]) {
+                    state.pathColli[pathName].mirrorDuration = val;
+                } else if (type === 'restanten' && state.pathColli[pathName]) {
+                    state.pathColli[pathName].restantenDuration = val;
                 } else {
                     state.otherTimes[pathName] = val;
                 }
@@ -296,10 +305,16 @@ export const setupModals = () => {
     if (durationDeleteBtn) {
         durationDeleteBtn.addEventListener('click', () => {
             if (!activeDurationTaskId) return;
-            const [pathName] = activeDurationTaskId.split('_');
+            const [pathName, type] = activeDurationTaskId.split('_');
             if (activeDurationTaskId.includes('_inst-')) {
                 removeTaskFromAll(activeDurationTaskId);
                 delete state.instanceTimes[activeDurationTaskId];
+            } else if (type === 'mirror' && state.pathColli[pathName]) {
+                delete state.pathColli[pathName].mirrorDuration;
+                removeTaskFromAll(activeDurationTaskId);
+            } else if (type === 'restanten' && state.pathColli[pathName]) {
+                delete state.pathColli[pathName].restantenDuration;
+                removeTaskFromAll(activeDurationTaskId);
             } else {
                 delete state.otherTimes[pathName];
                 Object.keys(state.instanceTimes).forEach(instKey => {
@@ -359,6 +374,7 @@ export const setupModals = () => {
     const closeAutoPairModalBtn = document.getElementById('close-auto-pair-modal-btn');
     const saveAutoPairModalBtn = document.getElementById('save-auto-pair-modal-btn');
     const modalAutoPairEnabled = document.getElementById('modal-auto-pair-enabled');
+    const modalAutoPairRestanten = document.getElementById('modal-auto-pair-restanten');
     const modalPrependOtherEnabled = document.getElementById('modal-prepend-other-enabled');
     const modalOtherTaskSelection = document.getElementById('modal-other-task-selection');
     const modalOtherTaskSelect = document.getElementById('modal-other-task-select');
@@ -385,9 +401,10 @@ export const setupModals = () => {
         setupModal(autoPairModal, [closeAutoPairModalBtn, autoPairModalCancelBtn]);
         openAutoPairModalBtn.addEventListener('click', () => {
             if (!state.autoPairSettings) {
-                state.autoPairSettings = { enabled: false, prependOtherTask: false, selectedOtherTask: "" };
+                state.autoPairSettings = { enabled: false, prependRestanten: false, prependOtherTask: false, selectedOtherTask: "" };
             }
             if (modalAutoPairEnabled) modalAutoPairEnabled.checked = !!state.autoPairSettings.enabled;
+            if (modalAutoPairRestanten) modalAutoPairRestanten.checked = !!state.autoPairSettings.prependRestanten;
             if (modalPrependOtherEnabled) modalPrependOtherEnabled.checked = !!state.autoPairSettings.prependOtherTask;
             if (modalOtherTaskSelection) modalOtherTaskSelection.style.display = state.autoPairSettings.prependOtherTask ? 'flex' : 'none';
             populateOtherTaskSelect(state.autoPairSettings.selectedOtherTask);
@@ -430,6 +447,7 @@ export const setupModals = () => {
         saveAutoPairModalBtn.addEventListener('click', () => {
             if (!state.autoPairSettings) state.autoPairSettings = {};
             state.autoPairSettings.enabled = !!(modalAutoPairEnabled && modalAutoPairEnabled.checked);
+            state.autoPairSettings.prependRestanten = !!(modalAutoPairRestanten && modalAutoPairRestanten.checked);
             state.autoPairSettings.prependOtherTask = !!(modalPrependOtherEnabled && modalPrependOtherEnabled.checked);
             state.autoPairSettings.selectedOtherTask = modalOtherTaskSelect ? modalOtherTaskSelect.value : "";
             autoPairModal.style.display = 'none';

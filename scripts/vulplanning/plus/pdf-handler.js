@@ -1,5 +1,5 @@
 import { extractTextLinesFromPage } from '../../pdf-utils.js';
-import { HARDCODED_PATHS_MAPPING, HARDCODED_NORMS, HARDCODED_MIRROR_TIMES } from './pdf-defaults.js';
+import { HARDCODED_PATHS_MAPPING, HARDCODED_NORMS, HARDCODED_MIRROR_TIMES, HARDCODED_RESTANTEN_TIMES } from './pdf-defaults.js';
 import { state } from '../state.js';
 
 export const parsePDFAndGetNames = async (file) => {
@@ -85,6 +85,7 @@ export const getDefaultPDFPaden = () => {
     return Object.entries(HARDCODED_PATHS_MAPPING).map(([pathName, categories]) => ({
         name: pathName,
         mirrorNorm: HARDCODED_MIRROR_TIMES[pathName] ?? 21,
+        restantenNorm: HARDCODED_RESTANTEN_TIMES[pathName] ?? 20,
         categories: categories.map(cat => ({
             name: cat,
             norm: HARDCODED_NORMS[cat.toLowerCase()] ?? 62
