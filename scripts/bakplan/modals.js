@@ -40,6 +40,7 @@ export const showConfirmModal = (title, message, onConfirm, delaySeconds = 0) =>
         okBtn.disabled = false;
         okBtn.textContent = originalOkText;
         modal.style.display = 'none';
+        modal.removeEventListener('click', handleBackdrop);
         cancelBtn.removeEventListener('click', handleCancel);
         okBtn.removeEventListener('click', handleOk);
     };
@@ -51,6 +52,11 @@ export const showConfirmModal = (title, message, onConfirm, delaySeconds = 0) =>
         onConfirm();
     };
 
+    const handleBackdrop = (e) => {
+        if (e.target === modal) handleCancel();
+    };
+
+    modal.addEventListener('click', handleBackdrop);
     cancelBtn.addEventListener('click', handleCancel);
     okBtn.addEventListener('click', handleOk);
 };

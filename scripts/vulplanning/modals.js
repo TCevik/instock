@@ -157,7 +157,8 @@ export const openDurationModal = (taskId) => {
 export const setupModals = () => {
     const helperModal = document.getElementById('helper-modal');
     const helperCancelBtn = document.getElementById('modal-cancel-btn');
-    const closeHelperModal = setupModal(helperModal, [helperCancelBtn], () => {
+    const helperCancelIconBtn = document.getElementById('modal-cancel-icon-btn');
+    const closeHelperModal = setupModal(helperModal, [helperCancelBtn, helperCancelIconBtn], () => {
         activeTaskId = null;
     });
 
@@ -233,7 +234,8 @@ export const setupModals = () => {
 
     const durationModal = document.getElementById('duration-modal');
     const durationCancelBtn = document.getElementById('duration-cancel-btn');
-    const closeDurationModal = setupModal(durationModal, [durationCancelBtn], () => {
+    const durationCancelIconBtn = document.getElementById('duration-cancel-icon-btn');
+    const closeDurationModal = setupModal(durationModal, [durationCancelBtn, durationCancelIconBtn], () => {
         if (activeDurationTaskId && activeDurationTaskId.includes('_inst-')) {
             const [pathName] = activeDurationTaskId.split('_');
             if (pathName === 'Pauze' && (!state.instanceTimes[activeDurationTaskId] || state.instanceTimes[activeDurationTaskId] <= 0)) {
@@ -315,7 +317,8 @@ export const setupModals = () => {
 
     const customTaskModal = document.getElementById('custom-task-modal');
     const customTaskCancelBtn = document.getElementById('custom-task-cancel-btn');
-    const closeCustomTaskModal = setupModal(customTaskModal, [customTaskCancelBtn]);
+    const customTaskCancelIconBtn = document.getElementById('custom-task-cancel-icon-btn');
+    const closeCustomTaskModal = setupModal(customTaskModal, [customTaskCancelBtn, customTaskCancelIconBtn]);
 
     const addCustomTaskBtn = document.getElementById('add-custom-task-btn');
     if (addCustomTaskBtn) {
@@ -378,7 +381,8 @@ export const setupModals = () => {
     };
 
     if (openAutoPairModalBtn && autoPairModal) {
-        setupModal(autoPairModal, [closeAutoPairModalBtn]);
+        const autoPairModalCancelBtn = document.getElementById('auto-pair-modal-cancel-btn');
+        setupModal(autoPairModal, [closeAutoPairModalBtn, autoPairModalCancelBtn]);
         openAutoPairModalBtn.addEventListener('click', () => {
             if (!state.autoPairSettings) {
                 state.autoPairSettings = { enabled: false, prependOtherTask: false, selectedOtherTask: "" };

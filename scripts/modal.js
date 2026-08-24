@@ -54,6 +54,7 @@ export function showConfirmModal(title, message, btnTextOrCallback, onConfirmArg
 
     const close = () => {
         modal.style.display = 'none';
+        modal.removeEventListener('click', handleBackdrop);
         cancelBtn.removeEventListener('click', handleCancel);
         okBtn.removeEventListener('click', handleOk);
     };
@@ -67,6 +68,13 @@ export function showConfirmModal(title, message, btnTextOrCallback, onConfirmArg
         onConfirm();
     };
 
+    const handleBackdrop = (e) => {
+        if (e.target === modal) {
+            handleCancel();
+        }
+    };
+
+    modal.addEventListener('click', handleBackdrop);
     cancelBtn.addEventListener('click', handleCancel);
     okBtn.addEventListener('click', handleOk);
 }
@@ -175,6 +183,11 @@ export function initPadenModal(supabase, storeId, onSaved) {
     };
 
     const closeModal = () => modal.style.display = 'none';
+
+    const closeBtn = document.getElementById('close-paden-modal-btn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeModal);
+    }
 
     if (cancelBtn) {
         cancelBtn.addEventListener('click', closeModal);

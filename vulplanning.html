@@ -170,8 +170,19 @@
                                         <th>Eindtijd</th>
                                         <th>
                                             <div style="display: flex; justify-content: space-between; align-items: center; padding-right: 6px;">
-                                                <span style="width: 75%;">Toegewezen Taken (Werktijd)</span>
-                                                <span style="width: 25%; text-align: right; color: var(--danger-color); font-size: 10px;">Overtijd</span>
+                                                <span style="font-weight: 600;">Toegewezen Taken</span>
+                                                <div class="timeline-zoom-controls" style="display: flex; align-items: center; gap: 4px;">
+                                                    <button type="button" class="action-btn timeline-zoom-btn timeline-zoom-out" title="Uitzoomen" style="padding: 2px 6px; font-size: 11px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; cursor: pointer; display: flex; align-items: center;">
+                                                        <i class="material-icons" style="font-size: 14px;">remove</i>
+                                                    </button>
+                                                    <span class="timeline-zoom-level-text" style="font-size: 11px; min-width: 36px; text-align: center; color: var(--text-color-muted); font-weight: 500;">100%</span>
+                                                    <button type="button" class="action-btn timeline-zoom-btn timeline-zoom-in" title="Inzoomen" style="padding: 2px 6px; font-size: 11px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; cursor: pointer; display: flex; align-items: center;">
+                                                        <i class="material-icons" style="font-size: 14px;">add</i>
+                                                    </button>
+                                                    <button type="button" class="action-btn timeline-zoom-btn timeline-zoom-reset" title="Herstel zoom (100%)" style="padding: 2px 6px; font-size: 11px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; cursor: pointer; display: flex; align-items: center;">
+                                                        <i class="material-icons" style="font-size: 14px;">fit_screen</i>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </th>
                                     </tr>
@@ -201,8 +212,19 @@
                                         <th>Eindtijd</th>
                                         <th>
                                             <div style="display: flex; justify-content: space-between; align-items: center; padding-right: 6px;">
-                                                <span style="width: 75%;">Toegewezen Taken (Werktijd)</span>
-                                                <span style="width: 25%; text-align: right; color: var(--danger-color); font-size: 10px;">Overtijd</span>
+                                                <span style="font-weight: 600;">Toegewezen Taken</span>
+                                                <div class="timeline-zoom-controls" style="display: flex; align-items: center; gap: 4px;">
+                                                    <button type="button" class="action-btn timeline-zoom-btn timeline-zoom-out" title="Uitzoomen" style="padding: 2px 6px; font-size: 11px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; cursor: pointer; display: flex; align-items: center;">
+                                                        <i class="material-icons" style="font-size: 14px;">remove</i>
+                                                    </button>
+                                                    <span class="timeline-zoom-level-text" style="font-size: 11px; min-width: 36px; text-align: center; color: var(--text-color-muted); font-weight: 500;">100%</span>
+                                                    <button type="button" class="action-btn timeline-zoom-btn timeline-zoom-in" title="Inzoomen" style="padding: 2px 6px; font-size: 11px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; cursor: pointer; display: flex; align-items: center;">
+                                                        <i class="material-icons" style="font-size: 14px;">add</i>
+                                                    </button>
+                                                    <button type="button" class="action-btn timeline-zoom-btn timeline-zoom-reset" title="Herstel zoom (100%)" style="padding: 2px 6px; font-size: 11px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; cursor: pointer; display: flex; align-items: center;">
+                                                        <i class="material-icons" style="font-size: 14px;">fit_screen</i>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </th>
                                     </tr>
@@ -256,208 +278,331 @@
     </main>
 
     <div id="helper-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-content">
-            <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 16px;">Iemand laten helpen</h3>
-
-            <div class="form-group" style="margin-bottom: 16px;">
-                <label for="helper-select">Kies helper</label>
-                <div class="input-wrapper">
-                    <select id="helper-select"
-                        style="width: 100%; padding: 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-color);"></select>
+        <div class="modal-content" style="max-width: 440px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--vullen-bg); display: flex; align-items: center; justify-content: center;">
+                        <i class="material-icons" style="font-size: 20px; color: var(--accent-color-sidemenu);">group_add</i>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 17px; font-weight: 600; margin: 0; color: var(--text-color);">Iemand laten helpen</h3>
+                        <p style="font-size: 12px; color: var(--text-color-muted); margin: 0;">Verdeel de taakduur met een collega</p>
+                    </div>
                 </div>
+                <button type="button" id="modal-cancel-icon-btn" class="close-modal-btn" style="line-height: 1;">
+                    <i class="material-icons" style="font-size: 20px;">close</i>
+                </button>
             </div>
 
-            <div class="form-group" id="helper-duration-group" style="margin-bottom: 16px;">
-                <label for="helper-duration">Tijd (in minuten)</label>
-                <div class="input-wrapper">
-                    <input type="number" id="helper-duration" min="1" placeholder="Minuten..."
-                        style="width: 100%; padding: 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-color);">
+            <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 18px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="helper-select" style="font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-color-muted); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                        <i class="material-icons" style="font-size: 15px; color: var(--accent-color-sidemenu);">person</i> Kies collega
+                    </label>
+                    <div class="input-wrapper">
+                        <i class="material-icons" style="position: absolute; left: 12px; color: var(--text-color-muted); font-size: 18px; pointer-events: none;">person_outline</i>
+                        <select id="helper-select" class="form-input" style="padding-left: 38px; width: 100%; border-radius: 8px;"></select>
+                    </div>
+                </div>
+
+                <div class="form-group" id="helper-duration-group" style="margin-bottom: 0;">
+                    <label for="helper-duration" style="font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-color-muted); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                        <i class="material-icons" style="font-size: 15px; color: var(--accent-color-sidemenu);">schedule</i> Hulptijd
+                    </label>
+                    <div class="input-wrapper">
+                        <i class="material-icons" style="position: absolute; left: 12px; color: var(--text-color-muted); font-size: 18px; pointer-events: none;">timer</i>
+                        <input type="number" id="helper-duration" min="1" placeholder="Aantal minuten..." class="form-input" style="padding-left: 38px; width: 100%; border-radius: 8px;">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--input-bg); padding: 6px; border: 1px solid var(--border-color); border-radius: 10px;">
+                    <label class="person-checkbox-label" style="margin: 0; padding: 8px 10px; justify-content: center; background: var(--card-bg); border-radius: 6px;">
+                        <input type="checkbox" id="helper-half-checkbox">
+                        <span class="person-name" style="font-size: 12px; font-weight: 600;">50 / 50</span>
+                    </label>
+                    <label class="person-checkbox-label" style="margin: 0; padding: 8px 10px; justify-content: center; background: var(--card-bg); border-radius: 6px;">
+                        <input type="checkbox" id="helper-max-checkbox">
+                        <span class="person-name" style="font-size: 12px; font-weight: 600;">Maximaal</span>
+                    </label>
                 </div>
             </div>
-
-            <label class="person-checkbox-label" style="margin-bottom: 8px; padding: 6px 10px;">
-                <input type="checkbox" id="helper-max-checkbox">
-                <span class="person-name">Maximaal</span>
-            </label>
-            <label class="person-checkbox-label" style="margin-bottom: 20px; padding: 6px 10px;">
-                <input type="checkbox" id="helper-half-checkbox">
-                <span class="person-name">50/50</span>
-            </label>
 
             <div id="helper-error-msg"
-                style="color: var(--danger-color); font-size: 13px; font-weight: 500; margin-bottom: 12px; display: none;">
-                kies eerst een vuller om de tijd te zien</div>
+                style="color: var(--danger-color); font-size: 12px; font-weight: 500; margin-bottom: 12px; display: none; padding: 8px 12px; background: var(--danger-bg); border-radius: 6px; align-items: center; gap: 6px;">
+                <i class="material-icons" style="font-size: 16px;">error_outline</i>
+                <span>Kies eerst een vuller om de tijd te zien</span>
+            </div>
 
-            <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                <button id="modal-cancel-btn" class="submit-btn"
-                    style="background: var(--border-color); color: var(--text-color); max-width: 100px; box-shadow: none;">Annuleren</button>
-                <button id="modal-save-btn" class="submit-btn" style="max-width: 100px;">Opslaan</button>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; padding-top: 12px; border-top: 1px solid var(--border-color);">
+                <button type="button" id="modal-cancel-btn" class="submit-btn"
+                    style="background: var(--border-color); color: var(--text-color); max-width: 110px; box-shadow: none; padding: 8px 14px; font-size: 13px;">Annuleren</button>
+                <button type="button" id="modal-save-btn" class="submit-btn" style="max-width: 120px; padding: 8px 16px; font-size: 13px;">Opslaan</button>
             </div>
         </div>
     </div>
 
     <div id="duration-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-content">
-            <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 16px;">Tijd aanpassen</h3>
-            <div class="form-group" style="margin-bottom: 16px;">
-                <label for="task-duration-input">Tijd (in minuten)</label>
-                <div class="input-wrapper">
-                    <input type="number" id="task-duration-input" min="1" placeholder="Minuten..."
-                        style="width: 100%; padding: 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-color);">
+        <div class="modal-content" style="max-width: 440px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--vullen-bg); display: flex; align-items: center; justify-content: center;">
+                        <i class="material-icons" style="font-size: 20px; color: var(--accent-color-sidemenu);">schedule</i>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 17px; font-weight: 600; margin: 0; color: var(--text-color);">Tijd aanpassen</h3>
+                        <p style="font-size: 12px; color: var(--text-color-muted); margin: 0;">Pas de tijdsduur van de taak aan</p>
+                    </div>
                 </div>
-                <div style="display: flex; gap: 8px; margin-top: 8px;">
-                    <button type="button" class="quick-duration-btn action-btn" data-min="15" style="flex: 1; padding: 6px; font-size: 12px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color); cursor: pointer;">15 min</button>
-                    <button type="button" class="quick-duration-btn action-btn" data-min="30" style="flex: 1; padding: 6px; font-size: 12px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color); cursor: pointer;">30 min</button>
-                    <button type="button" class="quick-duration-btn action-btn" data-min="45" style="flex: 1; padding: 6px; font-size: 12px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color); cursor: pointer;">45 min</button>
+                <button type="button" id="duration-cancel-icon-btn" class="close-modal-btn" style="line-height: 1;">
+                    <i class="material-icons" style="font-size: 20px;">close</i>
+                </button>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 18px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="task-duration-input" style="font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-color-muted); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                        <i class="material-icons" style="font-size: 15px; color: var(--accent-color-sidemenu);">timer</i> Tijd (in minuten)
+                    </label>
+                    <div class="input-wrapper">
+                        <i class="material-icons" style="position: absolute; left: 12px; color: var(--text-color-muted); font-size: 18px; pointer-events: none;">edit_calendar</i>
+                        <input type="number" id="task-duration-input" min="1" placeholder="Minuten..." class="form-input" style="padding-left: 38px; width: 100%; border-radius: 8px;">
+                    </div>
+                </div>
+
+                <div>
+                    <label style="font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-color-muted); margin-bottom: 6px; display: block;">Snelkeuzes</label>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                        <button type="button" class="quick-duration-btn action-btn" data-min="15" style="padding: 8px; font-size: 12px; font-weight: 500; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-color); cursor: pointer; text-align: center;">15 min</button>
+                        <button type="button" class="quick-duration-btn action-btn" data-min="30" style="padding: 8px; font-size: 12px; font-weight: 500; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-color); cursor: pointer; text-align: center;">30 min</button>
+                        <button type="button" class="quick-duration-btn action-btn" data-min="45" style="padding: 8px; font-size: 12px; font-weight: 500; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-color); cursor: pointer; text-align: center;">45 min</button>
+                    </div>
                 </div>
             </div>
-            <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                <button id="duration-delete-btn" class="submit-btn"
-                    style="background: var(--danger-color); color: #ffffff; max-width: 110px; margin-right: auto; box-shadow: none;">Verwijderen</button>
-                <button id="duration-cancel-btn" class="submit-btn"
-                    style="background: var(--border-color); color: var(--text-color); max-width: 100px; box-shadow: none;">Annuleren</button>
-                <button id="duration-save-btn" class="submit-btn" style="max-width: 100px;">Opslaan</button>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end; padding-top: 12px; border-top: 1px solid var(--border-color); align-items: center;">
+                <button type="button" id="duration-delete-btn" class="submit-btn"
+                    style="background: var(--danger-bg); color: var(--danger-color); border: 1px solid var(--danger-color); max-width: 120px; margin-right: auto; box-shadow: none; padding: 8px 12px; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                    <i class="material-icons" style="font-size: 16px;">delete</i>
+                    <span>Verwijder</span>
+                </button>
+                <button type="button" id="duration-cancel-btn" class="submit-btn"
+                    style="background: var(--border-color); color: var(--text-color); max-width: 110px; box-shadow: none; padding: 8px 14px; font-size: 13px;">Annuleren</button>
+                <button type="button" id="duration-save-btn" class="submit-btn" style="max-width: 110px; padding: 8px 16px; font-size: 13px;">Opslaan</button>
             </div>
         </div>
     </div>
 
     <div id="custom-task-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-content">
-            <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 16px;">Custom taak toevoegen</h3>
-            <div class="form-group" style="margin-bottom: 16px;">
-                <label for="custom-task-name-input">Naam taak</label>
-                <div class="input-wrapper">
-                    <input type="text" id="custom-task-name-input" placeholder="Bijv. Schoonmaken..."
-                        style="width: 100%; padding: 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-color);">
+        <div class="modal-content" style="max-width: 440px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--vullen-bg); display: flex; align-items: center; justify-content: center;">
+                        <i class="material-icons" style="font-size: 20px; color: var(--accent-color-sidemenu);">add_task</i>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 17px; font-weight: 600; margin: 0; color: var(--text-color);">Custom taak toevoegen</h3>
+                        <p style="font-size: 12px; color: var(--text-color-muted); margin: 0;">Maak een extra losse taak aan</p>
+                    </div>
+                </div>
+                <button type="button" id="custom-task-cancel-icon-btn" class="close-modal-btn" style="line-height: 1;">
+                    <i class="material-icons" style="font-size: 20px;">close</i>
+                </button>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 18px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="custom-task-name-input" style="font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-color-muted); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                        <i class="material-icons" style="font-size: 15px; color: var(--accent-color-sidemenu);">label_outline</i> Naam taak
+                    </label>
+                    <div class="input-wrapper">
+                        <i class="material-icons" style="position: absolute; left: 12px; color: var(--text-color-muted); font-size: 18px; pointer-events: none;">edit</i>
+                        <input type="text" id="custom-task-name-input" placeholder="Bijv. Schoonmaken, Emballage..." class="form-input" style="padding-left: 38px; width: 100%; border-radius: 8px;">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="custom-task-duration-input" style="font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-color-muted); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                        <i class="material-icons" style="font-size: 15px; color: var(--accent-color-sidemenu);">schedule</i> Tijd (in minuten)
+                    </label>
+                    <div class="input-wrapper">
+                        <i class="material-icons" style="position: absolute; left: 12px; color: var(--text-color-muted); font-size: 18px; pointer-events: none;">timer</i>
+                        <input type="number" id="custom-task-duration-input" min="1" placeholder="Aantal minuten..." class="form-input" style="padding-left: 38px; width: 100%; border-radius: 8px;">
+                    </div>
                 </div>
             </div>
-            <div class="form-group" style="margin-bottom: 16px;">
-                <label for="custom-task-duration-input">Tijd (in minuten)</label>
-                <div class="input-wrapper">
-                    <input type="number" id="custom-task-duration-input" min="1" placeholder="Minuten..."
-                        style="width: 100%; padding: 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-color);">
-                </div>
-            </div>
-            <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                <button id="custom-task-cancel-btn" class="submit-btn"
-                    style="background: var(--border-color); color: var(--text-color); max-width: 100px; box-shadow: none;">Annuleren</button>
-                <button id="custom-task-save-btn" class="submit-btn" style="max-width: 100px;">Toevoegen</button>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end; padding-top: 12px; border-top: 1px solid var(--border-color);">
+                <button type="button" id="custom-task-cancel-btn" class="submit-btn"
+                    style="background: var(--border-color); color: var(--text-color); max-width: 110px; box-shadow: none; padding: 8px 14px; font-size: 13px;">Annuleren</button>
+                <button type="button" id="custom-task-save-btn" class="submit-btn" style="max-width: 130px; padding: 8px 16px; font-size: 13px;">Toevoegen</button>
             </div>
         </div>
     </div>
 
     <div id="finalize-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content" style="max-width: 520px; max-height: 85vh; display: flex; flex-direction: column;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h3 style="font-size: 18px; font-weight: 600; margin: 0; color: var(--text-color);">Productiviteiten Finaliseren</h3>
-                <button type="button" id="close-finalize-modal-btn" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-color-muted); line-height: 1;">&times;</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--vullen-bg); display: flex; align-items: center; justify-content: center;">
+                        <i class="material-icons" style="font-size: 20px; color: var(--accent-color-sidemenu);">fact_check</i>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 17px; font-weight: 600; margin: 0; color: var(--text-color);">Productiviteiten Finaliseren</h3>
+                        <p style="font-size: 12px; color: var(--text-color-muted); margin: 0;">Sla de productiviteit van vandaag op</p>
+                    </div>
+                </div>
+                <button type="button" id="close-finalize-modal-btn" class="close-modal-btn" style="line-height: 1;">
+                    <i class="material-icons" style="font-size: 20px;">close</i>
+                </button>
             </div>
-            <p style="font-size: 13px; color: var(--text-color-muted); margin-bottom: 14px;">
-                Selecteer de medewerkers waarvan je de productiviteit wilt opslaan.
-            </p>
-            <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 10px;">
+
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 12px;">
                 <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; cursor: pointer; user-select: none;">
-                    <input type="checkbox" id="finalize-select-all" style="accent-color: var(--accent-color); cursor: pointer;" checked>
+                    <input type="checkbox" id="finalize-select-all" style="accent-color: var(--accent-color-sidemenu); cursor: pointer;" checked>
                     <span>Alles selecteren</span>
                 </label>
-                <span id="finalize-selected-count" style="font-size: 12px; color: var(--text-color-muted);"></span>
+                <span id="finalize-selected-count" style="font-size: 12px; color: var(--text-color-muted); font-weight: 500;"></span>
             </div>
+
             <div id="finalize-list" style="display: flex; flex-direction: column; gap: 8px; overflow-y: auto; max-height: 50vh; padding-right: 4px; margin-bottom: 16px;">
             </div>
-            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--border-color);">
-                <button type="button" id="finalize-modal-cancel-btn" class="submit-btn" style="background: var(--border-color); color: var(--text-color); max-width: 100px; box-shadow: none;">Annuleren</button>
-                <button type="button" id="finalize-modal-save-btn" class="submit-btn" style="max-width: 120px;">Opslaan</button>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border-color);">
+                <button type="button" id="finalize-modal-cancel-btn" class="submit-btn" style="background: var(--border-color); color: var(--text-color); max-width: 110px; box-shadow: none; padding: 8px 14px; font-size: 13px;">Annuleren</button>
+                <button type="button" id="finalize-modal-save-btn" class="submit-btn" style="max-width: 120px; padding: 8px 16px; font-size: 13px;">Opslaan</button>
             </div>
         </div>
     </div>
 
     <div id="confirm-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-content" style="max-width: 420px;">
-            <h3 id="confirm-modal-title"
-                style="font-size: 18px; font-weight: 600; margin-bottom: 12px; color: var(--text-color);">Bevestigen
-            </h3>
-            <p id="confirm-modal-message"
-                style="font-size: 14px; color: var(--text-color-muted); margin-bottom: 20px; line-height: 1.5;"></p>
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button id="confirm-cancel-btn" class="action-btn"
-                    style="padding: 8px 16px; background-color: var(--input-bg);">Annuleren</button>
-                <button id="confirm-ok-btn" class="action-btn delete"
-                    style="padding: 8px 16px; background-color: var(--danger-color); color: #fff;">Overschrijven</button>
+        <div class="modal-content" style="max-width: 440px;">
+            <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px;">
+                <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--vullen-bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;">
+                    <i class="material-icons" style="font-size: 20px; color: var(--accent-color-sidemenu);">help_outline</i>
+                </div>
+                <div style="flex: 1;">
+                    <h3 id="confirm-modal-title" style="font-size: 17px; font-weight: 600; margin: 0 0 4px 0; color: var(--text-color);">Bevestigen</h3>
+                </div>
+            </div>
+            <div id="confirm-modal-message" style="font-size: 13px; color: var(--text-color-muted); margin-bottom: 18px; line-height: 1.5;"></div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; padding-top: 12px; border-top: 1px solid var(--border-color);">
+                <button id="confirm-cancel-btn" class="submit-btn" style="background: var(--border-color); color: var(--text-color); max-width: 110px; box-shadow: none; padding: 8px 14px; font-size: 13px;">Annuleren</button>
+                <button id="confirm-ok-btn" class="submit-btn" style="max-width: 170px; padding: 8px 16px; font-size: 13px;">Overschrijven</button>
             </div>
         </div>
     </div>
 
     <div id="paden-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-content" style="max-width: 600px; max-height: 85vh; overflow-y: auto;">
-            <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text-color);">Standaard Paden
-                & Categorieën</h3>
-            <p style="font-size: 13px; color: var(--text-color-secondary); margin-bottom: 16px;">Stel hier de vaste
-                paden, categorieën en normen (colli/uur) in voor jouw winkel.</p>
-            <div id="modal-paths-list" style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px;">
+        <div class="modal-content" style="max-width: 650px; max-height: 85vh; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--vullen-bg); display: flex; align-items: center; justify-content: center;">
+                        <i class="material-icons" style="font-size: 20px; color: var(--accent-color-sidemenu);">alt_route</i>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 17px; font-weight: 600; margin: 0; color: var(--text-color);">Standaard Paden & Categorieën</h3>
+                        <p style="font-size: 12px; color: var(--text-color-muted); margin: 0;">Beheer de vaste paden, categorieën en normen van de winkel</p>
+                    </div>
+                </div>
+                <button type="button" id="close-paden-modal-btn" class="close-modal-btn" style="line-height: 1;">
+                    <i class="material-icons" style="font-size: 20px;">close</i>
+                </button>
             </div>
-            <button type="button" id="modal-add-path-btn" class="action-btn"
-                style="padding: 6px 12px; font-size: 13px; background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 6px;">+
-                Pad Toevoegen</button>
-            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+
+            <div style="overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px; flex: 1;">
+                <div id="modal-paths-list" style="display: flex; flex-direction: column; gap: 12px;"></div>
+
+                <button type="button" id="modal-add-path-btn" class="action-btn"
+                    style="padding: 10px; font-size: 13px; background-color: var(--input-bg); border: 1px dashed var(--border-color); color: var(--text-color); border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; transition: 0.2s;">
+                    <i class="material-icons" style="font-size: 18px; color: var(--accent-color-sidemenu);">add_circle_outline</i>
+                    <span style="font-weight: 500;">Nieuw Pad Toevoegen</span>
+                </button>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 12px; border-top: 1px solid var(--border-color);">
                 <button type="button" id="paden-modal-cancel-btn" class="submit-btn"
-                    style="background: var(--border-color); color: var(--text-color); max-width: 100px; box-shadow: none;">Annuleren</button>
+                    style="background: var(--border-color); color: var(--text-color); max-width: 110px; box-shadow: none; padding: 8px 14px; font-size: 13px;">Annuleren</button>
                 <button type="button" id="paden-modal-save-btn" class="submit-btn"
-                    style="max-width: 120px;">Opslaan</button>
+                    style="max-width: 120px; padding: 8px 16px; font-size: 13px;">Opslaan</button>
             </div>
         </div>
     </div>
 
     <div id="auto-pair-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-content" style="max-width: 440px;">
+        <div class="modal-content" style="max-width: 460px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <h3 style="font-size: 17px; font-weight: 600; margin: 0; color: var(--text-color);">Samen Indelen
-                    Instellingen</h3>
-                <button type="button" id="close-auto-pair-modal-btn"
-                    style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-color-muted);">&times;</button>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px;">
-                <div style="display: flex; flex-direction: column; gap: 2px;">
-                    <span style="font-size: 12px; color: var(--text-color-muted);">Samenvoegen werkt alleen bij het inslepen van een <strong>vulopdracht</strong>.</span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--vullen-bg); display: flex; align-items: center; justify-content: center;">
+                        <i class="material-icons" style="font-size: 20px; color: var(--accent-color-sidemenu);">tune</i>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 17px; font-weight: 600; margin: 0; color: var(--text-color);">Samen Indelen Instellingen</h3>
+                        <p style="font-size: 12px; color: var(--text-color-muted); margin: 0;">Automatische combinaties bij inslepen</p>
+                    </div>
                 </div>
-                <label
-                    style="display: flex; align-items: center; justify-content: space-between; font-weight: 500; font-size: 13px; cursor: pointer; padding: 10px; background-color: var(--input-bg); border-radius: 8px; border: 1px solid var(--border-color);">
-                    <span>Bij vulopdracht: Spiegelen automatisch toevoegen</span>
+                <button type="button" id="close-auto-pair-modal-btn" class="close-modal-btn" style="line-height: 1;">
+                    <i class="material-icons" style="font-size: 20px;">close</i>
+                </button>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px;">
+                <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px;">
+                    <i class="material-icons" style="font-size: 16px; color: var(--accent-color-sidemenu);">info_outline</i>
+                    <span style="font-size: 12px; color: var(--text-color-muted);">Werkt alleen bij het inslepen van een <strong>vulopdracht</strong>.</span>
+                </div>
+
+                <label class="person-checkbox-label"
+                    style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background-color: var(--input-bg); border-radius: 10px; border: 1px solid var(--border-color); cursor: pointer;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="material-icons" style="font-size: 18px; color: var(--spiegelen-border);">flip_to_back</i>
+                        <span style="font-size: 13px; font-weight: 500; color: var(--text-color);">Spiegelen automatisch toevoegen</span>
+                    </div>
                     <input type="checkbox" id="modal-auto-pair-enabled"
                         style="width: 16px; height: 16px; accent-color: var(--accent-color-sidemenu); cursor: pointer;">
                 </label>
 
-                <div
-                    style="border-top: 1px solid var(--border-color); padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
-                    <label
-                        style="display: flex; align-items: center; justify-content: space-between; font-weight: 500; font-size: 13px; cursor: pointer; padding: 10px; background-color: var(--input-bg); border-radius: 8px; border: 1px solid var(--border-color);">
-                        <span>Bij vulopdracht: Standaard Overige taak ervoor zetten</span>
+                <div style="border: 1px solid var(--border-color); background-color: var(--input-bg); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 12px;">
+                    <label class="person-checkbox-label"
+                        style="display: flex; align-items: center; justify-content: space-between; padding: 0; background: transparent; border: none; cursor: pointer;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="material-icons" style="font-size: 18px; color: var(--accent-color-sidemenu);">playlist_add</i>
+                            <span style="font-size: 13px; font-weight: 500; color: var(--text-color);">Standaard Overige taak ervoor zetten</span>
+                        </div>
                         <input type="checkbox" id="modal-prepend-other-enabled"
                             style="width: 16px; height: 16px; accent-color: var(--accent-color-sidemenu); cursor: pointer;">
                     </label>
 
                     <div id="modal-other-task-selection"
-                        style="display: none; flex-direction: column; gap: 8px; padding: 4px;">
-                        <label style="font-size: 12px; font-weight: 600; color: var(--text-color-muted);">Kies Overige
-                            Taak:</label>
-                        <select id="modal-other-task-select" class="form-input"
-                            style="width: 100%; padding: 8px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color); font-size: 13px;"></select>
+                        style="display: none; flex-direction: column; gap: 10px; padding-top: 10px; border-top: 1px solid var(--border-color);">
+                        <div>
+                            <label style="font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-color-muted); margin-bottom: 6px; display: block;">Kies Overige Taak</label>
+                            <select id="modal-other-task-select" class="form-input"
+                                style="width: 100%; padding: 8px 12px; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-color); font-size: 13px;"></select>
+                        </div>
 
-                        <div style="display: flex; gap: 6px; margin-top: 4px; align-items: center;">
-                            <input type="text" id="modal-new-other-name" class="form-input"
-                                placeholder="Nieuwe taaknaam..."
-                                style="flex: 1; padding: 6px 8px; font-size: 12px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
-                            <input type="number" id="modal-new-other-min" class="form-input" placeholder="Min" min="1"
-                                style="width: 60px; padding: 6px 8px; font-size: 12px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color);">
-                            <button type="button" id="modal-add-other-btn" class="action-btn"
-                                style="padding: 6px 10px; font-size: 12px; background-color: var(--accent-color-sidemenu); color: #fff; border: none; border-radius: 6px; cursor: pointer;">+
-                                Maak</button>
+                        <div>
+                            <label style="font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-color-muted); margin-bottom: 6px; display: block;">Of maak een nieuwe aan</label>
+                            <div style="display: flex; gap: 6px; align-items: center;">
+                                <input type="text" id="modal-new-other-name" class="form-input"
+                                    placeholder="Nieuwe taaknaam..."
+                                    style="flex: 1; padding: 8px 10px; font-size: 12px; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-color);">
+                                <input type="number" id="modal-new-other-min" class="form-input" placeholder="Min" min="1"
+                                    style="width: 65px; padding: 8px 10px; font-size: 12px; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-color);">
+                                <button type="button" id="modal-add-other-btn" class="action-btn"
+                                    style="padding: 8px 12px; font-size: 12px; background-color: var(--accent-color-sidemenu); color: #fff; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 4px; font-weight: 500;">
+                                    <i class="material-icons" style="font-size: 15px;">add</i> Maak
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 12px; border-top: 1px solid var(--border-color);">
+                <button type="button" id="auto-pair-modal-cancel-btn" class="submit-btn"
+                    style="background: var(--border-color); color: var(--text-color); max-width: 110px; box-shadow: none; padding: 8px 14px; font-size: 13px;">Annuleren</button>
                 <button type="button" id="save-auto-pair-modal-btn" class="submit-btn"
-                    style="max-width: 120px;">Opslaan</button>
+                    style="max-width: 120px; padding: 8px 16px; font-size: 13px;">Opslaan</button>
             </div>
         </div>
     </div>

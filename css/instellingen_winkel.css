@@ -1,38 +1,39 @@
 .settings-section-title {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
     color: var(--text-color);
-    margin-bottom: 6px;
+    margin-bottom: 4px;
 }
 
 .settings-section-subtitle {
-    font-size: 14px;
+    font-size: 13px;
     color: var(--text-color-muted);
-    margin-bottom: 24px;
+    margin-bottom: 20px;
 }
 
 .modules-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 16px;
-    margin-bottom: 32px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
 }
 
 .module-card {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: var(--surface-color);
-    padding: 16px 20px;
+    background: var(--input-bg);
+    padding: 14px 16px;
     border-radius: 12px;
     border: 1px solid var(--border-color);
     cursor: pointer;
     user-select: none;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, background-color 0.2s;
 }
 
 .module-card:hover {
-    border-color: var(--accent-color);
+    border-color: rgba(255, 255, 255, 0.15);
+    background-color: #232326;
 }
 
 .module-info {
@@ -41,55 +42,61 @@
     gap: 12px;
 }
 
-.module-info i {
-    color: var(--accent-color);
-    font-size: 22px;
+.module-icon-wrap {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.module-icon-wrap i {
+    color: var(--accent-color-sidemenu);
+    font-size: 20px;
 }
 
 .module-text {
     display: flex;
     flex-direction: column;
+    gap: 2px;
 }
 
-.module-text > span {
-    font-size: 15px;
+.module-title {
+    font-size: 14px;
     font-weight: 500;
     color: var(--text-color);
 }
 
-.module-text span.module-status-text {
-    font-size: 12px;
-    color: var(--danger-color) !important;
+.module-status-text {
+    font-size: 11px;
+    color: var(--warning-color);
     font-weight: 500;
 }
 
 .module-card-disabled {
     cursor: not-allowed;
-}
-
-.module-card-disabled .module-info i,
-.module-card-disabled .module-text > span:not(.module-status-text) {
     opacity: 0.6;
 }
 
 .module-card-disabled:hover {
     border-color: var(--border-color);
+    background-color: var(--input-bg);
 }
 
 .module-card-disabled .switch {
     pointer-events: none;
 }
 
-.module-card-disabled .slider {
-    background-color: var(--border-color);
-    opacity: 0.5;
-}
-
 .switch {
     position: relative;
     display: inline-block;
-    width: 46px;
+    width: 44px;
     height: 24px;
+    flex-shrink: 0;
 }
 
 .switch input {
@@ -105,48 +112,38 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: var(--border-color);
-    transition: .3s;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    transition: 0.2s ease-in-out;
     border-radius: 24px;
 }
 
 .slider:before {
     position: absolute;
     content: "";
-    height: 18px;
-    width: 18px;
+    height: 16px;
+    width: 16px;
     left: 3px;
     bottom: 3px;
-    background-color: white;
-    transition: .3s;
+    background-color: var(--text-color-muted);
+    transition: 0.2s ease-in-out;
     border-radius: 50%;
 }
 
 input:checked + .slider {
-    background-color: var(--accent-color);
+    background-color: var(--accent-color-sidemenu);
+    border-color: var(--accent-color-sidemenu);
 }
 
 input:checked + .slider:before {
-    transform: translateX(22px);
+    transform: translateX(20px);
+    background-color: #ffffff;
 }
 
 @media (max-width: 600px) {
     .modules-grid {
         grid-template-columns: 1fr;
-        gap: 0;
-    }
-
-    .module-card {
-        background: transparent;
-        border: none;
-        border-bottom: 1px solid var(--border-color);
-        border-radius: 0;
-        padding: 14px 0;
-    }
-
-    #open-paden-modal-btn {
-        max-width: 100% !important;
-        width: 100%;
+        gap: 8px;
     }
 
     #submitBtn {

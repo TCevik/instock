@@ -62,9 +62,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             return `
                 <label class="${cardClass}">
                     <div class="module-info">
-                        <i class="material-icons">${mod.icon}</i>
+                        <div class="module-icon-wrap">
+                            <i class="material-icons">${mod.icon}</i>
+                        </div>
                         <div class="module-text">
-                            <span>${mod.label}</span>
+                            <span class="module-title">${mod.label}</span>
                             ${subtitleHtml}
                         </div>
                     </div>

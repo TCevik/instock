@@ -262,25 +262,32 @@
     list-style: none;
     padding: 0;
     margin: 8px 0 0 0;
-    max-height: 200px;
+    max-height: 240px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
+    padding-right: 2px;
 }
 
 .dept-list-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: var(--surface-color);
-    padding: 10px 14px;
+    background: var(--input-bg);
+    padding: 8px 12px;
     border-radius: 8px;
     border: 1px solid var(--border-color);
+    transition: border-color 0.2s;
+}
+
+.dept-list-item:hover {
+    border-color: rgba(255, 255, 255, 0.12);
 }
 
 .dept-list-item span {
-    font-size: 14px;
+    font-size: 13px;
+    font-weight: 500;
     color: var(--text-color);
 }
 

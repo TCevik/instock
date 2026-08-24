@@ -515,19 +515,29 @@ export const generatePrintablePlanning = () => {
                     border-color: var(--accent-color-sidemenu) !important;
                 }
             </style>
-            <div class="modal-content" style="max-width: 480px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-                    <h3 style="font-size: 16px; font-weight: 600; margin: 0; color: var(--text-color);">Notities voor Vulplanning</h3>
-                    <button type="button" id="close-print-notes-x-btn" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-color-muted);">&times;</button>
+            <div class="modal-content" style="max-width: 500px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--vullen-bg); display: flex; align-items: center; justify-content: center;">
+                            <i class="material-icons" style="font-size: 20px; color: var(--accent-color-sidemenu);">print</i>
+                        </div>
+                        <div>
+                            <h3 style="font-size: 17px; font-weight: 600; margin: 0; color: var(--text-color);">Notities voor Vulplanning</h3>
+                            <p style="font-size: 12px; color: var(--text-color-muted); margin: 0;">Voeg eventueel extra opmerkingen toe op de print</p>
+                        </div>
+                    </div>
+                    <button type="button" id="close-print-notes-x-btn" class="close-modal-btn" style="line-height: 1;">
+                        <i class="material-icons" style="font-size: 20px;">close</i>
+                    </button>
                 </div>
-                <div id="print-notes-list" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; max-height: 250px; overflow-y: auto;"></div>
-                <button type="button" id="add-print-note-btn" class="action-btn" style="padding: 6px 12px; font-size: 12px; background-color: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 6px; align-self: flex-start; cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                    <i class="material-icons" style="font-size: 16px;">add</i>
+                <div id="print-notes-list" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; max-height: 250px; overflow-y: auto; padding-right: 2px;"></div>
+                <button type="button" id="add-print-note-btn" class="action-btn" style="padding: 8px 12px; font-size: 12px; background-color: var(--input-bg); border: 1px dashed var(--border-color); color: var(--text-color); border-radius: 8px; align-self: flex-start; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 500;">
+                    <i class="material-icons" style="font-size: 16px; color: var(--accent-color-sidemenu);">add</i>
                     <span>Regel Toevoegen</span>
                 </button>
-                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
-                    <button type="button" id="cancel-print-notes-btn" class="submit-btn" style="background: var(--border-color); color: var(--text-color); max-width: 100px; box-shadow: none;">Annuleren</button>
-                    <button type="button" id="confirm-print-notes-btn" class="submit-btn" style="max-width: 120px;">Afdrukken</button>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-color);">
+                    <button type="button" id="cancel-print-notes-btn" class="submit-btn" style="background: var(--border-color); color: var(--text-color); max-width: 110px; box-shadow: none; padding: 8px 14px; font-size: 13px;">Annuleren</button>
+                    <button type="button" id="confirm-print-notes-btn" class="submit-btn" style="max-width: 130px; padding: 8px 16px; font-size: 13px;">Afdrukken</button>
                 </div>
             </div>
         `;

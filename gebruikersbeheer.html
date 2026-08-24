@@ -50,90 +50,121 @@
             </div>
         </div>
         <div class="modal-overlay" id="userModal">
-            <div class="management-card">
-                <div class="modal-header">
-                    <h2>Nieuwe Gebruiker Aanmaken</h2>
-                    <button class="close-modal-btn" id="closeModalBtn">
-                        <i class="material-icons">close</i>
+            <div class="management-card" style="max-width: 520px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--vullen-bg); display: flex; align-items: center; justify-content: center;">
+                            <i class="material-icons" id="user-modal-header-icon" style="font-size: 20px; color: var(--accent-color-sidemenu);">person_add</i>
+                        </div>
+                        <div>
+                            <h3 id="user-modal-title" style="font-size: 17px; font-weight: 600; margin: 0; color: var(--text-color);">Nieuwe Gebruiker Aanmaken</h3>
+                            <p id="user-modal-subtitle" style="font-size: 12px; color: var(--text-color-muted); margin: 0;">Voeg een nieuwe medewerker of beheerder toe</p>
+                        </div>
+                    </div>
+                    <button class="close-modal-btn" id="closeModalBtn" style="line-height: 1;">
+                        <i class="material-icons" style="font-size: 20px;">close</i>
                     </button>
                 </div>
+
                 <div class="message" id="message-box">
                     <i class="material-icons" id="message-icon"></i>
                     <span id="message-text"></span>
                 </div>
-                <form id="create-user-form" autocomplete="off" novalidate>
-                    <div class="form-group">
-                        <label for="full-name">Volledige naam</label>
+
+                <form id="create-user-form" autocomplete="off" novalidate style="display: flex; flex-direction: column; gap: 14px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="full-name" style="font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-color-muted); margin-bottom: 6px; display: block;">Volledige naam</label>
                         <div class="input-wrapper">
-                            <input type="text" id="full-name" required placeholder="bijv. Jan Jansen" autocomplete="off">
-                            <i class="material-icons">person</i>
+                            <input type="text" id="full-name" required placeholder="bijv. Jan Jansen" autocomplete="off" class="form-input" style="padding-left: 38px; width: 100%; border-radius: 8px;">
+                            <i class="material-icons" style="position: absolute; left: 12px; color: var(--text-color-muted); font-size: 18px; pointer-events: none;">person</i>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label for="gebruikersnaam">Gebruikersnaam</label>
-                        <div class="input-wrapper">
-                            <input type="text" id="gebruikersnaam" required placeholder="bijv. 12345" autocomplete="off">
-                            <i class="material-icons">badge</i>
+
+                    <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 0;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="gebruikersnaam" style="font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-color-muted); margin-bottom: 6px; display: block;">Gebruikersnaam</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="gebruikersnaam" required placeholder="bijv. 12345" autocomplete="off" class="form-input" style="padding-left: 38px; width: 100%; border-radius: 8px;">
+                                <i class="material-icons" style="position: absolute; left: 12px; color: var(--text-color-muted); font-size: 18px; pointer-events: none;">badge</i>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="role" style="font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-color-muted); margin-bottom: 6px; display: block;">Rol</label>
+                            <div class="input-wrapper">
+                                <select id="role" required class="form-input" style="padding-left: 38px; width: 100%; border-radius: 8px;">
+                                    <option value="" disabled selected>Selecteer rol</option>
+                                    <option value="medewerker">Medewerker</option>
+                                    <option value="beheerder">Beheerder</option>
+                                </select>
+                                <i class="material-icons" style="position: absolute; left: 12px; color: var(--text-color-muted); font-size: 18px; pointer-events: none;">manage_accounts</i>
+                            </div>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label for="role">Rol</label>
-                        <div class="input-wrapper">
-                            <select id="role" required>
-                                <option value="" disabled selected>Selecteer een rol</option>
-                                <option value="medewerker">Medewerker</option>
-                                <option value="beheerder">Beheerder</option>
-                            </select>
-                            <i class="material-icons">manage_accounts</i>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Afdelingen</label>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label style="font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-color-muted); margin-bottom: 6px; display: block;">Afdelingen</label>
                         <div class="checkbox-group" id="user-afdelingen-container"></div>
                     </div>
-                    <div class="form-group">
-                        <label for="password">Wachtwoord</label>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="password" style="font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-color-muted); margin-bottom: 6px; display: block;">Wachtwoord</label>
                         <div class="input-wrapper">
-                            <input type="password" id="password" required placeholder="••••••••" autocomplete="off">
-                            <i class="material-icons">lock</i>
+                            <input type="password" id="password" required placeholder="••••••••" autocomplete="off" class="form-input" style="padding-left: 38px; width: 100%; border-radius: 8px;">
+                            <i class="material-icons" style="position: absolute; left: 12px; color: var(--text-color-muted); font-size: 18px; pointer-events: none;">lock</i>
                         </div>
                     </div>
-                    <button type="submit" class="submit-btn" id="submitBtn">
-                        <span>Gebruiker Aanmaken</span>
-                        <i class="material-icons">person_add</i>
-                    </button>
+
+                    <div style="margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--border-color); width: 100%;">
+                        <button type="submit" class="submit-btn" id="submitBtn" style="width: 100%; max-width: none; padding: 12px 18px; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 8px;">
+                            <span>Gebruiker Aanmaken</span>
+                            <i class="material-icons" style="font-size: 18px;">person_add</i>
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
         <div class="modal-overlay" id="deptModal">
-            <div class="management-card">
-                <div class="modal-header">
-                    <h2>Afdelingen Beheren</h2>
-                    <button class="close-modal-btn" id="closeDeptModalBtn">
-                        <i class="material-icons">close</i>
+            <div class="management-card" style="max-width: 480px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--vullen-bg); display: flex; align-items: center; justify-content: center;">
+                            <i class="material-icons" style="font-size: 20px; color: var(--accent-color-sidemenu);">storefront</i>
+                        </div>
+                        <div>
+                            <h3 style="font-size: 17px; font-weight: 600; margin: 0; color: var(--text-color);">Afdelingen Beheren</h3>
+                            <p style="font-size: 12px; color: var(--text-color-muted); margin: 0;">Beheer de afdelingen voor jouw winkel</p>
+                        </div>
+                    </div>
+                    <button class="close-modal-btn" id="closeDeptModalBtn" style="line-height: 1;">
+                        <i class="material-icons" style="font-size: 20px;">close</i>
                     </button>
                 </div>
+
                 <div class="message" id="dept-message-box">
                     <i class="material-icons" id="dept-message-icon"></i>
                     <span id="dept-message-text"></span>
                 </div>
-                <form id="add-dept-form" autocomplete="off">
-                    <div class="form-group">
-                        <label for="new-dept-name">Nieuwe afdeling toevoegen</label>
+
+                <form id="add-dept-form" autocomplete="off" style="margin-bottom: 16px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="new-dept-name" style="font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-color-muted); margin-bottom: 6px; display: block;">Nieuwe afdeling toevoegen</label>
                         <div class="input-wrapper-btn">
                             <div class="input-wrapper flex-grow">
-                                <input type="text" id="new-dept-name" required placeholder="bijv. Kruidenierswaren" autocomplete="off">
-                                <i class="material-icons">storefront</i>
+                                <i class="material-icons" style="position: absolute; left: 12px; color: var(--text-color-muted); font-size: 18px; pointer-events: none;">add_business</i>
+                                <input type="text" id="new-dept-name" required placeholder="bijv. Kruidenierswaren, Kassa..." autocomplete="off" class="form-input" style="padding-left: 38px; width: 100%; border-radius: 8px;">
                             </div>
-                            <button type="submit" class="submit-btn compact" id="addDeptBtn">
-                                <i class="material-icons">add</i>
+                            <button type="submit" class="submit-btn compact" id="addDeptBtn" style="border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 13px;">
+                                <i class="material-icons" style="font-size: 18px;">add</i>
+                                <span>Toevoegen</span>
                             </button>
                         </div>
                     </div>
                 </form>
+
                 <div class="dept-list-container">
-                    <label>Bestaande afdelingen</label>
-                    <ul class="dept-list" id="dept-list"></ul>
+                    <label style="font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-color-muted); margin-bottom: 8px; display: block;">Bestaande afdelingen</label>
+                    <ul class="dept-list" id="dept-list" style="max-height: 240px;"></ul>
                 </div>
             </div>
         </div>
@@ -196,6 +227,23 @@
                     </button>
                 </div>
                 <div class="leaderboard-list-container" id="leaderboard-list"></div>
+            </div>
+        </div>
+        <div class="modal-overlay" id="confirm-modal" style="display: none;">
+            <div class="modal-content" style="max-width: 440px;">
+                <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--vullen-bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;">
+                        <i class="material-icons" style="font-size: 20px; color: var(--accent-color-sidemenu);">help_outline</i>
+                    </div>
+                    <div style="flex: 1;">
+                        <h3 id="confirm-modal-title" style="font-size: 17px; font-weight: 600; margin: 0 0 4px 0; color: var(--text-color);">Bevestigen</h3>
+                    </div>
+                </div>
+                <div id="confirm-modal-message" style="font-size: 13px; color: var(--text-color-muted); margin-bottom: 18px; line-height: 1.5;"></div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end; padding-top: 12px; border-top: 1px solid var(--border-color);">
+                    <button id="confirm-cancel-btn" class="submit-btn" style="background: var(--border-color); color: var(--text-color); max-width: 110px; box-shadow: none; padding: 8px 14px; font-size: 13px;">Annuleren</button>
+                    <button id="confirm-ok-btn" class="submit-btn" style="max-width: 170px; padding: 8px 16px; font-size: 13px;">Verwijderen</button>
+                </div>
             </div>
         </div>
         <div id="department-sections-container"></div>

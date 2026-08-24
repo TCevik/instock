@@ -41,7 +41,8 @@ export const state = {
         enabled: false,
         prependOtherTask: false,
         selectedOtherTask: ""
-    }
+    },
+    timelineZoom: 1.0
 };
 
 export const resetState = () => {

@@ -1,4 +1,4 @@
-import { getSupabase, checkAuth, showMessage, setupModal, handleFormSubmit, invokeFunction } from './main.js';
+import { getSupabase, checkAuth, showMessage, setupModal, handleFormSubmit, invokeFunction, showConfirmModal } from './main.js';
 import { loadHeader } from './header.js';
 import { parseStoreDepartments, sortUsersByRole, groupUsersByDepartment, calculateProductivityStats, sortHistoryByDate, formatDateDisplay, getLeaderboardData, parseTaskInput } from './gebruikersbeheer-logic.js';
 import { getProductivityStatusClass, formatTaskDisplayName } from './vulplanning/planning-logic.js';
@@ -137,8 +137,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const resetModalState = () => {
         isEditing = false;
         editingUserId = null;
-        document.querySelector('.modal-header h2').textContent = 'Nieuwe Gebruiker Aanmaken';
-        submitBtn.querySelector('span').textContent = 'Gebruiker Aanmaken';
+        const modalTitle = document.getElementById('user-modal-title');
+        const modalSubtitle = document.getElementById('user-modal-subtitle');
+        const modalIcon = document.getElementById('user-modal-header-icon');
+        if (modalTitle) modalTitle.textContent = 'Nieuwe Gebruiker Aanmaken';
+        if (modalSubtitle) modalSubtitle.textContent = 'Voeg een nieuwe medewerker of beheerder toe';
+        if (modalIcon) modalIcon.textContent = 'person_add';
+        const submitSpan = submitBtn.querySelector('span');
+        const submitIcon = submitBtn.querySelector('.material-icons');
+        if (submitSpan) submitSpan.textContent = 'Gebruiker Aanmaken';
+        if (submitIcon) submitIcon.textContent = 'person_add';
         passwordInput.setAttribute('required', 'required');
         form.reset();
         renderDepartmentCheckboxes();
@@ -415,21 +423,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    deptListEl.addEventListener('click', async (e) => {
+    deptListEl.addEventListener('click', (e) => {
         const deleteBtn = e.target.closest('.delete-dept-btn');
         if (!deleteBtn) return;
         const deptToDelete = deleteBtn.getAttribute('data-dept');
         if (!deptToDelete) return;
 
-        await handleFormSubmit(deleteBtn, '...', deptMessageBox, async () => {
-            const updated = currentStoreDepartments.filter(d => d !== deptToDelete);
-            const error = await saveStoreDepartments(updated);
-            if (error) {
-                showMessage(deptMessageBox, deptMessageText, deptMessageIcon, 'Fout bij verwijderen van afdeling.', 'error');
-            } else {
-                showMessage(deptMessageBox, deptMessageText, deptMessageIcon, 'Afdeling succesvol verwijderd!', 'success');
-            }
-        });
+        showConfirmModal(
+            'Afdeling Verwijderen',
+            `Weet je zeker dat je afdeling <strong>${deptToDelete}</strong> wilt verwijderen?`,
+            'Verwijderen',
+            async () => {
+                await handleFormSubmit(deleteBtn, '...', deptMessageBox, async () => {
+                    const updated = currentStoreDepartments.filter(d => d !== deptToDelete);
+                    const error = await saveStoreDepartments(updated);
+                    if (error) {
+                        showMessage(deptMessageBox, deptMessageText, deptMessageIcon, 'Fout bij verwijderen van afdeling.', 'error');
+                    } else {
+                        showMessage(deptMessageBox, deptMessageText, deptMessageIcon, 'Afdeling succesvol verwijderd!', 'success');
+                    }
+                });
+            },
+            null,
+            'Annuleren'
+        );
     });
 
     const confirmModal = document.getElementById('confirmModal');
@@ -645,8 +662,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             const date = deleteBtn.getAttribute('data-date');
             if (!date || !activeProdUser) return;
 
-            deleteBtn.disabled = true;
-            await saveUserProductivityEntry(date, null, []);
+            const formattedDate = formatDateDisplay(date);
+            showConfirmModal(
+                'Registratie Verwijderen',
+                `Weet je zeker dat je de productiviteitsregistratie van <strong>${formattedDate}</strong> voor <strong>${activeProdUser.full_name || 'deze medewerker'}</strong> wilt verwijderen?`,
+                'Verwijderen',
+                async () => {
+                    deleteBtn.disabled = true;
+                    await saveUserProductivityEntry(date, null, []);
+                },
+                null,
+                'Annuleren'
+            );
             return;
         }
 
@@ -771,8 +798,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             passwordInput.value = '';
             passwordInput.removeAttribute('required');
 
-            document.querySelector('.modal-header h2').textContent = 'Gebruiker Bewerken';
-            submitBtn.querySelector('span').textContent = 'Opslaan';
+            const modalTitle = document.getElementById('user-modal-title');
+            const modalSubtitle = document.getElementById('user-modal-subtitle');
+            const modalIcon = document.getElementById('user-modal-header-icon');
+            if (modalTitle) modalTitle.textContent = 'Gebruiker Bewerken';
+            if (modalSubtitle) modalSubtitle.textContent = 'Pas gegevens of rechten van deze gebruiker aan';
+            if (modalIcon) modalIcon.textContent = 'manage_accounts';
+            const submitSpan = submitBtn.querySelector('span');
+            const submitIcon = submitBtn.querySelector('.material-icons');
+            if (submitSpan) submitSpan.textContent = 'Opslaan';
+            if (submitIcon) submitIcon.textContent = 'save';
 
             userModal.classList.add('open');
             messageBox.style.display = 'none';
