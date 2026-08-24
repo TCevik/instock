@@ -9,7 +9,7 @@ import { parsePDFAndGetNames, parseColliPDF, getDefaultPDFPaden, doSettingsMatch
 import { createManualInputManager, renderPeopleList } from './manual-input.js';
 import { generatePrintablePlanning } from './printable-overview.js';
 import { renderWorkspace } from './workspace.js';
-import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration, getEffectiveTaskDuration, matchEmployeeName, getFillerProductivity, formatTaskDisplayName } from './planning-logic.js';
+import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration, getEffectiveTaskDuration, matchEmployeeName, getFillerProductivity, formatTaskDisplayName, getProductivityStatusClass } from './planning-logic.js';
 import { initHistory, resetHistory, setupHistoryListeners } from './history.js';
 
 (() => {
@@ -141,6 +141,53 @@ import { initHistory, resetHistory, setupHistoryListeners } from './history.js';
         }
 
         if (finalizeBtn) {
+            const finalizeModal = document.getElementById('finalize-modal');
+            const finalizeList = document.getElementById('finalize-list');
+            const finalizeSelectAll = document.getElementById('finalize-select-all');
+            const finalizeSelectedCount = document.getElementById('finalize-selected-count');
+            const finalizeCancelBtn = document.getElementById('finalize-modal-cancel-btn');
+            const finalizeCloseBtn = document.getElementById('close-finalize-modal-btn');
+            const finalizeSaveBtn = document.getElementById('finalize-modal-save-btn');
+
+            let currentMatchedEmployees = [];
+
+            const updateFinalizeCount = () => {
+                if (!finalizeList || !finalizeSelectedCount) return;
+                const checkboxes = finalizeList.querySelectorAll('.finalize-emp-checkbox');
+                const checked = finalizeList.querySelectorAll('.finalize-emp-checkbox:checked');
+                finalizeSelectedCount.textContent = `${checked.length}/${checkboxes.length} geselecteerd`;
+                if (finalizeSelectAll) {
+                    finalizeSelectAll.checked = checkboxes.length > 0 && checked.length === checkboxes.length;
+                    finalizeSelectAll.indeterminate = checked.length > 0 && checked.length < checkboxes.length;
+                }
+                if (finalizeSaveBtn) {
+                    finalizeSaveBtn.disabled = checked.length === 0;
+                    finalizeSaveBtn.style.opacity = checked.length === 0 ? '0.5' : '1';
+                    finalizeSaveBtn.style.cursor = checked.length === 0 ? 'not-allowed' : 'pointer';
+                }
+            };
+
+            const closeFinalizeModal = () => {
+                if (finalizeModal) finalizeModal.style.display = 'none';
+            };
+
+            if (finalizeCancelBtn) finalizeCancelBtn.addEventListener('click', closeFinalizeModal);
+            if (finalizeCloseBtn) finalizeCloseBtn.addEventListener('click', closeFinalizeModal);
+            if (finalizeModal) {
+                finalizeModal.addEventListener('click', (e) => {
+                    if (e.target === finalizeModal) closeFinalizeModal();
+                });
+            }
+
+            if (finalizeSelectAll) {
+                finalizeSelectAll.addEventListener('change', () => {
+                    if (!finalizeList) return;
+                    const checkboxes = finalizeList.querySelectorAll('.finalize-emp-checkbox');
+                    checkboxes.forEach(cb => { cb.checked = finalizeSelectAll.checked; });
+                    updateFinalizeCount();
+                });
+            }
+
             finalizeBtn.addEventListener('click', async () => {
                 finalizeBtn.disabled = true;
                 try {
@@ -174,11 +221,16 @@ import { initHistory, resetHistory, setupHistoryListeners } from './history.js';
                                 const dur = Math.round(getEffectiveTaskDuration(tId, state));
                                 return dur > 0 ? `${tId}|${dur}` : tId;
                             });
+                            const history = Array.isArray(user.history_productivity) ? user.history_productivity : [];
+                            const existingEntry = history.find(entry => entry && entry.date === today);
+
                             matchedEmployees.push({
                                 user,
                                 filler,
                                 productivity: getFillerProductivity(filler, state),
-                                tasks: tasksWithDurations
+                                tasks: tasksWithDurations,
+                                hasExisting: !!existingEntry,
+                                oldProductivity: existingEntry ? (existingEntry.productivity ?? null) : null
                             });
                         }
                     });
@@ -189,89 +241,76 @@ import { initHistory, resetHistory, setupHistoryListeners } from './history.js';
                         return;
                     }
 
-                    const approvedPayload = [];
+                    currentMatchedEmployees = matchedEmployees;
 
-                    const askConfirmationForEmployee = (index) => {
-                        return new Promise((resolve) => {
-                            if (index >= matchedEmployees.length) {
-                                resolve();
-                                return;
-                            }
+                    if (finalizeList) {
+                        finalizeList.innerHTML = matchedEmployees.map((emp, idx) => {
+                            const prodClass = getProductivityStatusClass(emp.productivity);
+                            const prodBadge = emp.productivity !== null
+                                ? `<span class="filler-stat-item prod ${prodClass}" style="padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; border: 1px solid;">${emp.productivity}%</span>`
+                                : `<span style="font-size: 12px; color: var(--text-color-muted);">-</span>`;
 
-                            const emp = matchedEmployees[index];
-                            const history = Array.isArray(emp.user.history_productivity) ? emp.user.history_productivity : [];
-                            const existingEntry = history.find(entry => entry && entry.date === today);
+                            const overwriteBadge = emp.hasExisting
+                                ? `<span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background-color: var(--prod-warning-bg); color: var(--prod-warning-color); border: 1px solid var(--prod-warning-border); display: inline-flex; align-items: center; gap: 4px;"><i class="material-icons" style="font-size: 12px;">sync</i> Overschrijven${emp.oldProductivity !== null ? ` (${emp.oldProductivity}%)` : ''}</span>`
+                                : `<span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background-color: var(--prod-healthy-bg); color: var(--prod-healthy-color); border: 1px solid var(--prod-healthy-border);">Nieuw</span>`;
 
-                            if (existingEntry) {
-                                const oldProdVal = existingEntry.productivity ?? null;
-                                const newProdVal = emp.productivity ?? null;
-                                const prodChanged = oldProdVal !== newProdVal;
+                            return `
+                                <label class="finalize-emp-row" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; gap: 10px;">
+                                    <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                                        <input type="checkbox" class="finalize-emp-checkbox" data-index="${idx}" checked style="accent-color: var(--accent-color); cursor: pointer; width: 16px; height: 16px; flex-shrink: 0;">
+                                        <span style="font-size: 14px; font-weight: 500; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${emp.user.full_name}</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                                        ${prodBadge}
+                                        ${overwriteBadge}
+                                    </div>
+                                </label>
+                            `;
+                        }).join('');
 
-                                const oldTasksArr = Array.isArray(existingEntry.tasks) ? existingEntry.tasks : [];
-                                const newTasksArr = Array.isArray(emp.tasks) ? emp.tasks : [];
-                                const tasksChanged = oldTasksArr.length !== newTasksArr.length || oldTasksArr.some((t, i) => t !== newTasksArr[i]);
-
-                                if (!prodChanged && !tasksChanged) {
-                                    approvedPayload.push({
-                                        userId: emp.user.id,
-                                        date: today,
-                                        productivity: emp.productivity,
-                                        tasks: emp.tasks
-                                    });
-                                    askConfirmationForEmployee(index + 1).then(resolve);
-                                    return;
-                                }
-
-                                const changeLines = [];
-                                if (prodChanged) {
-                                    const oldProdStr = oldProdVal !== null ? `${oldProdVal}%` : 'Geen';
-                                    const newProdStr = newProdVal !== null ? `${newProdVal}%` : 'Geen';
-                                    changeLines.push(`Productiviteit gewijzigd: ${oldProdStr} &rarr; <strong>${newProdStr}</strong>`);
-                                }
-                                if (tasksChanged) {
-                                    const oldTasksStr = oldTasksArr.length > 0 ? oldTasksArr.map(formatTaskDisplayName).join('; ') : 'Geen';
-                                    const newTasksStr = newTasksArr.length > 0 ? newTasksArr.map(formatTaskDisplayName).join('; ') : 'Geen';
-                                    changeLines.push(`Taken gewijzigd:<br>&bull; Oud: ${oldTasksStr}<br>&bull; Nieuw: <strong>${newTasksStr}</strong>`);
-                                }
-
-                                const message = `Voor <strong>${emp.user.full_name}</strong> zijn er wijzigingen ten opzichte van de eerdere registratie vandaag:<br><br>` +
-                                    changeLines.join('<br><br>') +
-                                    `<br><br>Wil je deze gegevens overschrijven?`;
-
-                                showConfirmModal(
-                                    'Registratie Overschrijven',
-                                    message,
-                                    'Overschrijven',
-                                    () => {
-                                        approvedPayload.push({
-                                            userId: emp.user.id,
-                                            date: today,
-                                            productivity: emp.productivity,
-                                            tasks: emp.tasks
-                                        });
-                                        askConfirmationForEmployee(index + 1).then(resolve);
-                                    },
-                                    () => {
-                                        askConfirmationForEmployee(index + 1).then(resolve);
-                                    },
-                                    'Overslaan'
-                                );
-                            } else {
-                                approvedPayload.push({
-                                    userId: emp.user.id,
-                                    date: today,
-                                    productivity: emp.productivity,
-                                    tasks: emp.tasks
-                                });
-                                askConfirmationForEmployee(index + 1).then(resolve);
-                            }
+                        finalizeList.querySelectorAll('.finalize-emp-checkbox').forEach(cb => {
+                            cb.addEventListener('change', updateFinalizeCount);
                         });
-                    };
+                    }
 
-                    await askConfirmationForEmployee(0);
+                    if (finalizeSelectAll) finalizeSelectAll.checked = true;
+                    updateFinalizeCount();
+                    if (finalizeModal) finalizeModal.style.display = 'flex';
+                } catch (err) {
+                    showToast('Er is een fout opgetreden', 'error');
+                } finally {
+                    finalizeBtn.disabled = false;
+                }
+            });
 
-                    if (approvedPayload.length > 0) {
-                        showLoadingOverlay('Opslaan...');
+            if (finalizeSaveBtn) {
+                finalizeSaveBtn.addEventListener('click', async () => {
+                    const checkedBoxes = finalizeList ? finalizeList.querySelectorAll('.finalize-emp-checkbox:checked') : [];
+                    if (checkedBoxes.length === 0) {
+                        showToast('Geen medewerkers geselecteerd', 'warning');
+                        return;
+                    }
+
+                    const today = new Date().toISOString().split('T')[0];
+                    const approvedPayload = [];
+                    checkedBoxes.forEach(cb => {
+                        const idx = parseInt(cb.dataset.index, 10);
+                        const emp = currentMatchedEmployees[idx];
+                        if (emp) {
+                            approvedPayload.push({
+                                userId: emp.user.id,
+                                date: today,
+                                productivity: emp.productivity,
+                                tasks: emp.tasks
+                            });
+                        }
+                    });
+
+                    closeFinalizeModal();
+                    showLoadingOverlay('Opslaan...');
+
+                    try {
+                        const supabaseClient = await getSupabase();
                         const { data: { session } } = await supabaseClient.auth.getSession();
                         const headers = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
                         const { data: invokeData, error: invokeError, detailedError } = await invokeFunction('save_productivity', {
@@ -296,12 +335,11 @@ import { initHistory, resetHistory, setupHistoryListeners } from './history.js';
                                     ? currentUser.history_productivity.filter(h => h && h.date !== item.date)
                                     : [];
 
-                                const newEntry = {
+                                history.push({
                                     date: item.date,
                                     productivity: item.productivity,
                                     tasks: item.tasks
-                                };
-                                history.push(newEntry);
+                                });
 
                                 const { error: updateError } = await supabaseClient
                                     .from('user_data')
@@ -323,14 +361,13 @@ import { initHistory, resetHistory, setupHistoryListeners } from './history.js';
                         } else {
                             showToast('Productiviteit opgeslagen', 'success');
                         }
+                    } catch (err) {
+                        showToast('Er is een fout opgetreden bij het opslaan', 'error');
+                    } finally {
+                        hideLoadingOverlay();
                     }
-                } catch (err) {
-                    showToast('Er is een fout opgetreden', 'error');
-                } finally {
-                    hideLoadingOverlay();
-                    finalizeBtn.disabled = false;
-                }
-            });
+                });
+            }
         }
 
         let pendingFillers = null;

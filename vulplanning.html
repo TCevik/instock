@@ -346,6 +346,31 @@
         </div>
     </div>
 
+    <div id="finalize-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 520px; max-height: 85vh; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="font-size: 18px; font-weight: 600; margin: 0; color: var(--text-color);">Productiviteiten Finaliseren</h3>
+                <button type="button" id="close-finalize-modal-btn" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-color-muted); line-height: 1;">&times;</button>
+            </div>
+            <p style="font-size: 13px; color: var(--text-color-muted); margin-bottom: 14px;">
+                Selecteer de medewerkers waarvan je de productiviteit wilt opslaan.
+            </p>
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 10px;">
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; cursor: pointer; user-select: none;">
+                    <input type="checkbox" id="finalize-select-all" style="accent-color: var(--accent-color); cursor: pointer;" checked>
+                    <span>Alles selecteren</span>
+                </label>
+                <span id="finalize-selected-count" style="font-size: 12px; color: var(--text-color-muted);"></span>
+            </div>
+            <div id="finalize-list" style="display: flex; flex-direction: column; gap: 8px; overflow-y: auto; max-height: 50vh; padding-right: 4px; margin-bottom: 16px;">
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--border-color);">
+                <button type="button" id="finalize-modal-cancel-btn" class="submit-btn" style="background: var(--border-color); color: var(--text-color); max-width: 100px; box-shadow: none;">Annuleren</button>
+                <button type="button" id="finalize-modal-save-btn" class="submit-btn" style="max-width: 120px;">Opslaan</button>
+            </div>
+        </div>
+    </div>
+
     <div id="confirm-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content" style="max-width: 420px;">
             <h3 id="confirm-modal-title"
