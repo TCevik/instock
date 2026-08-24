@@ -32,38 +32,128 @@ let currentDraggedTaskId = null;
 let currentDraggedIsFromAssigned = false;
 let taskContextMenu = null;
 let zoomListenersInitialized = false;
+let isSyncingScroll = false;
+
+export const getTimelineScale = () => 2.0 * (state.timelineZoom || 1.0);
+
+export const getTotalTimelineMinutes = () => {
+    let maxMinNeeded = 1440;
+    const allFillers = new Set([...state.selectedFillers, ...(state.hiddenFillers || [])]);
+    allFillers.forEach(filler => {
+        const startMin = getFillerStartTime(filler);
+        const maxMin = getAvailableTime(filler);
+        if (isFinite(maxMin) && maxMin > 0) {
+            maxMinNeeded = Math.max(maxMinNeeded, startMin + maxMin);
+        }
+        let taskTotal = 0;
+        (state.fillerTasks[filler] || []).forEach(tId => {
+            taskTotal += getEffectiveTaskDuration(tId);
+        });
+        if (taskTotal > 0) {
+            maxMinNeeded = Math.max(maxMinNeeded, startMin + taskTotal);
+        }
+    });
+    return Math.ceil(maxMinNeeded / 60) * 60;
+};
+
+const syncAllTimelines = (sourceEl) => {
+    if (isSyncingScroll || !sourceEl || !sourceEl.isConnected) return;
+    isSyncingScroll = true;
+    const scrollLeft = sourceEl.scrollLeft;
+    state.timelineScrollLeft = scrollLeft;
+
+    const allContainers = document.querySelectorAll('.filler-tasks-list, .timeline-ruler-container, .timeline-bottom-scrollbar-container');
+    allContainers.forEach(el => {
+        if (el !== sourceEl && el.scrollLeft !== scrollLeft) {
+            el.scrollLeft = scrollLeft;
+        }
+    });
+    isSyncingScroll = false;
+};
+
+const renderTimelineRuler = (rulerContainer, scale, totalMinutes = 1440) => {
+    if (!rulerContainer) return;
+    const track = rulerContainer.querySelector('.timeline-ruler-track') || rulerContainer;
+    track.innerHTML = '';
+    const totalWidth = totalMinutes * scale;
+    track.style.width = `${totalWidth}px`;
+    track.style.minWidth = `${totalWidth}px`;
+    const totalHours = Math.round(totalMinutes / 60);
+
+    for (let h = 0; h <= totalHours; h++) {
+        const marker = document.createElement('div');
+        marker.className = 'timeline-hour-marker';
+        marker.style.left = `${h * 60 * scale}px`;
+        if (h < totalHours) {
+            marker.style.width = `${60 * scale}px`;
+        }
+        const label = document.createElement('span');
+        label.className = 'timeline-hour-label';
+        const displayH = h % 24;
+        const dayOffset = Math.floor(h / 24);
+        label.textContent = `${displayH < 10 ? '0' + displayH : displayH}:00${dayOffset > 0 ? ' (+' + dayOffset + 'd)' : ''}`;
+        if (h === totalHours) {
+            label.style.display = 'inline-block';
+            label.style.transform = 'translateX(-100%)';
+            marker.style.paddingLeft = '0';
+            marker.style.paddingRight = '2px';
+        }
+        marker.appendChild(label);
+        track.appendChild(marker);
+    }
+    rulerContainer.addEventListener('scroll', () => syncAllTimelines(rulerContainer), { passive: true });
+};
 
 const setupZoomListeners = () => {
     if (zoomListenersInitialized) return;
     zoomListenersInitialized = true;
 
+    const changeZoom = (newZoom) => {
+        const oldZoom = state.timelineZoom || 1.0;
+        state.timelineZoom = newZoom;
+        if (state.timelineScrollLeft !== undefined) {
+            state.timelineScrollLeft = (state.timelineScrollLeft / oldZoom) * newZoom;
+        }
+        renderWorkspace();
+    };
+
     document.addEventListener('click', (e) => {
         const outBtn = e.target.closest('.timeline-zoom-out');
         if (outBtn) {
-            state.timelineZoom = Math.max(0.4, Math.round(((state.timelineZoom || 1.0) - 0.15) * 100) / 100);
-            renderWorkspace();
+            changeZoom(Math.max(0.4, Math.round(((state.timelineZoom || 1.0) - 0.15) * 100) / 100));
             return;
         }
         const inBtn = e.target.closest('.timeline-zoom-in');
         if (inBtn) {
-            state.timelineZoom = Math.min(3.0, Math.round(((state.timelineZoom || 1.0) + 0.15) * 100) / 100);
-            renderWorkspace();
+            changeZoom(Math.min(3.0, Math.round(((state.timelineZoom || 1.0) + 0.15) * 100) / 100));
             return;
         }
         const resetBtn = e.target.closest('.timeline-zoom-reset');
         if (resetBtn) {
-            state.timelineZoom = 1.0;
-            renderWorkspace();
+            state.timelineScrollLeft = undefined;
+            changeZoom(1.0);
             return;
         }
     });
 
     document.addEventListener('wheel', (e) => {
-        if (e.ctrlKey && e.target.closest('.fillers-table, .filler-tasks-list, .filler-tasks-cell')) {
+        const layoutWrapper = e.target.closest('#fillers-layout-wrapper, .fillers-table, .filler-row, .filler-tasks-cell, .timeline-ruler-container, .timeline-bottom-scrollbar-container, .timeline-table-footer');
+        if (!layoutWrapper) return;
+
+        if (e.ctrlKey) {
             e.preventDefault();
             const delta = e.deltaY < 0 ? 0.15 : -0.15;
-            state.timelineZoom = Math.min(3.0, Math.max(0.4, Math.round(((state.timelineZoom || 1.0) + delta) * 100) / 100));
-            renderWorkspace();
+            changeZoom(Math.min(3.0, Math.max(0.4, Math.round(((state.timelineZoom || 1.0) + delta) * 100) / 100)));
+            return;
+        }
+
+        const delta = (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) * 0.4;
+        if (delta !== 0) {
+            e.preventDefault();
+            const targetContainer = document.querySelector('.timeline-bottom-scrollbar-container') || document.querySelector('.filler-tasks-list');
+            if (targetContainer) {
+                targetContainer.scrollLeft += delta;
+            }
         }
     }, { passive: false });
 };
@@ -153,7 +243,7 @@ export const createTaskCard = (taskId, startTime, endTime, maxMin, totalInTimePl
     }
 
     if (startTime !== undefined && endTime !== undefined) {
-        const effectiveScale = scale !== undefined ? scale : (1.6 * (state.timelineZoom || 1.0));
+        const effectiveScale = scale !== undefined ? scale : getTimelineScale();
         const cardWidth = Math.max(2, effectiveDuration * effectiveScale);
 
         card.style.width = `${cardWidth}px`;
@@ -282,6 +372,23 @@ export const createTaskCard = (taskId, startTime, endTime, maxMin, totalInTimePl
                 triggerSave();
             });
             menu.appendChild(removeItem);
+        } else if (type === 'other' && pathName !== 'Pauze') {
+            const deleteOtherItem = document.createElement('div');
+            deleteOtherItem.className = 'context-menu-item';
+            deleteOtherItem.innerHTML = '<i class="material-icons">delete_outline</i><span>Taak verwijderen</span>';
+            deleteOtherItem.addEventListener('click', () => {
+                menu.style.display = 'none';
+                delete state.otherTimes[pathName];
+                Object.keys(state.instanceTimes).forEach(instKey => {
+                    if (instKey.startsWith(`${pathName}_other_inst-`)) {
+                        removeTaskFromAll(instKey);
+                        delete state.instanceTimes[instKey];
+                    }
+                });
+                renderWorkspace();
+                triggerSave();
+            });
+            menu.appendChild(deleteOtherItem);
         }
 
         if (menu.children.length === 0) return;
@@ -331,6 +438,14 @@ export const renderWorkspace = () => {
     const mirrorContainer = document.getElementById('unassigned-mirror-tasks');
     const otherContainer = document.getElementById('unassigned-other-tasks');
     if (!workspace || !fillersTableBody || !fillContainer || !mirrorContainer || !otherContainer) return;
+
+    if (!isSyncingScroll) {
+        const anyScrollEl = document.querySelector('.filler-tasks-list, .timeline-ruler-container, .timeline-bottom-scrollbar-container');
+        if (anyScrollEl && anyScrollEl.scrollLeft > 0) {
+            state.timelineScrollLeft = anyScrollEl.scrollLeft;
+        }
+    }
+    isSyncingScroll = true;
 
     const pairCheckbox = document.getElementById('pair-fill-mirror-checkbox');
     if (pairCheckbox) pairCheckbox.checked = !!state.autoPairFillMirror;
@@ -667,32 +782,87 @@ export const renderWorkspace = () => {
         endContainer.appendChild(prodContainer);
         tdEnd.appendChild(endContainer);
 
+        const fillerStartMin = getFillerStartTime(filler);
+        const maxLimitTime = fillerStartMin + maxMin;
+
+        let totalInTimePlanned = 0;
+        let totalOvertimePlanned = 0;
+        let runningCalcTime = fillerStartMin;
+
+        (state.fillerTasks[filler] || []).forEach(taskId => {
+            const duration = getEffectiveTaskDuration(taskId);
+            const taskStart = runningCalcTime;
+            const taskEnd = runningCalcTime + duration;
+            runningCalcTime = taskEnd;
+
+            if (taskEnd <= maxLimitTime) {
+                totalInTimePlanned += duration;
+            } else if (taskStart >= maxLimitTime) {
+                totalOvertimePlanned += duration;
+            } else {
+                totalInTimePlanned += Math.max(0, maxLimitTime - taskStart);
+                totalOvertimePlanned += Math.max(0, taskEnd - maxLimitTime);
+            }
+        });
+
         const tdTasks = document.createElement('td');
         tdTasks.className = 'filler-tasks-cell';
         const tasksList = document.createElement('div');
         tasksList.className = 'filler-tasks-list';
 
-        const scale = 1.6 * (state.timelineZoom || 1.0);
+        const scale = getTimelineScale();
 
-        const timelineSep = document.createElement('div');
-        timelineSep.className = 'timeline-separator';
         if (isFinite(maxMin) && maxMin > 0) {
-            timelineSep.style.display = 'block';
-            timelineSep.style.left = `${maxMin * scale + 4}px`;
-        } else {
-            timelineSep.style.display = 'none';
+            const shiftBg = document.createElement('div');
+            shiftBg.className = 'timeline-shift-bg';
+            shiftBg.style.left = `${fillerStartMin * scale}px`;
+            shiftBg.style.width = `${maxMin * scale}px`;
+            tasksList.appendChild(shiftBg);
         }
-        tasksList.appendChild(timelineSep);
 
-        tasksList.addEventListener('scroll', (e) => {
-            const scrollLeft = e.target.scrollLeft;
-            const allLists = document.querySelectorAll('.filler-tasks-list');
-            allLists.forEach(list => {
-                if (list !== e.target && list.scrollLeft !== scrollLeft) {
-                    list.scrollLeft = scrollLeft;
-                }
-            });
+        const startSpacer = document.createElement('div');
+        startSpacer.className = 'timeline-start-spacer';
+        startSpacer.style.width = `${fillerStartMin * scale}px`;
+        startSpacer.style.minWidth = `${fillerStartMin * scale}px`;
+        startSpacer.style.maxWidth = `${fillerStartMin * scale}px`;
+        tasksList.appendChild(startSpacer);
+
+        let currentTime = fillerStartMin;
+        (state.fillerTasks[filler] || []).forEach(taskId => {
+            const duration = getEffectiveTaskDuration(taskId);
+            const startTime = currentTime;
+            const endTime = currentTime + duration;
+            currentTime = endTime;
+
+            const card = createTaskCard(taskId, startTime, endTime, maxMin, totalInTimePlanned, totalOvertimePlanned, fillerStartMin, scale);
+            if (card) {
+                tasksList.appendChild(card);
+            } else if (duration > 0) {
+                const spacer = document.createElement('div');
+                const spacerWidth = Math.max(2, duration * scale);
+                spacer.style.width = `${spacerWidth}px`;
+                spacer.style.minWidth = `${spacerWidth}px`;
+                spacer.style.maxWidth = `${spacerWidth}px`;
+                spacer.style.flexShrink = '0';
+                spacer.style.visibility = 'hidden';
+                tasksList.appendChild(spacer);
+            }
         });
+
+        let totalUsedMin = 0;
+        (state.fillerTasks[filler] || []).forEach(taskId => {
+            totalUsedMin += getEffectiveTaskDuration(taskId);
+        });
+        const totalTimelineMinutes = getTotalTimelineMinutes();
+        const remainingTrackMin = Math.max(0, totalTimelineMinutes - (fillerStartMin + totalUsedMin));
+        const endSpacer = document.createElement('div');
+        endSpacer.className = 'timeline-end-spacer';
+        endSpacer.style.width = `${remainingTrackMin * scale}px`;
+        endSpacer.style.minWidth = `${remainingTrackMin * scale}px`;
+        endSpacer.style.maxWidth = `${remainingTrackMin * scale}px`;
+        tasksList.appendChild(endSpacer);
+
+        tasksList.addEventListener('scroll', () => syncAllTimelines(tasksList), { passive: true });
 
         tr.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -748,7 +918,7 @@ export const renderWorkspace = () => {
                     });
                 }
             } else {
-                placeholders.forEach(p => tasksList.appendChild(p));
+                placeholders.forEach(p => tasksList.insertBefore(p, endSpacer));
             }
         });
 
@@ -785,7 +955,7 @@ export const renderWorkspace = () => {
                         tasks.push(helperTaskId);
                     }
                 } else {
-                    state.fillerTasks[filler].push(helperTaskId);
+                    tasks.push(helperTaskId);
                 }
                 renderWorkspace();
                 triggerSave();
@@ -853,51 +1023,6 @@ export const renderWorkspace = () => {
             triggerSave();
             if (isNewPauseTask) {
                 openDurationModal(taskId);
-            }
-        });
-
-        const fillerStartMin = getFillerStartTime(filler);
-        const maxLimitTime = fillerStartMin + maxMin;
-
-        let totalInTimePlanned = 0;
-        let totalOvertimePlanned = 0;
-        let runningCalcTime = fillerStartMin;
-
-        (state.fillerTasks[filler] || []).forEach(taskId => {
-            const duration = getEffectiveTaskDuration(taskId);
-            const taskStart = runningCalcTime;
-            const taskEnd = runningCalcTime + duration;
-            runningCalcTime = taskEnd;
-
-            if (taskEnd <= maxLimitTime) {
-                totalInTimePlanned += duration;
-            } else if (taskStart >= maxLimitTime) {
-                totalOvertimePlanned += duration;
-            } else {
-                totalInTimePlanned += Math.max(0, maxLimitTime - taskStart);
-                totalOvertimePlanned += Math.max(0, taskEnd - maxLimitTime);
-            }
-        });
-
-        let currentTime = fillerStartMin;
-        (state.fillerTasks[filler] || []).forEach(taskId => {
-            const duration = getEffectiveTaskDuration(taskId);
-            const startTime = currentTime;
-            const endTime = currentTime + duration;
-            currentTime = endTime;
-
-            const card = createTaskCard(taskId, startTime, endTime, maxMin, totalInTimePlanned, totalOvertimePlanned, fillerStartMin, scale);
-            if (card) {
-                tasksList.appendChild(card);
-            } else if (duration > 0) {
-                const spacer = document.createElement('div');
-                const spacerWidth = Math.max(2, duration * scale);
-                spacer.style.width = `${spacerWidth}px`;
-                spacer.style.minWidth = `${spacerWidth}px`;
-                spacer.style.maxWidth = `${spacerWidth}px`;
-                spacer.style.flexShrink = '0';
-                spacer.style.visibility = 'hidden';
-                tasksList.appendChild(spacer);
             }
         });
 
@@ -1003,10 +1128,44 @@ export const renderWorkspace = () => {
     if (tabOther) tabOther.textContent = 'Overige';
 
     setupZoomListeners();
-    const zoomPercent = Math.round((state.timelineZoom || 1.0) * 100);
+    const currentZoom = state.timelineZoom || 1.0;
+    const zoomPercent = Math.round(currentZoom * 100);
     document.querySelectorAll('.timeline-zoom-level-text').forEach(el => {
         el.textContent = `${zoomPercent}%`;
     });
 
+    const scale = getTimelineScale();
+    const totalTimelineMinutes = getTotalTimelineMinutes();
+    renderTimelineRuler(document.getElementById('fillers-timeline-ruler'), scale, totalTimelineMinutes);
+    renderTimelineRuler(document.getElementById('non-fillers-timeline-ruler'), scale, totalTimelineMinutes);
+
+    document.querySelectorAll('.timeline-bottom-scrollbar-track').forEach(track => {
+        track.style.width = `${totalTimelineMinutes * scale}px`;
+        track.style.minWidth = `${totalTimelineMinutes * scale}px`;
+    });
+    document.querySelectorAll('.timeline-bottom-scrollbar-container').forEach(scrollbar => {
+        scrollbar.addEventListener('scroll', () => syncAllTimelines(scrollbar), { passive: true });
+    });
+
     workspace.style.display = 'grid';
+
+    if (state.timelineScrollLeft === undefined) {
+        const firstContainer = document.querySelector('.filler-tasks-list, .timeline-ruler-container, .timeline-bottom-scrollbar-container');
+        const containerWidth = (firstContainer && firstContainer.clientWidth) ? firstContainer.clientWidth : 800;
+        const allList = [...activeFillers, ...nonFillersList];
+        const startTimes = allList.map(f => getFillerStartTime(f)).filter(s => s > 0 && s < 1440);
+
+        if (startTimes.length > 0) {
+            const earliestStart = Math.min(...startTimes);
+            state.timelineScrollLeft = Math.max(0, (earliestStart - 20) * scale);
+        } else {
+            state.timelineScrollLeft = Math.max(0, (720 * scale) - (containerWidth / 2));
+        }
+    }
+
+    document.querySelectorAll('.filler-tasks-list, .timeline-ruler-container, .timeline-bottom-scrollbar-container').forEach(el => {
+        el.scrollLeft = state.timelineScrollLeft || 0;
+    });
+
+    isSyncingScroll = false;
 };

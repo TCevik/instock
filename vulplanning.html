@@ -168,26 +168,45 @@
                                         <th>Medewerker</th>
                                         <th>Tijd & Pauze</th>
                                         <th>Eindtijd</th>
-                                        <th>
-                                            <div style="display: flex; justify-content: space-between; align-items: center; padding-right: 6px;">
-                                                <span style="font-weight: 600;">Toegewezen Taken</span>
-                                                <div class="timeline-zoom-controls" style="display: flex; align-items: center; gap: 4px;">
-                                                    <button type="button" class="action-btn timeline-zoom-btn timeline-zoom-out" title="Uitzoomen" style="padding: 2px 6px; font-size: 11px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; cursor: pointer; display: flex; align-items: center;">
-                                                        <i class="material-icons" style="font-size: 14px;">remove</i>
-                                                    </button>
-                                                    <span class="timeline-zoom-level-text" style="font-size: 11px; min-width: 36px; text-align: center; color: var(--text-color-muted); font-weight: 500;">100%</span>
-                                                    <button type="button" class="action-btn timeline-zoom-btn timeline-zoom-in" title="Inzoomen" style="padding: 2px 6px; font-size: 11px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; cursor: pointer; display: flex; align-items: center;">
-                                                        <i class="material-icons" style="font-size: 14px;">add</i>
-                                                    </button>
-                                                    <button type="button" class="action-btn timeline-zoom-btn timeline-zoom-reset" title="Herstel zoom (100%)" style="padding: 2px 6px; font-size: 11px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; cursor: pointer; display: flex; align-items: center;">
-                                                        <i class="material-icons" style="font-size: 14px;">fit_screen</i>
-                                                    </button>
+                                        <th class="timeline-header-cell">
+                                            <div class="timeline-header-wrapper">
+                                                <div class="timeline-header-title-bar">
+                                                    <span style="font-weight: 600;">Toegewezen Taken</span>
+                                                    <div class="timeline-zoom-controls" style="display: flex; align-items: center; gap: 4px;">
+                                                        <button type="button" class="action-btn timeline-zoom-btn timeline-zoom-out" title="Uitzoomen" style="padding: 2px 6px; font-size: 11px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; cursor: pointer; display: flex; align-items: center;">
+                                                            <i class="material-icons" style="font-size: 14px;">remove</i>
+                                                        </button>
+                                                        <span class="timeline-zoom-level-text" style="font-size: 11px; min-width: 36px; text-align: center; color: var(--text-color-muted); font-weight: 500;">100%</span>
+                                                        <button type="button" class="action-btn timeline-zoom-btn timeline-zoom-in" title="Inzoomen" style="padding: 2px 6px; font-size: 11px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; cursor: pointer; display: flex; align-items: center;">
+                                                            <i class="material-icons" style="font-size: 14px;">add</i>
+                                                        </button>
+                                                        <button type="button" class="action-btn timeline-zoom-btn timeline-zoom-reset" title="Herstel zoom (100%)" style="padding: 2px 6px; font-size: 11px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; cursor: pointer; display: flex; align-items: center;">
+                                                            <i class="material-icons" style="font-size: 14px;">fit_screen</i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div class="timeline-ruler-container" id="fillers-timeline-ruler">
+                                                    <div class="timeline-ruler-track"></div>
                                                 </div>
                                             </div>
                                         </th>
                                     </tr>
                                 </thead>
                                 <tbody id="fillers-table-body"></tbody>
+                                <tfoot class="timeline-table-footer">
+                                    <tr>
+                                        <td colspan="4" class="timeline-footer-label-cell">
+                                            <span style="font-size: 11px; font-weight: 600; color: var(--text-color-muted); display: flex; align-items: center; gap: 4px; padding-left: 4px;">
+                                                <i class="material-icons" style="font-size: 14px;">swap_horiz</i> Tijdlijn
+                                            </span>
+                                        </td>
+                                        <td class="filler-tasks-cell timeline-footer-scroll-cell">
+                                            <div class="timeline-bottom-scrollbar-container">
+                                                <div class="timeline-bottom-scrollbar-track"></div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
                         <div id="non-fillers-section"
@@ -210,26 +229,45 @@
                                         <th>Medewerker</th>
                                         <th>Tijd & Pauze</th>
                                         <th>Eindtijd</th>
-                                        <th>
-                                            <div style="display: flex; justify-content: space-between; align-items: center; padding-right: 6px;">
-                                                <span style="font-weight: 600;">Toegewezen Taken</span>
-                                                <div class="timeline-zoom-controls" style="display: flex; align-items: center; gap: 4px;">
-                                                    <button type="button" class="action-btn timeline-zoom-btn timeline-zoom-out" title="Uitzoomen" style="padding: 2px 6px; font-size: 11px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; cursor: pointer; display: flex; align-items: center;">
-                                                        <i class="material-icons" style="font-size: 14px;">remove</i>
-                                                    </button>
-                                                    <span class="timeline-zoom-level-text" style="font-size: 11px; min-width: 36px; text-align: center; color: var(--text-color-muted); font-weight: 500;">100%</span>
-                                                    <button type="button" class="action-btn timeline-zoom-btn timeline-zoom-in" title="Inzoomen" style="padding: 2px 6px; font-size: 11px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; cursor: pointer; display: flex; align-items: center;">
-                                                        <i class="material-icons" style="font-size: 14px;">add</i>
-                                                    </button>
-                                                    <button type="button" class="action-btn timeline-zoom-btn timeline-zoom-reset" title="Herstel zoom (100%)" style="padding: 2px 6px; font-size: 11px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; cursor: pointer; display: flex; align-items: center;">
-                                                        <i class="material-icons" style="font-size: 14px;">fit_screen</i>
-                                                    </button>
+                                        <th class="timeline-header-cell">
+                                            <div class="timeline-header-wrapper">
+                                                <div class="timeline-header-title-bar">
+                                                    <span style="font-weight: 600;">Toegewezen Taken</span>
+                                                    <div class="timeline-zoom-controls" style="display: flex; align-items: center; gap: 4px;">
+                                                        <button type="button" class="action-btn timeline-zoom-btn timeline-zoom-out" title="Uitzoomen" style="padding: 2px 6px; font-size: 11px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; cursor: pointer; display: flex; align-items: center;">
+                                                            <i class="material-icons" style="font-size: 14px;">remove</i>
+                                                        </button>
+                                                        <span class="timeline-zoom-level-text" style="font-size: 11px; min-width: 36px; text-align: center; color: var(--text-color-muted); font-weight: 500;">100%</span>
+                                                        <button type="button" class="action-btn timeline-zoom-btn timeline-zoom-in" title="Inzoomen" style="padding: 2px 6px; font-size: 11px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; cursor: pointer; display: flex; align-items: center;">
+                                                            <i class="material-icons" style="font-size: 14px;">add</i>
+                                                        </button>
+                                                        <button type="button" class="action-btn timeline-zoom-btn timeline-zoom-reset" title="Herstel zoom (100%)" style="padding: 2px 6px; font-size: 11px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; cursor: pointer; display: flex; align-items: center;">
+                                                            <i class="material-icons" style="font-size: 14px;">fit_screen</i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div class="timeline-ruler-container" id="non-fillers-timeline-ruler">
+                                                    <div class="timeline-ruler-track"></div>
                                                 </div>
                                             </div>
                                         </th>
                                     </tr>
                                 </thead>
                                 <tbody id="non-fillers-table-body"></tbody>
+                                <tfoot class="timeline-table-footer">
+                                    <tr>
+                                        <td colspan="4" class="timeline-footer-label-cell">
+                                            <span style="font-size: 11px; font-weight: 600; color: var(--text-color-muted); display: flex; align-items: center; gap: 4px; padding-left: 4px;">
+                                                <i class="material-icons" style="font-size: 14px;">swap_horiz</i> Tijdlijn
+                                            </span>
+                                        </td>
+                                        <td class="filler-tasks-cell timeline-footer-scroll-cell">
+                                            <div class="timeline-bottom-scrollbar-container">
+                                                <div class="timeline-bottom-scrollbar-track"></div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
                     </div>

@@ -598,6 +598,7 @@ import { initHistory, resetHistory, setupHistoryListeners } from './history.js';
                     'Weet je zeker dat je alle toegewezen taken van alle medewerkers wilt verwijderen? De normen en tijden worden opnieuw berekend.',
                     'Leegmaken',
                     () => {
+                        recalculateStep1();
                         state.fillerTasks = {};
                         state.helpers = {};
                         state.instanceTimes = {};

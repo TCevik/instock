@@ -5,6 +5,7 @@ import { triggerSave } from './storage.js';
 import { initPadenModal } from '../main.js';
 import { matchEmployeeName } from './planning-logic.js';
 import { initHistory } from './history.js';
+import { HARDCODED_MIRROR_TIMES, HARDCODED_RESTANTEN_TIMES } from './plus/pdf-defaults.js';
 
 export const renderPeopleList = (names) => {
     const card = document.getElementById('people-card');
@@ -589,18 +590,18 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
     }
 
     const recalculateStep1 = () => {
+        if (!state.pathColli) state.pathColli = {};
         const tbody = document.getElementById('manual-paths-tbody');
         const headerRows = tbody ? tbody.querySelectorAll('.manual-path-header') : [];
         if (headerRows.length > 0) {
-            const newPathColli = {};
             headerRows.forEach(headerTr => {
                 const pathIdx = headerTr.getAttribute('data-path-idx');
                 const pathName = headerTr.querySelector('.manual-path-name')?.value.trim() || '';
                 if (!pathName) return;
                 const mirrorNormVal = headerTr.querySelector('.manual-path-mirror-norm')?.value;
-                const mirrorDur = mirrorNormVal !== undefined && mirrorNormVal !== '' ? parseFloat(mirrorNormVal) : 21;
+                const mirrorDur = mirrorNormVal !== undefined && mirrorNormVal !== '' ? parseFloat(mirrorNormVal) : (HARDCODED_MIRROR_TIMES[pathName] !== undefined ? HARDCODED_MIRROR_TIMES[pathName] : 21);
                 const restantenNormVal = headerTr.querySelector('.manual-path-restanten-norm')?.value;
-                const restantenDur = restantenNormVal !== undefined && restantenNormVal !== '' ? parseFloat(restantenNormVal) : 20;
+                const restantenDur = restantenNormVal !== undefined && restantenNormVal !== '' ? parseFloat(restantenNormVal) : (HARDCODED_RESTANTEN_TIMES[pathName] !== undefined ? HARDCODED_RESTANTEN_TIMES[pathName] : 20);
 
                 const catRows = tbody.querySelectorAll(`tr.manual-category-row[data-path-idx="${pathIdx}"]`);
                 let totalColli = 0;
@@ -615,17 +616,32 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
                     }
                 });
 
-                newPathColli[pathName] = {
-                    colli: totalColli,
-                    duration: Math.round(weightedSumMinutes),
-                    mirrorDuration: mirrorDur,
-                    restantenDuration: restantenDur
-                };
+                if (!state.pathColli[pathName]) {
+                    state.pathColli[pathName] = { colli: totalColli, duration: Math.round(weightedSumMinutes) };
+                }
+                if (totalColli > 0 && weightedSumMinutes > 0) {
+                    state.pathColli[pathName].colli = totalColli;
+                    state.pathColli[pathName].duration = Math.round(weightedSumMinutes);
+                }
+                state.pathColli[pathName].mirrorDuration = mirrorDur;
+                state.pathColli[pathName].restantenDuration = restantenDur;
             });
-            if (Object.keys(newPathColli).length > 0) {
-                state.pathColli = newPathColli;
-            }
         }
+        Object.keys(state.pathColli).forEach(pathName => {
+            const item = state.pathColli[pathName];
+            if (item) {
+                if (HARDCODED_MIRROR_TIMES[pathName] !== undefined) {
+                    item.mirrorDuration = HARDCODED_MIRROR_TIMES[pathName];
+                } else if (item.mirrorDuration === undefined) {
+                    item.mirrorDuration = 21;
+                }
+                if (HARDCODED_RESTANTEN_TIMES[pathName] !== undefined) {
+                    item.restantenDuration = HARDCODED_RESTANTEN_TIMES[pathName];
+                } else if (item.restantenDuration === undefined) {
+                    item.restantenDuration = 20;
+                }
+            }
+        });
     };
 
     return { addFillerRow, populatePaths, recalculateStep1 };
