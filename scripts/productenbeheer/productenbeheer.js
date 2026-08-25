@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const source = currentParams.get('source');
             if (source === 'checker') {
                 const status = isEditMode ? 'updated' : 'created';
-                window.location.href = `product_checker.html?ean=${productData.ean}&status=${status}`;
+                window.location.href = `product-checker.html?ean=${productData.ean}&status=${status}`;
             } else {
                 showToast(isEditMode ? 'Product succesvol bijgewerkt!' : 'Product succesvol aangemaakt!', 'success');
                 await loadProductsTable();

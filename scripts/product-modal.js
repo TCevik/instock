@@ -2,7 +2,7 @@ import { showMessage, handleFormSubmit } from './main.js';
 import { showToast } from './toast.js';
 import { validateBarcode, resizeAndCompressImage } from './productenbeheer/image-utils.js';
 import { saveProduct, fetchSingleProduct } from './productenbeheer/product-service.js';
-import { formatDateInputValue, parseDateInputToIso } from './product_checker-logic.js';
+import { formatDateInputValue, parseDateInputToIso } from './product-checker-logic.js';
 
 export function initProductModal({
     supabase,

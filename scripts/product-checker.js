@@ -1,7 +1,7 @@
 import { checkAuth, getSupabase, showMessage } from './main.js';
 import { loadHeader } from './header.js';
 import { showToast } from './toast.js';
-import { formatPrice, formatDate, calculateStockStatus } from './product_checker-logic.js';
+import { formatPrice, formatDate, calculateStockStatus } from './product-checker-logic.js';
 import { fetchSingleProduct } from './productenbeheer/product-service.js';
 import { initProductModal } from './product-modal.js';
 

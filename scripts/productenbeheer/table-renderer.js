@@ -1,4 +1,4 @@
-import { formatPrice, formatDate, calculateThtStatus } from '../product_checker-logic.js';
+import { formatPrice, formatDate, calculateThtStatus } from '../product-checker-logic.js';
 
 export const renderProductTableRows = (data, tableBody, openModalForEdit, openDeleteConfirm) => {
     if (!data || data.length === 0) {
@@ -76,8 +76,8 @@ export const renderProductTableRows = (data, tableBody, openModalForEdit, openDe
         tr.style.cursor = 'pointer';
         tr.addEventListener('click', () => {
             const currentSearch = window.location.search;
-            const returnUrl = encodeURIComponent(`productenbeheer.html${currentSearch}`);
-            window.location.href = `product_checker.html?ean=${product.ean}&return_url=${returnUrl}`;
+            const returnUrl = encodeURIComponent('productenbeheer.html');
+            window.location.href = `product-checker.html?ean=${product.ean}&return_url=${returnUrl}`;
         });
 
         tr.appendChild(tdNaam);
