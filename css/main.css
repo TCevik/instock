@@ -58,6 +58,8 @@ html {
     
     --helper-color: #ec4899;
     --helper-bg: rgba(236, 72, 153, 0.15);
+    --timeline-line-hour: rgba(255, 255, 255, 0.08);
+    --timeline-line-half: rgba(255, 255, 255, 0.03);
     --helper-card-bg: rgba(236, 72, 153, 0.05);
     --helper-border: rgba(236, 72, 153, 0.3);
     

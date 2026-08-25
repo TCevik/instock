@@ -87,6 +87,10 @@ const renderTimelineRuler = (rulerContainer, scale, totalMinutes = 1440) => {
         marker.style.left = `${h * 60 * scale}px`;
         if (h < totalHours) {
             marker.style.width = `${60 * scale}px`;
+            const halfMarker = document.createElement('div');
+            halfMarker.className = 'timeline-half-hour-marker';
+            halfMarker.style.left = `${30 * scale}px`;
+            marker.appendChild(halfMarker);
         }
         const label = document.createElement('span');
         label.className = 'timeline-hour-label';
@@ -1130,6 +1134,7 @@ export const renderWorkspace = () => {
     });
 
     const scale = getTimelineScale();
+    document.documentElement.style.setProperty('--timeline-hour-width', `${60 * scale}px`);
     const totalTimelineMinutes = getTotalTimelineMinutes();
     renderTimelineRuler(document.getElementById('fillers-timeline-ruler'), scale, totalTimelineMinutes);
     renderTimelineRuler(document.getElementById('non-fillers-timeline-ruler'), scale, totalTimelineMinutes);
