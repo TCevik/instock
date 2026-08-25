@@ -92,6 +92,72 @@ function goToPage(pageIndex) {
     }
 }
 
+function getDifferences(oldVal, newVal) {
+    if (JSON.stringify(oldVal) === JSON.stringify(newVal)) return null;
+
+    if (typeof oldVal !== 'object' || typeof newVal !== 'object' || oldVal === null || newVal === null) {
+        return { old: oldVal, new: newVal };
+    }
+
+    // Als het arrays zijn (zoals dagen of productlijsten), vergelijk ze op index of zoek naar objecten met een unieke sleutel (zoals ceNr of category)
+    if (Array.isArray(oldVal) && Array.isArray(newVal)) {
+        const diffArrayOld = [];
+        const diffArrayNew = [];
+        let hasArrayChanges = false;
+
+        const maxLen = Math.max(oldVal.length, newVal.length);
+        for (let i = 0; i < maxLen; i++) {
+            const oItem = oldVal[i];
+            const nItem = newVal[i];
+
+            if (JSON.stringify(oItem) !== JSON.stringify(nItem)) {
+                // Probeer te kijken of het producten zijn op basis van ceNr of category
+                if (oItem && nItem && typeof oItem === 'object' && typeof nItem === 'object') {
+                    const identifier = oItem.ceNr || oItem.category || i;
+                    const subDiff = getDifferences(oItem, nItem);
+                    if (subDiff) {
+                        diffArrayOld.push({ index: identifier, ...subDiff.old });
+                        diffArrayNew.push({ index: identifier, ...subDiff.new });
+                        hasArrayChanges = true;
+                        continue;
+                    }
+                }
+                diffArrayOld.push(oItem !== undefined ? oItem : null);
+                diffArrayNew.push(nItem !== undefined ? nItem : null);
+                hasArrayChanges = true;
+            }
+        }
+        return hasArrayChanges ? { old: diffArrayOld, new: diffArrayNew } : null;
+    }
+
+    const diffOld = {};
+    const diffNew = {};
+    let hasChanges = false;
+
+    const allKeys = new Set([...Object.keys(oldVal || {}), ...Object.keys(newVal || {})]);
+
+    allKeys.forEach(key => {
+        const o = oldVal[key];
+        const n = newVal[key];
+
+        if (JSON.stringify(o) !== JSON.stringify(n)) {
+            if (typeof o === 'object' && typeof n === 'object' && o !== null && n !== null) {
+                const nested = getDifferences(o, n);
+                if (nested) {
+                    diffOld[key] = nested.old;
+                    diffNew[key] = nested.new;
+                    hasChanges = true;
+                }
+            } else {
+                diffOld[key] = o;
+                diffNew[key] = n;
+                hasChanges = true;
+            }
+        }
+    });
+
+    return hasChanges ? { old: diffOld, new: diffNew } : null;
+}
 function openLogModal(log) {
     const modal = document.getElementById('logDetailsModal');
     const title = document.getElementById('modal-log-title');
@@ -106,8 +172,19 @@ function openLogModal(log) {
         title.textContent = `Details (${action.label} - ${logType})`;
     }
 
-    const oldFormatted = log.old_value_parsed ? JSON.stringify(log.old_value_parsed, null, 2) : null;
-    const newFormatted = log.new_value_parsed ? JSON.stringify(log.new_value_parsed, null, 2) : null;
+    let displayOld = log.old_value_parsed;
+    let displayNew = log.new_value_parsed;
+
+    if (displayOld && displayNew) {
+        const diffs = getDifferences(displayOld, displayNew);
+        if (diffs) {
+            displayOld = diffs.old;
+            displayNew = diffs.new;
+        }
+    }
+
+    const oldFormatted = displayOld ? JSON.stringify(displayOld, null, 2) : null;
+    const newFormatted = displayNew ? JSON.stringify(displayNew, null, 2) : null;
 
     let modalHtml = `
         <div class="log-diff-container">
