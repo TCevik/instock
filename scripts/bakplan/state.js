@@ -35,3 +35,8 @@ export let storeId = null;
 export const setStoreId = (id) => {
     storeId = id;
 };
+
+export let userRole = null;
+export const setUserRole = (role) => {
+    userRole = role;
+};

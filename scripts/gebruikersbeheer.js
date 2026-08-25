@@ -5,7 +5,7 @@ import { getProductivityStatusClass, formatTaskDisplayName } from './vulplanning
 import { showToast } from './toast.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const auth = await checkAuth(['beheerder']);
+    const auth = await checkAuth(['beheerder', 'teamleider']);
     if (!auth) return;
 
     loadHeader();
@@ -46,7 +46,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const closeLeaderboardModalBtn = document.getElementById('closeLeaderboardModalBtn');
     const leaderboardList = document.getElementById('leaderboard-list');
 
+    const openModalBtn = document.getElementById('openModalBtn');
+
     const { session, userData } = auth;
+    const isTeamleider = userData.role === 'teamleider';
+
+    if (isTeamleider) {
+        if (openModalBtn) openModalBtn.style.display = 'none';
+        if (openDeptModalBtn) openDeptModalBtn.style.display = 'none';
+    }
+
     const loggedInUserId = session.user.id;
     const currentWinkelId = userData.winkel;
     const supabase = await getSupabase();
@@ -202,13 +211,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        const renderActionBtns = (u, isSelf) => `
-            <div class="action-btns">
-                <button class="action-btn info info-user-btn" data-id="${u.id}" title="Productiviteit bekijken"><i class="material-icons">info</i></button>
-                <button class="action-btn edit" data-id="${u.id}"><i class="material-icons">edit</i></button>
-                <button class="action-btn delete" data-id="${u.id}" ${isSelf ? 'disabled' : ''}><i class="material-icons">delete</i></button>
-            </div>
-        `;
+        const renderActionBtns = (u, isSelf) => {
+            if (isTeamleider) {
+                return `
+                    <div class="action-btns">
+                        <button class="action-btn info info-user-btn" data-id="${u.id}" title="Productiviteit bekijken"><i class="material-icons">info</i></button>
+                    </div>
+                `;
+            }
+            return `
+                <div class="action-btns">
+                    <button class="action-btn info info-user-btn" data-id="${u.id}" title="Productiviteit bekijken"><i class="material-icons">info</i></button>
+                    <button class="action-btn edit" data-id="${u.id}"><i class="material-icons">edit</i></button>
+                    <button class="action-btn delete" data-id="${u.id}" ${isSelf ? 'disabled' : ''}><i class="material-icons">delete</i></button>
+                </div>
+            `;
+        };
 
         if (viewMode === 'alphabetical' || searchQuery) {
             const sortedAlphabetical = sortUsersByRole(filteredUsers);
@@ -379,14 +397,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     const userModal = document.getElementById('userModal');
-    const openModalBtn = document.getElementById('openModalBtn');
     const closeModalBtn = document.getElementById('closeModalBtn');
 
-    openModalBtn.addEventListener('click', () => {
-        resetModalState();
-        userModal.classList.add('open');
-        messageBox.style.display = 'none';
-    });
+    if (openModalBtn) {
+        openModalBtn.addEventListener('click', () => {
+            resetModalState();
+            userModal.classList.add('open');
+            messageBox.style.display = 'none';
+        });
+    }
 
     const closeUserModal = setupModal(userModal, [closeModalBtn], resetModalState);
 
@@ -540,12 +559,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </div>
                         <div class="prod-history-actions">
                             <span class="prod-badge ${statusClass}">${badgeText}</span>
+                            ${!isTeamleider ? `
                             <button class="prod-history-btn edit-prod-entry-btn" title="Bewerken" data-date="${item.date}" data-prod="${pVal !== null ? pVal : ''}" data-tasks="${rawTasksJoined.replace(/"/g, '&quot;')}">
                                 <i class="material-icons">edit</i>
                             </button>
                             <button class="prod-history-btn delete-btn delete-prod-entry-btn" title="Verwijderen" data-date="${item.date}">
                                 <i class="material-icons">delete</i>
                             </button>
+                            ` : ''}
                         </div>
                     </div>
                     <div class="prod-history-tasks-wrapper">

@@ -10,10 +10,16 @@ export const parseStoreDepartments = (storeInfo) => {
 };
 
 export const sortUsersByRole = (users) => {
+    const roleRank = {
+        'beheerder': 0,
+        'teamleider': 1,
+        'medewerker': 2
+    };
+
     return [...users].sort((a, b) => {
-        const roleA = (a.role || '').toLowerCase() === 'beheerder' ? 0 : 1;
-        const roleB = (b.role || '').toLowerCase() === 'beheerder' ? 0 : 1;
-        if (roleA !== roleB) return roleA - roleB;
+        const rankA = roleRank[(a.role || '').toLowerCase()] ?? 2;
+        const rankB = roleRank[(b.role || '').toLowerCase()] ?? 2;
+        if (rankA !== rankB) return rankA - rankB;
         return (a.full_name || '').localeCompare(b.full_name || '', 'nl', { sensitivity: 'base' });
     });
 };

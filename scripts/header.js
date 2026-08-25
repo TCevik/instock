@@ -31,6 +31,7 @@ export async function updateHeaderMenu() {
     };
 
     const fixedHiddenForMedewerker = ["gebruikersbeheer", "instellingen_winkel", "bakplan", "vulplanning", "productenbeheer", "logs"];
+    const fixedHiddenForTeamleider = ["instellingen_winkel", "productenbeheer", "logs"];
     const productRelatedKeys = ["product_checker", "voorraadmutaties", "tht_module", "tht_registratie", "tellen", "acties"];
     const allProductRelatedOff = productRelatedKeys.every(k => modules[k] === false);
 
@@ -40,6 +41,8 @@ export async function updateHeaderMenu() {
 
         let hide = false;
         if (userRole === "medewerker" && fixedHiddenForMedewerker.includes(moduleKey)) {
+            hide = true;
+        } else if (userRole === "teamleider" && fixedHiddenForTeamleider.includes(moduleKey)) {
             hide = true;
         } else if (allProductRelatedOff && (text === "producten" || moduleKey === "productenbeheer")) {
             hide = true;

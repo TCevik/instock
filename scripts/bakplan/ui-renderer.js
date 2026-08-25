@@ -1,5 +1,5 @@
 import { setupModal } from '../main.js';
-import { DAYS, state, previousStateData, setPreviousStateData } from './state.js';
+import { DAYS, state, previousStateData, setPreviousStateData, userRole } from './state.js';
 import { getPlateQuantity, syncProductFieldAcrossDays } from './logic.js';
 import { triggerSave } from './storage.js';
 import { pdfParser } from './pdf-handler.js';
@@ -428,29 +428,32 @@ export const uiRenderer = {
             return;
         }
 
+        const isTeamleider = userRole === 'teamleider';
         let html = '';
         categories.forEach((catObj, catIdx) => {
             const cat = catObj.category;
             const isThawChecked = !!catObj.thawInBatch1;
             html += `
                 <tr class="category-header-row">
-                    <td colspan="5" contenteditable="true" data-catidx="${catIdx}">
+                    <td colspan="5" ${!isTeamleider ? 'contenteditable="true"' : ''} data-catidx="${catIdx}">
                         ${cat}
                     </td>
                     <td colspan="2" style="text-align: right; min-width: 160px; white-space: nowrap;">
                         <label class="custom-toggle" title="Plaats deze categorie op de ontdooikar">
-                            <input type="checkbox" class="cat-thaw-check" data-catidx="${catIdx}" ${isThawChecked ? 'checked' : ''}>
+                            <input type="checkbox" class="cat-thaw-check" data-catidx="${catIdx}" ${isThawChecked ? 'checked' : ''} ${isTeamleider ? 'disabled' : ''}>
                             <span class="toggle-slider"></span>
                             <span class="toggle-label">Ontdooiproducten</span>
                         </label>
                     </td>
                     <td style="text-align: right; display: flex; gap: 4px; justify-content: flex-end; align-items: center;">
+                        ${!isTeamleider ? `
                         <button class="action-btn add-prod-to-cat-btn" data-catidx="${catIdx}" style="padding: 4px; background-color: var(--accent-color); color: #fff;" title="Product Toevoegen aan Categorie">
                             <i class="material-icons" style="font-size: 16px;">add</i>
                         </button>
                         <button class="action-btn delete delete-cat-btn" data-catidx="${catIdx}" style="padding: 4px;" title="Categorie Verwijderen">
                             <i class="material-icons" style="font-size: 16px;">delete</i>
                         </button>
+                        ` : ''}
                     </td>
                 </tr>
             `;
@@ -478,7 +481,7 @@ export const uiRenderer = {
                     badgeHtml = '<span class="status-badge missing" contenteditable="false">Niet meer in PDF</span>';
                 }
 
-                const actionButtonsHtml = isFlagged ? `
+                const actionButtonsHtml = isTeamleider ? '' : (isFlagged ? `
                     <button class="action-btn approve-row-btn" data-catidx="${catIdx}" data-idx="${index}" style="height: 28px; padding: 0 12px; background-color: var(--accent-color); color: #fff; font-size: 13px; font-weight: 500; border-radius: 6px; border: none !important; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;" title="Product Houden">
                         Houden
                     </button>
@@ -489,17 +492,17 @@ export const uiRenderer = {
                     <button class="action-btn delete delete-row-btn" data-catidx="${catIdx}" data-idx="${index}" style="height: 28px; width: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px;" title="Verwijderen">
                         <i class="material-icons" style="font-size: 16px;">delete</i>
                     </button>
-                `;
+                `);
 
                 html += `
                     <tr class="${rowClass}" ${titleText ? `title="${titleText}"` : ''}>
-                        <td data-label="Productomschrijving"><span contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="description">${prod.description}</span> ${badgeHtml}</td>
-                        <td data-label="Aantal op 1 plaat" class="col-sync" contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="plateQty">${plateQty}</td>
-                        <td data-label="Prijs" class="col-sync" contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="price">€ ${prod.price}</td>
-                        <td data-label="Promo" class="col-sync" contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="promo">${prod.promo ? '€ ' + prod.promo : '-'}</td>
-                        <td data-label="Opleggen" class="col-daily" contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="gemVerk">${prod.gemVerk}</td>
+                        <td data-label="Productomschrijving"><span ${!isTeamleider ? 'contenteditable="true"' : ''} data-catidx="${catIdx}" data-idx="${index}" data-field="description">${prod.description}</span> ${badgeHtml}</td>
+                        <td data-label="Aantal op 1 plaat" class="col-sync" ${!isTeamleider ? 'contenteditable="true"' : ''} data-catidx="${catIdx}" data-idx="${index}" data-field="plateQty">${plateQty}</td>
+                        <td data-label="Prijs" class="col-sync" ${!isTeamleider ? 'contenteditable="true"' : ''} data-catidx="${catIdx}" data-idx="${index}" data-field="price">€ ${prod.price}</td>
+                        <td data-label="Promo" class="col-sync" ${!isTeamleider ? 'contenteditable="true"' : ''} data-catidx="${catIdx}" data-idx="${index}" data-field="promo">${prod.promo ? '€ ' + prod.promo : '-'}</td>
+                        <td data-label="Opleggen" class="col-daily" ${!isTeamleider ? 'contenteditable="true"' : ''} data-catidx="${catIdx}" data-idx="${index}" data-field="gemVerk">${prod.gemVerk}</td>
                         <td data-label="Platen" class="col-daily">${platen}</td>
-                        <td data-label="Derving" class="col-daily" contenteditable="true" data-catidx="${catIdx}" data-idx="${index}" data-field="derving" ${dervingClass}>${prod.derving}</td>
+                        <td data-label="Derving" class="col-daily" ${!isTeamleider ? 'contenteditable="true"' : ''} data-catidx="${catIdx}" data-idx="${index}" data-field="derving" ${dervingClass}>${prod.derving}</td>
                         <td data-label="Actie" style="display: flex; gap: 6px; align-items: center; justify-content: flex-end; min-height: 44px;">
                             ${actionButtonsHtml}
                         </td>

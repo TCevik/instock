@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { userData } = auth;
     const storeId = userData?.winkel;
     const isMedewerker = userData?.role === 'medewerker';
+    const isTeamleider = userData?.role === 'teamleider';
 
     const supabase = await getSupabase();
     const searchInput = document.getElementById('search-input');
@@ -41,7 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const productImageBox = document.getElementById('product-image-box');
     const editBtn = document.getElementById('edit-product-btn');
 
-    if (!isMedewerker && checkerHeaderActions) {
+    if (!isMedewerker && !isTeamleider && checkerHeaderActions) {
         checkerHeaderActions.style.display = 'flex';
     }
 
@@ -199,7 +200,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.history.pushState({ ean: product.ean }, '', newUrl);
 
         if (editBtn) {
-            if (isMedewerker) {
+            if (isMedewerker || isTeamleider) {
                 editBtn.style.display = 'none';
             } else {
                 editBtn.style.display = '';

@@ -16,7 +16,7 @@ import { initHistory, resetHistory, setupHistoryListeners } from './history.js';
     setRenderWorkspaceCallback(renderWorkspace);
 
     document.addEventListener('DOMContentLoaded', async () => {
-        const auth = await checkAuth(['beheerder']);
+        const auth = await checkAuth(['beheerder', 'teamleider']);
         if (!auth) return;
         loadHeader();
         setupHistoryListeners();
