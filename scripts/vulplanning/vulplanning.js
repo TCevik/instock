@@ -9,7 +9,7 @@ import { parsePDFAndGetNames, parseColliPDF, getDefaultPDFPaden, doSettingsMatch
 import { createManualInputManager, renderPeopleList } from './manual-input.js';
 import { generatePrintablePlanning } from './printable-overview.js';
 import { renderWorkspace } from './workspace.js';
-import { formatMin, getFillerPause, parseNameAndSubtitle, getTaskDuration, getEffectiveTaskDuration, matchEmployeeName, getFillerProductivity, formatTaskDisplayName, getProductivityStatusClass } from './planning-logic.js';
+import { formatMin, getFillerPause, getFillerBreakTime, parseNameAndSubtitle, getTaskDuration, getEffectiveTaskDuration, matchEmployeeName, getFillerProductivity, formatTaskDisplayName, getProductivityStatusClass } from './planning-logic.js';
 import { initHistory, resetHistory, setupHistoryListeners } from './history.js';
 
 (() => {
@@ -538,14 +538,7 @@ import { initHistory, resetHistory, setupHistoryListeners } from './history.js';
 
                 visibleFillers.forEach(filler => {
                     const presetPause = getFillerPause(filler, state);
-                    let taskBreaks = 0;
-                    const tasks = state.fillerTasks[filler] || [];
-                    tasks.forEach(tId => {
-                        const [pName] = (tId.includes('_helper') ? tId.split('_helper')[0] : tId).split('_');
-                        if (pName === 'Pauze') {
-                            taskBreaks += getTaskDuration(tId, state);
-                        }
-                    });
+                    const taskBreaks = getFillerBreakTime(filler, state);
                     const diff = taskBreaks - presetPause;
                     if (diff !== 0) {
                         const cleanName = parseNameAndSubtitle(filler).name;

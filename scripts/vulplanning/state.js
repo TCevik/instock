@@ -1,6 +1,7 @@
 import {
     parseNameAndSubtitle,
     getFillerPause as logicGetFillerPause,
+    getFillerBreakTime as logicGetFillerBreakTime,
     getAvailableTime as logicGetAvailableTime,
     getFillerActualEndTime as logicGetFillerActualEndTime,
     getTaskDuration as logicGetTaskDuration,
@@ -79,6 +80,7 @@ export const createPersonNameElement = (fullName, titleClass = 'person-name', su
 };
 
 export const getFillerPause = (displayName) => logicGetFillerPause(displayName, state);
+export const getFillerBreakTime = (displayName) => logicGetFillerBreakTime(displayName, state);
 export const getAvailableTime = (displayName) => logicGetAvailableTime(displayName, state);
 export const getFillerActualEndTime = (displayName) => logicGetFillerActualEndTime(displayName, state);
 export const getTaskDuration = (taskId) => logicGetTaskDuration(taskId, state);

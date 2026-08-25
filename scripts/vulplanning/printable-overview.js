@@ -1,6 +1,7 @@
 import {
     state,
     getFillerPause,
+    getFillerBreakTime,
     getAvailableTime,
     getEffectiveTaskDuration,
     getFillerTotalTime,
@@ -37,13 +38,7 @@ const buildRowHtml = (filler) => {
     const isExceeded = isFinite(maxMin) && roundedTotal > maxMin;
     const remainingMin = isFinite(maxMin) ? maxMin - roundedTotal : 0;
 
-    let taskBreaks = 0;
-    tasks.forEach(tId => {
-        const [pName] = (tId.includes('_helper') ? tId.split('_helper')[0] : tId).split('_');
-        if (pName === 'Pauze') {
-            taskBreaks += getTaskDuration(tId);
-        }
-    });
+    const taskBreaks = getFillerBreakTime(filler);
     const remainingPause = pauseMin - taskBreaks;
 
     let currentTime = isFinite(startMin) ? startMin : 0;

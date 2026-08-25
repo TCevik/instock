@@ -1,6 +1,7 @@
 import {
     state,
     getFillerPause,
+    getFillerBreakTime,
     getAvailableTime,
     getTaskDuration,
     getEffectiveTaskDuration,
@@ -192,7 +193,7 @@ const getDraggedTaskSequence = (draggedId) => {
     return list;
 };
 
-export const createTaskCard = (taskId, startTime, endTime, maxMin, totalInTimePlanned, totalOvertimePlanned, fillerStartTime, scale) => {
+export const createTaskCard = (taskId, startTime, endTime, maxMin, totalInTimePlanned, totalOvertimePlanned, fillerStartTime, scale, taskBreaks = 0) => {
     const isHelperTask = taskId.includes('_helper');
     const mainTaskId = isHelperTask ? taskId.split('_helper')[0] : taskId;
     const [pathName, type] = mainTaskId.split('_');
@@ -254,7 +255,7 @@ export const createTaskCard = (taskId, startTime, endTime, maxMin, totalInTimePl
 
         if (isFinite(maxMin) && maxMin > 0) {
             const baseStart = fillerStartTime !== undefined ? fillerStartTime : (endTime - effectiveDuration);
-            const maxLimitTime = baseStart + maxMin;
+            const maxLimitTime = baseStart + maxMin + taskBreaks;
 
             let overDur = 0;
             if (endTime > maxLimitTime) {
@@ -700,14 +701,7 @@ export const renderWorkspace = () => {
             bottomRow.className = 'bottom-row-stats';
             const pauseSpan = document.createElement('span');
             pauseSpan.className = 'filler-stat-item pause-span';
-            let taskBreaks = 0;
-            const fillerAssigned = state.fillerTasks[filler] || [];
-            fillerAssigned.forEach(tId => {
-                const [pName] = (tId.includes('_helper') ? tId.split('_helper')[0] : tId).split('_');
-                if (pName === 'Pauze') {
-                    taskBreaks += getTaskDuration(tId);
-                }
-            });
+            const taskBreaks = getFillerBreakTime(filler);
             pauseSpan.textContent = `Pauze: ${formatMin(taskBreaks)} / ${formatMin(pauseMin)}`;
 
             const remainingSpan = document.createElement('span');
@@ -782,8 +776,9 @@ export const renderWorkspace = () => {
         endContainer.appendChild(prodContainer);
         tdEnd.appendChild(endContainer);
 
+        const taskBreaks = getFillerBreakTime(filler);
         const fillerStartMin = getFillerStartTime(filler);
-        const maxLimitTime = fillerStartMin + maxMin;
+        const maxLimitTime = isFinite(maxMin) ? (fillerStartMin + maxMin + taskBreaks) : Infinity;
 
         let totalInTimePlanned = 0;
         let totalOvertimePlanned = 0;
@@ -816,7 +811,7 @@ export const renderWorkspace = () => {
             const shiftBg = document.createElement('div');
             shiftBg.className = 'timeline-shift-bg';
             shiftBg.style.left = `${fillerStartMin * scale}px`;
-            shiftBg.style.width = `${maxMin * scale}px`;
+            shiftBg.style.width = `${(maxMin + taskBreaks) * scale}px`;
             tasksList.appendChild(shiftBg);
         }
 
@@ -834,7 +829,7 @@ export const renderWorkspace = () => {
             const endTime = currentTime + duration;
             currentTime = endTime;
 
-            const card = createTaskCard(taskId, startTime, endTime, maxMin, totalInTimePlanned, totalOvertimePlanned, fillerStartMin, scale);
+            const card = createTaskCard(taskId, startTime, endTime, maxMin, totalInTimePlanned, totalOvertimePlanned, fillerStartMin, scale, taskBreaks);
             if (card) {
                 tasksList.appendChild(card);
             } else if (duration > 0) {

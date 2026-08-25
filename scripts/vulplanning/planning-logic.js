@@ -208,22 +208,28 @@ export const getFillerTotalTime = (filler, state) => {
     return total;
 };
 
+export const getFillerBreakTime = (displayName, state) => {
+    let total = 0;
+    const tasks = state?.fillerTasks?.[displayName] || [];
+    tasks.forEach(taskId => {
+        const [pathName] = taskId.replace('_helper', '').split('_');
+        if (pathName === 'Pauze') {
+            total += getTaskDuration(taskId, state);
+        }
+    });
+    return total;
+};
+
 export const getFillerProductivity = (displayName, state) => {
     const startMin = getFillerStartTime(displayName);
     const endMin = getFillerActualEndTime(displayName, state);
     if (!isFinite(endMin) || endMin <= startMin) return null;
     const presetPause = getFillerPause(displayName, state);
-    let taskBreaks = 0;
-    let hasTaskBreaks = false;
-    if (state && state.fillerTasks && state.fillerTasks[displayName]) {
-        state.fillerTasks[displayName].forEach(taskId => {
-            const [pathName] = taskId.replace('_helper', '').split('_');
-            if (pathName === 'Pauze') {
-                taskBreaks += getTaskDuration(taskId, state);
-                hasTaskBreaks = true;
-            }
-        });
-    }
+    const taskBreaks = getFillerBreakTime(displayName, state);
+    const hasTaskBreaks = (state?.fillerTasks?.[displayName] || []).some(tId => {
+        const [pName] = (tId.includes('_helper') ? tId.split('_helper')[0] : tId).split('_');
+        return pName === 'Pauze';
+    });
     const effectivePause = hasTaskBreaks ? taskBreaks : presetPause;
     const workedNet = Math.max(1, (endMin - startMin) - effectivePause);
     const plannedTime = getFillerTotalTime(displayName, state);
