@@ -143,7 +143,12 @@ export const getAvailableTime = (displayName, state) => {
     };
     const start = parseTime(parts[0]);
     const end = parseTime(parts[1]);
-    const gross = end > start ? (end - start) : Infinity;
+
+    let gross = end - start;
+    if (gross < 0) {
+        gross += 24 * 60;
+    }
+
     if (!isFinite(gross)) return Infinity;
     const pause = getFillerPause(displayName, state);
     return Math.max(0, gross - pause);
@@ -222,8 +227,13 @@ export const getFillerBreakTime = (displayName, state) => {
 
 export const getFillerProductivity = (displayName, state) => {
     const startMin = getFillerStartTime(displayName);
-    const endMin = getFillerActualEndTime(displayName, state);
-    if (!isFinite(endMin) || endMin <= startMin) return null;
+    let endMin = getFillerActualEndTime(displayName, state);
+
+    if (endMin < startMin) {
+        endMin += 24 * 60;
+    }
+
+    if (!isFinite(endMin) || endMin === startMin) return null;
     const presetPause = getFillerPause(displayName, state);
     const taskBreaks = getFillerBreakTime(displayName, state);
     const hasTaskBreaks = (state?.fillerTasks?.[displayName] || []).some(tId => {

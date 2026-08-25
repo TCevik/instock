@@ -440,7 +440,7 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
                     seenNames.add(lowerName);
 
                     if (!start || !end) missingTimes = true;
-                    if (start && end && start >= end) invalidTimes = true;
+                    if (start && end && start === end) invalidTimes = true;
                     const displayName = `${name} - ${start} - ${end}`;
                     newFillers.push(displayName);
                     if (pauseVal !== undefined && pauseVal !== '') {
@@ -465,7 +465,7 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
             }
 
             if (invalidTimes) {
-                showToast('De begintijd van een vuller moet vroeger zijn dan de eindtijd.', 'error');
+                showToast('De begintijd en eindtijd mogen niet gelijk zijn.', 'error');
                 return;
             }
 
