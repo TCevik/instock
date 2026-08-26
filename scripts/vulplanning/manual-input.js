@@ -147,12 +147,14 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
         row.className = 'manual-filler-row';
         row.style.cssText = 'display: flex; gap: 8px; align-items: center; margin-bottom: 18px; position: relative;';
 
+        const initialName = typeof nameVal === 'object' ? getEmployeeFullName(nameVal) : (nameVal || '');
+        const initialUsername = typeof nameVal === 'object' ? getEmployeeUsername(nameVal) : '';
         const origName = matchInfo ? matchInfo.originalName : '';
 
         row.innerHTML = `
             <div style="flex: 2; position: relative;">
                 <div style="display: flex; align-items: center; gap: 4px;">
-                    <input type="text" class="manual-filler-name form-input" placeholder="Naam medewerker..." value="${nameVal}" style="width: 100%;">
+                    <input type="text" class="manual-filler-name form-input" placeholder="Naam medewerker..." value="${initialName}" ${initialUsername ? `data-username="${initialUsername}"` : ''} style="width: 100%;">
                     <button type="button" class="match-toggle-btn" style="padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--input-bg); cursor: pointer; display: none; align-items: center; justify-content: center;">
                         <i class="material-icons match-icon" style="font-size: 16px;">cancel</i>
                     </button>
@@ -294,7 +296,7 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
             });
         }
 
-        updateUIState(nameVal);
+        updateUIState(initialName);
 
         const removeBtn = row.querySelector('.remove-filler-btn');
         removeBtn.addEventListener('click', () => {

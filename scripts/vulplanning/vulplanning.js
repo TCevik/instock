@@ -9,7 +9,7 @@ import { parsePDFAndGetNames, parseColliPDF, getDefaultPDFPaden, doSettingsMatch
 import { createManualInputManager, renderPeopleList } from './manual-input.js';
 import { generatePrintablePlanning } from './printable-overview.js';
 import { renderWorkspace } from './workspace.js';
-import { formatMin, getFillerPause, getFillerBreakTime, parseNameAndSubtitle, getTaskDuration, getEffectiveTaskDuration, matchEmployeeName, getFillerProductivity, formatTaskDisplayName, getProductivityStatusClass } from './planning-logic.js';
+import { formatMin, getFillerPause, getFillerBreakTime, parseNameAndSubtitle, getTaskDuration, getEffectiveTaskDuration, matchEmployeeName, getEmployeeFullName, getFillerProductivity, formatTaskDisplayName, getProductivityStatusClass } from './planning-logic.js';
 import { initHistory, resetHistory, setupHistoryListeners } from './history.js';
 
 (() => {
@@ -413,7 +413,7 @@ import { initHistory, resetHistory, setupHistoryListeners } from './history.js';
                         const match = displayName.match(/^(.+?)\s*-\s*(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})$/);
                         const rawName = match ? match[1].trim() : displayName.trim();
                         const { matchedUser, hasMultipleMatches, candidateMatches } = matchEmployeeName(rawName, storeEmployees);
-                        const nameToUse = matchedUser || rawName;
+                        const nameToUse = matchedUser ? getEmployeeFullName(matchedUser) : rawName;
                         const startVal = match ? match[2] : '';
                         const endVal = match ? match[3] : '';
                         const pause = state.fillerBreaks && state.fillerBreaks[displayName] !== undefined ? state.fillerBreaks[displayName] : '';
