@@ -136,3 +136,49 @@ export async function handleFormSubmit(submitBtn, loadingText, messageBox, actio
         }
     }
 }
+
+function disableInputSuggestions(el) {
+    if (!el || !el.setAttribute) return;
+    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'FORM') {
+        el.setAttribute('autocomplete', 'off');
+        el.setAttribute('autocorrect', 'off');
+        el.setAttribute('autocapitalize', 'off');
+        el.setAttribute('spellcheck', 'false');
+    }
+}
+
+function initDisableSuggestions() {
+    const applyToAll = (root = document) => {
+        root.querySelectorAll('input, textarea, form').forEach(disableInputSuggestions);
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => applyToAll());
+    } else {
+        applyToAll();
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+            for (const node of mutation.addedNodes) {
+                if (node.nodeType === 1) {
+                    disableInputSuggestions(node);
+                    applyToAll(node);
+                }
+            }
+        }
+    });
+
+    observer.observe(document.documentElement, {
+        childList: true,
+        subtree: true
+    });
+
+    document.addEventListener('focusin', (e) => {
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+            disableInputSuggestions(e.target);
+        }
+    }, true);
+}
+
+initDisableSuggestions();

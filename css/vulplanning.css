@@ -915,6 +915,16 @@
 .td-info {
     padding: 4px 4px 4px 0;
     white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+}
+
+.td-info:hover .name-el {
+    color: var(--accent-color-sidemenu);
+}
+
+.td-info:hover .sub-el {
+    color: var(--text-color);
 }
 
 .info-container {

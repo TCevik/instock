@@ -115,12 +115,26 @@ export const formatMin = (min) => {
 };
 
 export const parseNameAndSubtitle = (str) => {
-    if (!str) return { name: '', subtitle: '' };
-    const match = str.match(/^(.*?)\s*(?:-|:|\()\s*(\d{2}:\d{2}\s*-\s*\d{2}(?::\d{2})?)\)?$/);
-    if (match) {
-        return { name: match[1].trim(), subtitle: match[2].trim() };
+    if (!str) return { name: '', subtitle: '', rawName: '', username: '' };
+    const timeMatch = str.match(/^(.*?)\s*(?:-|:|\()\s*(\d{2}:\d{2}\s*-\s*\d{2}(?::\d{2})?)\)?$/);
+    let rawNamePart = timeMatch ? timeMatch[1].trim() : str.trim();
+    let timeSubtitle = timeMatch ? timeMatch[2].trim() : '';
+
+    const userMatch = rawNamePart.match(/^(.*?)\s*\(@([^\)]+)\)$/);
+    let cleanName = rawNamePart;
+    let username = '';
+    if (userMatch) {
+        cleanName = userMatch[1].trim();
+        username = userMatch[2].trim();
     }
-    return { name: str, subtitle: '' };
+
+    return {
+        name: cleanName,
+        rawName: rawNamePart,
+        username: username,
+        subtitle: timeSubtitle,
+        timeSubtitle: timeSubtitle
+    };
 };
 
 export const getFillerPause = (displayName, state) => {
@@ -262,6 +276,41 @@ export const formatTimeOfDay = (totalMinutes) => {
     return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
 };
 
+export const normalizeTimeString = (val) => {
+    if (!val) return '';
+    let str = val.trim();
+    if (/^\d{1,2}$/.test(str)) {
+        const h = Math.min(23, Math.max(0, parseInt(str, 10)));
+        return `${String(h).padStart(2, '0')}:00`;
+    }
+    if (/^\d{1,2}:\d{1}$/.test(str)) {
+        const [hStr, mStr] = str.split(':');
+        const h = Math.min(23, Math.max(0, parseInt(hStr, 10)));
+        return `${String(h).padStart(2, '0')}:${mStr}0`;
+    }
+    if (/^\d{1,2}:$/.test(str)) {
+        const h = Math.min(23, Math.max(0, parseInt(str.replace(':', ''), 10)));
+        return `${String(h).padStart(2, '0')}:00`;
+    }
+    if (/^\d{1,2}:\d{2}$/.test(str)) {
+        const [hStr, mStr] = str.split(':');
+        const h = Math.min(23, Math.max(0, parseInt(hStr, 10)));
+        const m = Math.min(59, Math.max(0, parseInt(mStr, 10)));
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+    if (/^\d{3}$/.test(str)) {
+        const h = Math.min(23, Math.max(0, parseInt(str.substring(0, 1), 10)));
+        const m = Math.min(59, Math.max(0, parseInt(str.substring(1, 3), 10)));
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+    if (/^\d{4}$/.test(str)) {
+        const h = Math.min(23, Math.max(0, parseInt(str.substring(0, 2), 10)));
+        const m = Math.min(59, Math.max(0, parseInt(str.substring(2, 4), 10)));
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+    return str;
+};
+
 export const formatTimeInputValue = (val) => {
     let digits = (val || '').replace(/\D/g, '');
     if (digits.length >= 3) {
@@ -280,33 +329,51 @@ export const getTaskAssignment = (taskId, state) => {
     return null;
 };
 
-export const matchEmployeeName = (rawName, storeEmployees) => {
+export const getEmployeeFullName = (emp) => {
+    if (!emp) return '';
+    if (typeof emp === 'string') return emp;
+    return emp.full_name || emp.name || emp.gebruikersnaam || emp.username || '';
+};
+
+export const getEmployeeUsername = (emp) => {
+    if (!emp || typeof emp === 'string') return '';
+    return emp.gebruikersnaam || emp.username || '';
+};
+
+export const getEmployeeFirstName = (emp) => {
+    const full = getEmployeeFullName(emp);
+    return full.split(' ')[0] || full;
+};
+
+export const matchEmployeeName = (rawName, storeEmployees, explicitUsername = null) => {
     if (!storeEmployees || !storeEmployees.length || !rawName) {
         return { matchedUser: null, hasMultipleMatches: false, candidateMatches: [] };
     }
     const cleanPdfName = rawName.toLowerCase().trim();
-    const exactMatches = storeEmployees.filter(emp => emp.toLowerCase().trim() === cleanPdfName);
+
+    if (explicitUsername) {
+        const found = storeEmployees.find(e => getEmployeeUsername(e).toLowerCase() === explicitUsername.toLowerCase());
+        if (found) {
+            return { matchedUser: found, hasMultipleMatches: false, candidateMatches: [found] };
+        }
+    }
+
+    const usernameMatch = storeEmployees.filter(e => {
+        const u = getEmployeeUsername(e).toLowerCase();
+        return u && (u === cleanPdfName || cleanPdfName === `@${u}`);
+    });
+    if (usernameMatch.length === 1) {
+        return { matchedUser: usernameMatch[0], hasMultipleMatches: false, candidateMatches: usernameMatch };
+    }
+
+    const exactMatches = storeEmployees.filter(e => getEmployeeFullName(e).toLowerCase().trim() === cleanPdfName);
     if (exactMatches.length === 1) {
         return { matchedUser: exactMatches[0], hasMultipleMatches: false, candidateMatches: exactMatches };
     }
-    const includesMatches = storeEmployees.filter(emp => emp.toLowerCase().includes(cleanPdfName));
-    if (includesMatches.length === 1) {
-        return { matchedUser: includesMatches[0], hasMultipleMatches: false, candidateMatches: includesMatches };
+    if (exactMatches.length > 1) {
+        return { matchedUser: null, hasMultipleMatches: true, candidateMatches: exactMatches };
     }
-    if (includesMatches.length > 1) {
-        return { matchedUser: null, hasMultipleMatches: true, candidateMatches: includesMatches };
-    }
-    const pdfParts = cleanPdfName.split(/\s+/).filter(Boolean);
-    const partMatches = storeEmployees.filter(emp => {
-        const empLower = emp.toLowerCase();
-        return pdfParts.every(part => empLower.includes(part));
-    });
-    if (partMatches.length === 1) {
-        return { matchedUser: partMatches[0], hasMultipleMatches: false, candidateMatches: partMatches };
-    }
-    if (partMatches.length > 1) {
-        return { matchedUser: null, hasMultipleMatches: true, candidateMatches: partMatches };
-    }
+
     return { matchedUser: null, hasMultipleMatches: false, candidateMatches: [] };
 };
 
@@ -351,4 +418,31 @@ export const formatTaskDisplayName = (task) => {
         result += ` • ${formatMin(duration)}`;
     }
     return result;
+};
+
+export const removeFillerFromPlanning = (fillerKey, state) => {
+    if (!fillerKey || !state) return;
+    state.selectedFillers = (state.selectedFillers || []).filter(f => f !== fillerKey);
+    state.nonFillers = (state.nonFillers || []).filter(f => f !== fillerKey);
+    state.hiddenFillers = (state.hiddenFillers || []).filter(f => f !== fillerKey);
+
+    const assigned = state.fillerTasks ? (state.fillerTasks[fillerKey] || []) : [];
+    assigned.forEach(tId => {
+        if (tId.endsWith('_helper')) {
+            const mainId = tId.replace('_helper', '');
+            if (state.helpers) delete state.helpers[mainId];
+        }
+    });
+
+    if (state.fillerTasks) delete state.fillerTasks[fillerKey];
+    if (state.fillerBreaks) delete state.fillerBreaks[fillerKey];
+    if (state.actualEndTimes) delete state.actualEndTimes[fillerKey];
+
+    if (state.helpers) {
+        Object.keys(state.helpers).forEach(taskId => {
+            if (state.helpers[taskId] && state.helpers[taskId].helperName === fillerKey) {
+                delete state.helpers[taskId];
+            }
+        });
+    }
 };

@@ -22,10 +22,12 @@ import {
     getFillerStartTime,
     getFillerEndTime,
     parseNameAndSubtitle,
-    getAutoTasksForFillTask
+    getAutoTasksForFillTask,
+    removeFillerFromPlanning
 } from './planning-logic.js';
-import { openDurationModal, openHelperModal } from './modals.js';
+import { openDurationModal, openHelperModal, openEditFillerModal } from './modals.js';
 import { showConfirmModal } from '../modal.js';
+import { showToast } from '../toast.js';
 import { triggerSave } from './storage.js';
 import { HARDCODED_MIRROR_TIMES } from './plus/pdf-defaults.js';
 
@@ -302,6 +304,12 @@ export const createTaskCard = (taskId, startTime, endTime, maxMin, totalInTimePl
     }
     card.title = tooltip;
 
+    card.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openDurationModal(taskId);
+    });
+
     card.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -311,16 +319,16 @@ export const createTaskCard = (taskId, startTime, endTime, maxMin, totalInTimePl
 
         const assignee = getTaskAssignment(taskId);
 
-        if (type === 'other' || isBreakTask || type === 'restanten' || type === 'mirror') {
-            const editItem = document.createElement('div');
-            editItem.className = 'context-menu-item';
-            editItem.innerHTML = '<i class="material-icons">schedule</i><span>Duur aanpassen</span>';
-            editItem.addEventListener('click', () => {
-                menu.style.display = 'none';
-                openDurationModal(taskId);
-            });
-            menu.appendChild(editItem);
+        const editItem = document.createElement('div');
+        editItem.className = 'context-menu-item';
+        editItem.innerHTML = '<i class="material-icons">schedule</i><span>Duur aanpassen</span>';
+        editItem.addEventListener('click', () => {
+            menu.style.display = 'none';
+            openDurationModal(taskId);
+        });
+        menu.appendChild(editItem);
 
+        if (type === 'other' || isBreakTask || type === 'restanten' || type === 'mirror' || type === 'fill') {
             if (assignee) {
                 const fillerTasks = state.fillerTasks[assignee] || [];
                 const isLastTask = fillerTasks.length > 0 && fillerTasks[fillerTasks.length - 1] === taskId;
@@ -669,6 +677,11 @@ export const renderWorkspace = () => {
 
         const tdInfo = document.createElement('td');
         tdInfo.className = 'td-info';
+        tdInfo.style.cursor = 'pointer';
+        tdInfo.title = 'Klik om werktijden aan te passen';
+        tdInfo.addEventListener('click', () => {
+            openEditFillerModal(filler);
+        });
         const infoContainer = document.createElement('div');
         infoContainer.className = 'info-container';
         const { name, subtitle } = parseNameAndSubtitle(filler);

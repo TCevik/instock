@@ -1,11 +1,101 @@
-import { state, createPersonNameElement, formatTimeInputValue } from './state.js';
+import { state, createPersonNameElement, formatTimeInputValue, normalizeTimeString } from './state.js';
 import { showToast } from '../toast.js';
 import { showConfirmModal } from '../modal.js';
 import { triggerSave } from './storage.js';
 import { initPadenModal } from '../main.js';
-import { matchEmployeeName } from './planning-logic.js';
+import {
+    matchEmployeeName,
+    getEmployeeFullName,
+    getEmployeeUsername,
+    getEmployeeFirstName,
+    parseNameAndSubtitle
+} from './planning-logic.js';
 import { initHistory } from './history.js';
 import { HARDCODED_MIRROR_TIMES, HARDCODED_RESTANTEN_TIMES } from './plus/pdf-defaults.js';
+
+export const setupFillerAutocomplete = (inputEl, listEl, employeesList, onSelect, getExcluded = null) => {
+    let currentMatches = [];
+    const getList = () => {
+        if (typeof employeesList === 'function') return employeesList() || [];
+        if (Array.isArray(employeesList) && employeesList.length > 0) return employeesList;
+        return state.storeEmployees || [];
+    };
+
+    const render = () => {
+        let list = getList();
+        const excluded = typeof getExcluded === 'function' ? getExcluded() : null;
+        if (excluded && excluded.size > 0) {
+            list = list.filter(e => {
+                const un = getEmployeeUsername(e).toLowerCase();
+                if (un && (excluded.has(`@${un}`) || excluded.has(un))) return false;
+                return true;
+            });
+        }
+        const val = inputEl.value.trim().toLowerCase();
+        if (!val) {
+            currentMatches = [...list];
+        } else {
+            currentMatches = list.filter(e => {
+                const fullName = getEmployeeFullName(e).toLowerCase();
+                return fullName.includes(val);
+            }).sort((a, b) => {
+                const aName = getEmployeeFullName(a).toLowerCase();
+                const bName = getEmployeeFullName(b).toLowerCase();
+                const aStarts = aName.startsWith(val);
+                const bStarts = bName.startsWith(val);
+                if (aStarts && !bStarts) return -1;
+                if (!aStarts && bStarts) return 1;
+                return 0;
+            });
+        }
+        if (!currentMatches.length) {
+            listEl.style.display = 'none';
+            return;
+        }
+        listEl.innerHTML = '';
+        currentMatches.forEach((emp) => {
+            const fullName = getEmployeeFullName(emp);
+            const username = getEmployeeUsername(emp);
+            const item = document.createElement('div');
+            item.className = 'filler-autocomplete-item';
+            item.style.cssText = 'padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--border-color); font-size: 13px; color: var(--text-color); display: flex; flex-direction: column; gap: 2px;';
+            
+            const nameEl = document.createElement('span');
+            nameEl.style.fontWeight = '500';
+            nameEl.textContent = fullName;
+            item.appendChild(nameEl);
+
+            if (username) {
+                const userEl = document.createElement('span');
+                userEl.style.fontSize = '11px';
+                userEl.style.color = 'var(--text-color-muted)';
+                userEl.textContent = `@${username}`;
+                item.appendChild(userEl);
+            }
+
+            item.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                inputEl.value = fullName;
+                inputEl.dataset.username = username;
+                listEl.style.display = 'none';
+                if (onSelect) onSelect(emp);
+            });
+            listEl.appendChild(item);
+        });
+        listEl.style.display = 'block';
+    };
+
+    inputEl.addEventListener('focus', () => render());
+    inputEl.addEventListener('input', () => {
+        delete inputEl.dataset.username;
+        render();
+    });
+    inputEl.addEventListener('blur', () => {
+        setTimeout(() => { listEl.style.display = 'none'; }, 200);
+    });
+
+    return { render };
+};
 
 export const renderPeopleList = (names) => {
     const card = document.getElementById('people-card');
@@ -51,64 +141,11 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
     const addFillerBtn = document.getElementById('add-manual-filler-btn');
     const startManualBtn = document.getElementById('start-manual-planning-btn');
 
-    const setupFillerAutocomplete = (inputEl, listEl, onSelect) => {
-        let currentMatches = [];
-        const render = () => {
-            const val = inputEl.value.trim().toLowerCase();
-            if (!val) {
-                currentMatches = [...storeEmployees];
-            } else {
-                currentMatches = storeEmployees.filter(e => e.toLowerCase().includes(val)).sort((a, b) => {
-                    const aLower = a.toLowerCase();
-                    const bLower = b.toLowerCase();
-                    const aStarts = aLower.startsWith(val);
-                    const bStarts = bLower.startsWith(val);
-                    if (aStarts && !bStarts) return -1;
-                    if (!aStarts && bStarts) return 1;
-                    return 0;
-                });
-            }
-            if (!currentMatches.length) {
-                listEl.style.display = 'none';
-                return;
-            }
-            listEl.innerHTML = '';
-            currentMatches.forEach((empName, index) => {
-                const item = document.createElement('div');
-                item.className = 'filler-autocomplete-item';
-                item.style.cssText = 'padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--border-color); font-size: 13px; color: var(--text-color);';
-                const nameEl = createPersonNameElement(empName, 'person-name', 'person-subtitle', 'person-info');
-                item.appendChild(nameEl);
-                item.addEventListener('mousedown', (e) => {
-                    e.preventDefault();
-                    inputEl.value = empName;
-                    listEl.style.display = 'none';
-                    if (onSelect) onSelect(empName);
-                    const row = inputEl.closest('.manual-filler-row');
-                    if (row) {
-                        const startInput = row.querySelector('.manual-filler-start');
-                        if (startInput) startInput.focus();
-                    }
-                });
-                listEl.appendChild(item);
-            });
-            listEl.style.display = 'block';
-        };
-
-        inputEl.addEventListener('focus', () => render());
-        inputEl.addEventListener('input', () => render());
-        inputEl.addEventListener('blur', () => {
-            setTimeout(() => { listEl.style.display = 'none'; }, 200);
-        });
-
-        return { render };
-    };
-
     const addFillerRow = (nameVal = '', startVal = '', endVal = '', pauseVal = '', matchInfo = null) => {
         if (!manualFillersList) return null;
         const row = document.createElement('div');
         row.className = 'manual-filler-row';
-        row.style.cssText = 'display: flex; gap: 8px; align-items: center; margin-bottom: 8px; position: relative;';
+        row.style.cssText = 'display: flex; gap: 8px; align-items: center; margin-bottom: 18px; position: relative;';
 
         const origName = matchInfo ? matchInfo.originalName : '';
 
@@ -120,6 +157,7 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
                         <i class="material-icons match-icon" style="font-size: 16px;">cancel</i>
                     </button>
                 </div>
+                <div class="manual-filler-user-badge" style="display: none; position: absolute; top: calc(100% + 2px); left: 2px; font-size: 11px; color: var(--text-color-muted); white-space: nowrap; pointer-events: none;"></div>
                 <div class="filler-autocomplete-list" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px; z-index: 100; max-height: 160px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"></div>
             </div>
             <input type="text" class="manual-filler-start form-input" placeholder="vanaf" value="${startVal}" style="flex: 1; text-align: center;" maxlength="5">
@@ -131,12 +169,54 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
         const nameInput = row.querySelector('.manual-filler-name');
         const matchToggleBtn = row.querySelector('.match-toggle-btn');
         const matchIcon = row.querySelector('.match-icon');
+        const userBadge = row.querySelector('.manual-filler-user-badge');
         let currentMatchedState = false;
+        const getOtherRows = () => {
+            if (!manualFillersList) return [];
+            return Array.from(manualFillersList.querySelectorAll('.manual-filler-row')).filter(r => r !== row);
+        };
 
         const updateUIState = (val) => {
             const trimmed = (val || '').trim();
-            const { matchedUser, hasMultipleMatches, candidateMatches } = matchEmployeeName(trimmed, storeEmployees);
-            const isExactMatch = matchedUser && matchedUser.toLowerCase() === trimmed.toLowerCase();
+            const explicitUsername = nameInput.dataset.username || null;
+            const { matchedUser, hasMultipleMatches, candidateMatches } = matchEmployeeName(trimmed, storeEmployees, explicitUsername);
+            const matchedFullName = getEmployeeFullName(matchedUser);
+            const isExactMatch = !!matchedUser && (matchedFullName.toLowerCase() === trimmed.toLowerCase() || !!explicitUsername);
+            const u = isExactMatch ? getEmployeeUsername(matchedUser) : explicitUsername;
+
+            if (trimmed) {
+                const otherRows = getOtherRows();
+                const isDuplicate = otherRows.some(r => {
+                    const otherInp = r.querySelector('.manual-filler-name');
+                    if (!otherInp) return false;
+                    const otherUser = otherInp.dataset.username ? otherInp.dataset.username.toLowerCase() : '';
+                    const otherVal = otherInp.value.trim().toLowerCase();
+                    if (u && otherUser) {
+                        return u.toLowerCase() === otherUser;
+                    }
+                    if (!u && !otherUser && trimmed && otherVal) {
+                        return trimmed.toLowerCase() === otherVal;
+                    }
+                    return false;
+                });
+
+                if (isDuplicate) {
+                    currentMatchedState = false;
+                    nameInput.style.backgroundColor = 'var(--danger-bg)';
+                    nameInput.style.borderColor = 'var(--danger-color)';
+                    matchIcon.textContent = 'cancel';
+                    matchIcon.style.color = 'var(--danger-color)';
+                    matchToggleBtn.style.display = 'inline-flex';
+                    matchToggleBtn.style.background = 'var(--danger-bg)';
+                    matchToggleBtn.style.borderColor = 'var(--danger-color)';
+                    matchToggleBtn.title = 'Deze medewerker staat al in de planning';
+                    if (userBadge) {
+                        userBadge.style.display = 'block';
+                        userBadge.innerHTML = `<span style="color: var(--danger-color); font-weight: 500;">Staat al in de planning</span>`;
+                    }
+                    return;
+                }
+            }
 
             if (isExactMatch) {
                 currentMatchedState = true;
@@ -145,9 +225,17 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
                 matchToggleBtn.style.display = 'inline-flex';
                 matchToggleBtn.style.background = 'var(--input-bg)';
                 matchToggleBtn.style.borderColor = 'var(--border-color)';
-                matchToggleBtn.title = 'Gekoppeld met account (klik voor undo)';
+                matchToggleBtn.title = u ? `Gekoppeld aan @${u} (klik voor undo)` : 'Gekoppeld met account (klik voor undo)';
                 nameInput.style.backgroundColor = 'var(--success-bg)';
                 nameInput.style.borderColor = 'var(--success-color)';
+                if (userBadge) {
+                    if (u) {
+                        userBadge.style.display = 'block';
+                        userBadge.innerHTML = `Gekoppeld account: <strong style="color: var(--accent-color-sidemenu);">@${u}</strong>`;
+                    } else {
+                        userBadge.style.display = 'none';
+                    }
+                }
             } else if (hasMultipleMatches) {
                 currentMatchedState = false;
                 matchIcon.textContent = 'cancel';
@@ -155,26 +243,35 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
                 matchToggleBtn.style.display = 'inline-flex';
                 matchToggleBtn.style.background = 'var(--danger-bg)';
                 matchToggleBtn.style.borderColor = 'var(--danger-color)';
-                const namesStr = candidateMatches && candidateMatches.length ? candidateMatches.join(', ') : '';
-                matchToggleBtn.title = namesStr ? `Meerdere accounts gevonden (${namesStr}). Klik om te koppelen.` : 'Meerdere accounts gevonden. Klik om te koppelen.';
+                const namesStr = candidateMatches && candidateMatches.length ? candidateMatches.map(c => {
+                    const user = getEmployeeUsername(c);
+                    return user ? `${getEmployeeFullName(c)} (@${user})` : getEmployeeFullName(c);
+                }).join(', ') : '';
+                matchToggleBtn.title = namesStr ? `Meerdere accounts gevonden (${namesStr}). Kies uit de lijst.` : 'Meerdere accounts gevonden. Kies uit de lijst.';
                 nameInput.style.backgroundColor = 'var(--danger-bg)';
                 nameInput.style.borderColor = 'var(--danger-color)';
+            } else if (!trimmed) {
+                currentMatchedState = false;
+                matchToggleBtn.style.display = 'none';
+                nameInput.style.backgroundColor = '';
+                nameInput.style.borderColor = '';
+                if (userBadge) userBadge.style.display = 'none';
             } else {
                 currentMatchedState = false;
                 matchIcon.textContent = 'cancel';
-                matchIcon.style.color = 'var(--text-color-muted)';
-                matchToggleBtn.style.display = matchInfo ? 'inline-flex' : 'none';
-                matchToggleBtn.style.background = 'var(--input-bg)';
-                matchToggleBtn.style.borderColor = 'var(--border-color)';
-                matchToggleBtn.title = 'Niet gekoppeld (klik om te koppelen)';
+                matchIcon.style.color = 'var(--danger-color)';
+                matchToggleBtn.style.display = 'inline-flex';
+                matchToggleBtn.style.background = 'var(--danger-bg)';
+                matchToggleBtn.style.borderColor = 'var(--danger-color)';
+                matchToggleBtn.title = 'Niet gekoppeld aan een gebruikersaccount';
                 nameInput.style.backgroundColor = '';
                 nameInput.style.borderColor = '';
+                if (userBadge) {
+                    userBadge.style.display = 'block';
+                    userBadge.innerHTML = `<span style="color: var(--danger-color); font-weight: 500;">Niet gekoppeld aan account</span>`;
+                }
             }
         };
-
-        const autocompleteManager = setupFillerAutocomplete(nameInput, row.querySelector('.filler-autocomplete-list'), (selectedName) => {
-            updateUIState(selectedName);
-        });
 
         nameInput.addEventListener('input', () => {
             updateUIState(nameInput.value);
@@ -221,6 +318,12 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
                     nextInput.focus();
                 }
             });
+            input.addEventListener('blur', (e) => {
+                const norm = normalizeTimeString(e.target.value);
+                if (norm && e.target.value !== norm) {
+                    input.value = norm;
+                }
+            });
         };
 
         formatTimeInput(startInput, endInput);
@@ -263,7 +366,37 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
             }
         });
 
-        setupFillerAutocomplete(nameInput, row.querySelector('.filler-autocomplete-list'));
+        setupFillerAutocomplete(nameInput, row.querySelector('.filler-autocomplete-list'), storeEmployees, (emp) => {
+            const u = getEmployeeUsername(emp);
+            nameInput.value = getEmployeeFullName(emp);
+            if (u) {
+                nameInput.dataset.username = u;
+            } else {
+                delete nameInput.dataset.username;
+            }
+            updateUIState(nameInput.value);
+            startInput.focus();
+        }, () => {
+            const used = new Set();
+            getOtherRows().forEach(r => {
+                const inp = r.querySelector('.manual-filler-name');
+                if (!inp) return;
+                const u = inp.dataset.username;
+                if (u) {
+                    used.add(u.toLowerCase());
+                    used.add(`@${u.toLowerCase()}`);
+                }
+            });
+            return used;
+        });
+
+        const parsedInitial = parseNameAndSubtitle(nameVal);
+        if (parsedInitial.username) {
+            nameInput.dataset.username = parsedInitial.username;
+            nameInput.value = parsedInitial.name;
+        }
+        updateUIState(nameInput.value);
+
         manualFillersList.appendChild(row);
         return row;
     };
@@ -429,19 +562,25 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
                 const nameInput = r.querySelector('.manual-filler-name');
                 if (!nameInput) return;
                 const name = nameInput.value.trim();
-                const start = r.querySelector('.manual-filler-start')?.value || '';
-                const end = r.querySelector('.manual-filler-end')?.value || '';
+                const userFromInput = nameInput.dataset.username || '';
+                const start = normalizeTimeString(r.querySelector('.manual-filler-start')?.value || '');
+                const end = normalizeTimeString(r.querySelector('.manual-filler-end')?.value || '');
                 const pauseVal = r.querySelector('.manual-filler-pause')?.value;
                 if (name) {
-                    const lowerName = name.toLowerCase();
-                    if (seenNames.has(lowerName)) {
+                    const finalName = userFromInput ? `${name} (@${userFromInput})` : name;
+                    const uniqueKey = userFromInput ? `@${userFromInput.toLowerCase()}` : finalName.toLowerCase();
+                    if (seenNames.has(uniqueKey)) {
                         duplicateName = name;
                     }
-                    seenNames.add(lowerName);
+                    seenNames.add(uniqueKey);
 
+                    const toMin = (t) => {
+                        const p = (t || '').split(':').map(Number);
+                        return (p[0] || 0) * 60 + (p[1] || 0);
+                    };
                     if (!start || !end) missingTimes = true;
-                    if (start && end && start === end) invalidTimes = true;
-                    const displayName = `${name} - ${start} - ${end}`;
+                    if (start && end && toMin(start) >= toMin(end)) invalidTimes = true;
+                    const displayName = `${finalName} - ${start} - ${end}`;
                     newFillers.push(displayName);
                     if (pauseVal !== undefined && pauseVal !== '') {
                         state.fillerBreaks[displayName] = parseInt(pauseVal, 10) || 0;
@@ -465,7 +604,7 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
             }
 
             if (invalidTimes) {
-                showToast('De begintijd en eindtijd mogen niet gelijk zijn.', 'error');
+                showToast('De begintijd moet voor de eindtijd liggen.', 'error');
                 return;
             }
 
@@ -543,8 +682,12 @@ export const createManualInputManager = ({ renderWorkspace, storeEmployees, getS
 
             const unlinkedFillers = [];
             newFillers.forEach(displayName => {
-                const name = displayName.split(' - ')[0].trim();
-                const isLinked = Array.isArray(storeEmployees) && storeEmployees.some(emp => emp.trim().toLowerCase() === name.toLowerCase());
+                const { name, username } = parseNameAndSubtitle(displayName);
+                const isLinked = Array.isArray(storeEmployees) && storeEmployees.some(emp => {
+                    const fn = getEmployeeFullName(emp).toLowerCase();
+                    const un = getEmployeeUsername(emp).toLowerCase();
+                    return (username && un === username.toLowerCase()) || fn === name.toLowerCase() || (un && un === name.toLowerCase());
+                });
                 if (!isLinked) {
                     unlinkedFillers.push(name);
                 }

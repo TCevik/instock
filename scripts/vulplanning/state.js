@@ -11,9 +11,12 @@ import {
     getFillerProductivity as logicGetFillerProductivity,
     getProductivityStatusClass,
     formatTimeInputValue,
+    normalizeTimeString,
     getTaskAssignment as logicGetTaskAssignment,
     getBaseTaskDuration as logicGetBaseTaskDuration,
-    getHelperTaskIdsForMainTask as logicGetHelperTaskIdsForMainTask
+    getHelperTaskIdsForMainTask as logicGetHelperTaskIdsForMainTask,
+    getFillerStartTime,
+    getFillerEndTime
 } from './planning-logic.js';
 
 export const state = {
@@ -43,7 +46,8 @@ export const state = {
         prependOtherTask: false,
         selectedOtherTask: ""
     },
-    timelineZoom: 1.0
+    timelineZoom: 1.0,
+    storeEmployees: []
 };
 
 export const resetState = () => {
@@ -88,7 +92,7 @@ export const getEffectiveTaskDuration = (taskId) => logicGetEffectiveTaskDuratio
 export const getFillerColli = (displayName) => logicGetFillerColli(displayName, state);
 export const getFillerTotalTime = (filler) => logicGetFillerTotalTime(filler, state);
 export const getFillerProductivity = (displayName) => logicGetFillerProductivity(displayName, state);
-export { getProductivityStatusClass, formatTimeInputValue };
+export { getProductivityStatusClass, formatTimeInputValue, normalizeTimeString, getFillerStartTime, getFillerEndTime };
 export const getTaskAssignment = (taskId) => logicGetTaskAssignment(taskId, state);
 export const getBaseTaskDuration = (taskId) => logicGetBaseTaskDuration(taskId, state);
 export const getHelperTaskIdsForMainTask = (mainTaskId) => logicGetHelperTaskIdsForMainTask(mainTaskId, state);

@@ -47,12 +47,18 @@ import { initHistory, resetHistory, setupHistoryListeners } from './history.js';
         if (storeId && supabase) {
             const { data: users } = await supabase
                 .from('user_data')
-                .select('full_name')
+                .select('id, full_name, gebruikersnaam')
                 .eq('winkel', storeId)
                 .order('full_name', { ascending: true });
             if (users) {
-                storeEmployees = users.map(u => u.full_name).filter(Boolean);
+                storeEmployees = users.map(u => ({
+                    id: u.id,
+                    full_name: u.full_name || '',
+                    gebruikersnaam: u.gebruikersnaam || '',
+                    username: u.gebruikersnaam || ''
+                })).filter(u => u.full_name || u.gebruikersnaam);
             }
+            state.storeEmployees = storeEmployees;
 
             const { data: vpData } = await supabase
                 .from('vulplanningen')
@@ -153,8 +159,8 @@ import { initHistory, resetHistory, setupHistoryListeners } from './history.js';
 
             const updateFinalizeCount = () => {
                 if (!finalizeList || !finalizeSelectedCount) return;
-                const checkboxes = finalizeList.querySelectorAll('.finalize-emp-checkbox');
-                const checked = finalizeList.querySelectorAll('.finalize-emp-checkbox:checked');
+                const checkboxes = finalizeList.querySelectorAll('.finalize-emp-checkbox:not(:disabled)');
+                const checked = finalizeList.querySelectorAll('.finalize-emp-checkbox:not(:disabled):checked');
                 finalizeSelectedCount.textContent = `${checked.length}/${checkboxes.length} geselecteerd`;
                 if (finalizeSelectAll) {
                     finalizeSelectAll.checked = checkboxes.length > 0 && checked.length === checkboxes.length;
