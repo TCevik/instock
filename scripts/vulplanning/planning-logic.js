@@ -374,6 +374,18 @@ export const matchEmployeeName = (rawName, storeEmployees, explicitUsername = nu
         return { matchedUser: null, hasMultipleMatches: true, candidateMatches: exactMatches };
     }
 
+    const partialMatches = storeEmployees.filter(e => {
+        const empName = getEmployeeFullName(e).toLowerCase().trim();
+        return cleanPdfName.length > 2 && (empName.startsWith(cleanPdfName) || cleanPdfName.startsWith(empName));
+    });
+    
+    if (partialMatches.length === 1) {
+        return { matchedUser: partialMatches[0], hasMultipleMatches: false, candidateMatches: partialMatches };
+    }
+    if (partialMatches.length > 1) {
+        return { matchedUser: null, hasMultipleMatches: true, candidateMatches: partialMatches };
+    }
+
     return { matchedUser: null, hasMultipleMatches: false, candidateMatches: [] };
 };
 
