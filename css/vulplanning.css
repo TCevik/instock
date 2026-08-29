@@ -1022,3 +1022,245 @@
     border-left: 1px solid var(--border-color);
 }
 
+.mobile-fillers-container {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .tasks-container {
+        display: none !important;
+    }
+
+    .drag-drop-workspace {
+        padding-right: 0 !important;
+    }
+
+    .fillers-table {
+        display: none !important;
+    }
+
+    .mobile-fillers-container {
+        display: flex !important;
+    }
+
+    .mobile-filler-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .mobile-filler-card.exceeded {
+        border-color: rgba(255, 82, 82, 0.4);
+    }
+
+    .mobile-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .mobile-card-info {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        min-width: 0;
+    }
+
+    .mobile-card-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-color);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .mobile-card-subtitle {
+        font-size: 11px;
+        color: var(--text-color-muted);
+    }
+
+    .mobile-card-end {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .mobile-end-label {
+        font-size: 11px;
+        color: var(--text-color-muted);
+        font-weight: 500;
+    }
+
+    .mobile-actual-end-input {
+        width: 65px;
+        padding: 4px 6px;
+        font-size: 12px;
+        font-weight: 600;
+        background-color: var(--input-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        color: var(--text-color);
+    }
+
+    .mobile-actual-end-input:focus {
+        border-color: var(--accent-color-sidemenu);
+        outline: none;
+    }
+
+    .mobile-prod-container {
+        display: flex;
+        align-items: center;
+        min-width: 42px;
+    }
+
+    .mobile-card-stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    .mobile-stat-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 6px;
+        font-size: 11px;
+        font-weight: 500;
+        background-color: var(--input-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        color: var(--text-color);
+    }
+
+    .mobile-stat-badge .material-icons {
+        font-size: 12px;
+        color: var(--text-color-muted);
+    }
+
+    .mobile-stat-badge.positive {
+        color: var(--accent-color-sidemenu);
+    }
+
+    .mobile-stat-badge.negative,
+    .mobile-stat-badge.exceeded {
+        color: var(--danger-color);
+    }
+
+    .mobile-tasks-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-top: 2px;
+    }
+
+    .mobile-no-tasks {
+        font-size: 11px;
+        color: var(--text-color-muted);
+        font-style: italic;
+        padding: 4px 0;
+    }
+
+    .mobile-task-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 8px;
+        background-color: var(--input-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        gap: 8px;
+    }
+
+    .mobile-task-item.fill {
+        background-color: var(--vullen-card-bg);
+        border-color: var(--vullen-border);
+        border-left: 3px solid var(--accent-color-sidemenu);
+    }
+
+    .mobile-task-item.mirror {
+        background-color: var(--spiegelen-card-bg);
+        border-color: var(--spiegelen-border);
+        border-left: 3px solid var(--warning-color);
+    }
+
+    .mobile-task-item.restanten {
+        background-color: var(--restanten-card-bg);
+        border-color: var(--restanten-border);
+        border-left: 3px solid var(--restanten-color);
+    }
+
+    .mobile-task-item.helper {
+        background-color: var(--helper-card-bg);
+        border-color: var(--helper-border);
+        border-left: 3px solid var(--helper-color);
+    }
+
+    .mobile-task-item.break-task {
+        background-color: var(--input-bg);
+        border-color: var(--border-color);
+        opacity: 0.8;
+    }
+
+    .mobile-task-left {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+    }
+
+    .mobile-task-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-color);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .mobile-task-right {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .mobile-task-dur {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-color);
+        background-color: var(--card-bg);
+        padding: 1px 5px;
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+    }
+
+    .mobile-task-time {
+        font-size: 11px;
+        color: var(--text-color-muted);
+        min-width: 70px;
+        text-align: right;
+    }
+
+    .page-header-row .action-btn,
+    .sort-filter-bar .action-btn,
+    #toggle-really-hidden-btn,
+    #really-hidden-panel,
+    #open-paden-modal-btn,
+    #reset-planning-btn,
+    #generate-planning-btn,
+    #finalize-planning-btn,
+    .undo-redo-group {
+        display: none !important;
+    }
+}
+

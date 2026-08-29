@@ -37,6 +37,8 @@ let taskContextMenu = null;
 let zoomListenersInitialized = false;
 let isSyncingScroll = false;
 
+export const isMobileView = () => window.matchMedia('(max-width: 768px)').matches;
+
 export const getTimelineScale = () => 2.0 * (state.timelineZoom || 1.0);
 
 export const getTotalTimelineMinutes = () => {
@@ -207,25 +209,28 @@ export const createTaskCard = (taskId, startTime, endTime, maxMin, totalInTimePl
     const data = state.pathColli[pathName];
     if (!data && type !== 'other') return null;
     if (getTaskDuration(taskId) <= 0 && !isBreakTask) return null;
+    const mobile = isMobileView();
     const card = document.createElement('div');
     card.className = 'task-card ' + type + (isBreakTask ? ' break-task' : '') + (isHelperTask ? ' helper' : '');
-    card.draggable = true;
+    card.draggable = !mobile;
     card.id = `task-${taskId}`;
 
-    card.addEventListener('dragstart', (e) => {
-        currentDraggedTaskId = taskId;
-        currentDraggedIsFromAssigned = card.closest('#assigned-tasks-grid') !== null;
-        e.dataTransfer.setData('text/plain', taskId);
-        e.dataTransfer.setData('is-from-assigned', currentDraggedIsFromAssigned ? 'true' : 'false');
-        card.classList.add('dragging');
-    });
+    if (!mobile) {
+        card.addEventListener('dragstart', (e) => {
+            currentDraggedTaskId = taskId;
+            currentDraggedIsFromAssigned = card.closest('#assigned-tasks-grid') !== null;
+            e.dataTransfer.setData('text/plain', taskId);
+            e.dataTransfer.setData('is-from-assigned', currentDraggedIsFromAssigned ? 'true' : 'false');
+            card.classList.add('dragging');
+        });
 
-    card.addEventListener('dragend', () => {
-        currentDraggedTaskId = null;
-        currentDraggedIsFromAssigned = false;
-        card.classList.remove('dragging');
-        document.querySelectorAll('.task-card-placeholder').forEach(el => el.remove());
-    });
+        card.addEventListener('dragend', () => {
+            currentDraggedTaskId = null;
+            currentDraggedIsFromAssigned = false;
+            card.classList.remove('dragging');
+            document.querySelectorAll('.task-card-placeholder').forEach(el => el.remove());
+        });
+    }
 
     const colliSuffix = (type === 'fill' && data && data.colli) ? ` (${data.colli} c)` : '';
     const titleRow = document.createElement('div');
@@ -304,20 +309,21 @@ export const createTaskCard = (taskId, startTime, endTime, maxMin, totalInTimePl
     }
     card.title = tooltip;
 
-    card.addEventListener('dblclick', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        openDurationModal(taskId);
-    });
+    if (!mobile) {
+        card.addEventListener('dblclick', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openDurationModal(taskId);
+        });
 
-    card.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+        card.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
 
-        const menu = getOrCreateTaskContextMenu();
-        menu.innerHTML = '';
+            const menu = getOrCreateTaskContextMenu();
+            menu.innerHTML = '';
 
-        const assignee = getTaskAssignment(taskId);
+            const assignee = getTaskAssignment(taskId);
 
         const editItem = document.createElement('div');
         editItem.className = 'context-menu-item';
@@ -418,6 +424,7 @@ export const createTaskCard = (taskId, startTime, endTime, maxMin, totalInTimePl
             menu.style.top = `${window.innerHeight - rect.height - 8}px`;
         }
     });
+    }
 
     return card;
 };
@@ -675,13 +682,17 @@ export const renderWorkspace = () => {
         actionsContainer.appendChild(reallyHideBtn);
         tdActions.appendChild(actionsContainer);
 
+        const mobile = isMobileView();
+
         const tdInfo = document.createElement('td');
         tdInfo.className = 'td-info';
-        tdInfo.style.cursor = 'pointer';
-        tdInfo.title = 'Klik om werktijden aan te passen';
-        tdInfo.addEventListener('click', () => {
-            openEditFillerModal(filler);
-        });
+        if (!mobile) {
+            tdInfo.style.cursor = 'pointer';
+            tdInfo.title = 'Klik om werktijden aan te passen';
+            tdInfo.addEventListener('click', () => {
+                openEditFillerModal(filler);
+            });
+        }
         const infoContainer = document.createElement('div');
         infoContainer.className = 'info-container';
         const { name, subtitle } = parseNameAndSubtitle(filler);
@@ -876,84 +887,147 @@ export const renderWorkspace = () => {
 
         tasksList.addEventListener('scroll', () => syncAllTimelines(tasksList), { passive: true });
 
-        tr.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            const draggedId = currentDraggedTaskId;
-            if (!draggedId) return;
+        if (!mobile) {
+            tr.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const draggedId = currentDraggedTaskId;
+                if (!draggedId) return;
 
-            let placeholders = [...tasksList.querySelectorAll('.task-card-placeholder')];
-            if (placeholders.length === 0) {
-                document.querySelectorAll('.task-card-placeholder').forEach(el => el.remove());
-                const existingAssignee = getTaskAssignment(draggedId);
-                const isCreatingHelper = currentDraggedIsFromAssigned && existingAssignee && existingAssignee !== filler && !draggedId.includes('_other');
-                const seq = isCreatingHelper ? [draggedId] : getDraggedTaskSequence(draggedId);
-                placeholders = seq.map(tId => {
-                    const card = createTaskCard(tId);
-                    if (!card) return null;
-                    card.classList.add('task-card-placeholder');
-                    card.removeAttribute('id');
-                    card.draggable = false;
-                    let effectiveDuration = getEffectiveTaskDuration(tId);
-                    if (isCreatingHelper) {
-                        card.classList.add('helper');
-                        const mainTaskId = tId.split('_helper')[0];
-                        const currentHelpers = getHelperTaskIdsForMainTask(mainTaskId);
-                        const targetWorkers = 1 + currentHelpers.length + 1;
-                        const baseDur = getBaseTaskDuration(mainTaskId);
-                        effectiveDuration = Math.floor(baseDur / targetWorkers);
-                        const leftSpan = card.querySelector('.task-card-meta span:first-child');
-                        if (leftSpan) leftSpan.textContent = formatMin(effectiveDuration);
-                    }
-                    if (isFinite(maxMin) && maxMin > 0) {
-                        const cardWidth = Math.max(2, effectiveDuration * scale);
-                        card.style.width = `${cardWidth}px`;
-                        card.style.minWidth = `${cardWidth}px`;
-                        card.style.maxWidth = `${cardWidth}px`;
-                        card.style.flexShrink = '0';
-                    }
-                    return card;
-                }).filter(Boolean);
-            }
-
-            if (placeholders.length === 0) return;
-
-            const closest = getClosestTask(tasksList, e.clientX, e.clientY);
-            if (closest && closest.card) {
-                tr.classList.remove('drag-over');
-                if (closest.before) {
-                    placeholders.forEach(p => tasksList.insertBefore(p, closest.card));
-                } else {
-                    let ref = closest.card;
-                    placeholders.forEach(p => {
-                        ref.after(p);
-                        ref = p;
-                    });
+                let placeholders = [...tasksList.querySelectorAll('.task-card-placeholder')];
+                if (placeholders.length === 0) {
+                    document.querySelectorAll('.task-card-placeholder').forEach(el => el.remove());
+                    const existingAssignee = getTaskAssignment(draggedId);
+                    const isCreatingHelper = currentDraggedIsFromAssigned && existingAssignee && existingAssignee !== filler && !draggedId.includes('_other');
+                    const seq = isCreatingHelper ? [draggedId] : getDraggedTaskSequence(draggedId);
+                    placeholders = seq.map(tId => {
+                        const card = createTaskCard(tId);
+                        if (!card) return null;
+                        card.classList.add('task-card-placeholder');
+                        card.removeAttribute('id');
+                        card.draggable = false;
+                        let effectiveDuration = getEffectiveTaskDuration(tId);
+                        if (isCreatingHelper) {
+                            card.classList.add('helper');
+                            const mainTaskId = tId.split('_helper')[0];
+                            const currentHelpers = getHelperTaskIdsForMainTask(mainTaskId);
+                            const targetWorkers = 1 + currentHelpers.length + 1;
+                            const baseDur = getBaseTaskDuration(mainTaskId);
+                            effectiveDuration = Math.floor(baseDur / targetWorkers);
+                            const leftSpan = card.querySelector('.task-card-meta span:first-child');
+                            if (leftSpan) leftSpan.textContent = formatMin(effectiveDuration);
+                        }
+                        if (isFinite(maxMin) && maxMin > 0) {
+                            const cardWidth = Math.max(2, effectiveDuration * scale);
+                            card.style.width = `${cardWidth}px`;
+                            card.style.minWidth = `${cardWidth}px`;
+                            card.style.maxWidth = `${cardWidth}px`;
+                            card.style.flexShrink = '0';
+                        }
+                        return card;
+                    }).filter(Boolean);
                 }
-            } else {
-                placeholders.forEach(p => tasksList.insertBefore(p, endSpacer));
-            }
-        });
 
-        tr.addEventListener('dragleave', (e) => {
-            if (!tr.contains(e.relatedTarget)) {
+                if (placeholders.length === 0) return;
+
+                const closest = getClosestTask(tasksList, e.clientX, e.clientY);
+                if (closest && closest.card) {
+                    tr.classList.remove('drag-over');
+                    if (closest.before) {
+                        placeholders.forEach(p => tasksList.insertBefore(p, closest.card));
+                    } else {
+                        let ref = closest.card;
+                        placeholders.forEach(p => {
+                            ref.after(p);
+                            ref = p;
+                        });
+                    }
+                } else {
+                    placeholders.forEach(p => tasksList.insertBefore(p, endSpacer));
+                }
+            });
+
+            tr.addEventListener('dragleave', (e) => {
+                if (!tr.contains(e.relatedTarget)) {
+                    tr.classList.remove('drag-over');
+                    tasksList.querySelectorAll('.task-card-placeholder').forEach(el => el.remove());
+                }
+            });
+
+            tr.addEventListener('drop', (e) => {
+                e.preventDefault();
                 tr.classList.remove('drag-over');
-                tasksList.querySelectorAll('.task-card-placeholder').forEach(el => el.remove());
-            }
-        });
+                document.querySelectorAll('.task-card-placeholder').forEach(el => el.remove());
+                let taskId = e.dataTransfer.getData('text/plain');
+                if (!taskId || !document.getElementById(`task-${taskId}`)) return;
+                const existingAssignee = getTaskAssignment(taskId);
+                const isFromAssigned = e.dataTransfer.getData('is-from-assigned') === 'true';
 
-        tr.addEventListener('drop', (e) => {
-            e.preventDefault();
-            tr.classList.remove('drag-over');
-            document.querySelectorAll('.task-card-placeholder').forEach(el => el.remove());
-            let taskId = e.dataTransfer.getData('text/plain');
-            if (!taskId || !document.getElementById(`task-${taskId}`)) return;
-            const existingAssignee = getTaskAssignment(taskId);
-            const isFromAssigned = e.dataTransfer.getData('is-from-assigned') === 'true';
+                if (isFromAssigned && existingAssignee && existingAssignee !== filler && !taskId.includes('_other')) {
+                    const mainTaskId = taskId.split('_helper')[0];
+                    const helperTaskId = `${mainTaskId}_helper_inst-${Date.now()}`;
+                    if (!state.fillerTasks[filler]) state.fillerTasks[filler] = [];
 
-            if (isFromAssigned && existingAssignee && existingAssignee !== filler && !taskId.includes('_other')) {
-                const mainTaskId = taskId.split('_helper')[0];
-                const helperTaskId = `${mainTaskId}_helper_inst-${Date.now()}`;
-                if (!state.fillerTasks[filler]) state.fillerTasks[filler] = [];
+                    const tasks = state.fillerTasks[filler];
+                    const closest = getClosestTask(tasksList, e.clientX, e.clientY);
+                    if (closest) {
+                        const targetTaskId = closest.card.id.replace('task-', '');
+                        const targetIndex = tasks.indexOf(targetTaskId);
+                        if (targetIndex !== -1) {
+                            const insertIndex = closest.before ? targetIndex : targetIndex + 1;
+                            tasks.splice(insertIndex, 0, helperTaskId);
+                        } else {
+                            tasks.push(helperTaskId);
+                        }
+                    } else {
+                        tasks.push(helperTaskId);
+                    }
+                    renderWorkspace();
+                    triggerSave();
+                    return;
+                }
+
+                const isAlreadyAssigned = existingAssignee !== null;
+
+                let isNewPauseTask = false;
+                if (taskId.includes('_other') && !taskId.includes('_inst-')) {
+                    const uniqueId = `${taskId}_inst-${Date.now()}`;
+                    const [pathName] = taskId.split('_');
+                    if (pathName === 'Pauze') {
+                        state.instanceTimes[uniqueId] = 0;
+                        isNewPauseTask = true;
+                    } else {
+                        state.instanceTimes[uniqueId] = state.otherTimes[pathName] || 30;
+                    }
+                    taskId = uniqueId;
+                } else {
+                    removeTaskFromAll(taskId);
+                }
+
+                if (!state.fillerTasks[filler]) {
+                    state.fillerTasks[filler] = [];
+                }
+
+                const tasksToAdd = [];
+                if (!isAlreadyAssigned) {
+                    const { prepended, prependedRestanten, appended } = getAutoTasksForFillTask(taskId, state.autoPairSettings, state.pathColli);
+                    if (prependedRestanten) {
+                        removeTaskFromAll(prependedRestanten);
+                        tasksToAdd.push(prependedRestanten);
+                    }
+                    if (prepended) {
+                        const uniqueId = `${prepended}_inst-${Date.now()}`;
+                        const [pName] = prepended.split('_');
+                        state.instanceTimes[uniqueId] = state.otherTimes[pName] || 30;
+                        tasksToAdd.push(uniqueId);
+                    }
+                    tasksToAdd.push(taskId);
+                    if (appended) {
+                        removeTaskFromAll(appended);
+                        tasksToAdd.push(appended);
+                    }
+                } else {
+                    tasksToAdd.push(taskId);
+                }
 
                 const tasks = state.fillerTasks[filler];
                 const closest = getClosestTask(tasksList, e.clientX, e.clientY);
@@ -962,81 +1036,20 @@ export const renderWorkspace = () => {
                     const targetIndex = tasks.indexOf(targetTaskId);
                     if (targetIndex !== -1) {
                         const insertIndex = closest.before ? targetIndex : targetIndex + 1;
-                        tasks.splice(insertIndex, 0, helperTaskId);
+                        tasks.splice(insertIndex, 0, ...tasksToAdd);
                     } else {
-                        tasks.push(helperTaskId);
+                        tasks.push(...tasksToAdd);
                     }
-                } else {
-                    tasks.push(helperTaskId);
-                }
-                renderWorkspace();
-                triggerSave();
-                return;
-            }
-
-            const isAlreadyAssigned = existingAssignee !== null;
-
-            let isNewPauseTask = false;
-            if (taskId.includes('_other') && !taskId.includes('_inst-')) {
-                const uniqueId = `${taskId}_inst-${Date.now()}`;
-                const [pathName] = taskId.split('_');
-                if (pathName === 'Pauze') {
-                    state.instanceTimes[uniqueId] = 0;
-                    isNewPauseTask = true;
-                } else {
-                    state.instanceTimes[uniqueId] = state.otherTimes[pathName] || 30;
-                }
-                taskId = uniqueId;
-            } else {
-                removeTaskFromAll(taskId);
-            }
-
-            if (!state.fillerTasks[filler]) {
-                state.fillerTasks[filler] = [];
-            }
-
-            const tasksToAdd = [];
-            if (!isAlreadyAssigned) {
-                const { prepended, prependedRestanten, appended } = getAutoTasksForFillTask(taskId, state.autoPairSettings, state.pathColli);
-                if (prependedRestanten) {
-                    removeTaskFromAll(prependedRestanten);
-                    tasksToAdd.push(prependedRestanten);
-                }
-                if (prepended) {
-                    const uniqueId = `${prepended}_inst-${Date.now()}`;
-                    const [pName] = prepended.split('_');
-                    state.instanceTimes[uniqueId] = state.otherTimes[pName] || 30;
-                    tasksToAdd.push(uniqueId);
-                }
-                tasksToAdd.push(taskId);
-                if (appended) {
-                    removeTaskFromAll(appended);
-                    tasksToAdd.push(appended);
-                }
-            } else {
-                tasksToAdd.push(taskId);
-            }
-
-            const tasks = state.fillerTasks[filler];
-            const closest = getClosestTask(tasksList, e.clientX, e.clientY);
-            if (closest) {
-                const targetTaskId = closest.card.id.replace('task-', '');
-                const targetIndex = tasks.indexOf(targetTaskId);
-                if (targetIndex !== -1) {
-                    const insertIndex = closest.before ? targetIndex : targetIndex + 1;
-                    tasks.splice(insertIndex, 0, ...tasksToAdd);
                 } else {
                     tasks.push(...tasksToAdd);
                 }
-            } else {
-                tasks.push(...tasksToAdd);
-            }
-            renderWorkspace();
-            triggerSave();
-            if (isNewPauseTask) {
-                openDurationModal(taskId);
-            }
-        });
+                renderWorkspace();
+                triggerSave();
+                if (isNewPauseTask) {
+                    openDurationModal(taskId);
+                }
+            });
+        }
 
         tdTasks.appendChild(tasksList);
 
@@ -1068,12 +1081,200 @@ export const renderWorkspace = () => {
         });
     };
 
+    const buildFillerMobileCard = (filler, isNonFiller = false) => {
+        const totalMin = getFillerTotalTime(filler);
+        const maxMin = getAvailableTime(filler);
+        const pauseMin = getFillerPause(filler);
+        const roundedTotal = Math.round(totalMin);
+        const isExceeded = roundedTotal > maxMin;
+        const remainingMin = isFinite(maxMin) ? maxMin - roundedTotal : 0;
+        const taskBreaks = getFillerBreakTime(filler);
+
+        const card = document.createElement('div');
+        card.className = `mobile-filler-card${isExceeded ? ' exceeded' : ''}${isNonFiller ? ' non-filler' : ''}`;
+
+        const header = document.createElement('div');
+        header.className = 'mobile-card-header';
+
+        const info = document.createElement('div');
+        info.className = 'mobile-card-info';
+        const { name, subtitle } = parseNameAndSubtitle(filler);
+        const nameEl = document.createElement('span');
+        nameEl.className = 'mobile-card-name';
+        nameEl.textContent = name;
+        info.appendChild(nameEl);
+        if (subtitle) {
+            const subEl = document.createElement('span');
+            subEl.className = 'mobile-card-subtitle';
+            subEl.textContent = subtitle;
+            info.appendChild(subEl);
+        }
+
+        const endWrapper = document.createElement('div');
+        endWrapper.className = 'mobile-card-end';
+
+        const endLabel = document.createElement('span');
+        endLabel.className = 'mobile-end-label';
+        endLabel.textContent = 'Eindtijd:';
+
+        const endInput = document.createElement('input');
+        endInput.type = 'text';
+        endInput.placeholder = '00:00';
+        endInput.maxLength = 5;
+        endInput.className = 'actual-end-input mobile-actual-end-input';
+        endInput.style.textAlign = 'center';
+
+        const plannedEndMin = getFillerEndTime(filler);
+        const plannedEndStr = isFinite(plannedEndMin) ? formatTimeOfDay(plannedEndMin) : '';
+        const currentActual = state.actualEndTimes && state.actualEndTimes[filler] !== undefined ? state.actualEndTimes[filler] : plannedEndStr;
+        endInput.value = currentActual;
+
+        const prodContainer = document.createElement('div');
+        prodContainer.className = 'mobile-prod-container';
+
+        const updateFillerProdDisplay = () => {
+            prodContainer.innerHTML = '';
+            const pVal = getFillerProductivity(filler);
+            if (pVal !== null) {
+                const statusClass = getProductivityStatusClass(pVal);
+                const pSpan = document.createElement('span');
+                pSpan.className = `filler-stat-item prod ${statusClass}`.trim();
+                pSpan.textContent = `${pVal}%`;
+                prodContainer.appendChild(pSpan);
+            }
+        };
+        updateFillerProdDisplay();
+
+        const handleInput = (e) => {
+            const val = formatTimeInputValue(e.target.value);
+            if (e.target.value !== val) {
+                endInput.value = val;
+            }
+            state.actualEndTimes[filler] = val;
+            updateFillerProdDisplay();
+            triggerSave();
+        };
+
+        endInput.addEventListener('input', handleInput);
+        endInput.addEventListener('change', handleInput);
+
+        endWrapper.appendChild(endLabel);
+        endWrapper.appendChild(endInput);
+        endWrapper.appendChild(prodContainer);
+
+        header.appendChild(info);
+        header.appendChild(endWrapper);
+        card.appendChild(header);
+
+        const stats = document.createElement('div');
+        stats.className = 'mobile-card-stats';
+
+        if (isFinite(maxMin)) {
+            const timeStat = document.createElement('span');
+            timeStat.className = `mobile-stat-badge${isExceeded ? ' exceeded' : ''}`;
+            timeStat.innerHTML = `<i class="material-icons">schedule</i>${formatMin(roundedTotal)} / ${formatMin(maxMin)}`;
+            stats.appendChild(timeStat);
+
+            const pauseStat = document.createElement('span');
+            pauseStat.className = 'mobile-stat-badge';
+            pauseStat.innerHTML = `<i class="material-icons">coffee</i>${formatMin(taskBreaks)} / ${formatMin(pauseMin)}`;
+            stats.appendChild(pauseStat);
+
+            const overStat = document.createElement('span');
+            overStat.className = `mobile-stat-badge ${remainingMin >= 0 ? 'positive' : 'negative'}`;
+            overStat.innerHTML = remainingMin >= 0 
+                ? `<i class="material-icons">hourglass_empty</i>Over: ${formatMin(remainingMin)}`
+                : `<i class="material-icons">warning</i>Te veel: ${formatMin(Math.abs(remainingMin))}`;
+            stats.appendChild(overStat);
+        }
+
+        const progressBarContainer = document.createElement('div');
+        progressBarContainer.className = 'progress-bar-container progress-bar-container-custom';
+        const progressBarFill = document.createElement('div');
+        progressBarFill.className = `progress-bar-fill${isExceeded ? ' exceeded' : ''}`;
+        const percentage = isFinite(maxMin) && maxMin > 0 ? Math.min((roundedTotal / maxMin) * 100, 100) : 0;
+        progressBarFill.style.width = `${percentage}%`;
+        progressBarContainer.appendChild(progressBarFill);
+
+        card.appendChild(stats);
+        card.appendChild(progressBarContainer);
+
+        const tasksList = document.createElement('div');
+        tasksList.className = 'mobile-tasks-list';
+
+        const fillerStartMin = getFillerStartTime(filler);
+        let currentTime = fillerStartMin;
+        const tasks = state.fillerTasks[filler] || [];
+
+        if (tasks.length === 0) {
+            const emptyEl = document.createElement('div');
+            emptyEl.className = 'mobile-no-tasks';
+            emptyEl.textContent = 'Geen taken toegewezen';
+            tasksList.appendChild(emptyEl);
+        } else {
+            tasks.forEach(taskId => {
+                const duration = getEffectiveTaskDuration(taskId);
+                const startTime = currentTime;
+                const endTime = currentTime + duration;
+                currentTime = endTime;
+
+                const isHelperTask = taskId.includes('_helper');
+                const mainTaskId = isHelperTask ? taskId.split('_helper')[0] : taskId;
+                const [pathName, type] = mainTaskId.split('_');
+                const isBreakTask = pathName === 'Pauze';
+                const data = state.pathColli[pathName];
+                const colliSuffix = (type === 'fill' && data && data.colli) ? ` (${data.colli} c)` : '';
+
+                const item = document.createElement('div');
+                item.className = `mobile-task-item ${type}${isBreakTask ? ' break-task' : ''}${isHelperTask ? ' helper' : ''}`;
+
+                const left = document.createElement('div');
+                left.className = 'mobile-task-left';
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'mobile-task-title';
+                nameSpan.textContent = `${pathName}${colliSuffix}`;
+                left.appendChild(nameSpan);
+
+                const right = document.createElement('div');
+                right.className = 'mobile-task-right';
+                const durSpan = document.createElement('span');
+                durSpan.className = 'mobile-task-dur';
+                durSpan.textContent = formatMin(duration);
+                const timeSpan = document.createElement('span');
+                timeSpan.className = 'mobile-task-time';
+                timeSpan.textContent = `${formatTimeOfDay(startTime)} - ${formatTimeOfDay(endTime)}`;
+                right.appendChild(durSpan);
+                right.appendChild(timeSpan);
+
+                item.appendChild(left);
+                item.appendChild(right);
+                tasksList.appendChild(item);
+            });
+        }
+
+        card.appendChild(tasksList);
+        return card;
+    };
+
+    let mobileContainer = document.getElementById('mobile-fillers-container');
+    if (!mobileContainer) {
+        mobileContainer = document.createElement('div');
+        mobileContainer.id = 'mobile-fillers-container';
+        mobileContainer.className = 'mobile-fillers-container';
+        const mainSection = document.getElementById('fillers-main-section');
+        if (mainSection) {
+            mainSection.appendChild(mobileContainer);
+        }
+    }
+    mobileContainer.innerHTML = '';
+
     if (nonFillersSection && nonFillersTableBody) {
         if (nonFillersList.length > 0) {
             nonFillersSection.style.display = 'flex';
             if (fillersHeader) fillersHeader.style.display = 'flex';
             sortFillers(nonFillersList, state.fillerSortOrder).forEach(filler => {
                 nonFillersTableBody.appendChild(buildFillerRow(filler, true));
+                mobileContainer.appendChild(buildFillerMobileCard(filler, true));
             });
         } else {
             nonFillersSection.style.display = 'none';
@@ -1085,6 +1286,7 @@ export const renderWorkspace = () => {
 
     sortedFillers.forEach(filler => {
         fillersTableBody.appendChild(buildFillerRow(filler, false));
+        mobileContainer.appendChild(buildFillerMobileCard(filler, false));
     });
 
     const assignedGrid = document.getElementById('assigned-tasks-grid');

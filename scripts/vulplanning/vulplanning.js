@@ -146,6 +146,17 @@ import { initHistory, resetHistory, setupHistoryListeners } from './history.js';
             initHistory();
         }
 
+        let wasMobile = window.matchMedia('(max-width: 768px)').matches;
+        window.addEventListener('resize', () => {
+            const isMobile = window.matchMedia('(max-width: 768px)').matches;
+            if (isMobile !== wasMobile) {
+                wasMobile = isMobile;
+                if (state.selectedFillers && state.selectedFillers.length > 0) {
+                    renderWorkspace();
+                }
+            }
+        });
+
         if (finalizeBtn) {
             const finalizeModal = document.getElementById('finalize-modal');
             const finalizeList = document.getElementById('finalize-list');
