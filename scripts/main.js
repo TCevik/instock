@@ -181,4 +181,37 @@ function initDisableSuggestions() {
     }, true);
 }
 
+function initAutoReloadOnInactive() {
+    let inactiveSince = null;
+    const threshold = 5 * 60 * 1000;
+
+    function handleInactive() {
+        if (!inactiveSince) {
+            inactiveSince = Date.now();
+        }
+    }
+
+    function handleActive() {
+        if (inactiveSince) {
+            if (Date.now() - inactiveSince >= threshold) {
+                window.location.reload();
+                return;
+            }
+            inactiveSince = null;
+        }
+    }
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            handleInactive();
+        } else {
+            handleActive();
+        }
+    });
+
+    window.addEventListener('blur', handleInactive);
+    window.addEventListener('focus', handleActive);
+}
+
 initDisableSuggestions();
+initAutoReloadOnInactive();
