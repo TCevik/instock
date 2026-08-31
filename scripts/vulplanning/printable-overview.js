@@ -27,7 +27,7 @@ const sortFillers = (list) => {
     });
 };
 
-const buildRowHtml = (filler) => {
+const buildRowHtml = (filler, mergeTasks = true) => {
     const { name, subtitle } = parseNameAndSubtitle(filler);
     const tasks = state.fillerTasks[filler] || [];
     const startMin = getFillerStartTime(filler);
@@ -47,34 +47,93 @@ const buildRowHtml = (filler) => {
     if (tasks.length === 0) {
         tasksHtml = `<div class="empty-tasks-label">Geen taken toegewezen</div>`;
     } else {
-        tasks.forEach(taskId => {
-            const isHelperTask = taskId.includes('_helper');
-            const mainTaskId = isHelperTask ? taskId.split('_helper')[0] : taskId;
-            const [pathName, type] = mainTaskId.split('_');
-            const isBreakTask = pathName === 'Pauze';
-            const duration = getEffectiveTaskDuration(taskId);
-            const tStart = currentTime;
-            currentTime += duration;
+        const processedTasks = [];
+        for (let i = 0; i < tasks.length; i++) {
+            const taskId = tasks[i];
+            const isHelper = taskId.includes('_helper');
+            const mainId = isHelper ? taskId.split('_helper')[0] : taskId;
+            const [path, type] = mainId.split('_');
 
-            const data = state.pathColli[pathName];
-            const colliSuffix = (type === 'fill' && data && data.colli) ? ` (${data.colli} c)` : '';
-            const title = isHelperTask ? `${pathName} (Hulp)` : `${pathName}${colliSuffix}`;
-            const timeStr = `${formatTimeOfDay(tStart)} - ${formatTimeOfDay(currentTime)}`;
-            const durationText = formatMin(duration);
+            if (mergeTasks && !isHelper && type === 'restanten' && i + 2 < tasks.length) {
+                const next1 = tasks[i + 1];
+                const next2 = tasks[i + 2];
+                if (!next1.includes('_helper') && !next2.includes('_helper')) {
+                    const [p1, t1] = next1.split('_');
+                    const [p2, t2] = next2.split('_');
+                    if (p1 === path && p2 === path && t1 === 'fill' && t2 === 'mirror') {
+                        const dur0 = getEffectiveTaskDuration(taskId);
+                        const dur1 = getEffectiveTaskDuration(next1);
+                        const dur2 = getEffectiveTaskDuration(next2);
+                        processedTasks.push({
+                            isMerged: true,
+                            pathName: path,
+                            totalDuration: dur0 + dur1 + dur2,
+                            fillDuration: dur1,
+                            taskIds: [taskId, next1, next2]
+                        });
+                        i += 2;
+                        continue;
+                    }
+                }
+            }
 
-            let cardTypeClass = type;
-            if (isBreakTask) cardTypeClass += ' break-task';
-            if (isHelperTask) cardTypeClass += ' helper';
+            processedTasks.push({
+                isMerged: false,
+                taskId: taskId
+            });
+        }
 
-            tasksHtml += `
-                <div class="task-card ${cardTypeClass}">
-                    <div class="task-card-title">${title}</div>
-                    <div class="task-card-meta">
-                        <span>${durationText}</span>
-                        <span>${timeStr}</span>
+        processedTasks.forEach(item => {
+            if (item.isMerged) {
+                const duration = item.totalDuration;
+                const tStart = currentTime;
+                currentTime += duration;
+
+                const data = state.pathColli[item.pathName];
+                const colliSuffix = (data && data.colli) ? ` (${data.colli} c)` : '';
+                const title = `${item.pathName}${colliSuffix}`;
+                const timeStr = `${formatTimeOfDay(tStart)} - ${formatTimeOfDay(currentTime)}`;
+                const durationText = formatMin(duration);
+
+                tasksHtml += `
+                    <div class="task-card merged-trio">
+                        <div class="task-card-title">${title}</div>
+                        <div class="task-card-meta">
+                            <span>${durationText}</span>
+                            <span>${timeStr}</span>
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            } else {
+                const taskId = item.taskId;
+                const isHelperTask = taskId.includes('_helper');
+                const mainTaskId = isHelperTask ? taskId.split('_helper')[0] : taskId;
+                const [pathName, type] = mainTaskId.split('_');
+                const isBreakTask = pathName === 'Pauze';
+                const duration = getEffectiveTaskDuration(taskId);
+                const tStart = currentTime;
+                currentTime += duration;
+
+                const data = state.pathColli[pathName];
+                const colliSuffix = (type === 'fill' && data && data.colli) ? ` (${data.colli} c)` : '';
+                const title = isHelperTask ? `${pathName} (Hulp)` : `${pathName}${colliSuffix}`;
+                const timeStr = `${formatTimeOfDay(tStart)} - ${formatTimeOfDay(currentTime)}`;
+                const durationText = formatMin(duration);
+
+                let cardTypeClass = type;
+                if (isBreakTask) cardTypeClass += ' break-task';
+                if (isHelperTask) cardTypeClass += ' helper';
+
+                tasksHtml += `
+                    <div class="task-card ${cardTypeClass}">
+                        <div class="task-card-title">${title}</div>
+                        <div class="task-card-meta">
+                            <span>${durationText}</span>
+                            <span>${timeStr}</span>
+                        </div>
+                    </div>
+                `;
+            }
         });
     }
 
@@ -108,7 +167,7 @@ const buildRowHtml = (filler) => {
     `;
 };
 
-const renderTable = (rows) => `
+const renderTable = (rows, mergeTasks = true) => `
     <table class="fillers-table">
         <colgroup>
             <col class="col-name">
@@ -125,12 +184,12 @@ const renderTable = (rows) => `
             </tr>
         </thead>
         <tbody>
-            ${rows.map(buildRowHtml).join('')}
+            ${rows.map(filler => buildRowHtml(filler, mergeTasks)).join('')}
         </tbody>
     </table>
 `;
 
-const executePrint = (notes = []) => {
+const executePrint = (notes = [], mergeTasks = true) => {
     let iframe = document.getElementById('print-vulplanning-iframe');
     if (!iframe) {
         iframe = document.createElement('iframe');
@@ -163,7 +222,7 @@ const executePrint = (notes = []) => {
         sectionsHtml += `
             <div class="table-section">
                 ${sortedNon.length > 0 ? `<div class="section-title">Vullers</div>` : ''}
-                ${renderTable(sortedActive)}
+                ${renderTable(sortedActive, mergeTasks)}
             </div>
         `;
     }
@@ -171,7 +230,7 @@ const executePrint = (notes = []) => {
         sectionsHtml += `
             <div class="table-section">
                 <div class="section-title">Niet-vullers</div>
-                ${renderTable(sortedNon)}
+                ${renderTable(sortedNon, mergeTasks)}
             </div>
         `;
     }
@@ -362,6 +421,7 @@ body {
     font-style: italic;
 }
 .task-card {
+    position: relative;
     border-radius: 3px;
     padding: 1px 4px;
     min-width: 85px;
@@ -383,6 +443,17 @@ body {
     background: #fffbeb;
     border-color: #fde68a;
     border-left: 3px solid #d97706;
+}
+.task-card.restanten {
+    background: #f5f3ff;
+    border-color: #ddd6fe;
+    border-left: 3px solid #8b5cf6;
+}
+.task-card.merged-trio {
+    background: linear-gradient(#f4f8ec, #f4f8ec) padding-box,
+                linear-gradient(135deg, #8b5cf6 0%, #8b5cf6 33.33%, #658d24 33.33%, #658d24 66.66%, #d97706 66.66%, #d97706 100%) border-box;
+    border: 1.5px solid transparent;
+    border-radius: 4px;
 }
 .task-card.helper {
     background: #fdf2f8;
@@ -517,7 +588,7 @@ export const generatePrintablePlanning = () => {
                             <i class="material-icons" style="font-size: 20px; color: var(--accent-color-sidemenu);">print</i>
                         </div>
                         <div>
-                            <h3 style="font-size: 17px; font-weight: 600; margin: 0; color: var(--text-color);">Notities voor Vulplanning</h3>
+                            <h3 style="font-size: 17px; font-weight: 600; margin: 0; color: var(--text-color);">Notities & Opties voor Vulplanning</h3>
                             <p style="font-size: 12px; color: var(--text-color-muted); margin: 0;">Voeg eventueel extra opmerkingen toe op de print</p>
                         </div>
                     </div>
@@ -530,6 +601,15 @@ export const generatePrintablePlanning = () => {
                     <i class="material-icons" style="font-size: 16px; color: var(--accent-color-sidemenu);">add</i>
                     <span>Regel Toevoegen</span>
                 </button>
+                <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border-color);">
+                    <label class="person-checkbox-label" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background-color: var(--input-bg); border-radius: 8px; border: 1px solid var(--border-color); cursor: pointer;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="material-icons" style="font-size: 18px; color: var(--accent-color-sidemenu);">call_merge</i>
+                            <span style="font-size: 13px; font-weight: 500; color: var(--text-color);">Restanten, vullen & spiegelen samenvoegen</span>
+                        </div>
+                        <input type="checkbox" id="modal-print-merge-tasks" checked style="width: 16px; height: 16px; accent-color: var(--accent-color-sidemenu); cursor: pointer;">
+                    </label>
+                </div>
                 <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-color);">
                     <button type="button" id="cancel-print-notes-btn" class="submit-btn" style="background: var(--border-color); color: var(--text-color); max-width: 110px; box-shadow: none; padding: 8px 14px; font-size: 13px;">Annuleren</button>
                     <button type="button" id="confirm-print-notes-btn" class="submit-btn" style="max-width: 130px; padding: 8px 16px; font-size: 13px;">Afdrukken</button>
@@ -556,8 +636,10 @@ export const generatePrintablePlanning = () => {
             const list = document.getElementById('print-notes-list');
             const noteInputs = list.querySelectorAll('.modal-note-input');
             const notes = Array.from(noteInputs).map(inp => inp.value.trim()).filter(Boolean);
+            const mergeCheckbox = document.getElementById('modal-print-merge-tasks');
+            const mergeTasks = mergeCheckbox ? mergeCheckbox.checked : true;
             closeModal();
-            executePrint(notes);
+            executePrint(notes, mergeTasks);
         });
     }
 
