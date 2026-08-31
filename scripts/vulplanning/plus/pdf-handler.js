@@ -17,23 +17,27 @@ export const parsePDFAndGetNames = async (file) => {
                 let name = row.rawText.substring(0, timeIndex).trim();
                 name = name.replace(/[…\.\s\-]+$/, '').trim();
                 if (name && !['TAAK', 'AANWEZIG', 'TIJDEN', 'DAGROOSTER', 'WINKEL', 'GOEDERENVERWERKING'].includes(name.toUpperCase()) && !name.toUpperCase().includes('AFGEDRUKT')) {
-                    const timeMatch = row.rawText.match(/\b\d{2}:\d{2}\s*-\s*\d{2}(?::\d{2})?[…\.]*/);
-                    const timeStr = timeMatch ? timeMatch[0].replace(/[…\.]+$/, '').trim() : '';
-                    const displayName = timeStr ? `${name} - ${timeStr}` : name;
-                    namesSet.add(displayName);
+                    const shiftMatches = [...row.rawText.matchAll(/\b(\d{2}:\d{2})\s*-\s*(\d{2}(?::\d{2})?)\b/g)];
+                    if (shiftMatches.length > 0) {
+                        const firstShift = shiftMatches[0];
+                        const lastShift = shiftMatches[shiftMatches.length - 1];
+                        const startStr = firstShift[1];
+                        const endRaw = lastShift[2];
+                        const endStr = endRaw.includes(':') ? endRaw : `${endRaw}:00`;
+                        const timeStr = `${startStr}-${endStr}`;
+                        const displayName = `${name} - ${timeStr}`;
+                        namesSet.add(displayName);
 
-                    const timeMatches = [...row.rawText.matchAll(/\b\d{2}:\d{2}\b/g)].map(m => m[0]);
-                    if (timeMatches.length >= 2) {
-                        const shiftMatch = row.rawText.match(/\b\d{2}:\d{2}\s*-\s*\d{2}(?::\d{2})?\b/);
-                        if (shiftMatch) {
-                            const afterShift = row.rawText.substring(shiftMatch.index + shiftMatch[0].length);
-                            const pauseMatch = afterShift.match(/\b\d{2}:\d{2}\b/);
-                            if (pauseMatch) {
-                                const pParts = pauseMatch[0].split(':');
-                                const pMin = (parseInt(pParts[0], 10) || 0) * 60 + (parseInt(pParts[1], 10) || 0);
-                                state.fillerBreaks[displayName] = pMin;
-                            }
+                        const lastShiftEndPos = lastShift.index + lastShift[0].length;
+                        const afterShifts = row.rawText.substring(lastShiftEndPos);
+                        const pauseMatch = afterShifts.match(/\b\d{2}:\d{2}\b/);
+                        if (pauseMatch) {
+                            const pParts = pauseMatch[0].split(':');
+                            const pMin = (parseInt(pParts[0], 10) || 0) * 60 + (parseInt(pParts[1], 10) || 0);
+                            state.fillerBreaks[displayName] = pMin;
                         }
+                    } else {
+                        namesSet.add(name);
                     }
                 }
             }
