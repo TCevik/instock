@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="nl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="css/main.css">
+    <script type="module" src="js/main.js"></script>
+
+    <link rel="stylesheet" href="css/modal.css">
+    <link rel="stylesheet" href="css/logs.css">
+    <script type="module" src="js/logs.js"></script>
+
+    <title>Systeem Logs</title>
+</head>
+
+<body>
+    <div class="page-container">
+        <div class="page-header-row">
+            <h1 class="page-title">Systeem Logs</h1>
+            <div class="page-header-actions">
+                <div class="table-search-wrapper">
+                    <span class="material-icons search-icon">search</span>
+                    <input type="text" id="searchInput" class="search-input" placeholder="Zoek op gebruiker...">
+                </div>
+                <div class="filter-select-wrapper" id="actionFilterContainer"></div>
+            </div>
+        </div>
+        <div class="table-card">
+            <div class="table-responsive">
+                <table class="logs-table">
+                    <thead>
+                        <tr>
+                            <th>Gebruiker</th>
+                            <th>Actie</th>
+                            <th class="th-sortable" id="thTime" title="Klik om te sorteren">
+                                <div class="th-content">
+                                    <span>Tijdstip</span>
+                                    <span class="material-icons sort-icon" id="sortTimeIcon">arrow_downward</span>
+                                </div>
+                            </th>
+                            <th class="th-actions">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTableBody">
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-pagination">
+                <span class="pagination-info" id="paginationInfo"></span>
+                <div class="pagination-buttons">
+                    <button type="button" class="pagination-btn" id="prevPageBtn">
+                        <span class="material-icons">chevron_left</span>
+                    </button>
+                    <span class="pagination-current" id="paginationCurrent"></span>
+                    <button type="button" class="pagination-btn" id="nextPageBtn">
+                        <span class="material-icons">chevron_right</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
