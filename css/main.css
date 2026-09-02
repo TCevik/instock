@@ -1,0 +1,80 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+* {
+    -webkit-tap-highlight-color: transparent;
+    margin: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+.material-icons {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+:root {
+    --accent-color: #658d24;
+    --accent-hover: #56771e;
+    --background-color: #121212;
+    --card-background: #18181b;
+    --card-border: #27272a;
+    --input-background: #161618;
+    --input-border: #27272a;
+    --input-focus: #658d24;
+    --text-color: #ffffff;
+    --text-color-muted: #8e8e93;
+    --text-color-placeholder: #52525b;
+    --scrollbar-thumb: #27272a;
+    --scrollbar-thumb-hover: #3f3f46;
+    --bg-shape-stroke: rgba(101, 141, 36, 0.45);
+}
+
+body {
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+.btn {
+    background-color: var(--accent-color);
+    color: var(--text-color);
+    border: none;
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background-color 0.2s;
+}
+
+.btn:hover {
+    background-color: var(--accent-hover);
+}
+
+.btn-icon {
+    font-size: 20px;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 20px;
+    border: 2px solid var(--background-color);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+}
