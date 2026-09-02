@@ -29,6 +29,10 @@ const PAGE_SIZE = 30;
 let allUsers = [];
 let filteredUsers = [];
 let currentPage = 1;
+let currentRoleFilter = 'all';
+let searchQuery = '';
+let currentSortKey = 'name';
+let currentSortDirection = 'asc';
 
 function getRoleLabel(role) {
     return ROLE_MAP[role] || String(role ?? 'Onbekend');
@@ -296,6 +300,81 @@ async function openEditModal(userId) {
     }
 }
 
+function updateSortIcons() {
+    const sortKeys = ['name', 'username', 'role', 'birthday', 'productivity'];
+    sortKeys.forEach(key => {
+        const icon = document.getElementById(`sortIcon_${key}`);
+        if (!icon) return;
+
+        if (currentSortKey === key) {
+            icon.textContent = currentSortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward';
+            icon.style.opacity = '1';
+        } else {
+            icon.textContent = 'unfold_more';
+            icon.style.opacity = '0.35';
+        }
+    });
+}
+
+function applyFiltersAndSort() {
+    let result = [...allUsers];
+
+    if (currentRoleFilter && currentRoleFilter !== 'all') {
+        const roleNum = Number(currentRoleFilter);
+        result = result.filter(u => Number(u.role) === roleNum);
+    }
+
+    const q = searchQuery.toLowerCase().trim();
+    if (q) {
+        result = result.filter(user => {
+            const name = (user.full_name || '').toLowerCase();
+            const username = (user.username || '').toLowerCase();
+            return name.includes(q) || username.includes(q);
+        });
+    }
+
+    result.sort((a, b) => {
+        let valA, valB;
+
+        if (currentSortKey === 'name') {
+            valA = (a.full_name || a.username || '').toLowerCase();
+            valB = (b.full_name || b.username || '').toLowerCase();
+            return currentSortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        }
+
+        if (currentSortKey === 'username') {
+            valA = (a.username || '').toLowerCase();
+            valB = (b.username || '').toLowerCase();
+            return currentSortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        }
+
+        if (currentSortKey === 'role') {
+            valA = Number(a.role) || 0;
+            valB = Number(b.role) || 0;
+            return currentSortDirection === 'asc' ? valA - valB : valB - valA;
+        }
+
+        if (currentSortKey === 'birthday') {
+            valA = a.birthday ? new Date(a.birthday).getTime() : 0;
+            valB = b.birthday ? new Date(b.birthday).getTime() : 0;
+            return currentSortDirection === 'asc' ? valA - valB : valB - valA;
+        }
+
+        if (currentSortKey === 'productivity') {
+            valA = a.productivity !== null && a.productivity !== undefined ? Number(a.productivity) : -1;
+            valB = b.productivity !== null && b.productivity !== undefined ? Number(b.productivity) : -1;
+            return currentSortDirection === 'asc' ? valA - valB : valB - valA;
+        }
+
+        return 0;
+    });
+
+    filteredUsers = result;
+    currentPage = 1;
+    updateSortIcons();
+    renderTable();
+}
+
 function renderTable() {
     const tbody = document.getElementById('usersTableBody');
     const paginationInfo = document.getElementById('paginationInfo');
@@ -369,41 +448,52 @@ function renderTable() {
     if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
 }
 
-function filterUsers(query) {
-    const q = query.toLowerCase().trim();
-    if (!q) {
-        filteredUsers = [...allUsers];
-    } else {
-        filteredUsers = allUsers.filter(user => {
-            const name = (user.full_name || '').toLowerCase();
-            const username = (user.username || '').toLowerCase();
-            const role = getRoleLabel(user.role).toLowerCase();
-            return name.includes(q) || username.includes(q) || role.includes(q);
-        });
-    }
-    currentPage = 1;
-    renderTable();
-}
-
 async function loadUsers() {
     const { data: users, error } = await supabase
         .from('user_data')
-        .select('user_id, full_name, username, role, birthday, productivity')
-        .order('full_name', { ascending: true });
+        .select('user_id, full_name, username, role, birthday, productivity');
 
     if (error || !users) return;
 
     allUsers = users;
-    filteredUsers = [...allUsers];
-    renderTable();
+    applyFiltersAndSort();
+}
+
+const roleFilterContainer = document.getElementById('roleFilterContainer');
+if (roleFilterContainer) {
+    createCustomSelect(roleFilterContainer, [
+        { value: 'all', label: 'Alle rollen' },
+        { value: '1', label: 'Medewerker' },
+        { value: '2', label: 'Teamleider' },
+        { value: '3', label: 'Beheerder' }
+    ], 'all', 'Filter op rol', (val) => {
+        currentRoleFilter = val;
+        applyFiltersAndSort();
+    });
 }
 
 const searchInput = document.getElementById('searchInput');
 if (searchInput) {
     searchInput.addEventListener('input', (e) => {
-        filterUsers(e.target.value);
+        searchQuery = e.target.value;
+        applyFiltersAndSort();
     });
 }
+
+document.querySelectorAll('.th-sortable').forEach(th => {
+    th.addEventListener('click', () => {
+        const key = th.getAttribute('data-sort-key');
+        if (!key) return;
+
+        if (currentSortKey === key) {
+            currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            currentSortKey = key;
+            currentSortDirection = 'asc';
+        }
+        applyFiltersAndSort();
+    });
+});
 
 const createUserBtn = document.getElementById('createUserBtn');
 if (createUserBtn) {

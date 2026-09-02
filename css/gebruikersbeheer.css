@@ -23,7 +23,7 @@
     position: relative;
     display: flex;
     align-items: center;
-    width: 320px;
+    width: 280px;
 }
 
 .search-icon {
@@ -52,6 +52,10 @@
 
 .search-input:focus {
     border-color: var(--input-focus);
+}
+
+.filter-select-wrapper {
+    width: 180px;
 }
 
 .table-card {
@@ -88,6 +92,28 @@
     color: var(--text-color-muted);
     text-transform: uppercase;
     white-space: nowrap;
+}
+
+.th-sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s;
+}
+
+.th-sortable:hover {
+    color: var(--text-color);
+}
+
+.th-content {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sort-icon {
+    font-size: 16px;
+    color: var(--accent-color);
+    transition: transform 0.2s;
 }
 
 .users-table td {
@@ -244,4 +270,11 @@
 
 .action-btn .material-icons {
     font-size: 18px;
+}
+
+@media (max-width: 768px) {
+    .table-search-wrapper,
+    .filter-select-wrapper {
+        width: 100%;
+    }
 }

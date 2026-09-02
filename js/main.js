@@ -79,6 +79,34 @@ export async function logout() {
     window.location.replace('login.html');
 }
 
+function disableInputSuggestions(root = document) {
+    const inputs = root.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]), textarea');
+    inputs.forEach(input => {
+        input.setAttribute('autocomplete', 'off');
+        input.setAttribute('autocorrect', 'off');
+        input.setAttribute('autocapitalize', 'off');
+        input.setAttribute('spellcheck', 'false');
+    });
+}
+
+disableInputSuggestions();
+
+const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+            if (node.nodeType === 1) {
+                if (node.matches && node.matches('input, textarea')) {
+                    disableInputSuggestions(node.parentElement || document);
+                } else if (node.querySelectorAll) {
+                    disableInputSuggestions(node);
+                }
+            }
+        }
+    }
+});
+
+observer.observe(document.documentElement, { childList: true, subtree: true });
+
 checkAuth();
 loadOverlay();
 initModal();

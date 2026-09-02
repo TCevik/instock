@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="css/main.css">
     <script type="module" src="js/main.js"></script>
 
+    <link rel="stylesheet" href="css/modal.css">
     <link rel="stylesheet" href="css/gebruikersbeheer.css">
     <script type="module" src="js/gebruikersbeheer.js"></script>
 
@@ -21,8 +22,9 @@
             <div class="page-header-actions">
                 <div class="table-search-wrapper">
                     <span class="material-icons search-icon">search</span>
-                    <input type="text" id="searchInput" class="search-input" placeholder="Zoek op naam, gebruikersnaam of rol...">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Zoek op naam of gebruikersnaam...">
                 </div>
+                <div class="filter-select-wrapper" id="roleFilterContainer"></div>
                 <button type="button" class="btn" id="createUserBtn">
                     <span class="material-icons btn-icon">person_add</span>
                     <span>Nieuwe gebruiker</span>
@@ -34,11 +36,36 @@
                 <table class="users-table">
                     <thead>
                         <tr>
-                            <th>Gebruiker</th>
-                            <th>Gebruikersnaam</th>
-                            <th>Rol</th>
-                            <th>Geboortedatum</th>
-                            <th>Productiviteit</th>
+                            <th class="th-sortable" data-sort-key="name">
+                                <div class="th-content">
+                                    <span>Gebruiker</span>
+                                    <span class="material-icons sort-icon" id="sortIcon_name">unfold_more</span>
+                                </div>
+                            </th>
+                            <th class="th-sortable" data-sort-key="username">
+                                <div class="th-content">
+                                    <span>Gebruikersnaam</span>
+                                    <span class="material-icons sort-icon" id="sortIcon_username">unfold_more</span>
+                                </div>
+                            </th>
+                            <th class="th-sortable" data-sort-key="role">
+                                <div class="th-content">
+                                    <span>Rol</span>
+                                    <span class="material-icons sort-icon" id="sortIcon_role">unfold_more</span>
+                                </div>
+                            </th>
+                            <th class="th-sortable" data-sort-key="birthday">
+                                <div class="th-content">
+                                    <span>Geboortedatum</span>
+                                    <span class="material-icons sort-icon" id="sortIcon_birthday">unfold_more</span>
+                                </div>
+                            </th>
+                            <th class="th-sortable" data-sort-key="productivity">
+                                <div class="th-content">
+                                    <span>Productiviteit</span>
+                                    <span class="material-icons sort-icon" id="sortIcon_productivity">unfold_more</span>
+                                </div>
+                            </th>
                             <th class="th-actions">Acties</th>
                         </tr>
                     </thead>
