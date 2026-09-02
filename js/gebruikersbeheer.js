@@ -1,4 +1,6 @@
-import { supabase } from './main.js';
+import { supabase, showModal, closeModal } from './main.js';
+import { createDatePicker } from './datepicker.js';
+import { createCustomSelect } from './select.js';
 
 function escapeHtml(str) {
     if (!str) return '';
@@ -30,6 +32,79 @@ let currentPage = 1;
 
 function getRoleLabel(role) {
     return ROLE_MAP[role] || String(role ?? 'Onbekend');
+}
+
+async function openEditModal(userId) {
+    const user = allUsers.find(u => String(u.user_id) === String(userId));
+    if (!user) return;
+
+    const fullName = escapeHtml(user.full_name || '');
+    const username = escapeHtml(user.username || '');
+    const birthday = user.birthday || '';
+    const userRole = Number(user.role) || 1;
+
+    await showModal(`
+        <div class="modal-header">
+            <h2 class="modal-title">Gebruiker bewerken</h2>
+            <p class="modal-subtitle">Pas de gegevens van de gebruiker aan</p>
+        </div>
+        <form class="modal-form" id="editUserForm">
+            <div class="form-group">
+                <label for="editFullName">Volledige naam</label>
+                <input type="text" id="editFullName" class="modal-input" value="${fullName}" required>
+            </div>
+            <div class="form-group">
+                <label for="editUsername">Gebruikersnaam</label>
+                <input type="text" id="editUsername" class="modal-input" value="${username}" required>
+            </div>
+            <div class="modal-form-row">
+                <div class="form-group">
+                    <label>Rol</label>
+                    <div id="editRoleSelect"></div>
+                </div>
+                <div class="form-group">
+                    <label>Geboortedatum</label>
+                    <div id="editBirthdayPicker"></div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Afdelingen</label>
+                <div id="editDepartmentSelect"></div>
+            </div>
+            <div class="form-group">
+                <label for="editPassword">Wachtwoord</label>
+                <input type="password" id="editPassword" class="modal-input" placeholder="Laat leeg om niet te wijzigen">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="modal-btn-secondary" id="cancelEditModalBtn">Annuleren</button>
+                <button type="submit" class="btn">Opslaan</button>
+            </div>
+        </form>
+    `);
+
+    const roleContainer = document.getElementById('editRoleSelect');
+    if (roleContainer) {
+        createCustomSelect(roleContainer, [
+            { value: '1', label: 'Medewerker' },
+            { value: '2', label: 'Teamleider' },
+            { value: '3', label: 'Beheerder' }
+        ], String(userRole));
+    }
+
+    const deptContainer = document.getElementById('editDepartmentSelect');
+    if (deptContainer) {
+        createCustomSelect(deptContainer, [], '', 'Selecteer afdeling...');
+    }
+
+    const datePickerContainer = document.getElementById('editBirthdayPicker');
+    if (datePickerContainer) {
+        createDatePicker(datePickerContainer, birthday);
+    }
+
+    const cancelBtn = document.getElementById('cancelEditModalBtn');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', closeModal);
+    }
 }
 
 function renderTable() {
@@ -158,6 +233,19 @@ if (nextPageBtn) {
         if (currentPage < totalPages) {
             currentPage++;
             renderTable();
+        }
+    });
+}
+
+const usersTableBody = document.getElementById('usersTableBody');
+if (usersTableBody) {
+    usersTableBody.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-btn');
+        if (editBtn) {
+            const userId = editBtn.getAttribute('data-user-id');
+            if (userId) {
+                openEditModal(userId);
+            }
         }
     });
 }
