@@ -1,1 +1,243 @@
+.page-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
 
+.page-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-color);
+}
+
+.table-search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 280px;
+    max-width: 360px;
+    width: 100%;
+}
+
+.search-icon {
+    position: absolute;
+    left: 14px;
+    font-size: 20px;
+    color: var(--text-color-placeholder);
+    pointer-events: none;
+}
+
+.search-input {
+    width: 100%;
+    background-color: var(--input-background);
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    padding: 12px 14px 12px 42px;
+    font-size: 14px;
+    color: var(--text-color);
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.search-input::placeholder {
+    color: var(--text-color-placeholder);
+}
+
+.search-input:focus {
+    border-color: var(--input-focus);
+}
+
+.table-card {
+    background-color: var(--card-background);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 14px;
+}
+
+.users-table thead {
+    background-color: var(--input-background);
+    border-bottom: 1px solid var(--card-border);
+}
+
+.users-table th {
+    padding: 14px 20px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--text-color-muted);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.users-table td {
+    padding: 14px 20px;
+    color: var(--text-color);
+    border-bottom: 1px solid var(--card-border);
+    white-space: nowrap;
+}
+
+.users-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.users-table tbody tr:hover {
+    background-color: var(--input-background);
+}
+
+.user-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-avatar-sm {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background-color: var(--input-background);
+    border: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-color);
+    flex-shrink: 0;
+}
+
+.user-avatar-sm .material-icons {
+    font-size: 20px;
+}
+
+.user-full-name {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.username-cell {
+    color: var(--text-color-muted);
+}
+
+.role-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    background-color: var(--input-background);
+    border: 1px solid var(--card-border);
+    color: var(--accent-color);
+}
+
+.table-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-top: 1px solid var(--card-border);
+    background-color: var(--card-background);
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.pagination-info {
+    font-size: 13px;
+    color: var(--text-color-muted);
+}
+
+.pagination-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pagination-btn {
+    background-color: var(--input-background);
+    border: 1px solid var(--card-border);
+    color: var(--text-color);
+    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background-color: var(--card-border);
+    border-color: var(--input-focus);
+}
+
+.pagination-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.pagination-btn .material-icons {
+    font-size: 20px;
+}
+
+.pagination-current {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-color);
+    padding: 0 6px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--text-color-muted);
+    font-size: 14px;
+}
+
+.th-actions {
+    text-align: right;
+    width: 60px;
+}
+
+.td-actions {
+    text-align: right;
+    width: 60px;
+}
+
+.action-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-color-muted);
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: color 0.2s, background-color 0.2s, border-color 0.2s;
+}
+
+.action-btn:hover {
+    color: var(--text-color);
+    background-color: var(--card-border);
+    border-color: var(--input-focus);
+}
+
+.action-btn .material-icons {
+    font-size: 18px;
+}

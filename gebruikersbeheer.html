@@ -15,6 +15,45 @@
 </head>
 
 <body>
+    <div class="page-container">
+        <div class="page-header-row">
+            <h1 class="page-title">Gebruikersbeheer</h1>
+            <div class="table-search-wrapper">
+                <span class="material-icons search-icon">search</span>
+                <input type="text" id="searchInput" class="search-input" placeholder="Zoek op naam, gebruikersnaam of rol...">
+            </div>
+        </div>
+        <div class="table-card">
+            <div class="table-responsive">
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>Gebruiker</th>
+                            <th>Gebruikersnaam</th>
+                            <th>Rol</th>
+                            <th>Geboortedatum</th>
+                            <th>Productiviteit</th>
+                            <th class="th-actions">Acties</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-pagination">
+                <span class="pagination-info" id="paginationInfo"></span>
+                <div class="pagination-buttons">
+                    <button type="button" class="pagination-btn" id="prevPageBtn">
+                        <span class="material-icons">chevron_left</span>
+                    </button>
+                    <span class="pagination-current" id="paginationCurrent"></span>
+                    <button type="button" class="pagination-btn" id="nextPageBtn">
+                        <span class="material-icons">chevron_right</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
