@@ -25,6 +25,21 @@ function formatDutchDate(dateStr) {
     return dateStr;
 }
 
+function formatDateTime(isoString) {
+    if (!isoString) return '-';
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return isoString;
+
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+
+    return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
+}
+
 const PAGE_SIZE = 30;
 let allUsers = [];
 let filteredUsers = [];
@@ -408,7 +423,7 @@ async function openEditModal(userId) {
 }
 
 function updateSortIcons() {
-    const sortKeys = ['name', 'username', 'role', 'departments', 'birthday', 'productivity'];
+    const sortKeys = ['name', 'username', 'role', 'departments', 'birthday', 'productivity', 'last_sign_in_at'];
     sortKeys.forEach(key => {
         const icon = document.getElementById(`sortIcon_${key}`);
         if (!icon) return;
@@ -480,6 +495,12 @@ function applyFiltersAndSort() {
             return currentSortDirection === 'asc' ? valA - valB : valB - valA;
         }
 
+        if (currentSortKey === 'last_sign_in_at') {
+            valA = a.last_sign_in_at ? new Date(a.last_sign_in_at).getTime() : 0;
+            valB = b.last_sign_in_at ? new Date(b.last_sign_in_at).getTime() : 0;
+            return currentSortDirection === 'asc' ? valA - valB : valB - valA;
+        }
+
         return 0;
     });
 
@@ -511,7 +532,7 @@ function renderTable() {
     if (pageUsers.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="empty-state">Geen gebruikers gevonden</td>
+                <td colspan="8" class="empty-state">Geen gebruikers gevonden</td>
             </tr>
         `;
     } else {
@@ -525,6 +546,7 @@ function renderTable() {
                 : `<div class="departments-list">${depts.map(d => `<span class="department-badge">${escapeHtml(d)}</span>`).join('')}</div>`;
             const birthday = escapeHtml(formatDutchDate(user.birthday));
             const productivity = user.productivity !== null && user.productivity !== undefined ? escapeHtml(String(user.productivity)) : '-';
+            const lastSignIn = escapeHtml(formatDateTime(user.last_sign_in_at));
 
             return `
                 <tr>
@@ -541,6 +563,7 @@ function renderTable() {
                     <td>${departmentsHtml}</td>
                     <td>${birthday}</td>
                     <td>${productivity}</td>
+                    <td class="time-cell">${lastSignIn}</td>
                     <td class="td-actions">
                         <button type="button" class="action-btn edit-btn" data-user-id="${escapeHtml(user.user_id)}" title="Bewerken">
                             <span class="material-icons">edit</span>
@@ -570,7 +593,7 @@ function renderTable() {
 async function loadUsers() {
     const { data: users, error } = await supabase
         .from('user_data')
-        .select('user_id, full_name, username, role, departments, birthday, productivity');
+        .select('user_id, full_name, username, role, departments, birthday, productivity, last_sign_in_at');
 
     if (error || !users) return;
 
