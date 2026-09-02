@@ -1,4 +1,4 @@
-import { supabase, showModal, closeModal, showConfirmModal, showToast } from './main.js';
+import { supabase, showModal, closeModal, showConfirmModal, showPromptModal, showToast } from './main.js';
 import { createDatePicker } from './datepicker.js';
 import { createCustomSelect } from './select.js';
 
@@ -36,6 +36,64 @@ let currentSortDirection = 'asc';
 
 function getRoleLabel(role) {
     return ROLE_MAP[role] || String(role ?? 'Onbekend');
+}
+
+function parseUserDepartments(deptVal) {
+    if (!deptVal) return [];
+    if (Array.isArray(deptVal)) return deptVal.filter(Boolean);
+    if (typeof deptVal === 'string') {
+        try {
+            const parsed = JSON.parse(deptVal);
+            if (Array.isArray(parsed)) return parsed.filter(Boolean);
+        } catch (_) {}
+        return deptVal.split(',').map(s => s.trim()).filter(Boolean);
+    }
+    return [];
+}
+
+function getDistinctDepartments(extraDepts = []) {
+    const set = new Set();
+    allUsers.forEach(u => {
+        const depts = parseUserDepartments(u.departments);
+        depts.forEach(d => {
+            if (d && String(d).trim()) {
+                set.add(String(d).trim());
+            }
+        });
+    });
+    const extraArr = Array.isArray(extraDepts) ? extraDepts : (extraDepts ? [extraDepts] : []);
+    extraArr.forEach(d => {
+        if (d && String(d).trim()) {
+            set.add(String(d).trim());
+        }
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+}
+
+function getDepartmentOptions(selectedDepts = []) {
+    const list = getDistinctDepartments(selectedDepts);
+    return list.map(dept => ({
+        value: dept,
+        label: dept
+    }));
+}
+
+async function promptNewDepartment(selectInstance) {
+    const newDept = await showPromptModal({
+        title: 'Nieuwe afdeling toevoegen',
+        subtitle: 'Voer de naam van de nieuwe afdeling in',
+        placeholder: 'Bijv. Kassa, Vulploeg, Bakkerij...',
+        confirmText: 'Toevoegen',
+        cancelText: 'Annuleren'
+    });
+    if (!newDept || !newDept.trim()) return;
+    const cleanDept = newDept.trim();
+    const currentSelected = selectInstance.getValue();
+    const nextSelected = Array.isArray(currentSelected) 
+        ? (currentSelected.includes(cleanDept) ? currentSelected : [...currentSelected, cleanDept])
+        : [cleanDept];
+    const updatedOptions = getDepartmentOptions(nextSelected);
+    selectInstance.setOptions(updatedOptions, nextSelected);
 }
 
 async function invokeUserManagement(action, payload) {
@@ -82,6 +140,10 @@ async function openCreateModal() {
                 <label for="createUsername">Gebruikersnaam</label>
                 <input type="text" id="createUsername" class="modal-input" placeholder="Bijv. jandevries" required>
             </div>
+            <div class="form-group">
+                <label>Afdelingen</label>
+                <div id="createDepartmentSelect"></div>
+            </div>
             <div class="modal-form-row">
                 <div class="form-group">
                     <label>Rol</label>
@@ -113,6 +175,24 @@ async function openCreateModal() {
         ], '1');
     }
 
+    const deptContainer = document.getElementById('createDepartmentSelect');
+    let deptSelect = null;
+    if (deptContainer) {
+        deptSelect = createCustomSelect(
+            deptContainer,
+            getDepartmentOptions([]),
+            [],
+            'Selecteer afdelingen...',
+            null,
+            {
+                label: 'Nieuwe afdeling toevoegen...',
+                icon: 'add',
+                onClick: () => promptNewDepartment(deptSelect)
+            },
+            true
+        );
+    }
+
     const datePickerContainer = document.getElementById('createBirthdayPicker');
     let birthdayPicker = null;
     if (datePickerContainer) {
@@ -139,6 +219,7 @@ async function openCreateModal() {
             const password = document.getElementById('createPassword')?.value;
             const role = roleSelect ? Number(roleSelect.getValue()) : 1;
             const birthday = birthdayPicker ? birthdayPicker.getValue() : null;
+            const departments = deptSelect ? deptSelect.getValue() : [];
 
             try {
                 await invokeUserManagement('create', {
@@ -146,7 +227,8 @@ async function openCreateModal() {
                     username,
                     password,
                     role,
-                    birthday: birthday || null
+                    birthday: birthday || null,
+                    departments: departments.length > 0 ? departments : null
                 });
                 closeModal();
                 showToast('notification', 'Gebruiker succesvol aangemaakt');
@@ -170,6 +252,7 @@ async function openEditModal(userId) {
     const username = escapeHtml(user.username || '');
     const birthday = user.birthday || '';
     const userRole = Number(user.role) || 1;
+    const userDepartments = parseUserDepartments(user.departments);
 
     await showModal(`
         <div class="modal-header">
@@ -184,6 +267,10 @@ async function openEditModal(userId) {
             <div class="form-group">
                 <label for="editUsername">Gebruikersnaam</label>
                 <input type="text" id="editUsername" class="modal-input" value="${username}" required>
+            </div>
+            <div class="form-group">
+                <label>Afdelingen</label>
+                <div id="editDepartmentSelect"></div>
             </div>
             <div class="modal-form-row">
                 <div class="form-group">
@@ -218,6 +305,24 @@ async function openEditModal(userId) {
             { value: '2', label: 'Teamleider' },
             { value: '3', label: 'Beheerder' }
         ], String(userRole));
+    }
+
+    const deptContainer = document.getElementById('editDepartmentSelect');
+    let deptSelect = null;
+    if (deptContainer) {
+        deptSelect = createCustomSelect(
+            deptContainer,
+            getDepartmentOptions(userDepartments),
+            userDepartments,
+            'Selecteer afdelingen...',
+            null,
+            {
+                label: 'Nieuwe afdeling toevoegen...',
+                icon: 'add',
+                onClick: () => promptNewDepartment(deptSelect)
+            },
+            true
+        );
     }
 
     const datePickerContainer = document.getElementById('editBirthdayPicker');
@@ -271,13 +376,15 @@ async function openEditModal(userId) {
             const newPassword = document.getElementById('editPassword')?.value;
             const newRole = roleSelect ? Number(roleSelect.getValue()) : userRole;
             const newBirthday = birthdayPicker ? birthdayPicker.getValue() : null;
+            const newDepartments = deptSelect ? deptSelect.getValue() : [];
 
             const payload = {
                 user_id: userId,
                 full_name: newFullName,
                 username: newUsername,
                 role: newRole,
-                birthday: newBirthday || null
+                birthday: newBirthday || null,
+                departments: newDepartments.length > 0 ? newDepartments : null
             };
 
             if (newPassword) {
@@ -301,7 +408,7 @@ async function openEditModal(userId) {
 }
 
 function updateSortIcons() {
-    const sortKeys = ['name', 'username', 'role', 'birthday', 'productivity'];
+    const sortKeys = ['name', 'username', 'role', 'departments', 'birthday', 'productivity'];
     sortKeys.forEach(key => {
         const icon = document.getElementById(`sortIcon_${key}`);
         if (!icon) return;
@@ -329,7 +436,8 @@ function applyFiltersAndSort() {
         result = result.filter(user => {
             const name = (user.full_name || '').toLowerCase();
             const username = (user.username || '').toLowerCase();
-            return name.includes(q) || username.includes(q);
+            const departments = parseUserDepartments(user.departments).join(' ').toLowerCase();
+            return name.includes(q) || username.includes(q) || departments.includes(q);
         });
     }
 
@@ -352,6 +460,12 @@ function applyFiltersAndSort() {
             valA = Number(a.role) || 0;
             valB = Number(b.role) || 0;
             return currentSortDirection === 'asc' ? valA - valB : valB - valA;
+        }
+
+        if (currentSortKey === 'departments') {
+            valA = parseUserDepartments(a.departments).join(', ').toLowerCase();
+            valB = parseUserDepartments(b.departments).join(', ').toLowerCase();
+            return currentSortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
         }
 
         if (currentSortKey === 'birthday') {
@@ -397,7 +511,7 @@ function renderTable() {
     if (pageUsers.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="empty-state">Geen gebruikers gevonden</td>
+                <td colspan="7" class="empty-state">Geen gebruikers gevonden</td>
             </tr>
         `;
     } else {
@@ -405,6 +519,10 @@ function renderTable() {
             const displayName = escapeHtml(user.full_name?.trim() || user.username?.trim() || 'Gebruiker');
             const username = escapeHtml(user.username ? `@${user.username}` : '-');
             const role = escapeHtml(getRoleLabel(user.role));
+            const depts = parseUserDepartments(user.departments);
+            const departmentsHtml = depts.length === 0 
+                ? '-' 
+                : `<div class="departments-list">${depts.map(d => `<span class="department-badge">${escapeHtml(d)}</span>`).join('')}</div>`;
             const birthday = escapeHtml(formatDutchDate(user.birthday));
             const productivity = user.productivity !== null && user.productivity !== undefined ? escapeHtml(String(user.productivity)) : '-';
 
@@ -420,6 +538,7 @@ function renderTable() {
                     </td>
                     <td class="username-cell">${username}</td>
                     <td><span class="role-badge">${role}</span></td>
+                    <td>${departmentsHtml}</td>
                     <td>${birthday}</td>
                     <td>${productivity}</td>
                     <td class="td-actions">
@@ -451,7 +570,7 @@ function renderTable() {
 async function loadUsers() {
     const { data: users, error } = await supabase
         .from('user_data')
-        .select('user_id, full_name, username, role, birthday, productivity');
+        .select('user_id, full_name, username, role, departments, birthday, productivity');
 
     if (error || !users) return;
 
@@ -537,3 +656,4 @@ if (usersTableBody) {
 }
 
 loadUsers();
+

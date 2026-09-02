@@ -196,14 +196,23 @@
     background-color: var(--card-background);
     border: 1px solid var(--card-border);
     border-radius: 12px;
-    padding: 6px;
+    padding: 8px;
     z-index: 20;
     display: none;
     flex-direction: column;
-    gap: 2px;
-    max-height: 200px;
+    gap: 4px;
+    max-height: 220px;
     overflow-y: auto;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.custom-select-dropdown::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 0;
+    right: 0;
+    height: 8px;
 }
 
 .custom-select-dropdown.active {
@@ -214,8 +223,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 12px;
-    font-size: 13px;
+    padding: 11px 14px;
+    font-size: 13.5px;
     font-weight: 500;
     color: var(--text-color);
     border-radius: 8px;
@@ -243,6 +252,33 @@
     font-size: 13px;
     color: var(--text-color-muted);
     text-align: center;
+}
+
+.custom-select-divider {
+    height: 1px;
+    background-color: var(--card-border);
+    margin: 4px 0;
+}
+
+.custom-select-action-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.custom-select-action-option:hover {
+    background-color: var(--input-background);
+}
+
+.custom-select-action-option .material-icons {
+    font-size: 18px;
 }
 
 .custom-datepicker {

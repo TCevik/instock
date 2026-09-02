@@ -1,5 +1,5 @@
 import { supabase } from './supabase.js';
-import { initModal, showModal, closeModal, showConfirmModal } from './modal.js';
+import { initModal, showModal, closeModal, showConfirmModal, showPromptModal } from './modal.js';
 import { initToast, showToast } from './toast.js';
 
 async function checkAuth() {
@@ -112,4 +112,4 @@ loadOverlay();
 initModal();
 initToast();
 
-export { supabase, showModal, closeModal, showConfirmModal, showToast };
+export { supabase, initModal, showModal, closeModal, showConfirmModal, showPromptModal, initToast, showToast };

@@ -1,24 +1,69 @@
-export function createCustomSelect(containerElement, options = [], selectedValue = '', placeholder = 'Selecteer...', onChange = null) {
-    let currentVal = selectedValue;
-    const selectedOption = options.find(o => String(o.value) === String(selectedValue));
-    const label = selectedOption ? selectedOption.label : placeholder;
+export function createCustomSelect(containerElement, options = [], selectedValue = '', placeholder = 'Selecteer...', onChange = null, actionOption = null, isMulti = false) {
+    let currentVal = isMulti 
+        ? (Array.isArray(selectedValue) ? selectedValue.map(String) : (selectedValue ? [String(selectedValue)] : []))
+        : (selectedValue !== null && selectedValue !== undefined ? String(selectedValue) : '');
+
+    function getDisplayLabel() {
+        if (isMulti) {
+            if (!Array.isArray(currentVal) || currentVal.length === 0) {
+                return placeholder;
+            }
+            return currentVal.map(val => {
+                const opt = options.find(o => String(o.value) === String(val));
+                return opt ? opt.label : val;
+            }).join(', ');
+        } else {
+            const selectedOption = options.find(o => String(o.value) === String(currentVal));
+            return selectedOption ? selectedOption.label : (currentVal ? currentVal : placeholder);
+        }
+    }
+
+    function isOptionSelected(val) {
+        if (isMulti) {
+            return Array.isArray(currentVal) && currentVal.includes(String(val));
+        }
+        return String(val) === String(currentVal);
+    }
+
+    function renderDropdownContent() {
+        let optionsHtml = '';
+        if (options.length === 0 && !actionOption) {
+            optionsHtml = `<div class="custom-select-empty">Geen opties beschikbaar</div>`;
+        } else {
+            optionsHtml = options.map(opt => {
+                const selected = isOptionSelected(opt.value);
+                return `
+                    <div class="custom-select-option${selected ? ' selected' : ''}" data-value="${opt.value}">
+                        <span>${opt.label}</span>
+                        ${selected ? '<span class="material-icons custom-select-check">check</span>' : ''}
+                    </div>
+                `;
+            }).join('');
+
+            if (actionOption) {
+                if (options.length > 0) {
+                    optionsHtml += `<div class="custom-select-divider"></div>`;
+                }
+                optionsHtml += `
+                    <div class="custom-select-action-option" id="${actionOption.id || 'customSelectActionBtn'}">
+                        <span class="material-icons">${actionOption.icon || 'add'}</span>
+                        <span>${actionOption.label}</span>
+                    </div>
+                `;
+            }
+        }
+        return optionsHtml;
+    }
 
     containerElement.innerHTML = `
         <div class="custom-select-wrapper">
-            <input type="hidden" class="custom-select-value" value="${currentVal}">
+            <input type="hidden" class="custom-select-value" value="${isMulti ? JSON.stringify(currentVal) : currentVal}">
             <div class="custom-select-trigger" tabindex="0">
-                <span class="custom-select-label">${label}</span>
+                <span class="custom-select-label">${getDisplayLabel()}</span>
                 <span class="material-icons custom-select-arrow">expand_more</span>
             </div>
             <div class="custom-select-dropdown">
-                ${options.length === 0 
-                    ? `<div class="custom-select-empty">Geen opties beschikbaar</div>`
-                    : options.map(opt => `
-                        <div class="custom-select-option${String(opt.value) === String(currentVal) ? ' selected' : ''}" data-value="${opt.value}">
-                            <span>${opt.label}</span>
-                            ${String(opt.value) === String(currentVal) ? '<span class="material-icons custom-select-check">check</span>' : ''}
-                        </div>
-                    `).join('')}
+                ${renderDropdownContent()}
             </div>
         </div>
     `;
@@ -60,27 +105,66 @@ export function createCustomSelect(containerElement, options = [], selectedValue
     });
 
     dropdown.addEventListener('click', (e) => {
+        const actionEl = e.target.closest('.custom-select-action-option');
+        if (actionEl && actionOption && actionOption.onClick) {
+            closeDropdown();
+            actionOption.onClick();
+            return;
+        }
+
         const optionEl = e.target.closest('.custom-select-option');
         if (!optionEl) return;
 
         const val = optionEl.getAttribute('data-value');
-        const text = optionEl.querySelector('span').textContent;
 
-        currentVal = val;
-        hiddenVal.value = val;
-        labelSpan.textContent = text;
+        if (isMulti) {
+            e.stopPropagation();
+            if (!Array.isArray(currentVal)) currentVal = [];
+            const index = currentVal.indexOf(val);
+            if (index > -1) {
+                currentVal.splice(index, 1);
+            } else {
+                currentVal.push(val);
+            }
+            hiddenVal.value = JSON.stringify(currentVal);
+            labelSpan.textContent = getDisplayLabel();
+            dropdown.innerHTML = renderDropdownContent();
+            if (onChange) onChange([...currentVal]);
+        } else {
+            const text = optionEl.querySelector('span').textContent;
+            currentVal = val;
+            hiddenVal.value = val;
+            labelSpan.textContent = text;
 
-        dropdown.querySelectorAll('.custom-select-option').forEach(el => {
-            el.classList.remove('selected');
-            const check = el.querySelector('.custom-select-check');
-            if (check) check.remove();
-        });
+            dropdown.querySelectorAll('.custom-select-option').forEach(el => {
+                el.classList.remove('selected');
+                const check = el.querySelector('.custom-select-check');
+                if (check) check.remove();
+            });
 
-        optionEl.classList.add('selected');
-        optionEl.insertAdjacentHTML('beforeend', '<span class="material-icons custom-select-check">check</span>');
+            optionEl.classList.add('selected');
+            optionEl.insertAdjacentHTML('beforeend', '<span class="material-icons custom-select-check">check</span>');
 
-        closeDropdown();
-        if (onChange) onChange(val);
+            closeDropdown();
+            if (onChange) onChange(val);
+        }
+    });
+
+    let closeTimer = null;
+
+    root.addEventListener('mouseenter', () => {
+        if (closeTimer) {
+            clearTimeout(closeTimer);
+            closeTimer = null;
+        }
+    });
+
+    root.addEventListener('mouseleave', () => {
+        if (dropdown.classList.contains('active')) {
+            closeTimer = setTimeout(() => {
+                closeDropdown();
+            }, 120);
+        }
     });
 
     document.addEventListener('click', (e) => {
@@ -90,25 +174,36 @@ export function createCustomSelect(containerElement, options = [], selectedValue
     });
 
     return {
-        getValue: () => hiddenVal.value,
-        setValue: (val) => {
-            currentVal = val;
-            hiddenVal.value = val;
-            const opt = options.find(o => String(o.value) === String(val));
-            labelSpan.textContent = opt ? opt.label : placeholder;
-        },
-        setOptions: (newOptions) => {
-            options = newOptions;
-            if (options.length === 0) {
-                dropdown.innerHTML = `<div class="custom-select-empty">Geen opties beschikbaar</div>`;
-            } else {
-                dropdown.innerHTML = options.map(opt => `
-                    <div class="custom-select-option${String(opt.value) === String(currentVal) ? ' selected' : ''}" data-value="${opt.value}">
-                        <span>${opt.label}</span>
-                        ${String(opt.value) === String(currentVal) ? '<span class="material-icons custom-select-check">check</span>' : ''}
-                    </div>
-                `).join('');
+        getValue: () => {
+            if (isMulti) {
+                return Array.isArray(currentVal) ? [...currentVal] : [];
             }
+            return hiddenVal.value;
+        },
+        setValue: (val) => {
+            if (isMulti) {
+                currentVal = Array.isArray(val) ? val.map(String) : (val ? [String(val)] : []);
+                hiddenVal.value = JSON.stringify(currentVal);
+            } else {
+                currentVal = val !== null && val !== undefined ? String(val) : '';
+                hiddenVal.value = currentVal;
+            }
+            labelSpan.textContent = getDisplayLabel();
+            dropdown.innerHTML = renderDropdownContent();
+        },
+        setOptions: (newOptions, newSelectedValue = undefined) => {
+            options = newOptions;
+            if (newSelectedValue !== undefined) {
+                if (isMulti) {
+                    currentVal = Array.isArray(newSelectedValue) ? newSelectedValue.map(String) : (newSelectedValue ? [String(newSelectedValue)] : []);
+                    hiddenVal.value = JSON.stringify(currentVal);
+                } else {
+                    currentVal = newSelectedValue !== null && newSelectedValue !== undefined ? String(newSelectedValue) : '';
+                    hiddenVal.value = currentVal;
+                }
+                labelSpan.textContent = getDisplayLabel();
+            }
+            dropdown.innerHTML = renderDropdownContent();
         }
     };
 }

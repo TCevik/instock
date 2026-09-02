@@ -122,6 +122,50 @@ export function showConfirmModal({ title = 'Bevestigen', message, confirmText = 
     });
 }
 
+export function showPromptModal({ title = 'Invoer', subtitle = '', placeholder = '', confirmText = 'Toevoegen', cancelText = 'Annuleren', initialValue = '' }) {
+    return new Promise(async (resolve) => {
+        const overlay = await showModal(`
+            <div class="modal-header">
+                <h2 class="modal-title">${title}</h2>
+                ${subtitle ? `<p class="modal-subtitle">${subtitle}</p>` : ''}
+            </div>
+            <form class="modal-form" id="promptModalForm">
+                <div class="form-group">
+                    <input type="text" id="promptModalInput" class="modal-input" placeholder="${placeholder}" value="${initialValue}" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="modal-btn-secondary" id="promptModalCancelBtn">${cancelText}</button>
+                    <button type="submit" class="btn" id="promptModalConfirmBtn">${confirmText}</button>
+                </div>
+            </form>
+        `);
+
+        const input = overlay.querySelector('#promptModalInput');
+        const form = overlay.querySelector('#promptModalForm');
+        const cancelBtn = overlay.querySelector('#promptModalCancelBtn');
+
+        if (input) {
+            setTimeout(() => input.focus(), 50);
+        }
+
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const val = input ? input.value.trim() : '';
+                closeModal(overlay);
+                resolve(val || null);
+            });
+        }
+
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                closeModal(overlay);
+                resolve(null);
+            });
+        }
+    });
+}
+
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && modalStack.length > 0) {
         closeModal();
@@ -132,4 +176,5 @@ if (typeof window !== 'undefined') {
     window.showModal = showModal;
     window.closeModal = closeModal;
     window.showConfirmModal = showConfirmModal;
+    window.showPromptModal = showPromptModal;
 }

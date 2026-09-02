@@ -60,7 +60,7 @@ function renderTable() {
     if (pageLogs.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="4" class="empty-state">Geen logs gevonden</td>
+                <td colspan="5" class="empty-state">Geen logs gevonden</td>
             </tr>
         `;
     } else {
@@ -70,6 +70,27 @@ function renderTable() {
             const username = user?.username ? `@${user.username}` : '';
             const displayName = fullName || username || (log.user_id ? 'Onbekende gebruiker' : 'Systeem');
             const subName = fullName && username ? username : '';
+
+            let affectedHtml = '-';
+            if (log.affected_user) {
+                const affected = usersMap.get(log.affected_user);
+                const affFullName = affected?.full_name?.trim();
+                const affUsername = affected?.username ? `@${affected.username}` : '';
+                const affDisplayName = affFullName || affUsername || 'Onbekende gebruiker';
+                const affSubName = affFullName && affUsername ? affUsername : '';
+
+                affectedHtml = `
+                    <div class="user-cell">
+                        <div class="user-avatar-sm">
+                            <span class="material-icons">person_outline</span>
+                        </div>
+                        <div class="user-info-stacked">
+                            <span class="user-full-name">${escapeHtml(affDisplayName)}</span>
+                            ${affSubName ? `<span class="user-subname">${escapeHtml(affSubName)}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
 
             const action = log.action || 'Onbekende actie';
             const isDanger = action.toLowerCase().includes('verwijderd');
@@ -89,6 +110,7 @@ function renderTable() {
                             </div>
                         </div>
                     </td>
+                    <td>${affectedHtml}</td>
                     <td>
                         <span class="action-badge ${isDanger ? 'danger' : ''}">${escapeHtml(action)}</span>
                     </td>
@@ -132,7 +154,16 @@ function applyFiltersAndSort() {
             const user = usersMap.get(log.user_id);
             const name = (user?.full_name || '').toLowerCase();
             const uname = (user?.username || '').toLowerCase();
-            return name.includes(q) || uname.includes(q);
+
+            let affectedMatch = false;
+            if (log.affected_user) {
+                const affected = usersMap.get(log.affected_user);
+                const affName = (affected?.full_name || '').toLowerCase();
+                const affUname = (affected?.username || '').toLowerCase();
+                affectedMatch = affName.includes(q) || affUname.includes(q);
+            }
+
+            return name.includes(q) || uname.includes(q) || affectedMatch;
         });
     }
 
@@ -208,6 +239,30 @@ function openDetailsModal(log) {
         detailsHtml = `<div class="empty-state" style="padding: 20px 0;">Geen detailgegevens beschikbaar voor deze actie.</div>`;
     }
 
+    let affectedUserHtml = '';
+    if (log.affected_user) {
+        const affected = usersMap.get(log.affected_user);
+        const affFullName = affected?.full_name?.trim();
+        const affUsername = affected?.username ? `@${affected.username}` : '';
+        const affDisplayName = affFullName || affUsername || 'Onbekende gebruiker';
+        const affSubName = affFullName && affUsername ? affUsername : '';
+
+        affectedUserHtml = `
+            <div class="form-group">
+                <label>Betrokken gebruiker</label>
+                <div class="user-cell">
+                    <div class="user-avatar-sm">
+                        <span class="material-icons">person_outline</span>
+                    </div>
+                    <div class="user-info-stacked">
+                        <span class="user-full-name">${escapeHtml(affDisplayName)}</span>
+                        ${affSubName ? `<span class="user-subname">${escapeHtml(affSubName)}</span>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     showModal(`
         <div class="modal-header">
             <h2 class="modal-title">Log details</h2>
@@ -218,6 +273,7 @@ function openDetailsModal(log) {
                 <label>Actie</label>
                 <div><span class="action-badge">${escapeHtml(action)}</span></div>
             </div>
+            ${affectedUserHtml}
             <div class="form-group">
                 <label>Wijzigingen / Gegevens</label>
                 <div class="log-details-list">
