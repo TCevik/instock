@@ -290,9 +290,138 @@
     font-size: 18px;
 }
 
+.users-cards {
+    display: none;
+    flex-direction: column;
+}
+
+.user-list-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--card-border);
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.user-list-item:active {
+    background-color: var(--input-background);
+}
+
+.user-list-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.user-list-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.user-list-top .user-full-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-list-sub {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--text-color-muted);
+}
+
+.user-meta-dot {
+    opacity: 0.4;
+    font-size: 10px;
+}
+
+.user-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.meta-icon {
+    font-size: 13px;
+    color: var(--text-color-muted);
+}
+
+.user-list-depts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 2px;
+}
+
+.user-list-depts .department-badge {
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 5px;
+}
+
+.user-list-chevron {
+    color: var(--text-color-placeholder);
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
 @media (max-width: 768px) {
+    .table-responsive {
+        display: none;
+    }
+
+    .users-cards {
+        display: flex;
+    }
+
+    .page-header-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+        margin-bottom: 18px;
+    }
+
+    .page-title {
+        font-size: 22px;
+    }
+
+    .page-header-actions {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        gap: 10px;
+    }
+
     .table-search-wrapper,
     .filter-select-wrapper {
         width: 100%;
+    }
+
+    .page-header-actions .btn {
+        width: 100%;
+    }
+
+    .table-pagination {
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .pagination-buttons {
+        width: 100%;
+        justify-content: center;
     }
 }

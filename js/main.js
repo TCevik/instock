@@ -56,6 +56,35 @@ async function loadOverlay() {
                 }
             });
 
+            const sidebar = document.querySelector('.app-sidebar');
+            const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+            const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+
+            function toggleSidebar() {
+                if (!sidebar) return;
+                const isOpen = sidebar.classList.toggle('open');
+                if (sidebarBackdrop) {
+                    sidebarBackdrop.classList.toggle('active', isOpen);
+                }
+            }
+
+            function closeSidebar() {
+                if (sidebar) sidebar.classList.remove('open');
+                if (sidebarBackdrop) sidebarBackdrop.classList.remove('active');
+            }
+
+            if (sidebarToggleBtn) {
+                sidebarToggleBtn.addEventListener('click', toggleSidebar);
+            }
+
+            if (sidebarBackdrop) {
+                sidebarBackdrop.addEventListener('click', closeSidebar);
+            }
+
+            links.forEach(link => {
+                link.addEventListener('click', closeSidebar);
+            });
+
             const logoutBtn = document.getElementById('logoutBtn');
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', logout);

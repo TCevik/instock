@@ -512,6 +512,7 @@ function applyFiltersAndSort() {
 
 function renderTable() {
     const tbody = document.getElementById('usersTableBody');
+    const cardsContainer = document.getElementById('usersCardsContainer');
     const paginationInfo = document.getElementById('paginationInfo');
     const paginationCurrent = document.getElementById('paginationCurrent');
     const prevBtn = document.getElementById('prevPageBtn');
@@ -535,6 +536,9 @@ function renderTable() {
                 <td colspan="8" class="empty-state">Geen gebruikers gevonden</td>
             </tr>
         `;
+        if (cardsContainer) {
+            cardsContainer.innerHTML = `<div class="empty-state">Geen gebruikers gevonden</div>`;
+        }
     } else {
         tbody.innerHTML = pageUsers.map(user => {
             const displayName = escapeHtml(user.full_name?.trim() || user.username?.trim() || 'Gebruiker');
@@ -572,6 +576,42 @@ function renderTable() {
                 </tr>
             `;
         }).join('');
+
+        if (cardsContainer) {
+            cardsContainer.innerHTML = pageUsers.map(user => {
+                const displayName = escapeHtml(user.full_name?.trim() || user.username?.trim() || 'Gebruiker');
+                const username = escapeHtml(user.username ? `@${user.username}` : '');
+                const role = escapeHtml(getRoleLabel(user.role));
+                const depts = parseUserDepartments(user.departments);
+                const departmentsHtml = depts.length === 0
+                    ? ''
+                    : `<div class="user-list-depts">${depts.map(d => `<span class="department-badge">${escapeHtml(d)}</span>`).join('')}</div>`;
+                const birthday = escapeHtml(formatDutchDate(user.birthday));
+                const hasBirthday = user.birthday && birthday !== '-';
+                const productivity = user.productivity !== null && user.productivity !== undefined ? `${user.productivity}% prod.` : '';
+
+                return `
+                    <div class="user-list-item edit-btn" data-user-id="${escapeHtml(user.user_id)}">
+                        <div class="user-avatar-sm">
+                            <span class="material-icons">person</span>
+                        </div>
+                        <div class="user-list-content">
+                            <div class="user-list-top">
+                                <span class="user-full-name">${displayName}</span>
+                                <span class="role-badge">${role}</span>
+                            </div>
+                            <div class="user-list-sub">
+                                ${username ? `<span class="username-cell">${username}</span>` : ''}
+                                ${hasBirthday ? `<span class="user-meta-dot">•</span><span class="user-meta-item"><span class="material-icons meta-icon">cake</span>${birthday}</span>` : ''}
+                                ${productivity ? `<span class="user-meta-dot">•</span><span class="user-meta-item">${productivity}</span>` : ''}
+                            </div>
+                            ${departmentsHtml}
+                        </div>
+                        <span class="material-icons user-list-chevron">chevron_right</span>
+                    </div>
+                `;
+            }).join('');
+        }
     }
 
     if (paginationInfo) {
@@ -668,6 +708,19 @@ if (nextPageBtn) {
 const usersTableBody = document.getElementById('usersTableBody');
 if (usersTableBody) {
     usersTableBody.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.edit-btn');
+        if (editBtn) {
+            const userId = editBtn.getAttribute('data-user-id');
+            if (userId) {
+                openEditModal(userId);
+            }
+        }
+    });
+}
+
+const usersCardsContainer = document.getElementById('usersCardsContainer');
+if (usersCardsContainer) {
+    usersCardsContainer.addEventListener('click', (e) => {
         const editBtn = e.target.closest('.edit-btn');
         if (editBtn) {
             const userId = editBtn.getAttribute('data-user-id');

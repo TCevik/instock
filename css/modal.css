@@ -552,15 +552,43 @@
     background-color: var(--danger-hover);
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
+    .modal-overlay {
+        top: 60px;
+        padding: 0;
+        align-items: stretch;
+        justify-content: stretch;
+    }
+
     .modal-container {
+        width: 100%;
+        max-width: 100%;
+        height: calc(100vh - 60px);
+        max-height: calc(100vh - 60px);
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+        border-bottom: none;
         padding: 24px 18px;
-        border-radius: 14px;
+        transform: none;
     }
 
     .modal-form-row {
         flex-direction: column;
         gap: 16px;
+    }
+
+    .modal-footer {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    .modal-footer .modal-btn-secondary,
+    .modal-footer .btn,
+    .modal-footer .modal-btn-danger,
+    .modal-footer .btn-danger-confirm {
+        width: 100%;
+        margin-right: 0;
     }
 
     .datepicker-dropdown {

@@ -2,15 +2,18 @@
 
 <header class="app-header">
     <div class="header-left">
+        <button id="sidebarToggleBtn" class="sidebar-toggle-btn" aria-label="Menu openen of sluiten">
+            <span class="material-icons">menu</span>
+        </button>
         <div class="header-logo">
             <span class="material-icons header-logo-icon">inventory_2</span>
             <span class="header-title">INSTOCK</span>
         </div>
     </div>
     <div class="header-right">
-        <span id="logoutBtn" class="header-logout-link">
+        <span id="logoutBtn" class="header-logout-link" title="Uitloggen">
             <span class="material-icons">logout</span>
-            Uitloggen
+            <span class="header-logout-text">Uitloggen</span>
         </span>
         <span class="header-divider"></span>
         <span id="headerUserName" class="header-user-name"></span>
@@ -49,3 +52,4 @@
         </a>
     </nav>
 </aside>
+<div id="sidebarBackdrop" class="sidebar-backdrop"></div>

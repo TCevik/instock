@@ -3,3 +3,10 @@
     font-weight: 700;
     color: var(--text-color);
 }
+
+@media (max-width: 768px) {
+    .welcome-heading {
+        font-size: 22px;
+        word-break: break-word;
+    }
+}
