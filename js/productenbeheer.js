@@ -17,6 +17,12 @@ function formatPrice(val) {
 }
 
 const PAGE_SIZE = 30;
+const BARCODE_TYPE_OPTIONS = [
+    { value: 'EAN-13', label: 'EAN-13' },
+    { value: 'EAN-8', label: 'EAN-8' },
+    { value: 'UPC-A', label: 'UPC-A' },
+    { value: 'Modified Plessy', label: 'Modified Plessy' }
+];
 let currentProducts = [];
 let totalCount = 0;
 let currentPage = 1;
@@ -266,8 +272,8 @@ async function openCreateModal() {
                     <input type="text" id="createEan" class="modal-input" placeholder="Bijv. 8710400000000" required>
                 </div>
                 <div class="form-group">
-                    <label for="createBarcodeType">Barcode type</label>
-                    <input type="text" id="createBarcodeType" class="modal-input" placeholder="Bijv. EAN-13">
+                    <label>Barcode type</label>
+                    <div id="createBarcodeTypeSelect"></div>
                 </div>
             </div>
             <div class="form-group">
@@ -325,6 +331,17 @@ async function openCreateModal() {
         </form>
     `);
 
+    const barcodeTypeContainer = document.getElementById('createBarcodeTypeSelect');
+    let barcodeTypeSelect = null;
+    if (barcodeTypeContainer) {
+        barcodeTypeSelect = createCustomSelect(
+            barcodeTypeContainer,
+            BARCODE_TYPE_OPTIONS,
+            'EAN-13',
+            'Selecteer type...'
+        );
+    }
+
     const datePickerContainer = document.getElementById('createBestBeforePicker');
     let datePicker = null;
     if (datePickerContainer) {
@@ -347,7 +364,7 @@ async function openCreateModal() {
             }
 
             const ean = document.getElementById('createEan')?.value.trim();
-            const barcodeType = document.getElementById('createBarcodeType')?.value.trim() || null;
+            const barcodeType = barcodeTypeSelect ? barcodeTypeSelect.getValue() : null;
             const name = document.getElementById('createName')?.value.trim();
             const brand = document.getElementById('createBrand')?.value.trim() || null;
             const department = document.getElementById('createDepartment')?.value.trim() || null;
@@ -409,12 +426,12 @@ async function openEditModal(ean) {
         <form class="modal-form" id="editProductForm">
             <div class="modal-form-row">
                 <div class="form-group">
-                    <label for="editEan">EAN</label>
-                    <input type="text" id="editEan" class="modal-input" value="${escapeHtml(product.ean)}" disabled>
+                    <label for="editEan">EAN *</label>
+                    <input type="text" id="editEan" class="modal-input" value="${escapeHtml(product.ean)}" required>
                 </div>
                 <div class="form-group">
-                    <label for="editBarcodeType">Barcode type</label>
-                    <input type="text" id="editBarcodeType" class="modal-input" value="${escapeHtml(product.barcode_type || '')}">
+                    <label>Barcode type</label>
+                    <div id="editBarcodeTypeSelect"></div>
                 </div>
             </div>
             <div class="form-group">
@@ -473,6 +490,17 @@ async function openEditModal(ean) {
         </form>
     `);
 
+    const barcodeTypeContainer = document.getElementById('editBarcodeTypeSelect');
+    let barcodeTypeSelect = null;
+    if (barcodeTypeContainer) {
+        barcodeTypeSelect = createCustomSelect(
+            barcodeTypeContainer,
+            BARCODE_TYPE_OPTIONS,
+            product.barcode_type || 'EAN-13',
+            'Selecteer type...'
+        );
+    }
+
     const datePickerContainer = document.getElementById('editBestBeforePicker');
     let datePicker = null;
     if (datePickerContainer) {
@@ -520,7 +548,8 @@ async function openEditModal(ean) {
                 saveBtn.textContent = 'Opslaan...';
             }
 
-            const barcodeType = document.getElementById('editBarcodeType')?.value.trim() || null;
+            const newEan = document.getElementById('editEan')?.value.trim();
+            const barcodeType = barcodeTypeSelect ? barcodeTypeSelect.getValue() : null;
             const name = document.getElementById('editName')?.value.trim();
             const brand = document.getElementById('editBrand')?.value.trim() || null;
             const department = document.getElementById('editDepartment')?.value.trim() || null;
@@ -534,7 +563,8 @@ async function openEditModal(ean) {
 
             try {
                 await invokeProductManagement('update', {
-                    ean: product.ean,
+                    target_ean: product.ean,
+                    ean: newEan,
                     barcode_type: barcodeType,
                     name,
                     brand,
