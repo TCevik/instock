@@ -85,6 +85,11 @@ async function loadOverlay() {
                 link.addEventListener('click', closeSidebar);
             });
 
+            const changePasswordBtn = document.getElementById('changePasswordBtn');
+            if (changePasswordBtn) {
+                changePasswordBtn.addEventListener('click', openChangePasswordModal);
+            }
+
             const logoutBtn = document.getElementById('logoutBtn');
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', logout);
@@ -99,6 +104,100 @@ async function loadOverlay() {
             }
         }
     } catch (error) {
+    }
+}
+
+async function openChangePasswordModal() {
+    await showModal(`
+        <div class="modal-header">
+            <h2 class="modal-title">Wachtwoord wijzigen</h2>
+            <p class="modal-subtitle">Voer je huidige en nieuwe wachtwoord in</p>
+        </div>
+        <form class="modal-form" id="changePasswordForm">
+            <div class="form-group">
+                <label for="oldPasswordInput">Huidig wachtwoord *</label>
+                <input type="password" id="oldPasswordInput" class="modal-input" placeholder="Voer huidig wachtwoord in" required>
+            </div>
+            <div class="form-group">
+                <label for="newPasswordInput">Nieuw wachtwoord *</label>
+                <input type="password" id="newPasswordInput" class="modal-input" placeholder="Voer nieuw wachtwoord in" required>
+            </div>
+            <div class="form-group">
+                <label for="confirmPasswordInput">Herhaal nieuw wachtwoord *</label>
+                <input type="password" id="confirmPasswordInput" class="modal-input" placeholder="Herhaal nieuw wachtwoord" required>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="modal-btn-secondary" id="cancelChangePasswordBtn">Annuleren</button>
+                <button type="submit" class="btn" id="submitPasswordBtn">Wijzigen</button>
+            </div>
+        </form>
+    `);
+
+    const cancelBtn = document.getElementById('cancelChangePasswordBtn');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', closeModal);
+    }
+
+    const form = document.getElementById('changePasswordForm');
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = document.getElementById('submitPasswordBtn');
+            const oldPassword = document.getElementById('oldPasswordInput')?.value;
+            const newPassword = document.getElementById('newPasswordInput')?.value;
+            const confirmPassword = document.getElementById('confirmPasswordInput')?.value;
+
+            if (!oldPassword || !newPassword) {
+                showToast('error', 'Beide wachtwoorden zijn verplicht');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showToast('error', 'Nieuwe wachtwoorden komen niet overeen');
+                return;
+            }
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Wijzigen...';
+            }
+
+            try {
+                const { data, error } = await supabase.functions.invoke('update-password', {
+                    body: { oldPassword, newPassword }
+                });
+
+                if (error) {
+                    let msg = error.message || 'Fout bij wijzigen van wachtwoord';
+                    if (error.context && typeof error.context.json === 'function') {
+                        try {
+                            const body = await error.context.json();
+                            if (body && body.error) msg = body.error;
+                        } catch (_) {}
+                    } else if (error.context && typeof error.context.text === 'function') {
+                        try {
+                            const text = await error.context.text();
+                            const parsed = JSON.parse(text);
+                            if (parsed && parsed.error) msg = parsed.error;
+                        } catch (_) {}
+                    }
+                    throw new Error(msg);
+                }
+
+                if (data && data.error) {
+                    throw new Error(data.error);
+                }
+
+                closeModal();
+                showToast('notification', data?.message || 'Wachtwoord succesvol gewijzigd');
+            } catch (err) {
+                showToast('error', err.message || 'Fout bij wijzigen van wachtwoord');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Wijzigen';
+                }
+            }
+        });
     }
 }
 
@@ -141,6 +240,6 @@ loadOverlay();
 initModal();
 initToast();
 
-export { supabase, initModal, showModal, closeModal, showConfirmModal, showPromptModal, initToast, showToast };
+export { supabase, initModal, showModal, closeModal, showConfirmModal, showPromptModal, initToast, showToast, openChangePasswordModal };
 
 

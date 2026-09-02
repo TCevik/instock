@@ -33,6 +33,28 @@ let currentActionFilter = 'all';
 let searchQuery = '';
 let searchDebounceTimer = null;
 
+function getAffectedDisplay(affected, action = '') {
+    if (!affected) return null;
+    const user = usersMap.get(affected);
+    if (user) {
+        const fullName = user.full_name?.trim();
+        const username = user.username ? `@${user.username}` : '';
+        const displayName = fullName || username || 'Onbekende gebruiker';
+        const subName = fullName && username ? username : '';
+        return {
+            title: displayName,
+            sub: subName,
+            icon: 'person_outline'
+        };
+    }
+    const isUser = action.toLowerCase().includes('gebruiker') || affected.includes('@');
+    return {
+        title: affected,
+        sub: '',
+        icon: isUser ? 'person_outline' : 'inventory_2'
+    };
+}
+
 function renderTable() {
     const tbody = document.getElementById('logsTableBody');
     const paginationInfo = document.getElementById('paginationInfo');
@@ -65,21 +87,16 @@ function renderTable() {
             const subName = fullName && username ? username : '';
 
             let affectedHtml = '-';
-            if (log.affected_user) {
-                const affected = usersMap.get(log.affected_user);
-                const affFullName = affected?.full_name?.trim();
-                const affUsername = affected?.username ? `@${affected.username}` : '';
-                const affDisplayName = affFullName || affUsername || 'Onbekende gebruiker';
-                const affSubName = affFullName && affUsername ? affUsername : '';
-
+            const aff = getAffectedDisplay(log.affected ?? log.affected_user, log.action);
+            if (aff) {
                 affectedHtml = `
                     <div class="user-cell">
                         <div class="user-avatar-sm">
-                            <span class="material-icons">person_outline</span>
+                            <span class="material-icons">${aff.icon}</span>
                         </div>
                         <div class="user-info-stacked">
-                            <span class="user-full-name">${escapeHtml(affDisplayName)}</span>
-                            ${affSubName ? `<span class="user-subname">${escapeHtml(affSubName)}</span>` : ''}
+                            <span class="user-full-name">${escapeHtml(aff.title)}</span>
+                            ${aff.sub ? `<span class="user-subname">${escapeHtml(aff.sub)}</span>` : ''}
                         </div>
                     </div>
                 `;
@@ -195,23 +212,18 @@ function openDetailsModal(log) {
     }
 
     let affectedUserHtml = '';
-    if (log.affected_user) {
-        const affected = usersMap.get(log.affected_user);
-        const affFullName = affected?.full_name?.trim();
-        const affUsername = affected?.username ? `@${affected.username}` : '';
-        const affDisplayName = affFullName || affUsername || 'Onbekende gebruiker';
-        const affSubName = affFullName && affUsername ? affUsername : '';
-
+    const aff = getAffectedDisplay(log.affected ?? log.affected_user, log.action);
+    if (aff) {
         affectedUserHtml = `
             <div class="form-group">
-                <label>Betrokken gebruiker</label>
+                <label>Betrokken</label>
                 <div class="user-cell">
                     <div class="user-avatar-sm">
-                        <span class="material-icons">person_outline</span>
+                        <span class="material-icons">${aff.icon}</span>
                     </div>
                     <div class="user-info-stacked">
-                        <span class="user-full-name">${escapeHtml(affDisplayName)}</span>
-                        ${affSubName ? `<span class="user-subname">${escapeHtml(affSubName)}</span>` : ''}
+                        <span class="user-full-name">${escapeHtml(aff.title)}</span>
+                        ${aff.sub ? `<span class="user-subname">${escapeHtml(aff.sub)}</span>` : ''}
                     </div>
                 </div>
             </div>
@@ -273,15 +285,12 @@ async function fetchLogsPage() {
     }
 
     if (q) {
+        const conditions = [`affected.ilike.%${q}%`];
         if (matchingUserIds.length > 0) {
-            const userFilterStr = `user_id.in.(${matchingUserIds.join(',')}),affected_user.in.(${matchingUserIds.join(',')})`;
-            query = query.or(userFilterStr);
-        } else {
-            currentLogs = [];
-            totalCount = 0;
-            renderTable();
-            return;
+            conditions.push(`user_id.in.(${matchingUserIds.join(',')})`);
+            conditions.push(`affected.in.(${matchingUserIds.join(',')})`);
         }
+        query = query.or(conditions.join(','));
     }
 
     query = query
