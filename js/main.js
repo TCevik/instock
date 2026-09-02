@@ -2,14 +2,79 @@ import { supabase } from './supabase.js';
 import { initModal, showModal, closeModal, showConfirmModal, showPromptModal } from './modal.js';
 import { initToast, showToast } from './toast.js';
 
+const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000;
+const LAST_ACTIVITY_KEY = 'instock_last_activity';
+
+function recordActivity() {
+    localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+}
+
+function checkInactivity() {
+    const isLoginPage = window.location.pathname.endsWith('login.html');
+    if (isLoginPage) return;
+
+    const last = localStorage.getItem(LAST_ACTIVITY_KEY);
+    if (last) {
+        const elapsed = Date.now() - Number(last);
+        if (elapsed > INACTIVITY_TIMEOUT_MS) {
+            logout();
+            return;
+        }
+    }
+}
+
+function initInactivityTracker() {
+    if (window.location.pathname.endsWith('login.html')) return;
+
+    recordActivity();
+
+    let lastRecorded = 0;
+    const updateThrottled = () => {
+        const now = Date.now();
+        if (now - lastRecorded > 2000) {
+            lastRecorded = now;
+            recordActivity();
+        }
+    };
+
+    ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'].forEach((event) => {
+        window.addEventListener(event, updateThrottled, { passive: true });
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            checkInactivity();
+            updateThrottled();
+        }
+    });
+
+    window.addEventListener('focus', () => {
+        checkInactivity();
+        updateThrottled();
+    });
+
+    setInterval(checkInactivity, 5000);
+}
+
 async function checkAuth() {
     const isLoginPage = window.location.pathname.endsWith('login.html');
     const { data: { session } } = await supabase.auth.getSession();
 
     if (!session && !isLoginPage) {
         window.location.replace('login.html');
+        return;
     } else if (session && isLoginPage) {
         window.location.replace('index.html');
+        return;
+    }
+
+    if (!isLoginPage) {
+        const last = localStorage.getItem(LAST_ACTIVITY_KEY);
+        if (last && Date.now() - Number(last) > INACTIVITY_TIMEOUT_MS) {
+            await logout();
+            return;
+        }
+        recordActivity();
     }
 
     supabase.auth.onAuthStateChange((_event, newSession) => {
@@ -203,6 +268,7 @@ async function openChangePasswordModal() {
 
 export async function logout() {
     currentUserData = null;
+    localStorage.removeItem(LAST_ACTIVITY_KEY);
     await supabase.auth.signOut();
     window.location.replace('login.html');
 }
@@ -239,6 +305,7 @@ checkAuth();
 loadOverlay();
 initModal();
 initToast();
+initInactivityTracker();
 
 export { supabase, initModal, showModal, closeModal, showConfirmModal, showPromptModal, initToast, showToast, openChangePasswordModal };
 

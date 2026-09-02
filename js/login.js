@@ -47,6 +47,7 @@ if (loginForm) {
         }
 
         if (data.session) {
+            localStorage.setItem('instock_last_activity', Date.now().toString());
             window.location.replace('index.html');
         }
     });

@@ -40,6 +40,10 @@
     --danger-hover: #dc2626;
 }
 
+html {
+    scrollbar-gutter: stable;
+}
+
 body {
     background-color: var(--background-color);
     color: var(--text-color);
