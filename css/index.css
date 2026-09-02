@@ -1,0 +1,10 @@
+.page-container {
+    margin-left: 60px;
+    padding: 32px 40px;
+}
+
+.welcome-heading {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-color);
+}

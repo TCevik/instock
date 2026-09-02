@@ -58,6 +58,19 @@
     opacity: 1;
 }
 
+.header-divider {
+    width: 1px;
+    height: 20px;
+    background-color: var(--text-color);
+    opacity: 0.3;
+}
+
+.header-user-name {
+    color: var(--text-color);
+    font-size: 14px;
+    font-weight: 500;
+}
+
 .app-sidebar {
     position: fixed;
     top: 60px;
