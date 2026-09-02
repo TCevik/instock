@@ -142,3 +142,5 @@ initModal();
 initToast();
 
 export { supabase, initModal, showModal, closeModal, showConfirmModal, showPromptModal, initToast, showToast };
+
+
