@@ -74,6 +74,7 @@
 
 .logs-table {
     width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
     text-align: left;
     font-size: 14px;
@@ -92,6 +93,27 @@
     color: var(--text-color-muted);
     text-transform: uppercase;
     white-space: nowrap;
+}
+
+.th-user {
+    width: 26%;
+}
+
+.th-affected {
+    width: 26%;
+}
+
+.th-action {
+    width: 20%;
+}
+
+.th-time {
+    width: 20%;
+}
+
+.th-actions {
+    text-align: right;
+    width: 80px;
 }
 
 .th-sortable {

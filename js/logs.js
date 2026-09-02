@@ -24,19 +24,14 @@ function formatDateTime(isoString) {
 }
 
 const PAGE_SIZE = 50;
-let allLogs = [];
+let currentLogs = [];
 let usersMap = new Map();
-let filteredLogs = [];
+let totalCount = 0;
 let currentPage = 1;
 let sortAscending = false;
 let currentActionFilter = 'all';
 let searchQuery = '';
-
-function getLogTime(log) {
-    const raw = log.happened_at || log.created_at;
-    if (!raw) return 0;
-    return new Date(raw).getTime();
-}
+let searchDebounceTimer = null;
 
 function renderTable() {
     const tbody = document.getElementById('logsTableBody');
@@ -47,24 +42,22 @@ function renderTable() {
 
     if (!tbody) return;
 
-    const totalLogs = filteredLogs.length;
-    const totalPages = Math.max(1, Math.ceil(totalLogs / PAGE_SIZE));
+    const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
     if (currentPage > totalPages) currentPage = totalPages;
     if (currentPage < 1) currentPage = 1;
 
     const startIndex = (currentPage - 1) * PAGE_SIZE;
-    const endIndex = Math.min(startIndex + PAGE_SIZE, totalLogs);
-    const pageLogs = filteredLogs.slice(startIndex, endIndex);
+    const endIndex = Math.min(startIndex + currentLogs.length, totalCount);
 
-    if (pageLogs.length === 0) {
+    if (currentLogs.length === 0) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="5" class="empty-state">Geen logs gevonden</td>
             </tr>
         `;
     } else {
-        tbody.innerHTML = pageLogs.map((log, idx) => {
+        tbody.innerHTML = currentLogs.map((log, idx) => {
             const user = usersMap.get(log.user_id);
             const fullName = user?.full_name?.trim();
             const username = user?.username ? `@${user.username}` : '';
@@ -95,7 +88,6 @@ function renderTable() {
             const action = log.action || 'Onbekende actie';
             const isDanger = action.toLowerCase().includes('verwijderd');
             const timeStr = formatDateTime(log.happened_at || log.created_at);
-            const globalIndex = startIndex + idx;
 
             return `
                 <tr>
@@ -116,7 +108,7 @@ function renderTable() {
                     </td>
                     <td class="time-cell">${escapeHtml(timeStr)}</td>
                     <td class="td-actions">
-                        <button type="button" class="action-btn view-details-btn" data-index="${globalIndex}" title="Details bekijken">
+                        <button type="button" class="action-btn view-details-btn" data-index="${idx}" title="Details bekijken">
                             <span class="material-icons">visibility</span>
                         </button>
                     </td>
@@ -126,10 +118,10 @@ function renderTable() {
     }
 
     if (paginationInfo) {
-        if (totalLogs === 0) {
+        if (totalCount === 0) {
             paginationInfo.textContent = '0 logs';
         } else {
-            paginationInfo.textContent = `${startIndex + 1}-${endIndex} van ${totalLogs} logs`;
+            paginationInfo.textContent = `${startIndex + 1}-${endIndex} van ${totalCount} logs`;
         }
     }
 
@@ -139,43 +131,6 @@ function renderTable() {
 
     if (prevBtn) prevBtn.disabled = currentPage <= 1;
     if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
-}
-
-function applyFiltersAndSort() {
-    let result = [...allLogs];
-
-    if (currentActionFilter && currentActionFilter !== 'all') {
-        result = result.filter(log => String(log.action || '').trim().toLowerCase() === currentActionFilter.toLowerCase());
-    }
-
-    const q = searchQuery.toLowerCase().trim();
-    if (q) {
-        result = result.filter(log => {
-            const user = usersMap.get(log.user_id);
-            const name = (user?.full_name || '').toLowerCase();
-            const uname = (user?.username || '').toLowerCase();
-
-            let affectedMatch = false;
-            if (log.affected_user) {
-                const affected = usersMap.get(log.affected_user);
-                const affName = (affected?.full_name || '').toLowerCase();
-                const affUname = (affected?.username || '').toLowerCase();
-                affectedMatch = affName.includes(q) || affUname.includes(q);
-            }
-
-            return name.includes(q) || uname.includes(q) || affectedMatch;
-        });
-    }
-
-    result.sort((a, b) => {
-        const timeA = getLogTime(a);
-        const timeB = getLogTime(b);
-        return sortAscending ? timeA - timeB : timeB - timeA;
-    });
-
-    filteredLogs = result;
-    currentPage = 1;
-    renderTable();
 }
 
 function openDetailsModal(log) {
@@ -292,41 +247,101 @@ function openDetailsModal(log) {
     }
 }
 
-async function loadData() {
-    const [logsRes, usersRes] = await Promise.all([
-        supabase.from('logs').select('*').order('happened_at', { ascending: false }),
-        supabase.from('user_data').select('user_id, full_name, username')
-    ]);
+async function fetchLogsPage() {
+    const from = (currentPage - 1) * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
 
-    if (usersRes.data) {
-        usersMap = new Map(usersRes.data.map(u => [u.user_id, u]));
-    }
+    let matchingUserIds = [];
+    const q = searchQuery.trim().toLowerCase();
 
-    if (logsRes.data) {
-        allLogs = logsRes.data;
-
-        const uniqueActions = Array.from(new Set(allLogs.map(l => l.action).filter(Boolean))).sort();
-        const actionFilterContainer = document.getElementById('actionFilterContainer');
-        if (actionFilterContainer) {
-            const selectOptions = [
-                { value: 'all', label: 'Alle acties' },
-                ...uniqueActions.map(act => ({ value: act, label: act }))
-            ];
-            createCustomSelect(actionFilterContainer, selectOptions, 'all', 'Filter op actie', (val) => {
-                currentActionFilter = val;
-                applyFiltersAndSort();
-            });
+    if (q) {
+        for (const [userId, u] of usersMap.entries()) {
+            const name = (u.full_name || '').toLowerCase();
+            const uname = (u.username || '').toLowerCase();
+            if (name.includes(q) || uname.includes(q)) {
+                matchingUserIds.push(userId);
+            }
         }
     }
 
-    applyFiltersAndSort();
+    let query = supabase
+        .from('logs')
+        .select('*', { count: 'exact' });
+
+    if (currentActionFilter && currentActionFilter !== 'all') {
+        query = query.eq('action', currentActionFilter);
+    }
+
+    if (q) {
+        if (matchingUserIds.length > 0) {
+            const userFilterStr = `user_id.in.(${matchingUserIds.join(',')}),affected_user.in.(${matchingUserIds.join(',')})`;
+            query = query.or(userFilterStr);
+        } else {
+            currentLogs = [];
+            totalCount = 0;
+            renderTable();
+            return;
+        }
+    }
+
+    query = query
+        .order('happened_at', { ascending: sortAscending })
+        .range(from, to);
+
+    const { data, count, error } = await query;
+
+    if (!error && data) {
+        currentLogs = data;
+        totalCount = count ?? 0;
+    } else {
+        currentLogs = [];
+        totalCount = 0;
+    }
+
+    renderTable();
+}
+
+async function initActionFilter() {
+    const { data } = await supabase.from('logs').select('action').limit(500);
+    if (!data) return;
+
+    const uniqueActions = Array.from(new Set(data.map(l => l.action).filter(Boolean))).sort();
+    const actionFilterContainer = document.getElementById('actionFilterContainer');
+    if (actionFilterContainer) {
+        const selectOptions = [
+            { value: 'all', label: 'Alle acties' },
+            ...uniqueActions.map(act => ({ value: act, label: act }))
+        ];
+        createCustomSelect(actionFilterContainer, selectOptions, 'all', 'Filter op actie', (val) => {
+            currentActionFilter = val;
+            currentPage = 1;
+            fetchLogsPage();
+        });
+    }
+}
+
+async function loadData() {
+    const { data: users } = await supabase
+        .from('user_data')
+        .select('user_id, full_name, username');
+
+    if (users) {
+        usersMap = new Map(users.map(u => [u.user_id, u]));
+    }
+
+    await initActionFilter();
+    await fetchLogsPage();
 }
 
 const searchInput = document.getElementById('searchInput');
 if (searchInput) {
     searchInput.addEventListener('input', (e) => {
         searchQuery = e.target.value;
-        applyFiltersAndSort();
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => {
+            currentPage = 1;
+            fetchLogsPage();
+        }, 300);
     });
 }
 
@@ -338,7 +353,8 @@ if (thTime) {
         if (sortTimeIcon) {
             sortTimeIcon.textContent = sortAscending ? 'arrow_upward' : 'arrow_downward';
         }
-        applyFiltersAndSort();
+        currentPage = 1;
+        fetchLogsPage();
     });
 }
 
@@ -347,7 +363,7 @@ if (prevPageBtn) {
     prevPageBtn.addEventListener('click', () => {
         if (currentPage > 1) {
             currentPage--;
-            renderTable();
+            fetchLogsPage();
         }
     });
 }
@@ -355,10 +371,10 @@ if (prevPageBtn) {
 const nextPageBtn = document.getElementById('nextPageBtn');
 if (nextPageBtn) {
     nextPageBtn.addEventListener('click', () => {
-        const totalPages = Math.ceil(filteredLogs.length / PAGE_SIZE);
+        const totalPages = Math.ceil(totalCount / PAGE_SIZE);
         if (currentPage < totalPages) {
             currentPage++;
-            renderTable();
+            fetchLogsPage();
         }
     });
 }
@@ -369,7 +385,7 @@ if (logsTableBody) {
         const viewBtn = e.target.closest('.view-details-btn');
         if (viewBtn) {
             const index = Number(viewBtn.getAttribute('data-index'));
-            const log = filteredLogs[index];
+            const log = currentLogs[index];
             if (log) {
                 openDetailsModal(log);
             }
