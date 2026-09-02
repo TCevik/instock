@@ -1,4 +1,5 @@
 import { supabase } from './supabase.js';
+import { showToast } from './toast.js';
 
 const loginForm = document.getElementById('loginForm');
 const storecodeInput = document.getElementById('storecode');
@@ -41,7 +42,7 @@ if (loginForm) {
         });
 
         if (error) {
-            alert(error.message);
+            showToast('error', error.message);
             return;
         }
 

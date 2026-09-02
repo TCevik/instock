@@ -19,9 +19,9 @@ export async function showModal(contentHtml) {
 
     const zIndex = BASE_Z_INDEX + modalStack.length * 10;
     const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay active';
+    overlay.className = 'modal-overlay';
     overlay.style.zIndex = String(zIndex);
-    overlay.setAttribute('aria-hidden', 'false');
+    overlay.setAttribute('aria-hidden', 'true');
 
     overlay.innerHTML = `
         <div class="modal-container" role="dialog" aria-modal="true">
@@ -35,6 +35,11 @@ export async function showModal(contentHtml) {
     document.body.appendChild(overlay);
     modalStack.push(overlay);
     document.body.style.overflow = 'hidden';
+
+    requestAnimationFrame(() => {
+        overlay.classList.add('active');
+        overlay.setAttribute('aria-hidden', 'false');
+    });
 
     const closeBtn = overlay.querySelector('.modal-close-btn');
     if (closeBtn) {
@@ -72,7 +77,11 @@ export function closeModal(targetOverlay = null) {
     if (overlayToClose && overlayToClose.parentNode) {
         overlayToClose.classList.remove('active');
         overlayToClose.setAttribute('aria-hidden', 'true');
-        overlayToClose.remove();
+        setTimeout(() => {
+            if (overlayToClose.parentNode) {
+                overlayToClose.remove();
+            }
+        }, 200);
     }
 
     if (modalStack.length === 0) {

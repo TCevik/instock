@@ -1,5 +1,6 @@
 import { supabase } from './supabase.js';
 import { initModal, showModal, closeModal, showConfirmModal } from './modal.js';
+import { initToast, showToast } from './toast.js';
 
 async function checkAuth() {
     const isLoginPage = window.location.pathname.endsWith('login.html');
@@ -81,5 +82,6 @@ export async function logout() {
 checkAuth();
 loadOverlay();
 initModal();
+initToast();
 
-export { supabase, showModal, closeModal, showConfirmModal };
+export { supabase, showModal, closeModal, showConfirmModal, showToast };

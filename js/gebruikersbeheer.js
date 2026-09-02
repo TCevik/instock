@@ -1,4 +1,4 @@
-import { supabase, showModal, closeModal, showConfirmModal } from './main.js';
+import { supabase, showModal, closeModal, showConfirmModal, showToast } from './main.js';
 import { createDatePicker } from './datepicker.js';
 import { createCustomSelect } from './select.js';
 
@@ -145,9 +145,10 @@ async function openCreateModal() {
                     birthday: birthday || null
                 });
                 closeModal();
+                showToast('notification', 'Gebruiker succesvol aangemaakt');
                 await loadUsers();
             } catch (err) {
-                alert(err.message || 'Fout bij aanmaken van gebruiker');
+                showToast('error', err.message || 'Fout bij aanmaken van gebruiker');
                 if (saveBtn) {
                     saveBtn.disabled = false;
                     saveBtn.textContent = 'Aanmaken';
@@ -243,9 +244,10 @@ async function openEditModal(userId) {
             try {
                 await invokeUserManagement('delete', { user_id: userId });
                 closeModal();
+                showToast('notification', 'Gebruiker succesvol verwijderd');
                 await loadUsers();
             } catch (err) {
-                alert(err.message || 'Fout bij verwijderen van gebruiker');
+                showToast('error', err.message || 'Fout bij verwijderen van gebruiker');
             }
         });
     }
@@ -281,9 +283,10 @@ async function openEditModal(userId) {
             try {
                 await invokeUserManagement('update', payload);
                 closeModal();
+                showToast('notification', 'Gebruiker succesvol bijgewerkt');
                 await loadUsers();
             } catch (err) {
-                alert(err.message || 'Fout bij bijwerken van gebruiker');
+                showToast('error', err.message || 'Fout bij bijwerken van gebruiker');
                 if (saveBtn) {
                     saveBtn.disabled = false;
                     saveBtn.textContent = 'Opslaan';
