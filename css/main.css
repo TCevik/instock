@@ -30,6 +30,8 @@
     --scrollbar-thumb: #27272a;
     --scrollbar-thumb-hover: #3f3f46;
     --bg-shape-stroke: rgba(101, 141, 36, 0.45);
+    --danger-color: #ef4444;
+    --danger-hover: #dc2626;
 }
 
 body {

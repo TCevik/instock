@@ -473,6 +473,49 @@
     border-color: var(--input-focus);
 }
 
+.modal-btn-danger {
+    background-color: transparent;
+    border: 1px solid var(--card-border);
+    color: var(--danger-color);
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+    margin-right: auto;
+}
+
+.modal-btn-danger:hover {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+    color: var(--text-color);
+}
+
+.btn-danger-confirm {
+    background-color: var(--danger-color);
+    color: var(--text-color);
+    border: none;
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background-color 0.2s;
+}
+
+.btn-danger-confirm:hover {
+    background-color: var(--danger-hover);
+}
+
 @media (max-width: 480px) {
     .modal-container {
         padding: 24px 18px;

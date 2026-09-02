@@ -1,4 +1,4 @@
-import { supabase, showModal, closeModal } from './main.js';
+import { supabase, showModal, closeModal, showConfirmModal } from './main.js';
 import { createDatePicker } from './datepicker.js';
 import { createCustomSelect } from './select.js';
 
@@ -32,6 +32,129 @@ let currentPage = 1;
 
 function getRoleLabel(role) {
     return ROLE_MAP[role] || String(role ?? 'Onbekend');
+}
+
+async function invokeUserManagement(action, payload) {
+    const { data, error } = await supabase.functions.invoke('manage-user', {
+        body: { action, ...payload }
+    });
+
+    if (error) {
+        let msg = error.message || 'Er is een fout opgetreden';
+        if (error.context && typeof error.context.json === 'function') {
+            try {
+                const body = await error.context.json();
+                if (body && body.error) msg = body.error;
+            } catch (_) {}
+        } else if (error.context && typeof error.context.text === 'function') {
+            try {
+                const text = await error.context.text();
+                const parsed = JSON.parse(text);
+                if (parsed && parsed.error) msg = parsed.error;
+            } catch (_) {}
+        }
+        throw new Error(msg);
+    }
+
+    if (data && data.error) {
+        throw new Error(data.error);
+    }
+
+    return data;
+}
+
+async function openCreateModal() {
+    await showModal(`
+        <div class="modal-header">
+            <h2 class="modal-title">Nieuwe gebruiker</h2>
+            <p class="modal-subtitle">Voeg een nieuwe gebruiker toe</p>
+        </div>
+        <form class="modal-form" id="createUserForm">
+            <div class="form-group">
+                <label for="createFullName">Volledige naam</label>
+                <input type="text" id="createFullName" class="modal-input" placeholder="Bijv. Jan de Vries" required>
+            </div>
+            <div class="form-group">
+                <label for="createUsername">Gebruikersnaam</label>
+                <input type="text" id="createUsername" class="modal-input" placeholder="Bijv. jandevries" required>
+            </div>
+            <div class="modal-form-row">
+                <div class="form-group">
+                    <label>Rol</label>
+                    <div id="createRoleSelect"></div>
+                </div>
+                <div class="form-group">
+                    <label>Geboortedatum</label>
+                    <div id="createBirthdayPicker"></div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="createPassword">Wachtwoord</label>
+                <input type="password" id="createPassword" class="modal-input" placeholder="Wachtwoord" required minlength="6">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="modal-btn-secondary" id="cancelCreateModalBtn">Annuleren</button>
+                <button type="submit" class="btn" id="saveCreateBtn">Aanmaken</button>
+            </div>
+        </form>
+    `);
+
+    const roleContainer = document.getElementById('createRoleSelect');
+    let roleSelect = null;
+    if (roleContainer) {
+        roleSelect = createCustomSelect(roleContainer, [
+            { value: '1', label: 'Medewerker' },
+            { value: '2', label: 'Teamleider' },
+            { value: '3', label: 'Beheerder' }
+        ], '1');
+    }
+
+    const datePickerContainer = document.getElementById('createBirthdayPicker');
+    let birthdayPicker = null;
+    if (datePickerContainer) {
+        birthdayPicker = createDatePicker(datePickerContainer, '');
+    }
+
+    const cancelBtn = document.getElementById('cancelCreateModalBtn');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', closeModal);
+    }
+
+    const form = document.getElementById('createUserForm');
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const saveBtn = document.getElementById('saveCreateBtn');
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Aanmaken...';
+            }
+
+            const fullName = document.getElementById('createFullName')?.value.trim();
+            const username = document.getElementById('createUsername')?.value.trim().toLowerCase();
+            const password = document.getElementById('createPassword')?.value;
+            const role = roleSelect ? Number(roleSelect.getValue()) : 1;
+            const birthday = birthdayPicker ? birthdayPicker.getValue() : null;
+
+            try {
+                await invokeUserManagement('create', {
+                    full_name: fullName,
+                    username,
+                    password,
+                    role,
+                    birthday: birthday || null
+                });
+                closeModal();
+                await loadUsers();
+            } catch (err) {
+                alert(err.message || 'Fout bij aanmaken van gebruiker');
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Aanmaken';
+                }
+            }
+        });
+    }
 }
 
 async function openEditModal(userId) {
@@ -68,42 +191,105 @@ async function openEditModal(userId) {
                 </div>
             </div>
             <div class="form-group">
-                <label>Afdelingen</label>
-                <div id="editDepartmentSelect"></div>
-            </div>
-            <div class="form-group">
                 <label for="editPassword">Wachtwoord</label>
                 <input type="password" id="editPassword" class="modal-input" placeholder="Laat leeg om niet te wijzigen">
             </div>
             <div class="modal-footer">
+                <button type="button" class="modal-btn-danger" id="deleteUserBtn">
+                    <span class="material-icons">delete</span>
+                    <span>Verwijderen</span>
+                </button>
                 <button type="button" class="modal-btn-secondary" id="cancelEditModalBtn">Annuleren</button>
-                <button type="submit" class="btn">Opslaan</button>
+                <button type="submit" class="btn" id="saveEditBtn">Opslaan</button>
             </div>
         </form>
     `);
 
     const roleContainer = document.getElementById('editRoleSelect');
+    let roleSelect = null;
     if (roleContainer) {
-        createCustomSelect(roleContainer, [
+        roleSelect = createCustomSelect(roleContainer, [
             { value: '1', label: 'Medewerker' },
             { value: '2', label: 'Teamleider' },
             { value: '3', label: 'Beheerder' }
         ], String(userRole));
     }
 
-    const deptContainer = document.getElementById('editDepartmentSelect');
-    if (deptContainer) {
-        createCustomSelect(deptContainer, [], '', 'Selecteer afdeling...');
-    }
-
     const datePickerContainer = document.getElementById('editBirthdayPicker');
+    let birthdayPicker = null;
     if (datePickerContainer) {
-        createDatePicker(datePickerContainer, birthday);
+        birthdayPicker = createDatePicker(datePickerContainer, birthday);
     }
 
     const cancelBtn = document.getElementById('cancelEditModalBtn');
     if (cancelBtn) {
         cancelBtn.addEventListener('click', closeModal);
+    }
+
+    const deleteBtn = document.getElementById('deleteUserBtn');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', async () => {
+            const userName = user.full_name || user.username || 'deze gebruiker';
+            const confirmed = await showConfirmModal({
+                title: 'Gebruiker verwijderen',
+                message: `Weet je zeker dat je ${escapeHtml(userName)} wilt verwijderen?`,
+                confirmText: 'Verwijderen',
+                cancelText: 'Annuleren',
+                isDanger: true
+            });
+
+            if (!confirmed) return;
+
+            try {
+                await invokeUserManagement('delete', { user_id: userId });
+                closeModal();
+                await loadUsers();
+            } catch (err) {
+                alert(err.message || 'Fout bij verwijderen van gebruiker');
+            }
+        });
+    }
+
+    const form = document.getElementById('editUserForm');
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const saveBtn = document.getElementById('saveEditBtn');
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Opslaan...';
+            }
+
+            const newFullName = document.getElementById('editFullName')?.value.trim();
+            const newUsername = document.getElementById('editUsername')?.value.trim().toLowerCase();
+            const newPassword = document.getElementById('editPassword')?.value;
+            const newRole = roleSelect ? Number(roleSelect.getValue()) : userRole;
+            const newBirthday = birthdayPicker ? birthdayPicker.getValue() : null;
+
+            const payload = {
+                user_id: userId,
+                full_name: newFullName,
+                username: newUsername,
+                role: newRole,
+                birthday: newBirthday || null
+            };
+
+            if (newPassword) {
+                payload.password = newPassword;
+            }
+
+            try {
+                await invokeUserManagement('update', payload);
+                closeModal();
+                await loadUsers();
+            } catch (err) {
+                alert(err.message || 'Fout bij bijwerken van gebruiker');
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Opslaan';
+                }
+            }
+        });
     }
 }
 
@@ -213,6 +399,13 @@ const searchInput = document.getElementById('searchInput');
 if (searchInput) {
     searchInput.addEventListener('input', (e) => {
         filterUsers(e.target.value);
+    });
+}
+
+const createUserBtn = document.getElementById('createUserBtn');
+if (createUserBtn) {
+    createUserBtn.addEventListener('click', () => {
+        openCreateModal();
     });
 }
 
