@@ -1,7 +1,9 @@
 import { supabase, showToast, showModal, closeModal } from '../main.js';
+import { openImportModal } from './import-rooster.js';
 
 const vullersContainer = document.getElementById('vullers-container');
 const btnAddVuller = document.getElementById('btn-add-vuller');
+const btnImportRooster = document.getElementById('btn-import-rooster');
 
 let availableUsers = [];
 
@@ -413,6 +415,9 @@ function createVullerRow(name = '', from = '', to = '', pause = '') {
     const nameDropdown = row.querySelector('.autocomplete-dropdown');
     const userBadge = row.querySelector('.vuller-matched-user');
     setupAutocomplete(nameInput, nameDropdown, userBadge);
+    if (name) {
+        updateUsernameBadge(nameInput, userBadge);
+    }
 
     const fromInput = row.querySelector('.vuller-from');
     const fromDropdown = fromInput.nextElementSibling;
@@ -439,6 +444,23 @@ function createVullerRow(name = '', from = '', to = '', pause = '') {
 btnAddVuller.addEventListener('click', () => {
     createVullerRow();
 });
+
+if (btnImportRooster) {
+    btnImportRooster.addEventListener('click', () => {
+        openImportModal((shifts) => {
+            if (!shifts || shifts.length === 0) {
+                showToast('error', 'Geen medewerkers of diensten gevonden in de PDF.');
+                return;
+            }
+
+            vullersContainer.innerHTML = '';
+            shifts.forEach(s => {
+                createVullerRow(s.name, s.from, s.to, s.pause);
+            });
+            showToast('notification', `${shifts.length} medewerker(s) succesvol geïmporteerd!`);
+        }, availableUsers);
+    });
+}
 
 loadStoreUsers();
 createVullerRow();

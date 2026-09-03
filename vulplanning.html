@@ -9,6 +9,7 @@
     <script type="module" src="js/main.js"></script>
 
     <link rel="stylesheet" href="css/vulplanning.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script type="module" src="js/vulplanning/rooster.js"></script>
 
     <title>Vulplanning Maker</title>
@@ -23,10 +24,16 @@
             </div>
             <div class="card-body">
                 <div id="vullers-container" class="vullers-list"></div>
-                <button type="button" id="btn-add-vuller" class="btn btn-add-vuller">
-                    <span class="material-icons btn-icon">add</span>
-                    <span>Vuller Toevoegen</span>
-                </button>
+                <div class="planning-actions">
+                    <button type="button" id="btn-add-vuller" class="btn btn-add-vuller">
+                        <span class="material-icons btn-icon">add</span>
+                        <span>Vuller Toevoegen</span>
+                    </button>
+                    <button type="button" id="btn-import-rooster" class="btn btn-secondary">
+                        <span class="material-icons btn-icon">file_download</span>
+                        <span>Importeren</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
