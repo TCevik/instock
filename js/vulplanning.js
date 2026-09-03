@@ -28,6 +28,19 @@ const unassignedTasksSidebar = document.querySelector('.unassigned-tasks-sidebar
 const zoomLevelIndicator = document.getElementById('zoom-level-indicator');
 
 let tooltipElement = null;
+let draggedTaskData = null;
+
+function getDraggedTask() {
+    if (!draggedTaskData) return null;
+    if (draggedTaskData.source === 'unassigned') {
+        return planningState.unassignedTasks.find(t => t.id === draggedTaskData.taskId) || null;
+    }
+    if (draggedTaskData.source === 'assigned') {
+        const list = planningState.assignedTasks[draggedTaskData.fillerId] || [];
+        return list[draggedTaskData.taskIndex] || null;
+    }
+    return null;
+}
 
 function getOrCreateTooltip() {
     if (!tooltipElement) {
@@ -123,8 +136,43 @@ function showContextMenu(e, task, isAssigned = false, fillerId = null, taskIndex
     hideCustomTooltip();
     const menu = getOrCreateContextMenu();
 
+    let expandButtonHtml = '';
+    let remainingMins = 0;
+
+    if (isAssigned && fillerId && taskIndex !== null) {
+        const assignedList = planningState.assignedTasks[fillerId] || [];
+        if (taskIndex === assignedList.length - 1) {
+            const filler = planningState.fillers.find(f => f.id === fillerId);
+            if (filler) {
+                const shiftStart = timeToMinutes(filler.from);
+                let shiftEnd = timeToMinutes(filler.to);
+                if (shiftEnd > 0 && shiftEnd <= shiftStart) {
+                    shiftEnd += 24 * 60;
+                }
+                const pauseMins = parsePauseMinutes(filler.pause);
+                const shiftNetDuration = Math.max(0, (shiftEnd - shiftStart) - pauseMins);
+                
+                let totalAssigned = 0;
+                assignedList.forEach(t => {
+                    if (t.type !== 'pauze') totalAssigned += t.duration;
+                });
+                
+                remainingMins = shiftNetDuration - totalAssigned;
+                if (remainingMins > 0) {
+                    expandButtonHtml = `
+                        <button type="button" class="context-menu-item expand" id="ctx-expand-task">
+                            <span class="material-icons">straighten</span>
+                            <span>Uitvullen tot limiet (+${formatDuration(remainingMins)})</span>
+                        </button>
+                    `;
+                }
+            }
+        }
+    }
+
     if (task.type === 'overige') {
         menu.innerHTML = `
+            ${expandButtonHtml}
             <button type="button" class="context-menu-item" id="ctx-edit-task">
                 <span class="material-icons">edit</span>
                 <span>Bewerken</span>
@@ -134,21 +182,10 @@ function showContextMenu(e, task, isAssigned = false, fillerId = null, taskIndex
                 <span>Verwijderen</span>
             </button>
         `;
-
-        menu.querySelector('#ctx-edit-task').addEventListener('click', (ev) => {
-            ev.stopPropagation();
-            hideContextMenu();
-            openEditCustomTaskModal(task, isAssigned, fillerId, taskIndex);
-        });
-
-        menu.querySelector('#ctx-delete-task').addEventListener('click', (ev) => {
-            ev.stopPropagation();
-            hideContextMenu();
-            deleteCustomTask(task, isAssigned, fillerId, taskIndex);
-        });
     } else {
         if (!isAssigned) return;
         menu.innerHTML = `
+            ${expandButtonHtml}
             <button type="button" class="context-menu-item" id="ctx-edit-task">
                 <span class="material-icons">edit</span>
                 <span>Bewerken</span>
@@ -158,17 +195,38 @@ function showContextMenu(e, task, isAssigned = false, fillerId = null, taskIndex
                 <span>Verwijderen</span>
             </button>
         `;
+    }
 
-        menu.querySelector('#ctx-edit-task').addEventListener('click', (ev) => {
+    const expandBtn = menu.querySelector('#ctx-expand-task');
+    if (expandBtn) {
+        expandBtn.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            hideContextMenu();
+            if (remainingMins > 0) {
+                task.duration += remainingMins;
+                renderTimelineRows();
+                triggerAutoSave();
+            }
+        });
+    }
+
+    const editBtn = menu.querySelector('#ctx-edit-task');
+    if (editBtn) {
+        editBtn.addEventListener('click', (ev) => {
             ev.stopPropagation();
             hideContextMenu();
             openEditCustomTaskModal(task, isAssigned, fillerId, taskIndex);
         });
+    }
 
-        menu.querySelector('#ctx-delete-task').addEventListener('click', (ev) => {
+    const deleteBtn = menu.querySelector('#ctx-delete-task');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', (ev) => {
             ev.stopPropagation();
             hideContextMenu();
-            if (fillerId && taskIndex !== null) {
+            if (task.type === 'overige') {
+                deleteCustomTask(task, isAssigned, fillerId, taskIndex);
+            } else if (fillerId && taskIndex !== null) {
                 unassignTask(fillerId, taskIndex);
             }
         });
@@ -176,8 +234,8 @@ function showContextMenu(e, task, isAssigned = false, fillerId = null, taskIndex
 
     const x = e.clientX;
     const y = e.clientY;
-    menu.style.left = `${Math.min(window.innerWidth - 160, Math.max(10, x))}px`;
-    menu.style.top = `${Math.min(window.innerHeight - 100, Math.max(10, y))}px`;
+    menu.style.left = `${Math.min(window.innerWidth - 220, Math.max(10, x))}px`;
+    menu.style.top = `${Math.min(window.innerHeight - 130, Math.max(10, y))}px`;
     menu.classList.add('active');
 }
 
@@ -380,11 +438,14 @@ function calculateTimelineBounds(fillers) {
 
     (fillers || planningState.fillers || []).forEach(filler => {
         const shiftStart = timeToMinutes(filler.from);
-        const shiftEnd = timeToMinutes(filler.to);
+        let shiftEnd = timeToMinutes(filler.to);
+        if (shiftEnd > 0 && shiftEnd <= shiftStart) {
+            shiftEnd += 24 * 60;
+        }
         if (shiftEnd > maxMinutes) maxMinutes = shiftEnd;
 
         const assigned = (planningState.assignedTasks && planningState.assignedTasks[filler.id]) || [];
-        let cur = shiftStart > 0 ? shiftStart : 0;
+        let cur = shiftStart >= 0 ? shiftStart : 0;
         assigned.forEach(t => {
             cur += t.duration || 0;
         });
@@ -453,7 +514,10 @@ function renderTimelineRows() {
 
     planningState.fillers.forEach(filler => {
         const shiftStart = timeToMinutes(filler.from);
-        const shiftEnd = timeToMinutes(filler.to);
+        let shiftEnd = timeToMinutes(filler.to);
+        if (shiftEnd > 0 && shiftEnd <= shiftStart) {
+            shiftEnd += 24 * 60;
+        }
         const shiftGrossDuration = Math.max(0, shiftEnd - shiftStart);
         const pauseMins = parsePauseMinutes(filler.pause);
         const shiftNetDuration = Math.max(0, shiftGrossDuration - pauseMins);
@@ -466,23 +530,14 @@ function renderTimelineRows() {
 
         const prodPercent = shiftNetDuration > 0 ? Math.round((totalAssignedMins / shiftNetDuration) * 100) : 0;
         const diffMins = totalAssignedMins - shiftNetDuration;
-        let statusBadge = '';
-
+        let statusClass = 'status-fit';
+        let statusText = 'Passend';
         if (diffMins > 0) {
-            statusBadge = `<span class="timeline-badge timeline-badge-danger">Te veel: ${formatDuration(diffMins)}</span>`;
+            statusClass = 'status-over';
+            statusText = `Te veel: ${formatDuration(diffMins)}`;
         } else if (diffMins < 0) {
-            statusBadge = `<span class="timeline-badge timeline-badge-success">Over: ${formatDuration(Math.abs(diffMins))}</span>`;
-        } else if (shiftNetDuration > 0) {
-            statusBadge = `<span class="timeline-badge timeline-badge-success">Passend</span>`;
-        }
-
-        let calculatedEndTime = filler.to || '00:00';
-        if (assigned.length > 0) {
-            let lastEnd = shiftStart;
-            assigned.forEach(t => {
-                lastEnd += t.duration;
-            });
-            calculatedEndTime = minutesToTime(lastEnd);
+            statusClass = 'status-rem';
+            statusText = `Over: ${formatDuration(Math.abs(diffMins))}`;
         }
 
         let prodClass = 'danger';
@@ -497,19 +552,27 @@ function renderTimelineRows() {
         }
 
         const workerCard = document.createElement('div');
-        workerCard.className = 'timeline-worker-info';
+        workerCard.className = `timeline-worker-info ${diffMins > 0 ? 'worker-has-overflow' : ''}`;
         workerCard.setAttribute('data-filler-id', filler.id);
         workerCard.innerHTML = `
             <div class="timeline-worker-left">
                 <div class="timeline-worker-name-row">
                     <span class="timeline-worker-name" title="${filler.name || 'Naamloos'}">${filler.name || 'Naamloos'}</span>
                 </div>
-                <div class="timeline-worker-stats">
-                    <span>Tijd: ${filler.from || '00:00'} - ${filler.to || '00:00'}</span>
+                <div class="timeline-worker-subrow">
+                    <span class="timeline-worker-hours">${filler.from || '00:00'} - ${filler.to || '00:00'}</span>
                 </div>
-                <div class="timeline-worker-stats">
-                    <span>Pauze: ${filler.pause || '0m'}</span>
-                    ${statusBadge}
+            </div>
+            <div class="timeline-worker-center">
+                <div class="timeline-worker-statbox ${statusClass}">
+                    <div class="statbox-row">
+                        <span class="statbox-label">Tijd:</span>
+                        <span class="statbox-value">${formatDuration(totalAssignedMins)} / ${formatDuration(shiftNetDuration)}</span>
+                    </div>
+                    <div class="statbox-row">
+                        <span class="statbox-label">Pauze: ${filler.pause || '0m'}</span>
+                        <span class="statbox-status">${statusText}</span>
+                    </div>
                 </div>
             </div>
             <div class="timeline-worker-right">
@@ -591,9 +654,11 @@ function renderTimelineRows() {
             trackRow.appendChild(line);
         }
 
-        if (shiftEnd > shiftStart) {
+        const effectiveNetEnd = shiftStart + shiftNetDuration;
+
+        if (effectiveNetEnd > shiftStart) {
             const shiftLeft = Math.max(0, (shiftStart - startMins) * pxPerMin);
-            const shiftWidth = (shiftEnd - shiftStart) * pxPerMin;
+            const shiftWidth = (effectiveNetEnd - shiftStart) * pxPerMin;
             const bounds = document.createElement('div');
             bounds.className = 'timeline-shift-bounds';
             bounds.style.left = `${shiftLeft}px`;
@@ -601,7 +666,7 @@ function renderTimelineRows() {
             trackRow.appendChild(bounds);
         }
 
-        let currentBlockStartMins = shiftStart > 0 ? shiftStart : startMins;
+        let currentBlockStartMins = shiftStart >= 0 ? shiftStart : startMins;
 
         assigned.forEach((task, taskIdx) => {
             const taskLeft = Math.max(0, (currentBlockStartMins - startMins) * pxPerMin);
@@ -621,13 +686,30 @@ function renderTimelineRows() {
             const startStr = minutesToTime(taskStartMins);
             const endStr = minutesToTime(taskEndMins);
 
+            let typeBadge = '';
+            if (task.type === 'vullen') {
+                typeBadge = `<span class="task-badge-icon badge-vullen">V</span>`;
+            } else if (task.type === 'spiegelen') {
+                typeBadge = `<span class="task-badge-icon badge-spiegelen">S</span>`;
+            } else if (task.type === 'restanten') {
+                typeBadge = `<span class="task-badge-icon badge-restanten">R</span>`;
+            } else if (task.type === 'overige') {
+                typeBadge = `<span class="task-badge-icon badge-overige">O</span>`;
+            }
+
             block.innerHTML = `
-                <span class="timeline-task-title">${task.title}</span>
-                <span class="timeline-task-meta">${formatDuration(task.duration)} (${startStr} - ${endStr})</span>
+                <div class="task-block-header">
+                    ${typeBadge}
+                    <span class="timeline-task-title">${task.title}</span>
+                </div>
+                <div class="task-block-footer">
+                    <span class="timeline-task-meta-dur">${formatDuration(task.duration)}</span>
+                    <span class="timeline-task-meta-time">${startStr} - ${endStr}</span>
+                </div>
             `;
 
-            if (shiftEnd > 0 && taskEndMins > shiftEnd) {
-                const overflowMins = Math.min(task.duration, taskEndMins - shiftEnd);
+            if (effectiveNetEnd > 0 && taskEndMins > effectiveNetEnd) {
+                const overflowMins = Math.min(task.duration, taskEndMins - effectiveNetEnd);
                 const overflowWidth = Math.max(4, overflowMins * pxPerMin);
                 const overflowOverlay = document.createElement('div');
                 overflowOverlay.className = 'timeline-task-overflow';
@@ -657,19 +739,27 @@ function renderTimelineRows() {
 
             block.addEventListener('dragstart', (e) => {
                 hideCustomTooltip();
-                e.dataTransfer.setData('text/plain', JSON.stringify({
+                draggedTaskData = {
                     source: 'assigned',
                     taskId: task.id,
                     fillerId: filler.id,
                     taskIndex: taskIdx
-                }));
-                block.classList.add('dragging');
+                };
+                e.dataTransfer.setData('text/plain', JSON.stringify(draggedTaskData));
+                setTimeout(() => {
+                    block.classList.add('dragging');
+                }, 0);
                 if (unassignedTasksSidebar) {
                     unassignedTasksSidebar.classList.add('drag-active');
                 }
             });
 
             block.addEventListener('dragend', () => {
+                draggedTaskData = null;
+                document.querySelectorAll('.timeline-task-ghost').forEach(el => el.remove());
+                document.querySelectorAll('.timeline-task-block').forEach(b => {
+                    b.style.transform = '';
+                });
                 block.classList.remove('dragging');
                 if (unassignedTasksSidebar) {
                     unassignedTasksSidebar.classList.remove('drag-active');
@@ -691,27 +781,152 @@ function renderTimelineRows() {
 
         trackRow.addEventListener('dragover', (e) => {
             e.preventDefault();
-            trackRow.style.backgroundColor = 'rgba(101, 141, 36, 0.08)';
+            const dragged = getDraggedTask();
+            if (!dragged) return;
+
+            const rect = trackRow.getBoundingClientRect();
+            const hoverX = e.clientX - rect.left;
+
+            let ghost = trackRow.querySelector('.timeline-task-ghost');
+            if (!ghost) {
+                document.querySelectorAll('.timeline-task-ghost').forEach(el => el.remove());
+                document.querySelectorAll('.timeline-task-block').forEach(b => {
+                    b.style.transform = '';
+                });
+                ghost = document.createElement('div');
+                ghost.className = 'timeline-task-ghost';
+                ghost.innerHTML = `<span class="timeline-task-ghost-text">${dragged.title}</span>`;
+                trackRow.appendChild(ghost);
+            }
+
+            const allAssigned = planningState.assignedTasks[filler.id] || [];
+            const rowBaseStartMins = shiftStart >= 0 ? shiftStart : startMins;
+            const draggedWidthPx = Math.max(16, dragged.duration * pxPerMin);
+
+            const isSelfDrag = draggedTaskData && draggedTaskData.source === 'assigned' && draggedTaskData.fillerId === filler.id;
+            const selfOrigIdx = isSelfDrag ? draggedTaskData.taskIndex : -1;
+
+            const otherItems = [];
+            allAssigned.forEach((item, idx) => {
+                if (isSelfDrag && idx === selfOrigIdx) return;
+                otherItems.push(item);
+            });
+
+            const activeTargetIdxStr = trackRow.getAttribute('data-target-index');
+            const currentSlot = activeTargetIdxStr !== null 
+                ? Math.max(0, Math.min(otherItems.length, parseInt(activeTargetIdxStr, 10))) 
+                : (isSelfDrag ? selfOrigIdx : otherItems.length);
+
+            let slotStart = (rowBaseStartMins - startMins) * pxPerMin;
+            for (let s = 0; s < currentSlot; s++) {
+                slotStart += otherItems[s].duration * pxPerMin;
+            }
+            const slotEnd = slotStart + draggedWidthPx;
+
+            let bestSlot = currentSlot;
+
+            if (hoverX < slotStart && currentSlot > 0) {
+                const prevItem = otherItems[currentSlot - 1];
+                const prevItemWidth = prevItem.duration * pxPerMin;
+                const prevItemStart = slotStart - prevItemWidth;
+                const prevItemMid = prevItemStart + (prevItemWidth / 2);
+
+                if (hoverX < prevItemMid) {
+                    bestSlot = currentSlot - 1;
+                }
+            } else if (hoverX > slotEnd && currentSlot < otherItems.length) {
+                const nextItem = otherItems[currentSlot];
+                const nextItemWidth = nextItem.duration * pxPerMin;
+                const nextItemStart = slotEnd;
+                const nextItemMid = nextItemStart + (nextItemWidth / 2);
+
+                if (hoverX > nextItemMid) {
+                    bestSlot = currentSlot + 1;
+                }
+            }
+
+            let ghostLeftPx = (rowBaseStartMins - startMins) * pxPerMin;
+            for (let j = 0; j < bestSlot; j++) {
+                ghostLeftPx += otherItems[j].duration * pxPerMin;
+            }
+
+            ghost.style.left = `${Math.max(0, ghostLeftPx)}px`;
+            ghost.style.width = `${draggedWidthPx}px`;
+            trackRow.setAttribute('data-target-index', String(bestSlot));
+
+            let runningBasePx = (rowBaseStartMins - startMins) * pxPerMin;
+            otherItems.forEach((item, idx) => {
+                const blockEl = trackRow.querySelector(`.timeline-task-block[data-task-id="${item.id}"]`);
+                if (!blockEl) return;
+
+                const origLeft = parseFloat(blockEl.style.left) || 0;
+                let desiredLeft = runningBasePx;
+                if (idx >= bestSlot) {
+                    desiredLeft += draggedWidthPx;
+                }
+                const diffX = desiredLeft - origLeft;
+                blockEl.style.transform = diffX !== 0 ? `translateX(${diffX}px)` : '';
+                runningBasePx += item.duration * pxPerMin;
+            });
+
+            document.querySelectorAll('.timeline-track-row').forEach(otherRow => {
+                if (otherRow === trackRow) return;
+                const otherFillerId = parseInt(otherRow.getAttribute('data-filler-id'), 10);
+                const isSourceRow = draggedTaskData && draggedTaskData.source === 'assigned' && draggedTaskData.fillerId === otherFillerId;
+                if (isSourceRow) {
+                    const sourceBlocks = otherRow.querySelectorAll('.timeline-task-block');
+                    sourceBlocks.forEach(sb => {
+                        const sIdx = parseInt(sb.getAttribute('data-task-index'), 10);
+                        if (sIdx > draggedTaskData.taskIndex) {
+                            sb.style.transform = `translateX(-${draggedWidthPx}px)`;
+                        } else {
+                            sb.style.transform = '';
+                        }
+                    });
+                } else {
+                    otherRow.querySelectorAll('.timeline-task-block').forEach(sb => {
+                        sb.style.transform = '';
+                    });
+                }
+            });
         });
 
-        trackRow.addEventListener('dragleave', () => {
-            trackRow.style.backgroundColor = '';
+        trackRow.addEventListener('dragleave', (e) => {
+            if (!trackRow.contains(e.relatedTarget)) {
+                const ghost = trackRow.querySelector('.timeline-task-ghost');
+                if (ghost) ghost.remove();
+                trackRow.removeAttribute('data-target-index');
+                trackRow.querySelectorAll('.timeline-task-block').forEach(b => {
+                    b.style.transform = '';
+                });
+            }
         });
 
         trackRow.addEventListener('drop', (e) => {
             e.preventDefault();
-            trackRow.style.backgroundColor = '';
+            const ghost = trackRow.querySelector('.timeline-task-ghost');
+            if (ghost) ghost.remove();
+
+            trackRow.querySelectorAll('.timeline-task-block').forEach(b => {
+                b.style.transform = '';
+            });
+
+            const targetIdxStr = trackRow.getAttribute('data-target-index');
+            const targetIndex = targetIdxStr !== null ? parseInt(targetIdxStr, 10) : null;
+            trackRow.removeAttribute('data-target-index');
+
             const dataStr = e.dataTransfer.getData('text/plain');
             if (!dataStr) return;
 
             try {
                 const data = JSON.parse(dataStr);
                 if (data.source === 'unassigned') {
-                    assignTaskToFiller(data.taskId, filler.id);
+                    assignTaskToFiller(data.taskId, filler.id, targetIndex);
                 } else if (data.source === 'assigned') {
-                    moveAssignedTask(data.fillerId, data.taskIndex, filler.id);
+                    moveAssignedTask(data.fillerId, data.taskIndex, filler.id, targetIndex);
                 }
             } catch (_) {}
+            draggedTaskData = null;
         });
 
         timelineTracksContainer.appendChild(trackRow);
@@ -746,7 +961,7 @@ function renderUnassignedTasks() {
 
     filtered.forEach(task => {
         const card = document.createElement('div');
-        card.className = 'unassigned-task-card';
+        card.className = `unassigned-task-card type-${task.type || 'vullen'}`;
         card.setAttribute('draggable', 'true');
         card.setAttribute('data-task-id', task.id);
 
@@ -777,14 +992,20 @@ function renderUnassignedTasks() {
 
         card.addEventListener('dragstart', (e) => {
             hideCustomTooltip();
-            e.dataTransfer.setData('text/plain', JSON.stringify({
+            draggedTaskData = {
                 source: 'unassigned',
                 taskId: task.id
-            }));
+            };
+            e.dataTransfer.setData('text/plain', JSON.stringify(draggedTaskData));
             card.classList.add('dragging');
         });
 
         card.addEventListener('dragend', () => {
+            draggedTaskData = null;
+            document.querySelectorAll('.timeline-task-ghost').forEach(el => el.remove());
+            document.querySelectorAll('.timeline-task-block').forEach(b => {
+                b.style.transform = '';
+            });
             card.classList.remove('dragging');
         });
 
@@ -798,7 +1019,7 @@ function renderUnassignedTasks() {
     });
 }
 
-function assignTaskToFiller(taskId, fillerId) {
+function assignTaskToFiller(taskId, fillerId, insertIndex = null) {
     const task = planningState.unassignedTasks.find(t => t.id === taskId);
     if (!task) return;
 
@@ -806,23 +1027,30 @@ function assignTaskToFiller(taskId, fillerId) {
         planningState.assignedTasks[fillerId] = [];
     }
 
+    let taskToInsert = null;
     if (task.type === 'overige') {
-        const assignedInstance = {
+        taskToInsert = {
             ...task,
             id: `custom_inst_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
             templateId: task.id,
             origTitle: task.title,
             origDuration: task.duration
         };
-        planningState.assignedTasks[fillerId].push(assignedInstance);
     } else {
-        const taskIndex = planningState.unassignedTasks.findIndex(t => t.id === taskId);
-        if (taskIndex !== -1) {
-            planningState.unassignedTasks.splice(taskIndex, 1);
+        const taskIdx = planningState.unassignedTasks.findIndex(t => t.id === taskId);
+        if (taskIdx !== -1) {
+            planningState.unassignedTasks.splice(taskIdx, 1);
         }
         if (!task.origTitle) task.origTitle = task.title;
         if (!task.origDuration) task.origDuration = task.duration;
-        planningState.assignedTasks[fillerId].push(task);
+        taskToInsert = task;
+    }
+
+    const list = planningState.assignedTasks[fillerId];
+    if (insertIndex !== null && insertIndex >= 0 && insertIndex <= list.length) {
+        list.splice(insertIndex, 0, taskToInsert);
+    } else {
+        list.push(taskToInsert);
     }
 
     renderTimelineRows();
@@ -866,7 +1094,7 @@ function unassignTask(fillerId, taskIndex) {
     triggerAutoSave();
 }
 
-function moveAssignedTask(fromFillerId, fromIndex, toFillerId) {
+function moveAssignedTask(fromFillerId, fromIndex, toFillerId, insertIndex = null) {
     const fromList = planningState.assignedTasks[fromFillerId];
     if (!fromList || fromIndex < 0 || fromIndex >= fromList.length) return;
 
@@ -874,7 +1102,14 @@ function moveAssignedTask(fromFillerId, fromIndex, toFillerId) {
     if (!planningState.assignedTasks[toFillerId]) {
         planningState.assignedTasks[toFillerId] = [];
     }
-    planningState.assignedTasks[toFillerId].push(task);
+
+    const toList = planningState.assignedTasks[toFillerId];
+    if (insertIndex !== null && insertIndex >= 0) {
+        const boundedIndex = Math.min(insertIndex, toList.length);
+        toList.splice(boundedIndex, 0, task);
+    } else {
+        toList.push(task);
+    }
 
     renderTimelineRows();
     renderUnassignedTasks();
@@ -886,6 +1121,22 @@ function switchToTimelineView() {
     if (!fillers || fillers.length === 0) {
         showToast('error', 'Voer ten minste één medewerker in.');
         return;
+    }
+
+    for (const f of fillers) {
+        const displayName = f.name || 'Medewerker';
+        if (!f.from || !f.to) {
+            showToast('error', `Vul een begin- en eindtijd in voor ${displayName}.`);
+            return;
+        }
+
+        const startMins = timeToMinutes(f.from);
+        const endMins = timeToMinutes(f.to);
+
+        if (startMins >= endMins) {
+            showToast('error', `De begintijd van ${displayName} moet vroeger zijn dan de eindtijd.`);
+            return;
+        }
     }
 
     const existingOtherTasks = (planningState.unassignedTasks || []).filter(t => t.type === 'overige');
@@ -913,7 +1164,19 @@ function switchToTimelineView() {
     triggerAutoSave();
 }
 
-function switchToInputView() {
+async function switchToInputView() {
+    const hasAssignments = Object.values(planningState.assignedTasks || {}).some(list => Array.isArray(list) && list.length > 0);
+    if (hasAssignments) {
+        const confirmed = await showConfirmModal({
+            title: 'Invoer aanpassen',
+            message: 'Weet je het zeker? De huidige planning wordt hierbij verwijderd.',
+            confirmText: 'Ja, doorgaan',
+            cancelText: 'Annuleren',
+            isDanger: true
+        });
+        if (!confirmed) return;
+    }
+
     stepTimelineView.style.display = 'none';
     stepInputView.style.display = 'block';
 }
@@ -1128,7 +1391,7 @@ export function triggerAutoSave() {
                 }
             });
 
-            await supabase
+            const { error } = await supabase
                 .from('planner')
                 .upsert({
                     store_id: user.store_id,
@@ -1139,7 +1402,13 @@ export function triggerAutoSave() {
                 }, {
                     onConflict: 'store_id'
                 });
-        } catch (_) {}
+
+            if (error) {
+                showToast('error', 'Opslaan mislukt: controleer verbinding');
+            }
+        } catch (err) {
+            showToast('error', 'Opslaan mislukt: controleer verbinding');
+        }
     }, 400);
 }
 
