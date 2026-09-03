@@ -1,20 +1,267 @@
-.page-header-row {
+.planning-card {
+    background-color: var(--card-background);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 24px;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 24px;
-    gap: 16px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 20px;
 }
 
-.page-title {
-    font-size: 28px;
+.card-header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.card-title {
+    font-size: 18px;
     font-weight: 700;
     color: var(--text-color);
 }
 
+.card-subtitle {
+    font-size: 14px;
+    color: var(--text-color-muted);
+}
+
+.card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.vullers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.vuller-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.vuller-name-wrapper {
+    flex: 2;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.vuller-matched-user {
+    font-size: 12px;
+    color: var(--text-color-muted);
+    padding-left: 4px;
+    min-height: 18px;
+    line-height: 18px;
+    visibility: hidden;
+}
+
+.vuller-matched-user.visible {
+    visibility: visible;
+}
+
+.vuller-inputs-subgroup {
+    flex: 3;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.vuller-time-field-wrapper {
+    flex: 1;
+    position: relative;
+    min-width: 0;
+}
+
+.input-field {
+    width: 100%;
+    background-color: var(--input-background);
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 14px;
+    color: var(--text-color);
+    outline: none;
+    transition: border-color 0.2s;
+    text-align: center;
+}
+
+.input-field.vuller-name {
+    text-align: left;
+    padding: 12px 16px;
+}
+
+.input-field::placeholder {
+    color: var(--text-color-placeholder);
+}
+
+.input-field:focus {
+    border-color: var(--input-focus);
+}
+
+.time-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--card-background);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    max-height: 200px;
+    width: 100%;
+    min-width: 90px;
+    overflow-y: auto;
+    z-index: 100;
+    display: none;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+.time-dropdown.active {
+    display: block;
+}
+
+.time-option {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    text-align: center;
+    color: var(--text-color);
+    transition: background-color 0.15s;
+}
+
+.time-option:hover,
+.time-option.selected {
+    background-color: var(--input-background);
+    color: var(--text-color);
+}
+
+.autocomplete-dropdown {
+    position: absolute;
+    top: calc(100% - 18px);
+    left: 0;
+    right: 0;
+    background-color: var(--card-background);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 100;
+    display: none;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+.autocomplete-dropdown.active {
+    display: block;
+}
+
+.autocomplete-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 13px;
+    transition: background-color 0.15s;
+}
+
+.autocomplete-item:hover,
+.autocomplete-item.selected {
+    background-color: var(--input-background);
+}
+
+.autocomplete-item-name {
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.autocomplete-item-user {
+    font-size: 12px;
+    color: var(--text-color-muted);
+}
+
+.btn-delete-row {
+    background: transparent;
+    border: none;
+    color: var(--danger-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    border-radius: 8px;
+    transition: color 0.2s, background-color 0.2s;
+    flex-shrink: 0;
+    height: 46px;
+}
+
+.btn-delete-row:hover {
+    color: var(--danger-hover);
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+.btn-add-vuller {
+    align-self: flex-start;
+    padding: 10px 16px;
+    font-size: 14px;
+    border-radius: 10px;
+    background-color: transparent;
+    border: 1px solid var(--card-border);
+    color: var(--text-color);
+}
+
+.btn-add-vuller:hover {
+    background-color: var(--card-border);
+}
+
+.btn-add-vuller .btn-icon {
+    font-size: 18px;
+}
+
 @media (max-width: 768px) {
-    .page-title {
-        font-size: 22px;
+    .planning-card {
+        padding: 16px;
+        gap: 16px;
+    }
+
+    .vuller-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px 8px;
+        align-items: flex-start;
+        background-color: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--card-border);
+        border-radius: 12px;
+        padding: 12px;
+    }
+
+    .vuller-name-wrapper {
+        grid-column: 1;
+        width: 100%;
+    }
+
+    .btn-delete-row {
+        grid-column: 2;
+        grid-row: 1;
+        height: 42px;
+        padding: 8px;
+    }
+
+    .vuller-inputs-subgroup {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+
+    .input-field {
+        padding: 10px 8px;
+        font-size: 13px;
     }
 }
