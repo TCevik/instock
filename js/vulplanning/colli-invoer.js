@@ -1,4 +1,9 @@
-import { supabase, showToast } from '../main.js';
+import { supabase, showToast, showModal, closeModal } from '../main.js';
+import {
+    openColliImportModal,
+    arePathsMatchingDefault,
+    getHardcodedPathsStructure
+} from './import-colli.js';
 
 function escapeHtml(str) {
     if (!str) return '';
@@ -9,6 +14,7 @@ function escapeHtml(str) {
 
 let loadedPaths = [];
 const colliCategoriesContainer = document.getElementById('colli-categories-container');
+const btnImportColli = document.getElementById('btn-import-colli');
 
 export async function loadStorePathsForColli() {
     if (!colliCategoriesContainer) return;
@@ -48,7 +54,7 @@ export function renderColliTable(pathsList) {
 
     if (!pathsList || pathsList.length === 0) {
         colliCategoriesContainer.innerHTML = `
-            <div class="empty-state" style="padding: 30px 20px;">
+            <div class="empty-state" style="padding: 20px;">
                 Geen vaste paden of categorieën geconfigureerd in de winkelinstellingen.
             </div>
         `;
@@ -120,6 +126,127 @@ export function renderColliTable(pathsList) {
     `;
 }
 
+export function fillColliValues(colliMap) {
+    if (!colliCategoriesContainer || !colliMap) return 0;
+
+    const rows = colliCategoriesContainer.querySelectorAll('.colli-item-row');
+    let matchedCount = 0;
+
+    rows.forEach(row => {
+        const catName = (row.getAttribute('data-category-name') || '').toLowerCase().trim();
+        const input = row.querySelector('.colli-amount-input');
+        if (!input) return;
+
+        let amount = 0;
+        if (colliMap.hasOwnProperty(catName)) {
+            amount = colliMap[catName];
+            matchedCount++;
+        } else {
+            const keys = Object.keys(colliMap);
+            const foundKey = keys.find(k => k === catName || k.startsWith(catName) || catName.startsWith(k));
+            if (foundKey) {
+                amount = colliMap[foundKey];
+                matchedCount++;
+            }
+        }
+
+        input.value = amount || 0;
+    });
+
+    return matchedCount;
+}
+
+async function saveHardcodedPathsToStore() {
+    const defaultStructure = getHardcodedPathsStructure();
+    const { data, error } = await supabase.functions.invoke('manage-store-settings', {
+        body: {
+            action: 'update_paths',
+            default_paths: defaultStructure
+        }
+    });
+
+    if (error) {
+        let msg = error.message || 'Fout bij opslaan van instellingen';
+        if (error.context && typeof error.context.json === 'function') {
+            try {
+                const b = await error.context.json();
+                if (b && b.error) msg = b.error;
+            } catch (_) {}
+        }
+        throw new Error(msg);
+    }
+
+    if (data && data.error) {
+        throw new Error(data.error);
+    }
+
+    loadedPaths = defaultStructure;
+    renderColliTable(loadedPaths);
+}
+
+function promptPathMismatch(colliMap) {
+    const modalContent = `
+        <div class="modal-header">
+            <h2 class="modal-title">Paden kartering verschilt</h2>
+            <p class="modal-subtitle">De ingestelde paden en categorieën komen niet overeen met de standaard kartering van het colli overzicht document.</p>
+        </div>
+        <div class="modal-body">
+            <p style="font-size: 13px; color: var(--text-color-muted); line-height: 1.5;">
+                Wil je de huidige winkelpaden en categorieën overschrijven met de standaard paden en normen uit de PDF layout?
+            </p>
+            <div class="modal-footer" style="margin-top: 10px;">
+                <button type="button" class="modal-btn-secondary" id="btn-cancel-overwrite">Behouden & Invoeren</button>
+                <button type="button" class="btn" id="btn-confirm-overwrite">Paden Overschrijven</button>
+            </div>
+        </div>
+    `;
+
+    showModal(modalContent).then(overlay => {
+        const cancelBtn = overlay.querySelector('#btn-cancel-overwrite');
+        const confirmBtn = overlay.querySelector('#btn-confirm-overwrite');
+
+        cancelBtn.addEventListener('click', () => {
+            closeModal(overlay);
+            fillColliValues(colliMap);
+            showToast('notification', 'Colli ingevuld op huidige paden');
+        });
+
+        confirmBtn.addEventListener('click', async () => {
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Bezig met opslaan...';
+            try {
+                await saveHardcodedPathsToStore();
+                closeModal(overlay);
+                fillColliValues(colliMap);
+                showToast('notification', 'Winkelpaden bijgewerkt en colli succesvol ingevuld!');
+            } catch (err) {
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Paden Overschrijven';
+                showToast('error', err.message || 'Fout bij overschrijven paden');
+            }
+        });
+    });
+}
+
+if (btnImportColli) {
+    btnImportColli.addEventListener('click', () => {
+        openColliImportModal(async (colliMap) => {
+            if (!colliMap || Object.keys(colliMap).length === 0) {
+                showToast('error', 'Geen colli gegevens gevonden in het PDF bestand.');
+                return;
+            }
+
+            const isMatching = arePathsMatchingDefault(loadedPaths);
+            if (!isMatching) {
+                promptPathMismatch(colliMap);
+            } else {
+                fillColliValues(colliMap);
+                showToast('notification', 'Colli succesvol geïmporteerd!');
+            }
+        });
+    });
+}
+
 export function getColliData() {
     if (!colliCategoriesContainer) return [];
 
@@ -145,3 +272,4 @@ export function getColliData() {
 }
 
 loadStorePathsForColli();
+

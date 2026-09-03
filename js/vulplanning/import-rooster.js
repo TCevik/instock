@@ -121,44 +121,9 @@ export function parseShiftText(rawText, availableUsers = []) {
     return shifts;
 }
 
-export async function extractTextFromPdf(file) {
-    if (!window.pdfjsLib) {
-        throw new Error('PDF bibliotheek niet geladen.');
-    }
+import { extractTextFromPdf } from './pdf-helper.js';
 
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let fullText = '';
-
-    for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        
-        let lastY = null;
-        let pageLines = [];
-        let currentLine = '';
-
-        for (let item of textContent.items) {
-            const y = item.transform[5];
-            if (lastY === null || Math.abs(y - lastY) > 4) {
-                if (currentLine) {
-                    pageLines.push(currentLine.trim());
-                }
-                currentLine = item.str;
-                lastY = y;
-            } else {
-                currentLine += ' ' + item.str;
-            }
-        }
-        if (currentLine) {
-            pageLines.push(currentLine.trim());
-        }
-
-        fullText += pageLines.join('\n') + '\n';
-    }
-
-    return fullText;
-}
+export { extractTextFromPdf };
 
 export function openImportModal(onImport, availableUsers = []) {
     const modalContent = `
