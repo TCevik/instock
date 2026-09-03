@@ -16,37 +16,51 @@ let loadedPaths = [];
 const colliCategoriesContainer = document.getElementById('colli-categories-container');
 const btnImportColli = document.getElementById('btn-import-colli');
 
-export async function loadStorePathsForColli() {
-    if (!colliCategoriesContainer) return;
+let pendingColliMap = {};
+let loadPathsPromise = null;
 
-    try {
-        const { data, error } = await supabase.functions.invoke('manage-store-settings', {
-            body: { action: 'get_paths' }
-        });
+export function loadStorePathsForColli() {
+    if (loadPathsPromise) return loadPathsPromise;
 
-        if (error) {
-            let msg = error.message || 'Kon paden niet laden';
-            if (error.context && typeof error.context.json === 'function') {
-                try {
-                    const b = await error.context.json();
-                    if (b && b.error) msg = b.error;
-                } catch (_) {}
+    loadPathsPromise = (async () => {
+        if (!colliCategoriesContainer) return [];
+
+        try {
+            const { data, error } = await supabase.functions.invoke('manage-store-settings', {
+                body: { action: 'get_paths' }
+            });
+
+            if (error) {
+                let msg = error.message || 'Kon paden niet laden';
+                if (error.context && typeof error.context.json === 'function') {
+                    try {
+                        const b = await error.context.json();
+                        if (b && b.error) msg = b.error;
+                    } catch (_) {}
+                }
+                throw new Error(msg);
             }
-            throw new Error(msg);
-        }
 
-        if (data && Array.isArray(data.default_paths)) {
-            loadedPaths = data.default_paths;
-        } else {
+            if (data && Array.isArray(data.default_paths)) {
+                loadedPaths = data.default_paths;
+            } else {
+                loadedPaths = [];
+            }
+
+            renderColliTable(loadedPaths);
+            if (pendingColliMap && Object.keys(pendingColliMap).length > 0) {
+                fillColliValues(pendingColliMap);
+            }
+            return loadedPaths;
+        } catch (err) {
+            showToast('error', err.message || 'Fout bij ophalen van winkelpaden');
             loadedPaths = [];
+            renderColliTable([]);
+            return [];
         }
+    })();
 
-        renderColliTable(loadedPaths);
-    } catch (err) {
-        showToast('error', err.message || 'Fout bij ophalen van winkelpaden');
-        loadedPaths = [];
-        renderColliTable([]);
-    }
+    return loadPathsPromise;
 }
 
 export function renderColliTable(pathsList) {
@@ -90,6 +104,8 @@ export function renderColliTable(pathsList) {
             categories.forEach(cat => {
                 const catName = escapeHtml(cat.name || 'Categorie');
                 const norm = cat.norm !== undefined && cat.norm !== null ? cat.norm : 0;
+                const lowerCat = (cat.name || '').toLowerCase().trim();
+                const existingVal = pendingColliMap[lowerCat] !== undefined ? pendingColliMap[lowerCat] : 0;
 
                 rowsHtml += `
                     <tr class="colli-item-row" data-path-name="${pathName}" data-category-name="${catName}" data-norm="${norm}">
@@ -97,7 +113,7 @@ export function renderColliTable(pathsList) {
                             <span class="colli-cat-name">${catName}</span>
                         </td>
                         <td class="colli-input-cell">
-                            <input type="number" min="0" class="colli-amount-input input-field" placeholder="0" value="0">
+                            <input type="number" min="0" class="colli-amount-input input-field" placeholder="0" value="${existingVal}">
                         </td>
                         <td class="colli-norm-cell">
                             <span class="colli-norm-value">${norm}</span>
@@ -127,9 +143,18 @@ export function renderColliTable(pathsList) {
 }
 
 export function fillColliValues(colliMap) {
-    if (!colliCategoriesContainer || !colliMap) return 0;
+    if (!colliMap) return 0;
+    pendingColliMap = { ...pendingColliMap, ...colliMap };
+
+    if (!colliCategoriesContainer) {
+        return 0;
+    }
 
     const rows = colliCategoriesContainer.querySelectorAll('.colli-item-row');
+    if (rows.length === 0) {
+        return 0;
+    }
+
     let matchedCount = 0;
 
     rows.forEach(row => {
@@ -137,7 +162,7 @@ export function fillColliValues(colliMap) {
         const input = row.querySelector('.colli-amount-input');
         if (!input) return;
 
-        let amount = 0;
+        let amount = null;
         if (colliMap.hasOwnProperty(catName)) {
             amount = colliMap[catName];
             matchedCount++;
@@ -150,7 +175,10 @@ export function fillColliValues(colliMap) {
             }
         }
 
-        input.value = amount || 0;
+        if (amount !== null && amount !== undefined) {
+            input.value = amount;
+            input.setAttribute('value', amount);
+        }
     });
 
     return matchedCount;
@@ -251,6 +279,10 @@ if (btnImportColli) {
     });
 }
 
+export function getLoadedPaths() {
+    return loadedPaths;
+}
+
 export function getColliData() {
     if (!colliCategoriesContainer) return [];
 
@@ -276,4 +308,5 @@ export function getColliData() {
 }
 
 loadStorePathsForColli();
+
 

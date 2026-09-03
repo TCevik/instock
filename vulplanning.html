@@ -18,48 +18,122 @@
 </head>
 
 <body>
-    <div class="page-container">
-        <div class="vulplanning-top-bar">
-            <div class="vulplanning-top-info">
-                <h1 class="vulplanning-page-title">Vulplanning Maken</h1>
-                <p class="vulplanning-page-subtitle">Vul het rooster en de colli in of importeer de PDF-bestanden.</p>
-            </div>
-            <div class="vulplanning-top-actions">
-                <button type="button" id="btn-unified-import" class="btn btn-secondary">
-                    <span class="material-icons btn-icon">file_download</span>
-                    <span>Documenten Importeren</span>
-                </button>
-                <button type="button" id="btn-continue" class="btn btn-continue">
-                    <span>Verder</span>
-                    <span class="material-icons btn-icon">arrow_forward</span>
-                </button>
-            </div>
-        </div>
-
-        <div class="planning-card">
-            <div class="card-header">
-                <h2 class="card-title">1. Rooster / Vulploeg Invoeren</h2>
-                <p class="card-subtitle">Voer medewerkers in met hun werktijden en pauze.</p>
-            </div>
-            <div class="card-body">
-                <div id="vullers-container" class="vullers-list"></div>
-                <div class="planning-actions">
-                    <button type="button" id="btn-add-vuller" class="btn btn-add-vuller">
-                        <span class="material-icons btn-icon">add</span>
-                        <span>Vuller Toevoegen</span>
+    <div class="page-container vulplanning-main-layout">
+        <div id="step-input-view" class="vulplanning-step-view">
+            <div class="vulplanning-top-bar">
+                <div class="vulplanning-top-info">
+                    <h1 class="vulplanning-page-title">Vulplanning Maken</h1>
+                    <p class="vulplanning-page-subtitle">Vul het rooster en de colli in of importeer de PDF-bestanden.</p>
+                </div>
+                <div class="vulplanning-top-actions">
+                    <button type="button" id="btn-unified-import" class="btn btn-secondary">
+                        <span class="material-icons btn-icon">file_download</span>
+                        <span>Documenten Importeren</span>
                     </button>
+                    <button type="button" id="btn-continue" class="btn btn-continue">
+                        <span>Planning Maken</span>
+                        <span class="material-icons btn-icon">arrow_forward</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="planning-card">
+                <div class="card-header">
+                    <h2 class="card-title">1. Rooster / Vulploeg Invoeren</h2>
+                    <p class="card-subtitle">Voer medewerkers in met hun werktijden en pauze.</p>
+                </div>
+                <div class="card-body">
+                    <div id="vullers-container" class="vullers-list"></div>
+                    <div class="planning-actions">
+                        <button type="button" id="btn-add-vuller" class="btn btn-add-vuller">
+                            <span class="material-icons btn-icon">add</span>
+                            <span>Vuller Toevoegen</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="planning-card">
+                <div class="card-header">
+                    <h2 class="card-title">2. Colli Invoeren Per Categorie</h2>
+                    <p class="card-subtitle">Vul het aantal colli in. Paden en normen worden overgenomen uit de instellingen.</p>
+                </div>
+                <div class="card-body">
+                    <div id="colli-categories-container">
+                        <div class="empty-state">Paden en categorieën laden...</div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="planning-card">
-            <div class="card-header">
-                <h2 class="card-title">2. Colli Invoeren Per Categorie</h2>
-                <p class="card-subtitle">Vul het aantal colli in. Paden en normen worden overgenomen uit de instellingen.</p>
+        <div id="step-timeline-view" class="vulplanning-step-view" style="display: none;">
+            <div class="timeline-app-header">
+                <div class="timeline-header-left">
+                    <button type="button" id="btn-back-to-input" class="btn btn-secondary btn-sm">
+                        <span class="material-icons btn-icon">arrow_back</span>
+                        <span>Invoer Aanpassen</span>
+                    </button>
+                    <div class="timeline-header-titles">
+                        <h1 class="vulplanning-page-title">Vulplanning Overzicht</h1>
+                        <p class="vulplanning-page-subtitle" id="timelineSubtitle">Beheer en bekijk de vulplanning</p>
+                    </div>
+                </div>
+                <div class="timeline-header-actions">
+                    <button type="button" id="btn-add-custom-task" class="btn btn-secondary btn-sm">
+                        <span class="material-icons btn-icon">add_task</span>
+                        <span>Taak Toevoegen</span>
+                    </button>
+                </div>
             </div>
-            <div class="card-body">
-                <div id="colli-categories-container">
-                    <div class="empty-state">Paden en categorieën laden...</div>
+
+            <div class="timeline-workspace">
+                <div class="timeline-board-container">
+                    <div class="timeline-board-topbar">
+                        <div class="timeline-workers-header-cell">
+                            <span class="timeline-col-title-main">MEDEWERKER TIJD & PAUZE</span>
+                            <span class="timeline-col-title-sub">EINDTIJD</span>
+                        </div>
+                        <div class="timeline-axis-label-row">
+                            <span class="timeline-axis-title">TOEGEWEZEN TAKEN</span>
+                            <div class="timeline-zoom-controls">
+                                <button type="button" id="btn-zoom-out" class="zoom-btn" title="Uitzoomen"><span class="material-icons">remove</span></button>
+                                <span id="zoom-level-indicator" class="zoom-indicator">100%</span>
+                                <button type="button" id="btn-zoom-in" class="zoom-btn" title="Inzoomen"><span class="material-icons">add</span></button>
+                                <button type="button" id="btn-zoom-reset" class="zoom-btn" title="Herstellen"><span class="material-icons">refresh</span></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="timeline-board-body">
+                        <div class="timeline-workers-pane">
+                            <div id="timeline-workers-list" class="timeline-workers-list"></div>
+                        </div>
+                        <div class="timeline-schedule-pane" id="timeline-schedule-pane">
+                            <div id="timeline-hours-axis" class="timeline-hours-axis"></div>
+                            <div id="timeline-tracks-container" class="timeline-tracks-container"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="unassigned-tasks-sidebar">
+                    <div class="unassigned-sidebar-header">
+                        <div class="unassigned-title-row">
+                            <span class="unassigned-sidebar-title">Onverdeelde Taken</span>
+                            <a href="instellingen-winkel.html" class="unassigned-settings-link" title="Winkelinstellingen">
+                                <span class="material-icons">settings</span>
+                                <span>Instellingen</span>
+                            </a>
+                        </div>
+                        <div class="unassigned-filter-tabs">
+                            <button type="button" class="unassigned-tab active" data-tab="vullen">VULLEN (<span id="count-tab-vullen">0</span>)</button>
+                            <button type="button" class="unassigned-tab" data-tab="spiegelen">SPIEGELEN (<span id="count-tab-spiegelen">0</span>)</button>
+                            <button type="button" class="unassigned-tab" data-tab="restanten">RESTANTEN (<span id="count-tab-restanten">0</span>)</button>
+                            <button type="button" class="unassigned-tab" data-tab="overige">OVERIGE (<span id="count-tab-overige">0</span>)</button>
+                        </div>
+                    </div>
+                    <div class="unassigned-list-section">
+                        <div class="unassigned-section-label">Verdeelde Taken</div>
+                        <div id="unassigned-tasks-list" class="unassigned-tasks-list"></div>
+                    </div>
                 </div>
             </div>
         </div>

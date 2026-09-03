@@ -38,6 +38,12 @@
     --bg-shape-stroke: rgba(101, 141, 36, 0.45);
     --danger-color: #ef4444;
     --danger-hover: #dc2626;
+    --warning-color: #f59e0b;
+    --yellow-color: #eab308;
+    --success-color: #22c55e;
+    --info-color: #3b82f6;
+    --task-item-bg: #202024;
+    --task-item-border: #323238;
 }
 
 html {
