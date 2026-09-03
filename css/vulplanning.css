@@ -1,74 +1,75 @@
 .planning-card {
     background-color: var(--card-background);
     border: 1px solid var(--card-border);
-    border-radius: 14px;
-    padding: 24px;
+    border-radius: 12px;
+    padding: 14px 16px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 12px;
+    margin-bottom: 14px;
 }
 
 .card-header {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 2px;
 }
 
 .card-title {
-    font-size: 18px;
+    font-size: 15px;
     font-weight: 700;
     color: var(--text-color);
 }
 
 .card-subtitle {
-    font-size: 14px;
+    font-size: 12px;
     color: var(--text-color-muted);
 }
 
 .card-body {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 10px;
 }
 
 .vullers-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 6px;
 }
 
 .vuller-row {
     display: flex;
-    align-items: flex-start;
-    gap: 12px;
+    align-items: center;
+    gap: 8px;
 }
 
 .vuller-name-wrapper {
     flex: 2;
     position: relative;
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    align-items: center;
 }
 
 .vuller-matched-user {
-    font-size: 12px;
+    position: absolute;
+    right: 10px;
+    font-size: 11px;
     color: var(--text-color-muted);
-    padding-left: 4px;
-    min-height: 18px;
-    line-height: 18px;
-    visibility: hidden;
+    pointer-events: none;
+    line-height: 1;
+    display: none;
 }
 
 .vuller-matched-user.visible {
-    visibility: visible;
+    display: block;
 }
 
 .vuller-inputs-subgroup {
     flex: 3;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
 }
 
 .vuller-time-field-wrapper {
@@ -81,9 +82,9 @@
     width: 100%;
     background-color: var(--input-background);
     border: 1px solid var(--input-border);
-    border-radius: 12px;
-    padding: 12px 14px;
-    font-size: 14px;
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-size: 13px;
     color: var(--text-color);
     outline: none;
     transition: border-color 0.2s;
@@ -92,7 +93,7 @@
 
 .input-field.vuller-name {
     text-align: left;
-    padding: 12px 16px;
+    padding: 7px 12px;
 }
 
 .input-field::placeholder {
@@ -105,19 +106,19 @@
 
 .time-dropdown {
     position: absolute;
-    top: calc(100% + 6px);
+    top: calc(100% + 4px);
     left: 50%;
     transform: translateX(-50%);
     background-color: var(--card-background);
     border: 1px solid var(--card-border);
-    border-radius: 12px;
-    max-height: 200px;
+    border-radius: 8px;
+    max-height: 180px;
     width: 100%;
     min-width: 90px;
     overflow-y: auto;
     z-index: 100;
     display: none;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
 }
 
 .time-dropdown.active {
@@ -125,9 +126,9 @@
 }
 
 .time-option {
-    padding: 8px 12px;
+    padding: 6px 10px;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 12px;
     text-align: center;
     color: var(--text-color);
     transition: background-color 0.15s;
@@ -141,17 +142,17 @@
 
 .autocomplete-dropdown {
     position: absolute;
-    top: calc(100% - 18px);
+    top: calc(100% + 4px);
     left: 0;
     right: 0;
     background-color: var(--card-background);
     border: 1px solid var(--card-border);
-    border-radius: 12px;
-    max-height: 220px;
+    border-radius: 8px;
+    max-height: 200px;
     overflow-y: auto;
     z-index: 100;
     display: none;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
 }
 
 .autocomplete-dropdown.active {
@@ -159,13 +160,13 @@
 }
 
 .autocomplete-item {
-    padding: 10px 14px;
+    padding: 7px 10px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
-    font-size: 13px;
+    gap: 8px;
+    font-size: 12px;
     transition: background-color 0.15s;
 }
 
@@ -180,7 +181,7 @@
 }
 
 .autocomplete-item-user {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text-color-muted);
 }
 
@@ -192,11 +193,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 10px;
-    border-radius: 8px;
+    padding: 6px;
+    border-radius: 6px;
     transition: color 0.2s, background-color 0.2s;
     flex-shrink: 0;
-    height: 46px;
+    height: 32px;
+}
+
+.btn-delete-row .material-icons {
+    font-size: 18px;
 }
 
 .btn-delete-row:hover {
@@ -207,14 +212,15 @@
 .planning-actions {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     flex-wrap: wrap;
+    margin-top: 2px;
 }
 
 .btn-add-vuller {
-    padding: 10px 16px;
-    font-size: 14px;
-    border-radius: 10px;
+    padding: 6px 12px;
+    font-size: 13px;
+    border-radius: 8px;
     background-color: transparent;
     border: 1px solid var(--card-border);
     color: var(--text-color);
@@ -225,13 +231,13 @@
 }
 
 .btn-add-vuller .btn-icon {
-    font-size: 18px;
+    font-size: 16px;
 }
 
 .btn-secondary {
-    padding: 10px 16px;
-    font-size: 14px;
-    border-radius: 10px;
+    padding: 6px 12px;
+    font-size: 13px;
+    border-radius: 8px;
     background-color: transparent;
     border: 1px solid var(--card-border);
     color: var(--text-color);
@@ -242,18 +248,18 @@
 }
 
 .btn-secondary .btn-icon {
-    font-size: 18px;
+    font-size: 16px;
 }
 
 .pdf-dropzone {
     border: 2px dashed var(--card-border);
-    border-radius: 14px;
-    padding: 32px 20px;
+    border-radius: 10px;
+    padding: 20px 16px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 8px;
     cursor: pointer;
     background-color: var(--input-background);
     transition: border-color 0.2s, background-color 0.2s;
@@ -267,36 +273,157 @@
 }
 
 .pdf-dropzone-icon {
-    font-size: 40px;
+    font-size: 32px;
     color: var(--accent-color);
 }
 
 .pdf-dropzone-text {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     color: var(--text-color);
 }
 
 .pdf-dropzone-subtext {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text-color-muted);
+}
+
+.colli-table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    background-color: var(--input-background);
+}
+
+.colli-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    text-align: left;
+}
+
+.colli-table thead {
+    background-color: var(--card-background);
+    border-bottom: 1px solid var(--card-border);
+}
+
+.colli-table th {
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--text-color-muted);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.colli-table th.th-colli {
+    width: 130px;
+    text-align: center;
+}
+
+.colli-table th.th-norm {
+    width: 130px;
+    text-align: center;
+}
+
+.colli-path-header-row td {
+    background-color: var(--card-background);
+    padding: 7px 12px;
+    border-top: 1px solid var(--card-border);
+    border-bottom: 1px solid var(--card-border);
+}
+
+.colli-path-header-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.colli-path-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent-color);
+}
+
+.colli-path-norms-badge {
+    font-size: 11px;
+    color: var(--text-color-muted);
+    font-weight: 500;
+}
+
+.colli-item-row td {
+    padding: 5px 12px;
+    border-bottom: 1px solid var(--card-border);
+    color: var(--text-color);
+}
+
+.colli-item-row:last-child td {
+    border-bottom: none;
+}
+
+.colli-cat-name-cell {
+    font-weight: 500;
+    padding-left: 20px !important;
+    font-size: 13px;
+}
+
+.colli-input-cell {
+    text-align: center;
+}
+
+.colli-amount-input {
+    width: 90px;
+    padding: 5px 8px;
+    border-radius: 6px;
+    display: inline-block;
+    background-color: var(--card-background);
+    font-size: 13px;
+}
+
+.colli-norm-cell {
+    text-align: center;
+}
+
+.colli-norm-value {
+    display: inline-block;
+    font-weight: 600;
+    color: var(--text-color-muted);
+    font-size: 12px;
+}
+
+.colli-empty-cat-text {
+    padding: 8px 12px 8px 20px;
+    color: var(--text-color-muted);
+    font-size: 12px;
+    font-style: italic;
+    border-bottom: 1px solid var(--card-border);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 24px 16px;
+    color: var(--text-color-muted);
+    font-size: 13px;
 }
 
 @media (max-width: 768px) {
     .planning-card {
-        padding: 16px;
-        gap: 16px;
+        padding: 12px;
+        gap: 10px;
     }
 
     .vuller-row {
         display: grid;
         grid-template-columns: 1fr auto;
-        gap: 8px 8px;
-        align-items: flex-start;
+        gap: 6px;
+        align-items: center;
         background-color: rgba(255, 255, 255, 0.02);
         border: 1px solid var(--card-border);
-        border-radius: 12px;
-        padding: 12px;
+        border-radius: 8px;
+        padding: 8px;
     }
 
     .vuller-name-wrapper {
@@ -307,8 +434,8 @@
     .btn-delete-row {
         grid-column: 2;
         grid-row: 1;
-        height: 42px;
-        padding: 8px;
+        height: 32px;
+        padding: 4px;
     }
 
     .vuller-inputs-subgroup {
@@ -317,11 +444,20 @@
         width: 100%;
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
+        gap: 6px;
     }
 
     .input-field {
-        padding: 10px 8px;
-        font-size: 13px;
+        padding: 6px 6px;
+        font-size: 12px;
+    }
+
+    .colli-cat-name-cell {
+        padding-left: 12px !important;
+    }
+
+    .colli-table th,
+    .colli-table td {
+        padding: 6px 8px;
     }
 }

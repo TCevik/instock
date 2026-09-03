@@ -18,6 +18,45 @@
     <div class="page-container">
         <div class="page-header-row">
             <h1 class="page-title">Instellingen Winkel</h1>
+            <div class="page-header-actions">
+                <button type="button" class="btn" id="saveAllPathsBtn">
+                    <span class="material-icons btn-icon">save</span>
+                    <span>Wijzigingen opslaan</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <div class="settings-card-header">
+                <div class="settings-card-title-group">
+                    <div class="settings-card-icon">
+                        <span class="material-icons">alt_route</span>
+                    </div>
+                    <div>
+                        <h2 class="settings-card-title">Standaard Paden & Categorieën</h2>
+                        <p class="settings-card-subtitle">Beheer de vaste paden, categorieën en normen van de winkel</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="paths-master-detail">
+                <div class="paths-sidebar">
+                    <div class="paths-sidebar-header">
+                        <span class="paths-sidebar-title">Paden</span>
+                        <button type="button" class="btn-secondary btn-sm" id="addPathBtn">
+                            <span class="material-icons btn-icon">add</span>
+                            <span>Nieuw pad</span>
+                        </button>
+                    </div>
+                    <div class="paths-list" id="pathsListContainer">
+                        <div class="empty-state">Paden laden...</div>
+                    </div>
+                </div>
+
+                <div class="paths-detail-panel" id="pathDetailPanel">
+                    <div class="empty-state" style="padding: 60px 20px;">Selecteer een pad om de details en categorieën te bewerken</div>
+                </div>
+            </div>
         </div>
     </div>
 </body>

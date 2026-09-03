@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="css/vulplanning.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script type="module" src="js/vulplanning/rooster.js"></script>
+    <script type="module" src="js/vulplanning/colli-invoer.js"></script>
 
     <title>Vulplanning Maker</title>
 </head>
@@ -33,6 +34,18 @@
                         <span class="material-icons btn-icon">file_download</span>
                         <span>Importeren</span>
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="planning-card">
+            <div class="card-header">
+                <h2 class="card-title">2. Colli Invoeren Per Categorie</h2>
+                <p class="card-subtitle">Vul het aantal colli in. Paden en normen worden overgenomen uit de instellingen.</p>
+            </div>
+            <div class="card-body">
+                <div id="colli-categories-container">
+                    <div class="empty-state">Paden en categorieën laden...</div>
                 </div>
             </div>
         </div>
