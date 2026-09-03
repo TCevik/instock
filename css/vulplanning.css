@@ -1,3 +1,29 @@
+.vulplanning-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+
+.vulplanning-top-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.vulplanning-page-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-color);
+}
+
+.vulplanning-page-subtitle {
+    font-size: 12px;
+    color: var(--text-color-muted);
+}
+
 .planning-card {
     background-color: var(--card-background);
     border: 1px solid var(--card-border);

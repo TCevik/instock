@@ -12,12 +12,24 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script type="module" src="js/vulplanning/rooster.js"></script>
     <script type="module" src="js/vulplanning/colli-invoer.js"></script>
+    <script type="module" src="js/vulplanning.js"></script>
 
     <title>Vulplanning Maker</title>
 </head>
 
 <body>
     <div class="page-container">
+        <div class="vulplanning-top-bar">
+            <div class="vulplanning-top-info">
+                <h1 class="vulplanning-page-title">Vulplanning Maken</h1>
+                <p class="vulplanning-page-subtitle">Vul het rooster en de colli in of importeer de PDF-bestanden.</p>
+            </div>
+            <button type="button" id="btn-unified-import" class="btn btn-secondary">
+                <span class="material-icons btn-icon">file_download</span>
+                <span>Documenten Importeren</span>
+            </button>
+        </div>
+
         <div class="planning-card">
             <div class="card-header">
                 <h2 class="card-title">1. Rooster / Vulploeg Invoeren</h2>
@@ -29,10 +41,6 @@
                     <button type="button" id="btn-add-vuller" class="btn btn-add-vuller">
                         <span class="material-icons btn-icon">add</span>
                         <span>Vuller Toevoegen</span>
-                    </button>
-                    <button type="button" id="btn-import-rooster" class="btn btn-secondary">
-                        <span class="material-icons btn-icon">file_download</span>
-                        <span>Importeren</span>
                     </button>
                 </div>
             </div>
@@ -46,12 +54,6 @@
             <div class="card-body">
                 <div id="colli-categories-container">
                     <div class="empty-state">Paden en categorieën laden...</div>
-                </div>
-                <div class="planning-actions">
-                    <button type="button" id="btn-import-colli" class="btn btn-secondary">
-                        <span class="material-icons btn-icon">file_download</span>
-                        <span>Colli PDF Importeren</span>
-                    </button>
                 </div>
             </div>
         </div>

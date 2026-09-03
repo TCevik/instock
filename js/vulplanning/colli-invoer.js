@@ -228,21 +228,25 @@ function promptPathMismatch(colliMap) {
     });
 }
 
+export function handleImportedColli(colliMap) {
+    if (!colliMap || Object.keys(colliMap).length === 0) {
+        showToast('error', 'Geen colli gegevens gevonden in het PDF bestand.');
+        return;
+    }
+
+    const isMatching = arePathsMatchingDefault(loadedPaths);
+    if (!isMatching) {
+        promptPathMismatch(colliMap);
+    } else {
+        fillColliValues(colliMap);
+        showToast('notification', 'Colli succesvol geïmporteerd!');
+    }
+}
+
 if (btnImportColli) {
     btnImportColli.addEventListener('click', () => {
-        openColliImportModal(async (colliMap) => {
-            if (!colliMap || Object.keys(colliMap).length === 0) {
-                showToast('error', 'Geen colli gegevens gevonden in het PDF bestand.');
-                return;
-            }
-
-            const isMatching = arePathsMatchingDefault(loadedPaths);
-            if (!isMatching) {
-                promptPathMismatch(colliMap);
-            } else {
-                fillColliValues(colliMap);
-                showToast('notification', 'Colli succesvol geïmporteerd!');
-            }
+        openColliImportModal((colliMap) => {
+            handleImportedColli(colliMap);
         });
     });
 }

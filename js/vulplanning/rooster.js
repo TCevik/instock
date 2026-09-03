@@ -441,25 +441,22 @@ function createVullerRow(name = '', from = '', to = '', pause = '') {
     vullersContainer.appendChild(row);
 }
 
-btnAddVuller.addEventListener('click', () => {
-    createVullerRow();
-});
-
-if (btnImportRooster) {
-    btnImportRooster.addEventListener('click', () => {
-        openImportModal((shifts) => {
-            if (!shifts || shifts.length === 0) {
-                showToast('error', 'Geen medewerkers of diensten gevonden in de PDF.');
-                return;
-            }
-
-            vullersContainer.innerHTML = '';
-            shifts.forEach(s => {
-                createVullerRow(s.name, s.from, s.to, s.pause);
-            });
-            showToast('notification', `${shifts.length} medewerker(s) succesvol geïmporteerd!`);
-        }, availableUsers);
+if (btnAddVuller) {
+    btnAddVuller.addEventListener('click', () => {
+        createVullerRow();
     });
+}
+
+export function fillRoosterShifts(shifts) {
+    if (!shifts || shifts.length === 0) return;
+    vullersContainer.innerHTML = '';
+    shifts.forEach(s => {
+        createVullerRow(s.name, s.from, s.to, s.pause);
+    });
+}
+
+export function getAvailableUsers() {
+    return availableUsers;
 }
 
 loadStoreUsers();
