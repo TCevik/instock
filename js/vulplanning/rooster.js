@@ -459,5 +459,40 @@ export function getAvailableUsers() {
     return availableUsers;
 }
 
+export function getFillersData() {
+    if (!vullersContainer) return [];
+
+    const rows = vullersContainer.querySelectorAll('.vuller-row');
+    const fillers = [];
+    let idCounter = 1;
+
+    rows.forEach(row => {
+        const nameInput = row.querySelector('.vuller-name');
+        const fromInput = row.querySelector('.vuller-from');
+        const toInput = row.querySelector('.vuller-to');
+        const pauseInput = row.querySelector('.vuller-pause');
+
+        const name = (nameInput?.value || '').trim();
+        const from = (fromInput?.value || '').trim();
+        const to = (toInput?.value || '').trim();
+        const pause = (pauseInput?.value || '').trim();
+
+        if (name || from || to) {
+            const matchedUser = findExactUser(name);
+            fillers.push({
+                id: idCounter++,
+                name: name,
+                user_id: matchedUser ? matchedUser.user_id : null,
+                username: matchedUser ? matchedUser.username : null,
+                from: from,
+                to: to,
+                pause: pause
+            });
+        }
+    });
+
+    return fillers;
+}
+
 loadStoreUsers();
 createVullerRow();

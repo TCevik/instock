@@ -277,6 +277,26 @@
     font-size: 16px;
 }
 
+.vulplanning-top-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-continue {
+    padding: 6px 16px;
+    font-size: 13px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-continue .btn-icon {
+    font-size: 16px;
+}
+
 .pdf-dropzone {
     border: 2px dashed var(--card-border);
     border-radius: 10px;

@@ -94,7 +94,7 @@ export async function getCurrentUser() {
 
     const { data, error } = await supabase
         .from('user_data')
-        .select('full_name, username')
+        .select('full_name, username, store_id')
         .eq('user_id', session.user.id)
         .maybeSingle();
 
