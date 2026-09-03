@@ -1,0 +1,192 @@
+.timeline-task-block {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    border-radius: 4px;
+    padding: 2px 6px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    font-size: 9.5px;
+    color: var(--text-color);
+    cursor: grab;
+    user-select: none;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    box-sizing: border-box;
+    border: 1px solid var(--task-item-border);
+    background-color: #1a1a1e;
+    transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1), border-color 0.15s, background-color 0.15s;
+    z-index: 10;
+}
+
+.timeline-task-block:hover {
+    z-index: 20;
+}
+
+.timeline-task-block.dragging {
+    opacity: 0 !important;
+    visibility: hidden !important;
+}
+
+.timeline-task-ghost {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    border-radius: 4px;
+    border: 1.5px dashed var(--accent-color);
+    background-color: rgba(101, 141, 36, 0.18);
+    pointer-events: none;
+    z-index: 15;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 6px;
+    opacity: 0.85;
+    transition: left 0.08s ease, width 0.08s ease;
+}
+
+.timeline-task-ghost-text {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--accent-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.timeline-task-block.type-vullen {
+    border-left: 3px solid var(--accent-color);
+    background-color: rgba(101, 141, 36, 0.12);
+}
+
+.timeline-task-block.type-vullen:hover {
+    border-color: var(--accent-color);
+    background-color: rgba(101, 141, 36, 0.22);
+}
+
+.timeline-task-block.type-spiegelen {
+    border-left: 3px solid var(--warning-color);
+    background-color: rgba(245, 158, 11, 0.12);
+}
+
+.timeline-task-block.type-spiegelen:hover {
+    border-color: var(--warning-color);
+    background-color: rgba(245, 158, 11, 0.22);
+}
+
+.timeline-task-block.type-restanten {
+    border-left: 3px solid var(--purple-color);
+    background-color: rgba(168, 85, 247, 0.12);
+}
+
+.timeline-task-block.type-restanten:hover {
+    border-color: var(--purple-color);
+    background-color: rgba(168, 85, 247, 0.22);
+}
+
+.timeline-task-block.type-overige {
+    border-left: 3px solid var(--info-color);
+    background-color: rgba(59, 130, 246, 0.12);
+}
+
+.timeline-task-block.type-overige:hover {
+    border-color: var(--info-color);
+    background-color: rgba(59, 130, 246, 0.22);
+}
+
+.task-block-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow: hidden;
+    min-width: 0;
+}
+
+.task-badge-icon {
+    font-size: 8px;
+    font-weight: 700;
+    width: 13px;
+    height: 13px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2px;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.badge-vullen {
+    background-color: rgba(101, 141, 36, 0.25);
+    color: var(--accent-color);
+}
+
+.badge-spiegelen {
+    background-color: rgba(245, 158, 11, 0.25);
+    color: var(--warning-color);
+}
+
+.badge-restanten {
+    background-color: rgba(168, 85, 247, 0.25);
+    color: var(--purple-color);
+}
+
+.badge-overige {
+    background-color: rgba(59, 130, 246, 0.25);
+    color: var(--info-color);
+}
+
+.task-block-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    overflow: hidden;
+}
+
+.timeline-task-meta-dur {
+    font-size: 8px;
+    color: var(--text-color-muted);
+    font-weight: 600;
+}
+
+.timeline-task-meta-time {
+    font-size: 8px;
+    color: var(--text-color-muted);
+    opacity: 0.8;
+}
+
+.timeline-task-title {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 9.5px;
+    line-height: 1.1;
+    color: var(--text-color);
+}
+
+.timeline-task-overflow {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    background: repeating-linear-gradient(
+        -45deg,
+        rgba(239, 68, 68, 0.45),
+        rgba(239, 68, 68, 0.45) 5px,
+        rgba(239, 68, 68, 0.15) 5px,
+        rgba(239, 68, 68, 0.15) 10px
+    );
+    border-left: 1.5px solid var(--danger-color);
+    border-top: 1px solid var(--danger-color);
+    border-bottom: 1px solid var(--danger-color);
+    border-right: 1px solid var(--danger-color);
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+    pointer-events: none;
+    z-index: 15;
+    box-sizing: border-box;
+}

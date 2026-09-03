@@ -1,0 +1,124 @@
+.colli-table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--card-border);
+    border-radius: 4px;
+    background-color: var(--input-background);
+}
+
+.colli-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    text-align: left;
+}
+
+.colli-table thead {
+    background-color: var(--card-background);
+    border-bottom: 1px solid var(--card-border);
+}
+
+.colli-table th {
+    padding: 6px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--text-color-muted);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.colli-table th.th-colli {
+    width: 110px;
+    text-align: center;
+}
+
+.colli-table th.th-norm {
+    width: 110px;
+    text-align: center;
+}
+
+.colli-path-header-row td {
+    background-color: var(--card-background);
+    padding: 4px 10px;
+    border-top: 1px solid var(--card-border);
+    border-bottom: 1px solid var(--card-border);
+}
+
+.colli-path-header-content {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.colli-path-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent-color);
+}
+
+.colli-path-norms-badge {
+    font-size: 10px;
+    color: var(--text-color-muted);
+    font-weight: 500;
+}
+
+.colli-item-row td {
+    padding: 3px 10px;
+    border-bottom: 1px solid var(--card-border);
+    color: var(--text-color);
+}
+
+.colli-item-row:last-child td {
+    border-bottom: none;
+}
+
+.colli-cat-name-cell {
+    font-weight: 500;
+    padding-left: 16px !important;
+    font-size: 12px;
+}
+
+.colli-input-cell {
+    text-align: center;
+}
+
+.colli-amount-input {
+    width: 75px;
+    padding: 3px 6px;
+    border-radius: 5px;
+    display: inline-block;
+    background-color: var(--card-background);
+    font-size: 12px;
+}
+
+.colli-norm-cell {
+    text-align: center;
+}
+
+.colli-norm-value {
+    display: inline-block;
+    font-weight: 600;
+    color: var(--text-color-muted);
+    font-size: 11px;
+}
+
+.colli-empty-cat-text {
+    padding: 6px 10px 6px 16px;
+    color: var(--text-color-muted);
+    font-size: 11px;
+    font-style: italic;
+    border-bottom: 1px solid var(--card-border);
+}
+
+@media (max-width: 768px) {
+    .colli-cat-name-cell {
+        padding-left: 10px !important;
+    }
+
+    .colli-table th,
+    .colli-table td {
+        padding: 4px 6px;
+    }
+}

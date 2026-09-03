@@ -481,6 +481,7 @@ function renderTimelineAxis() {
 
         const marker = document.createElement('div');
         marker.className = 'timeline-hour-marker';
+        marker.style.width = `${60 * pxPerMin}px`;
         if (h === startH) {
             marker.classList.add('marker-start');
         } else if (h === endH) {
@@ -1155,7 +1156,7 @@ function switchToTimelineView() {
     calculateTimelineBounds(fillers);
 
     stepInputView.style.display = 'none';
-    stepTimelineView.style.display = 'block';
+    stepTimelineView.style.display = 'flex';
 
     renderTimelineAxis();
     renderTimelineRows();
@@ -1178,7 +1179,7 @@ async function switchToInputView() {
     }
 
     stepTimelineView.style.display = 'none';
-    stepInputView.style.display = 'block';
+    stepInputView.style.display = 'flex';
 }
 
 if (btnContinue) {
@@ -1524,7 +1525,7 @@ async function loadSavedPlanning() {
         calculateTimelineBounds(savedFillers);
 
         stepInputView.style.display = 'none';
-        stepTimelineView.style.display = 'block';
+        stepTimelineView.style.display = 'flex';
 
         renderTimelineAxis();
         renderTimelineRows();

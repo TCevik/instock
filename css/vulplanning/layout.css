@@ -1,0 +1,170 @@
+.vulplanning-main-layout {
+    padding: 0 !important;
+    max-width: 100%;
+    height: calc(100vh - 60px);
+    height: calc(100dvh - 60px);
+    max-height: calc(100vh - 60px);
+    max-height: calc(100dvh - 60px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.vulplanning-step-view {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0%;
+    min-height: 0;
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
+}
+
+.vulplanning-input-scroll-container {
+    flex: 1 1 0%;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.vulplanning-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0;
+    padding: 10px 16px;
+    background-color: var(--card-background);
+    border-bottom: 1px solid var(--card-border);
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
+
+.vulplanning-top-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.vulplanning-page-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-color);
+    letter-spacing: -0.2px;
+}
+
+.vulplanning-page-subtitle {
+    font-size: 11px;
+    color: var(--text-color-muted);
+}
+
+.vulplanning-top-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.planning-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--card-border);
+}
+
+.section-header {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding-bottom: 4px;
+}
+
+.section-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.section-subtitle {
+    font-size: 11px;
+    color: var(--text-color-muted);
+}
+
+.section-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.planning-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 1px;
+}
+
+.btn-add-vuller {
+    padding: 4px 10px;
+    font-size: 11px;
+    border-radius: 4px;
+    background-color: var(--input-background);
+    border: 1px solid var(--card-border);
+    color: var(--text-color);
+}
+
+.btn-add-vuller:hover {
+    background-color: var(--card-border);
+}
+
+.btn-add-vuller .btn-icon {
+    font-size: 14px;
+}
+
+.btn-secondary {
+    padding: 4px 10px;
+    font-size: 11px;
+    border-radius: 4px;
+    background-color: var(--input-background);
+    border: 1px solid var(--card-border);
+    color: var(--text-color);
+}
+
+.btn-secondary:hover {
+    background-color: var(--card-border);
+}
+
+.btn-secondary .btn-icon {
+    font-size: 14px;
+}
+
+.btn-continue {
+    padding: 4px 12px;
+    font-size: 11px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.btn-continue .btn-icon {
+    font-size: 14px;
+}
+
+.btn-sm {
+    padding: 4px 10px;
+    font-size: 11px;
+    border-radius: 4px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 16px 12px;
+    color: var(--text-color-muted);
+    font-size: 12px;
+}
