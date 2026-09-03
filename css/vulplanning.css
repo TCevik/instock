@@ -898,10 +898,6 @@
     transition: background-color 0.2s ease;
 }
 
-.timeline-track-row.has-overflow {
-    background-color: rgba(239, 68, 68, 0.07);
-}
-
 .timeline-shift-bounds {
     position: absolute;
     top: 0;
