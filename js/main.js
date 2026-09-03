@@ -253,6 +253,14 @@ async function openChangePasswordModal() {
                     throw new Error(data.error);
                 }
 
+                const { data: sessionData } = await supabase.auth.getSession();
+                if (sessionData?.session?.user?.email) {
+                    await supabase.auth.signInWithPassword({
+                        email: sessionData.session.user.email,
+                        password: newPassword
+                    });
+                }
+
                 closeModal();
                 showToast('notification', data?.message || 'Wachtwoord succesvol gewijzigd');
             } catch (err) {
