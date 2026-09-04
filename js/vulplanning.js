@@ -205,8 +205,11 @@ tabButtons.forEach(btn => {
 
 if (unassignedTasksSidebar) {
     unassignedTasksSidebar.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        unassignedTasksSidebar.classList.add('drag-over');
+        const draggedData = getDraggedTaskData();
+        if (draggedData && draggedData.source === 'assigned') {
+            e.preventDefault();
+            unassignedTasksSidebar.classList.add('drag-over');
+        }
     });
 
     unassignedTasksSidebar.addEventListener('dragleave', (e) => {
@@ -225,7 +228,7 @@ if (unassignedTasksSidebar) {
 
         try {
             const data = JSON.parse(dataStr);
-            if ((data.source === 'assigned' || data.source === 'sidebar_assigned') && data.fillerId && data.taskIndex !== undefined) {
+            if (data.source === 'assigned' && data.fillerId && data.taskIndex !== undefined) {
                 unassignTask(data.fillerId, data.taskIndex, {
                     onRenderRows: doRenderRows,
                     onRenderUnassigned: doRenderUnassigned
