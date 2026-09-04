@@ -1,8 +1,22 @@
 import { showModal, closeModal, showToast } from '../main.js';
+import { createCustomSelect } from '../select.js';
 import { planningState } from './state.js';
 import { triggerAutoSave } from './storage.js';
 
 export function loadComboSettings() {
+    if (planningState.settings && typeof planningState.settings === 'object') {
+        const combo = planningState.settings.combo || planningState.settings.comboSettings || (planningState.settings.autoRestanten !== undefined ? planningState.settings : null);
+        if (combo) {
+            planningState.comboSettings = {
+                autoRestanten: combo.autoRestanten !== false,
+                autoSpiegelen: combo.autoSpiegelen !== false,
+                autoOverige: !!combo.autoOverige,
+                selectedOverigeTaskId: combo.selectedOverigeTaskId || null,
+                selectedOverigeTitle: combo.selectedOverigeTitle || null
+            };
+            return;
+        }
+    }
     try {
         const saved = localStorage.getItem('instock_planner_combo_settings');
         if (saved) {
@@ -10,7 +24,9 @@ export function loadComboSettings() {
             planningState.comboSettings = {
                 autoRestanten: parsed.autoRestanten !== false,
                 autoSpiegelen: parsed.autoSpiegelen !== false,
-                autoOverige: !!parsed.autoOverige
+                autoOverige: !!parsed.autoOverige,
+                selectedOverigeTaskId: parsed.selectedOverigeTaskId || null,
+                selectedOverigeTitle: parsed.selectedOverigeTitle || null
             };
         }
     } catch (_) {}
@@ -18,21 +34,60 @@ export function loadComboSettings() {
 
 export function saveComboSettings(settings) {
     planningState.comboSettings = { ...settings };
+    if (!planningState.settings || typeof planningState.settings !== 'object') {
+        planningState.settings = {};
+    }
+    planningState.settings.combo = { ...planningState.comboSettings };
     try {
         localStorage.setItem('instock_planner_combo_settings', JSON.stringify(planningState.comboSettings));
     } catch (_) {}
     triggerAutoSave();
 }
 
-export async function openComboSettingsModal() {
+export async function openComboSettingsModal(callbacks = {}) {
     loadComboSettings();
     const current = planningState.comboSettings || {
         autoRestanten: true,
         autoSpiegelen: true,
-        autoOverige: false
+        autoOverige: false,
+        selectedOverigeTaskId: null,
+        selectedOverigeTitle: null
     };
 
     let tempSettings = { ...current };
+
+    const availableOverigeTasks = [];
+    const seenTitles = new Set();
+    (planningState.unassignedTasks || []).forEach(t => {
+        if (t && t.type === 'overige' && !t.isHelper && !t.title.includes('(Helper)')) {
+            const key = t.title.toLowerCase().trim();
+            if (!seenTitles.has(key)) {
+                seenTitles.add(key);
+                availableOverigeTasks.push(t);
+            }
+        }
+    });
+    Object.values(planningState.assignedTasks || {}).flat().forEach(t => {
+        if (t && t.type === 'overige' && !t.isHelper && !t.title.includes('(Helper)')) {
+            const key = t.title.toLowerCase().trim();
+            if (!seenTitles.has(key)) {
+                seenTitles.add(key);
+                availableOverigeTasks.push(t);
+            }
+        }
+    });
+
+    let initialSelectedTask = availableOverigeTasks.find(t => String(t.id) === String(tempSettings.selectedOverigeTaskId));
+    if (!initialSelectedTask && tempSettings.selectedOverigeTitle) {
+        initialSelectedTask = availableOverigeTasks.find(t => t.title.toLowerCase().trim() === tempSettings.selectedOverigeTitle.toLowerCase().trim());
+    }
+    if (!initialSelectedTask && availableOverigeTasks.length > 0) {
+        initialSelectedTask = availableOverigeTasks[0];
+    }
+    if (initialSelectedTask) {
+        tempSettings.selectedOverigeTaskId = initialSelectedTask.id;
+        tempSettings.selectedOverigeTitle = initialSelectedTask.title;
+    }
 
     const modalContent = `
         <div class="modal-header" style="display: flex; flex-direction: row; align-items: center; gap: 14px; padding-right: 28px;">
@@ -75,15 +130,31 @@ export async function openComboSettingsModal() {
                 </div>
             </div>
 
-            <div class="combo-option-row ${tempSettings.autoOverige ? 'is-checked' : ''}" data-key="autoOverige">
-                <div class="combo-option-left">
-                    <div class="combo-option-icon icon-overige">
-                        <span class="material-icons">playlist_add</span>
+            <div class="combo-option-card ${tempSettings.autoOverige ? 'is-checked' : ''}">
+                <div class="combo-option-row ${tempSettings.autoOverige ? 'is-checked' : ''}" data-key="autoOverige">
+                    <div class="combo-option-left">
+                        <div class="combo-option-icon icon-overige">
+                            <span class="material-icons">playlist_add</span>
+                        </div>
+                        <span class="combo-option-title">Overige taak automatisch ervoor zetten</span>
                     </div>
-                    <span class="combo-option-title">Overige taak automatisch ervoor zetten</span>
+                    <div class="combo-checkbox">
+                        <span class="material-icons">check</span>
+                    </div>
                 </div>
-                <div class="combo-checkbox">
-                    <span class="material-icons">check</span>
+                <div id="combo-overige-subwrapper" class="combo-sub-wrapper" style="${tempSettings.autoOverige ? 'display: flex;' : 'display: none;'}">
+                    <label class="combo-sub-label">Selecteer overige taak</label>
+                    <div id="combo-overige-select-container"></div>
+                    <div id="combo-inline-add-task" class="combo-inline-add" style="display: none;">
+                        <div class="combo-inline-inputs">
+                            <input type="text" id="combo-new-task-title" class="combo-inline-input-title" placeholder="Taakomschrijving...">
+                            <input type="number" id="combo-new-task-dur" class="combo-inline-input-dur" placeholder="Min" min="1" value="30">
+                        </div>
+                        <div class="combo-inline-actions">
+                            <button type="button" class="combo-inline-btn-cancel" id="btn-cancel-inline-task">Annuleren</button>
+                            <button type="button" class="combo-inline-btn-add" id="btn-add-inline-task">Toevoegen</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -96,12 +167,100 @@ export async function openComboSettingsModal() {
 
     await showModal(modalContent);
 
+    function getSelectOptions() {
+        return availableOverigeTasks.map(t => ({
+            value: String(t.id),
+            label: `${t.title} (${t.duration || 30} min)`
+        }));
+    }
+
+    const selectContainer = document.getElementById('combo-overige-select-container');
+    const inlineAddBox = document.getElementById('combo-inline-add-task');
+    const newTitleInput = document.getElementById('combo-new-task-title');
+    const newDurInput = document.getElementById('combo-new-task-dur');
+    const btnCancelInline = document.getElementById('btn-cancel-inline-task');
+    const btnAddInline = document.getElementById('btn-add-inline-task');
+
+    let overigeSelect = null;
+    if (selectContainer) {
+        overigeSelect = createCustomSelect(
+            selectContainer,
+            getSelectOptions(),
+            tempSettings.selectedOverigeTaskId ? String(tempSettings.selectedOverigeTaskId) : (availableOverigeTasks[0] ? String(availableOverigeTasks[0].id) : ''),
+            availableOverigeTasks.length > 0 ? 'Selecteer overige taak...' : 'Geen overige taken beschikbaar',
+            (val) => {
+                tempSettings.selectedOverigeTaskId = val;
+                const found = availableOverigeTasks.find(t => String(t.id) === String(val));
+                if (found) {
+                    tempSettings.selectedOverigeTitle = found.title;
+                }
+            },
+            {
+                label: 'Nieuwe overige taak toevoegen...',
+                icon: 'add',
+                onClick: () => {
+                    if (inlineAddBox) {
+                        inlineAddBox.style.display = 'flex';
+                        if (newTitleInput) {
+                            newTitleInput.focus();
+                        }
+                    }
+                }
+            }
+        );
+    }
+
+    if (btnCancelInline && inlineAddBox) {
+        btnCancelInline.addEventListener('click', () => {
+            inlineAddBox.style.display = 'none';
+            if (newTitleInput) newTitleInput.value = '';
+        });
+    }
+
+    if (btnAddInline && inlineAddBox) {
+        btnAddInline.addEventListener('click', () => {
+            const title = newTitleInput ? newTitleInput.value.trim() : '';
+            const duration = parseInt(newDurInput ? newDurInput.value : '30', 10) || 30;
+            if (!title) return;
+
+            const newTask = {
+                id: `custom_${Date.now()}`,
+                type: 'overige',
+                title: title,
+                duration: duration,
+                colli: 0
+            };
+
+            planningState.unassignedTasks.push(newTask);
+            availableOverigeTasks.push(newTask);
+
+            tempSettings.selectedOverigeTaskId = newTask.id;
+            tempSettings.selectedOverigeTitle = newTask.title;
+
+            if (overigeSelect) {
+                overigeSelect.setOptions(getSelectOptions(), String(newTask.id));
+            }
+
+            inlineAddBox.style.display = 'none';
+            if (newTitleInput) newTitleInput.value = '';
+            if (callbacks.onRenderUnassigned) callbacks.onRenderUnassigned();
+        });
+    }
+
     const rows = document.querySelectorAll('.combo-option-row');
     rows.forEach(row => {
         row.addEventListener('click', () => {
             const key = row.getAttribute('data-key');
             tempSettings[key] = !tempSettings[key];
             row.classList.toggle('is-checked', tempSettings[key]);
+            if (key === 'autoOverige') {
+                const card = row.closest('.combo-option-card');
+                if (card) card.classList.toggle('is-checked', tempSettings[key]);
+                const subwrapper = document.getElementById('combo-overige-subwrapper');
+                if (subwrapper) {
+                    subwrapper.style.display = tempSettings[key] ? 'flex' : 'none';
+                }
+            }
         });
     });
 
@@ -116,6 +275,7 @@ export async function openComboSettingsModal() {
     if (saveBtn) {
         saveBtn.addEventListener('click', () => {
             saveComboSettings(tempSettings);
+            if (callbacks.onRenderUnassigned) callbacks.onRenderUnassigned();
             closeModal();
             showToast('notification', 'Samen indelen instellingen opgeslagen');
         });

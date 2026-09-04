@@ -220,11 +220,11 @@ function promptPathMismatch(colliMap) {
         </div>
         <div class="modal-body">
             <p style="font-size: 13px; color: var(--text-color-muted); line-height: 1.5;">
-                Wil je de huidige winkelpaden en categorieën overschrijven met de standaard paden en normen uit de PDF layout?
+                Wil je de huidige winkelpaden en categorieën overschrijven met de standaard paden en normen uit de PDF layout en de colli invullen?
             </p>
             <div class="modal-footer" style="margin-top: 10px;">
-                <button type="button" class="modal-btn-secondary" id="btn-cancel-overwrite">Behouden & Invoeren</button>
-                <button type="button" class="btn" id="btn-confirm-overwrite">Paden Overschrijven</button>
+                <button type="button" class="modal-btn-secondary" id="btn-cancel-overwrite">Niet invullen</button>
+                <button type="button" class="btn" id="btn-confirm-overwrite">Aanpassen en invullen</button>
             </div>
         </div>
     `;
@@ -235,8 +235,6 @@ function promptPathMismatch(colliMap) {
 
         cancelBtn.addEventListener('click', () => {
             closeModal(overlay);
-            fillColliValues(colliMap);
-            showToast('notification', 'Colli ingevuld op huidige paden');
         });
 
         confirmBtn.addEventListener('click', async () => {
@@ -246,11 +244,11 @@ function promptPathMismatch(colliMap) {
                 await saveHardcodedPathsToStore();
                 closeModal(overlay);
                 fillColliValues(colliMap);
-                showToast('notification', 'Winkelpaden bijgewerkt en colli succesvol ingevuld!');
+                showToast('notification', 'Winkelpaden aangepast en colli succesvol ingevuld!');
             } catch (err) {
                 confirmBtn.disabled = false;
-                confirmBtn.textContent = 'Paden Overschrijven';
-                showToast('error', err.message || 'Fout bij overschrijven paden');
+                confirmBtn.textContent = 'Aanpassen en invullen';
+                showToast('error', err.message || 'Fout bij aanpassen paden');
             }
         });
     });

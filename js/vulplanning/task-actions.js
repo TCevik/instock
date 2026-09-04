@@ -37,9 +37,38 @@ export function assignTaskToFiller(taskId, fillerId, insertIndex = null, callbac
         const pathName = task.pathName || task.title.replace(/\s*\([^)]*\)/g, '').trim();
 
         if (combo.autoOverige) {
-            const oIdx = planningState.unassignedTasks.findIndex(t => t.type === 'overige' && !t.isHelper);
-            if (oIdx !== -1) {
-                const oTask = planningState.unassignedTasks[oIdx];
+            let oTask = null;
+            if (combo.selectedOverigeTaskId) {
+                oTask = planningState.unassignedTasks.find(t => 
+                    t.type === 'overige' && !t.isHelper && String(t.id) === String(combo.selectedOverigeTaskId)
+                );
+            }
+            if (!oTask && combo.selectedOverigeTitle) {
+                oTask = planningState.unassignedTasks.find(t => 
+                    t.type === 'overige' && !t.isHelper && t.title.toLowerCase().trim() === combo.selectedOverigeTitle.toLowerCase().trim()
+                );
+            }
+            if (!oTask) {
+                oTask = planningState.unassignedTasks.find(t => t.type === 'overige' && !t.isHelper);
+            }
+            if (!oTask && combo.selectedOverigeTitle) {
+                const inAssigned = Object.values(planningState.assignedTasks || {}).flat().find(t => 
+                    t && t.type === 'overige' && !t.isHelper && (
+                        (combo.selectedOverigeTaskId && String(t.templateId || t.id) === String(combo.selectedOverigeTaskId)) ||
+                        (t.title && t.title.toLowerCase().trim() === combo.selectedOverigeTitle.toLowerCase().trim())
+                    )
+                );
+                if (inAssigned) {
+                    oTask = {
+                        id: inAssigned.templateId || inAssigned.id,
+                        type: 'overige',
+                        title: inAssigned.origTitle || inAssigned.title,
+                        duration: inAssigned.origDuration || inAssigned.duration || 30,
+                        colli: 0
+                    };
+                }
+            }
+            if (oTask) {
                 prependedTasks.push({
                     ...oTask,
                     id: `overige_inst_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,

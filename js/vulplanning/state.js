@@ -6,10 +6,13 @@ export const planningState = {
     activeTab: 'vullen',
     timelineStartHour: 0,
     timelineEndHour: 24,
+    settings: {},
     comboSettings: {
         autoRestanten: true,
         autoSpiegelen: true,
-        autoOverige: false
+        autoOverige: false,
+        selectedOverigeTaskId: null,
+        selectedOverigeTitle: null
     }
 };
 

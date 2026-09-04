@@ -357,7 +357,9 @@ setupCustomTaskModal(btnAddCustomTask, {
 loadComboSettings();
 
 if (btnComboSettings) {
-    btnComboSettings.addEventListener('click', openComboSettingsModal);
+    btnComboSettings.addEventListener('click', () => openComboSettingsModal({
+        onRenderUnassigned: doRenderUnassigned
+    }));
 }
 
 setupHistoryShortcuts({

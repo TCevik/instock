@@ -68,7 +68,11 @@ export function triggerAutoSave() {
                     fillers: planningState.fillers,
                     tasks: getColliData(),
                     schedule: compactSchedule,
-                    other_tasks: Array.from(otherTasksMap.values())
+                    other_tasks: Array.from(otherTasksMap.values()),
+                    settings: {
+                        ...(planningState.settings || {}),
+                        combo: planningState.comboSettings
+                    }
                 }, {
                     onConflict: 'store_id'
                 });

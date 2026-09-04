@@ -529,3 +529,122 @@
 .combo-option-row.is-checked .combo-checkbox .material-icons {
     opacity: 1;
 }
+
+.combo-option-card {
+    display: flex;
+    flex-direction: column;
+    border-radius: 10px;
+    background-color: var(--input-background);
+    border: 1px solid var(--card-border);
+    transition: border-color 0.15s;
+}
+
+.combo-option-card .combo-option-row {
+    border: none;
+    border-radius: 10px;
+    background-color: transparent;
+}
+
+.combo-option-card .combo-option-row:hover {
+    background-color: var(--card-border);
+}
+
+.combo-sub-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 14px 14px 14px;
+    border-top: 1px solid var(--card-border);
+}
+
+.combo-sub-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-color-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 8px;
+}
+
+.combo-sub-wrapper .custom-select-trigger {
+    padding: 8px 12px;
+    font-size: 13px;
+    border-radius: 8px;
+    background-color: var(--card-background);
+}
+
+.combo-inline-add {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 8px;
+    background-color: var(--card-background);
+    border: 1px solid var(--card-border);
+    margin-top: 4px;
+}
+
+.combo-inline-inputs {
+    display: flex;
+    gap: 8px;
+}
+
+.combo-inline-input-title {
+    flex: 2;
+    padding: 8px 10px;
+    font-size: 13px;
+    border-radius: 6px;
+    border: 1px solid var(--input-border);
+    background-color: var(--input-background);
+    color: var(--text-color);
+    outline: none;
+}
+
+.combo-inline-input-title:focus {
+    border-color: var(--input-focus);
+}
+
+.combo-inline-input-dur {
+    flex: 1;
+    padding: 8px 10px;
+    font-size: 13px;
+    border-radius: 6px;
+    border: 1px solid var(--input-border);
+    background-color: var(--input-background);
+    color: var(--text-color);
+    outline: none;
+}
+
+.combo-inline-input-dur:focus {
+    border-color: var(--input-focus);
+}
+
+.combo-inline-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+.combo-inline-btn-cancel {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 6px;
+    border: 1px solid var(--card-border);
+    background: transparent;
+    color: var(--text-color-muted);
+    cursor: pointer;
+}
+
+.combo-inline-btn-cancel:hover {
+    color: var(--text-color);
+}
+
+.combo-inline-btn-add {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 6px;
+    border: none;
+    background-color: var(--accent-color);
+    color: #ffffff;
+    cursor: pointer;
+}
