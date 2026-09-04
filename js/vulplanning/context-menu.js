@@ -3,6 +3,7 @@ import { planningState } from './state.js';
 import { timeToMinutes, formatDuration, parsePauseMinutes } from './time-utils.js';
 import { hideCustomTooltip } from './tooltip.js';
 import { triggerAutoSave } from './storage.js';
+import { openPauseModal } from './custom-task-modal.js';
 
 let contextMenuElement = null;
 
@@ -49,15 +50,21 @@ export function showContextMenu(e, task, isAssigned = false, fillerId = null, ta
                 if (shiftEnd > 0 && shiftEnd <= shiftStart) {
                     shiftEnd += 24 * 60;
                 }
-                const pauseMins = parsePauseMinutes(filler.pause);
-                const shiftNetDuration = Math.max(0, (shiftEnd - shiftStart) - pauseMins);
-                
+
+                let assignedPauzeMins = 0;
                 let totalAssigned = 0;
                 assignedList.forEach(t => {
-                    if (t.type !== 'pauze') totalAssigned += t.duration;
+                    totalAssigned += t.duration;
+                    if (t.type === 'pauze') {
+                        assignedPauzeMins += t.duration;
+                    }
                 });
+
+                const presetPause = parsePauseMinutes(filler.pause);
+                const hasPauzeTask = assignedPauzeMins > 0;
+                const targetShiftDuration = hasPauzeTask ? (shiftEnd - shiftStart - presetPause + assignedPauzeMins) : Math.max(0, shiftEnd - shiftStart - presetPause);
                 
-                remainingMins = shiftNetDuration - totalAssigned;
+                remainingMins = targetShiftDuration - totalAssigned;
                 if (remainingMins > 0) {
                     expandButtonHtml = `
                         <button type="button" class="context-menu-item expand" id="ctx-expand-task">
@@ -70,7 +77,7 @@ export function showContextMenu(e, task, isAssigned = false, fillerId = null, ta
         }
     }
 
-    if (task.type === 'overige') {
+    if (task.type === 'overige' || task.type === 'pauze') {
         menu.innerHTML = `
             ${expandButtonHtml}
             <button type="button" class="context-menu-item" id="ctx-edit-task">
@@ -103,6 +110,9 @@ export function showContextMenu(e, task, isAssigned = false, fillerId = null, ta
             ev.stopPropagation();
             hideContextMenu();
             if (remainingMins > 0) {
+                if (task.origDuration === undefined) {
+                    task.origDuration = task.duration;
+                }
                 task.duration += remainingMins;
                 if (callbacks.onRenderRows) callbacks.onRenderRows();
                 triggerAutoSave();
@@ -115,7 +125,18 @@ export function showContextMenu(e, task, isAssigned = false, fillerId = null, ta
         editBtn.addEventListener('click', (ev) => {
             ev.stopPropagation();
             hideContextMenu();
-            openEditCustomTaskModal(task, isAssigned, fillerId, taskIndex, callbacks);
+            if (task.type === 'pauze') {
+                openPauseModal(task.duration, (newMins) => {
+                    task.duration = newMins;
+                    task.origDuration = newMins;
+                    if (callbacks.onRenderRows) callbacks.onRenderRows();
+                    if (callbacks.onRenderUnassigned) callbacks.onRenderUnassigned();
+                    triggerAutoSave();
+                    showToast('notification', 'Pauze bijgewerkt');
+                });
+            } else {
+                openEditCustomTaskModal(task, isAssigned, fillerId, taskIndex, callbacks);
+            }
         });
     }
 
@@ -177,6 +198,8 @@ export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIn
         if (newTitle && newDuration > 0) {
             task.title = newTitle;
             task.duration = newDuration;
+            task.origDuration = newDuration;
+            task.origTitle = newTitle;
 
             if (!isAssigned) {
                 const templateId = task.id;
@@ -204,7 +227,13 @@ export async function deleteCustomTask(task, isAssigned, fillerId, taskIndex, ca
     if (!confirmed) return;
 
     if (isAssigned && fillerId && taskIndex !== null) {
-        planningState.assignedTasks[fillerId].splice(taskIndex, 1);
+        const [removed] = planningState.assignedTasks[fillerId].splice(taskIndex, 1);
+        if (removed && removed.templateId) {
+            const template = planningState.unassignedTasks.find(t => t.id === removed.templateId);
+            if (template && removed.origDuration !== undefined) {
+                template.duration = removed.origDuration;
+            }
+        }
     } else {
         planningState.unassignedTasks = planningState.unassignedTasks.filter(t => t.id !== task.id);
         Object.keys(planningState.assignedTasks).forEach(fid => {

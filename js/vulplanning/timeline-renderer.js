@@ -3,6 +3,7 @@ import { timeToMinutes, minutesToTime, formatDuration, parsePauseMinutes } from 
 import { showCustomTooltip, positionCustomTooltip, hideCustomTooltip } from './tooltip.js';
 import { showContextMenu } from './context-menu.js';
 import { calculateTimelineBounds, renderTimelineAxis, getPixelsPerMinute, getTimelineTotalMinutes } from './timeline-axis.js';
+import { openPauseModal } from './custom-task-modal.js';
 
 export function renderTimelineRows(options) {
     const {
@@ -36,17 +37,27 @@ export function renderTimelineRows(options) {
             shiftEnd += 24 * 60;
         }
         const shiftGrossDuration = Math.max(0, shiftEnd - shiftStart);
-        const pauseMins = parsePauseMinutes(filler.pause);
-        const shiftNetDuration = Math.max(0, shiftGrossDuration - pauseMins);
 
         const assigned = planningState.assignedTasks[filler.id] || [];
+
+        let assignedPauzeMins = 0;
+        let workAssignedMins = 0;
         let totalAssignedMins = 0;
         assigned.forEach(t => {
-            if (t.type !== 'pauze') totalAssignedMins += t.duration;
+            totalAssignedMins += t.duration;
+            if (t.type === 'pauze') {
+                assignedPauzeMins += t.duration;
+            } else {
+                workAssignedMins += t.duration;
+            }
         });
 
-        const prodPercent = shiftNetDuration > 0 ? Math.round((totalAssignedMins / shiftNetDuration) * 100) : 0;
-        const diffMins = totalAssignedMins - shiftNetDuration;
+        const hasPauzeTask = assignedPauzeMins > 0;
+        const presetPause = parsePauseMinutes(filler.pause);
+        const effectivePause = hasPauzeTask ? assignedPauzeMins : presetPause;
+        const targetShiftDuration = hasPauzeTask ? (shiftGrossDuration - presetPause + assignedPauzeMins) : Math.max(0, shiftGrossDuration - presetPause);
+
+        const diffMins = totalAssignedMins - targetShiftDuration;
         let statusClass = 'status-fit';
         let statusText = 'Passend';
         if (diffMins > 0) {
@@ -55,17 +66,6 @@ export function renderTimelineRows(options) {
         } else if (diffMins < 0) {
             statusClass = 'status-rem';
             statusText = `Over: ${formatDuration(Math.abs(diffMins))}`;
-        }
-
-        let prodClass = 'danger';
-        if (prodPercent > 100) {
-            prodClass = 'success';
-        } else if (prodPercent >= 80) {
-            prodClass = 'yellow';
-        } else if (prodPercent >= 60) {
-            prodClass = 'orange';
-        } else {
-            prodClass = 'danger';
         }
 
         const workerCard = document.createElement('div');
@@ -84,21 +84,46 @@ export function renderTimelineRows(options) {
                 <div class="timeline-worker-statbox ${statusClass}">
                     <div class="statbox-row">
                         <span class="statbox-label">Tijd:</span>
-                        <span class="statbox-value">${formatDuration(totalAssignedMins)} / ${formatDuration(shiftNetDuration)}</span>
+                        <span class="statbox-value">${formatDuration(totalAssignedMins)} / ${formatDuration(targetShiftDuration)}</span>
                     </div>
                     <div class="statbox-row">
-                        <span class="statbox-label">Pauze: ${filler.pause || '0m'}</span>
+                        <span class="statbox-label">Pauze: ${hasPauzeTask ? formatDuration(assignedPauzeMins) : (filler.pause || '0m')}</span>
                         <span class="statbox-status">${statusText}</span>
                     </div>
                 </div>
             </div>
             <div class="timeline-worker-right">
                 <input type="text" class="input-field timeline-worker-input" placeholder="" maxlength="5" />
-                <span class="timeline-worker-prod ${prodClass}">Prod: ${prodPercent}%</span>
+
+                <span class="timeline-worker-prod"></span>
             </div>
         `;
 
         const timeInput = workerCard.querySelector('.timeline-worker-input');
+        const prodLabel = workerCard.querySelector('.timeline-worker-prod');
+
+        function calcProd() {
+            prodLabel.textContent = '';
+            prodLabel.className = 'timeline-worker-prod';
+            if (!timeInput.value || timeInput.value.length < 5) return;
+
+            let actualEnd = timeToMinutes(timeInput.value);
+            if (actualEnd > 0 && actualEnd <= shiftStart && shiftEnd > 24 * 60) actualEnd += 24 * 60;
+            const actualGross = Math.max(0, actualEnd - shiftStart);
+            const actualNet = Math.max(0, actualGross - effectivePause);
+
+            if (actualNet <= 0) return;
+
+            const prodPercent = Math.round((workAssignedMins / actualNet) * 100);
+            let prodClass = 'danger';
+            if (prodPercent >= 100) prodClass = 'success';
+            else if (prodPercent >= 80) prodClass = 'yellow';
+            else if (prodPercent >= 60) prodClass = 'orange';
+
+            prodLabel.textContent = `Prod: ${prodPercent}%`;
+            prodLabel.className = `timeline-worker-prod ${prodClass}`;
+        }
+
         if (timeInput) {
             timeInput.addEventListener('input', () => {
                 let digits = timeInput.value.replace(/\D/g, '');
@@ -135,6 +160,7 @@ export function renderTimelineRows(options) {
                 }
 
                 timeInput.value = formatted;
+                calcProd();
             });
 
             timeInput.addEventListener('blur', () => {
@@ -153,6 +179,7 @@ export function renderTimelineRows(options) {
                         timeInput.value = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
                     }
                 }
+                calcProd();
             });
         }
 
@@ -171,7 +198,7 @@ export function renderTimelineRows(options) {
             trackRow.appendChild(line);
         }
 
-        const effectiveNetEnd = shiftStart + shiftNetDuration;
+        const effectiveNetEnd = shiftStart + targetShiftDuration;
 
         if (effectiveNetEnd > shiftStart) {
             const shiftLeft = Math.max(0, (shiftStart - startMins) * pxPerMin);
@@ -212,6 +239,8 @@ export function renderTimelineRows(options) {
                 typeBadge = `<span class="task-badge-icon badge-restanten">R</span>`;
             } else if (task.type === 'overige') {
                 typeBadge = `<span class="task-badge-icon badge-overige">O</span>`;
+            } else if (task.type === 'pauze') {
+                typeBadge = `<span class="task-badge-icon badge-pauze">P</span>`;
             }
 
             block.innerHTML = `
@@ -444,7 +473,13 @@ export function renderTimelineRows(options) {
             try {
                 const data = JSON.parse(dataStr);
                 if (data.source === 'unassigned') {
-                    if (onAssignTask) onAssignTask(data.taskId, filler.id, targetIndex);
+                    if (data.taskId === 'pauze_template') {
+                        openPauseModal(30, (chosenDuration) => {
+                            if (onAssignTask) onAssignTask(data.taskId, filler.id, targetIndex, chosenDuration);
+                        });
+                    } else if (onAssignTask) {
+                        onAssignTask(data.taskId, filler.id, targetIndex);
+                    }
                 } else if (data.source === 'assigned') {
                     if (onMoveTask) onMoveTask(data.fillerId, data.taskIndex, filler.id, targetIndex);
                 }

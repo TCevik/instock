@@ -1,8 +1,17 @@
 import { planningState } from './state.js';
 import { triggerAutoSave } from './storage.js';
 
-export function assignTaskToFiller(taskId, fillerId, insertIndex = null, callbacks = {}) {
-    const task = planningState.unassignedTasks.find(t => t.id === taskId);
+export function assignTaskToFiller(taskId, fillerId, insertIndex = null, callbacks = {}, customDuration = null) {
+    let task = planningState.unassignedTasks.find(t => t.id === taskId);
+    if (!task && (taskId === 'pauze_template' || taskId.startsWith('pauze'))) {
+        task = {
+            id: 'pauze_template',
+            type: 'pauze',
+            title: 'Pauze',
+            duration: customDuration || 30,
+            colli: 0
+        };
+    }
     if (!task) return;
 
     if (!planningState.assignedTasks[fillerId]) {
@@ -10,13 +19,15 @@ export function assignTaskToFiller(taskId, fillerId, insertIndex = null, callbac
     }
 
     let taskToInsert = null;
-    if (task.type === 'overige') {
+    if (task.type === 'overige' || task.type === 'pauze') {
+        const dur = customDuration || task.duration || 30;
         taskToInsert = {
             ...task,
-            id: `custom_inst_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            id: `${task.type}_inst_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
             templateId: task.id,
+            duration: dur,
             origTitle: task.title,
-            origDuration: task.duration
+            origDuration: dur
         };
     } else {
         const taskIdx = planningState.unassignedTasks.findIndex(t => t.id === taskId);
@@ -45,7 +56,7 @@ export function unassignTask(fillerId, taskIndex, callbacks = {}) {
     if (!assignedList || taskIndex < 0 || taskIndex >= assignedList.length) return;
 
     const [task] = assignedList.splice(taskIndex, 1);
-    if (task.type !== 'overige') {
+    if (task.type !== 'overige' && task.type !== 'pauze') {
         if (task.origTitle) {
             task.title = task.origTitle;
         }
@@ -68,6 +79,11 @@ export function unassignTask(fillerId, taskIndex, callbacks = {}) {
             }
         } else {
             planningState.unassignedTasks.push(task);
+        }
+    } else if (task.templateId) {
+        const template = planningState.unassignedTasks.find(t => t.id === task.templateId);
+        if (template && task.origDuration !== undefined) {
+            template.duration = task.origDuration;
         }
     }
 

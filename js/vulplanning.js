@@ -31,6 +31,17 @@ const unassignedTasksList = document.getElementById('unassigned-tasks-list');
 const unassignedTasksSidebar = document.querySelector('.unassigned-tasks-sidebar');
 const zoomLevelIndicator = document.getElementById('zoom-level-indicator');
 
+const initialSavedZoom = localStorage.getItem('instock_planner_zoom');
+if (initialSavedZoom !== null) {
+    const parsed = parseFloat(initialSavedZoom);
+    if (!isNaN(parsed)) {
+        planningState.zoom = parsed;
+        if (zoomLevelIndicator) {
+            zoomLevelIndicator.textContent = `${Math.round(parsed * 100)}%`;
+        }
+    }
+}
+
 function doRenderAxis() {
     renderTimelineAxis(timelineHoursAxis);
 }
@@ -41,11 +52,11 @@ function doRenderRows() {
         timelineTracksContainer,
         timelineHoursAxis,
         unassignedTasksSidebar,
-        onAssignTask: (taskId, fillerId, insertIndex) => {
+        onAssignTask: (taskId, fillerId, insertIndex, customDuration) => {
             assignTaskToFiller(taskId, fillerId, insertIndex, {
                 onRenderRows: doRenderRows,
                 onRenderUnassigned: doRenderUnassigned
-            });
+            }, customDuration);
         },
         onMoveTask: (fromFillerId, fromIndex, toFillerId, insertIndex) => {
             moveAssignedTask(fromFillerId, fromIndex, toFillerId, insertIndex, {
@@ -65,6 +76,10 @@ function doRenderRows() {
 }
 
 function doRenderUnassigned() {
+    const activeTab = planningState.activeTab || 'vullen';
+    tabButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === activeTab);
+    });
     renderUnassignedTasks({
         unassignedTasksList,
         onRenderRows: doRenderRows,
@@ -118,6 +133,7 @@ function switchToTimelineView() {
 
     stepInputView.style.display = 'none';
     stepTimelineView.style.display = 'flex';
+    localStorage.setItem('instock_planner_step', 'timeline');
 
     doRenderAxis();
     doRenderRows();
@@ -141,6 +157,7 @@ async function switchToInputView() {
 
     stepTimelineView.style.display = 'none';
     stepInputView.style.display = 'flex';
+    localStorage.setItem('instock_planner_step', 'input');
 }
 
 if (btnContinue) {
@@ -171,6 +188,7 @@ tabButtons.forEach(btn => {
         tabButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         planningState.activeTab = btn.getAttribute('data-tab');
+        localStorage.setItem('instock_planner_tab', planningState.activeTab);
         doRenderUnassigned();
     });
 });
@@ -215,6 +233,7 @@ function updateZoom() {
     if (zoomLevelIndicator) {
         zoomLevelIndicator.textContent = `${Math.round(planningState.zoom * 100)}%`;
     }
+    localStorage.setItem('instock_planner_zoom', String(planningState.zoom));
     doRenderAxis();
     doRenderRows();
 }
@@ -240,27 +259,83 @@ if (btnZoomReset) {
     });
 }
 
-const TIMELINE_SCROLL_KEY = 'instock_timeline_scroll_left';
+const TIMELINE_SCROLL_LEFT_KEY = 'instock_timeline_scroll_left';
+const TIMELINE_SCROLL_TOP_KEY = 'instock_timeline_scroll_top';
+const INPUT_SCROLL_TOP_KEY = 'instock_planner_input_scroll_top';
+const UNASSIGNED_SCROLL_TOP_KEY = 'instock_planner_unassigned_scroll_top';
 
 function restoreTimelineScroll() {
-    if (!timelineSchedulePane) return;
-    const saved = localStorage.getItem(TIMELINE_SCROLL_KEY);
-    if (saved !== null) {
-        const left = parseFloat(saved);
-        if (!isNaN(left)) {
+    const boardBody = document.querySelector('.timeline-board-body');
+    if (boardBody) {
+        const savedLeft = localStorage.getItem(TIMELINE_SCROLL_LEFT_KEY);
+        const savedTop = localStorage.getItem(TIMELINE_SCROLL_TOP_KEY);
+        requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-                timelineSchedulePane.scrollLeft = left;
+                if (savedLeft !== null) {
+                    const left = parseFloat(savedLeft);
+                    if (!isNaN(left)) boardBody.scrollLeft = left;
+                }
+                if (savedTop !== null) {
+                    const top = parseFloat(savedTop);
+                    if (!isNaN(top)) boardBody.scrollTop = top;
+                }
             });
+        });
+    }
+
+    const unassignedSection = document.querySelector('.unassigned-list-section');
+    if (unassignedSection) {
+        const savedUnassignedTop = localStorage.getItem(UNASSIGNED_SCROLL_TOP_KEY);
+        if (savedUnassignedTop !== null) {
+            const top = parseFloat(savedUnassignedTop);
+            if (!isNaN(top)) {
+                requestAnimationFrame(() => {
+                    unassignedSection.scrollTop = top;
+                });
+            }
         }
     }
 }
 
-if (timelineSchedulePane) {
+const timelineBoardBody = document.querySelector('.timeline-board-body');
+if (timelineBoardBody) {
     let scrollSaveTimeout = null;
-    timelineSchedulePane.addEventListener('scroll', () => {
+    timelineBoardBody.addEventListener('scroll', () => {
         if (scrollSaveTimeout) clearTimeout(scrollSaveTimeout);
         scrollSaveTimeout = setTimeout(() => {
-            localStorage.setItem(TIMELINE_SCROLL_KEY, String(timelineSchedulePane.scrollLeft));
+            localStorage.setItem(TIMELINE_SCROLL_LEFT_KEY, String(timelineBoardBody.scrollLeft));
+            localStorage.setItem(TIMELINE_SCROLL_TOP_KEY, String(timelineBoardBody.scrollTop));
+        }, 150);
+    }, { passive: true });
+}
+
+const inputScrollContainer = document.querySelector('.vulplanning-input-scroll-container');
+if (inputScrollContainer) {
+    const savedInputTop = localStorage.getItem(INPUT_SCROLL_TOP_KEY);
+    if (savedInputTop !== null) {
+        const top = parseFloat(savedInputTop);
+        if (!isNaN(top)) {
+            requestAnimationFrame(() => {
+                inputScrollContainer.scrollTop = top;
+            });
+        }
+    }
+    let inputScrollTimeout = null;
+    inputScrollContainer.addEventListener('scroll', () => {
+        if (inputScrollTimeout) clearTimeout(inputScrollTimeout);
+        inputScrollTimeout = setTimeout(() => {
+            localStorage.setItem(INPUT_SCROLL_TOP_KEY, String(inputScrollContainer.scrollTop));
+        }, 150);
+    }, { passive: true });
+}
+
+const unassignedListSection = document.querySelector('.unassigned-list-section');
+if (unassignedListSection) {
+    let unassignedScrollTimeout = null;
+    unassignedListSection.addEventListener('scroll', () => {
+        if (unassignedScrollTimeout) clearTimeout(unassignedScrollTimeout);
+        unassignedScrollTimeout = setTimeout(() => {
+            localStorage.setItem(UNASSIGNED_SCROLL_TOP_KEY, String(unassignedListSection.scrollTop));
         }, 150);
     }, { passive: true });
 }

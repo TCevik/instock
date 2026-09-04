@@ -15,10 +15,10 @@ export function triggerAutoSave() {
             Object.entries(planningState.assignedTasks).forEach(([fillerId, tasks]) => {
                 if (Array.isArray(tasks) && tasks.length > 0) {
                     compactSchedule[fillerId] = tasks.map(t => {
-                        if (t.type === 'overige') {
-                            return { id: t.id, templateId: t.templateId || t.id, type: 'overige', title: t.title, duration: t.duration };
+                        if (t.type === 'overige' || t.type === 'pauze') {
+                            return { id: t.id, templateId: t.templateId || t.id, type: t.type, title: t.title, duration: t.duration, origDuration: t.origDuration };
                         }
-                        return { id: t.id, type: t.type, duration: t.duration };
+                        return { id: t.id, type: t.type, duration: t.duration, origDuration: t.origDuration };
                     });
                 }
             });

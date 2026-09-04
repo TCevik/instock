@@ -203,6 +203,15 @@
     background-color: rgba(59, 130, 246, 0.12);
 }
 
+.unassigned-task-card.type-pauze {
+    border-left: 3px solid var(--pauze-color);
+}
+
+.unassigned-task-card.type-pauze:hover {
+    border-color: var(--pauze-color);
+    background-color: rgba(249, 115, 22, 0.12);
+}
+
 .unassigned-task-card.dragging {
     opacity: 0.5;
 }

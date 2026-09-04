@@ -66,6 +66,16 @@ function parseUserDepartments(deptVal) {
     return [];
 }
 
+function renderDepartmentBadges(deptVal, maxVisible = 2, fallback = '-') {
+    const depts = parseUserDepartments(deptVal);
+    if (depts.length === 0) return fallback;
+    const visible = depts.slice(0, maxVisible);
+    const hiddenCount = depts.length - maxVisible;
+    const badges = visible.map(d => `<span class="department-badge">${escapeHtml(d)}</span>`).join('');
+    const more = hiddenCount > 0 ? `<span class="department-badge department-badge-more" title="${escapeHtml(depts.join(', '))}">+${hiddenCount}</span>` : '';
+    return `<div class="departments-list">${badges}${more}</div>`;
+}
+
 function getDistinctDepartments(extraDepts = []) {
     const set = new Set();
     allUsers.forEach(u => {
@@ -544,10 +554,7 @@ function renderTable() {
             const displayName = escapeHtml(user.full_name?.trim() || user.username?.trim() || 'Gebruiker');
             const username = escapeHtml(user.username ? `@${user.username}` : '-');
             const role = escapeHtml(getRoleLabel(user.role));
-            const depts = parseUserDepartments(user.departments);
-            const departmentsHtml = depts.length === 0 
-                ? '-' 
-                : `<div class="departments-list">${depts.map(d => `<span class="department-badge">${escapeHtml(d)}</span>`).join('')}</div>`;
+            const departmentsHtml = renderDepartmentBadges(user.departments, 2, '-');
             const birthday = escapeHtml(formatDutchDate(user.birthday));
             const productivity = user.productivity !== null && user.productivity !== undefined ? escapeHtml(String(user.productivity)) : '-';
             const lastSignIn = escapeHtml(formatDateTime(user.last_sign_in_at));
@@ -582,10 +589,7 @@ function renderTable() {
                 const displayName = escapeHtml(user.full_name?.trim() || user.username?.trim() || 'Gebruiker');
                 const username = escapeHtml(user.username ? `@${user.username}` : '');
                 const role = escapeHtml(getRoleLabel(user.role));
-                const depts = parseUserDepartments(user.departments);
-                const departmentsHtml = depts.length === 0
-                    ? ''
-                    : `<div class="user-list-depts">${depts.map(d => `<span class="department-badge">${escapeHtml(d)}</span>`).join('')}</div>`;
+                const departmentsHtml = renderDepartmentBadges(user.departments, 3, '');
                 const birthday = escapeHtml(formatDutchDate(user.birthday));
                 const hasBirthday = user.birthday && birthday !== '-';
                 const productivity = user.productivity !== null && user.productivity !== undefined ? `${user.productivity}% prod.` : '';

@@ -176,7 +176,7 @@
 
 .departments-list {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 6px;
     align-items: center;
 }
@@ -190,6 +190,12 @@
     background-color: var(--input-background);
     border: 1px solid var(--card-border);
     color: var(--text-color);
+    white-space: nowrap;
+}
+
+.department-badge-more {
+    color: var(--accent-color);
+    cursor: default;
 }
 
 .table-pagination {

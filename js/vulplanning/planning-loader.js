@@ -98,19 +98,30 @@ export async function loadSavedPlanning(options = {}) {
                     const refId = typeof ref === 'string' ? ref : (ref && ref.id);
                     const templateId = ref && ref.templateId;
 
-                    if (ref && ref.type === 'overige') {
+                    if (ref && (ref.type === 'overige' || ref.type === 'pauze')) {
                         const template = taskPool.get(templateId || refId);
+                        const dur = (ref && ref.duration) || (template && template.duration) || 30;
                         hydratedAssignedTasks[fillerId].push({
-                            id: refId || `custom_inst_${Date.now()}`,
+                            id: refId || `${ref.type}_inst_${Date.now()}`,
                             templateId: templateId || (template && template.id) || refId,
-                            type: 'overige',
-                            title: (ref && ref.title) || (template && template.title) || 'Overige taak',
-                            duration: (ref && ref.duration) || (template && template.duration) || 30,
+                            type: ref.type,
+                            title: (ref && ref.title) || (template && template.title) || (ref.type === 'pauze' ? 'Pauze' : 'Overige taak'),
+                            duration: dur,
+                            origDuration: (ref && ref.origDuration !== undefined) ? ref.origDuration : (template ? template.duration : dur),
                             colli: 0
                         });
                     } else if (taskPool.has(refId)) {
                         const originalTask = taskPool.get(refId);
-                        hydratedAssignedTasks[fillerId].push(originalTask);
+                        const taskCopy = { ...originalTask };
+                        if (ref && ref.duration !== undefined) {
+                            taskCopy.duration = ref.duration;
+                        }
+                        if (ref && ref.origDuration !== undefined) {
+                            taskCopy.origDuration = ref.origDuration;
+                        } else if (!taskCopy.origDuration) {
+                            taskCopy.origDuration = originalTask.duration;
+                        }
+                        hydratedAssignedTasks[fillerId].push(taskCopy);
                         assignedTaskIds.add(refId);
                     }
                 });
@@ -125,12 +136,37 @@ export async function loadSavedPlanning(options = {}) {
 
         calculateTimelineBounds(savedFillers);
 
-        if (stepInputView) stepInputView.style.display = 'none';
-        if (stepTimelineView) stepTimelineView.style.display = 'flex';
+        const savedStep = localStorage.getItem('instock_planner_step');
+        if (savedStep === 'input') {
+            if (stepInputView) stepInputView.style.display = 'flex';
+            if (stepTimelineView) stepTimelineView.style.display = 'none';
+        } else {
+            if (stepInputView) stepInputView.style.display = 'none';
+            if (stepTimelineView) stepTimelineView.style.display = 'flex';
+        }
+
+        const savedTab = localStorage.getItem('instock_planner_tab');
+        if (savedTab) {
+            planningState.activeTab = savedTab;
+        }
+
+        const savedZoom = localStorage.getItem('instock_planner_zoom');
+        if (savedZoom !== null) {
+            const parsedZoom = parseFloat(savedZoom);
+            if (!isNaN(parsedZoom)) {
+                planningState.zoom = parsedZoom;
+                const zoomIndicator = document.getElementById('zoom-level-indicator');
+                if (zoomIndicator) {
+                    zoomIndicator.textContent = `${Math.round(planningState.zoom * 100)}%`;
+                }
+            }
+        }
 
         if (onRenderAxis) onRenderAxis();
         if (onRenderRows) onRenderRows();
         if (onRenderUnassigned) onRenderUnassigned();
-        if (onRestoreScroll) onRestoreScroll();
+        if (onRestoreScroll) {
+            setTimeout(onRestoreScroll, 50);
+        }
     } catch (_) {}
 }

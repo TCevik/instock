@@ -25,7 +25,19 @@ export function renderUnassignedTasks(options) {
         if (counterEl) counterEl.textContent = counts[tabKey] || 0;
     });
 
-    const filtered = planningState.unassignedTasks.filter(t => (t.type || 'vullen') === planningState.activeTab);
+    let filtered = planningState.unassignedTasks.filter(t => (t.type || 'vullen') === planningState.activeTab);
+    if (planningState.activeTab === 'overige') {
+        const hasPauze = filtered.some(t => t.type === 'pauze' || t.id === 'pauze_template');
+        if (!hasPauze) {
+            filtered = [{
+                id: 'pauze_template',
+                type: 'pauze',
+                title: 'Pauze',
+                duration: 30,
+                colli: 0
+            }, ...filtered];
+        }
+    }
 
     if (filtered.length === 0) {
         unassignedTasksList.innerHTML = `
@@ -42,12 +54,14 @@ export function renderUnassignedTasks(options) {
         card.setAttribute('draggable', 'true');
         card.setAttribute('data-task-id', task.id);
 
+        const durStr = (task.type === 'pauze' && task.id === 'pauze_template') ? 'Flexibel' : formatDuration(task.duration);
+
         card.innerHTML = `
             <div class="unassigned-task-header">
                 <span class="unassigned-task-title">${task.title}</span>
                 ${task.colli > 0 ? `<span class="unassigned-task-colli">${task.colli}c</span>` : ''}
             </div>
-            <span class="unassigned-task-duration">${formatDuration(task.duration)}</span>
+            <span class="unassigned-task-duration">${durStr}</span>
         `;
 
         card.addEventListener('mouseenter', (e) => {

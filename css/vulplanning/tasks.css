@@ -97,6 +97,16 @@
     background-color: rgba(59, 130, 246, 0.22);
 }
 
+.timeline-task-block.type-pauze {
+    border-left: 3px solid var(--pauze-color);
+    background-color: rgba(249, 115, 22, 0.12);
+}
+
+.timeline-task-block.type-pauze:hover {
+    border-color: var(--pauze-color);
+    background-color: rgba(249, 115, 22, 0.22);
+}
+
 .task-block-header {
     display: flex;
     align-items: center;
@@ -136,6 +146,11 @@
 .badge-overige {
     background-color: rgba(59, 130, 246, 0.25);
     color: var(--info-color);
+}
+
+.badge-pauze {
+    background-color: rgba(249, 115, 22, 0.25);
+    color: var(--pauze-color);
 }
 
 .task-block-footer {

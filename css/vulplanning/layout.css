@@ -133,6 +133,7 @@
     background-color: var(--input-background);
     border: 1px solid var(--card-border);
     color: var(--text-color);
+    text-decoration: none;
 }
 
 .btn-secondary:hover {
