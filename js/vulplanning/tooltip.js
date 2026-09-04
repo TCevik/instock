@@ -14,7 +14,8 @@ export function getOrCreateTooltip() {
 export function showCustomTooltip(e, data) {
     const tip = getOrCreateTooltip();
     const type = data.type || 'vullen';
-    const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+    const typeLabel = data.isHelper ? 'Helper' : (type.charAt(0).toUpperCase() + type.slice(1));
+    const typeBadgeClass = data.isHelper ? 'type-helper' : `type-${type}`;
     
     let colliHtml = '';
     if (data.colli > 0) {
@@ -26,11 +27,16 @@ export function showCustomTooltip(e, data) {
         timeHtml = `<span class="tooltip-detail-item"><strong>${data.startStr} - ${data.endStr}</strong></span>`;
     }
 
+    let durationHtml = '';
+    if (data.duration && !data.isFlexible) {
+        durationHtml = `<span class="tooltip-detail-item">${formatDuration(data.duration)}</span>`;
+    }
+
     tip.innerHTML = `
-        <span class="tooltip-badge-pill type-${type}">${typeLabel}</span>
+        <span class="tooltip-badge-pill ${typeBadgeClass}">${typeLabel}</span>
         <span class="tooltip-title">${data.title}</span>
         ${colliHtml}
-        <span class="tooltip-detail-item">${formatDuration(data.duration)}</span>
+        ${durationHtml}
         ${timeHtml}
     `;
 

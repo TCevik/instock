@@ -115,6 +115,7 @@ export function showContextMenu(e, task, isAssigned = false, fillerId = null, ta
                 }
                 task.duration += remainingMins;
                 if (callbacks.onRenderRows) callbacks.onRenderRows();
+                if (callbacks.onRenderUnassigned) callbacks.onRenderUnassigned();
                 triggerAutoSave();
             }
         });
@@ -163,10 +164,14 @@ export function showContextMenu(e, task, isAssigned = false, fillerId = null, ta
 }
 
 export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIndex, callbacks = {}) {
+    const subtitle = isAssigned
+        ? 'Pas de tijdsduur of titel aan voor deze planning. De originele tijd blijft behouden.'
+        : 'Pas de taakomschrijving of standaardtijd aan in het overzicht.';
+
     const modalContent = `
         <div class="modal-header">
-            <h2 class="modal-title">Taak Bewerken</h2>
-            <p class="modal-subtitle">Pas de taakomschrijving of tijdsduur aan voor deze planning.</p>
+            <h2 class="modal-title">${isAssigned ? 'Taak in Planning Bewerken' : 'Taak Bewerken'}</h2>
+            <p class="modal-subtitle">${subtitle}</p>
         </div>
         <form id="editCustomTaskForm" class="modal-form">
             <div class="form-group">
@@ -196,12 +201,20 @@ export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIn
         const newDuration = parseInt(overlay.querySelector('#editCustomTaskDuration').value, 10) || 0;
 
         if (newTitle && newDuration > 0) {
-            task.title = newTitle;
-            task.duration = newDuration;
-            task.origDuration = newDuration;
-            task.origTitle = newTitle;
-
-            if (!isAssigned) {
+            if (isAssigned) {
+                if (task.origDuration === undefined) {
+                    task.origDuration = task.duration;
+                }
+                if (task.origTitle === undefined) {
+                    task.origTitle = task.title;
+                }
+                task.title = newTitle;
+                task.duration = newDuration;
+            } else {
+                task.title = newTitle;
+                task.duration = newDuration;
+                task.origDuration = newDuration;
+                task.origTitle = newTitle;
                 const templateId = task.id;
                 task.templateId = templateId;
             }
@@ -210,7 +223,7 @@ export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIn
             if (callbacks.onRenderRows) callbacks.onRenderRows();
             if (callbacks.onRenderUnassigned) callbacks.onRenderUnassigned();
             triggerAutoSave();
-            showToast('notification', 'Taak succesvol bijgewerkt');
+            showToast('notification', isAssigned ? 'Taak in planning bijgewerkt' : 'Taak succesvol bijgewerkt');
         }
     });
 }
@@ -227,18 +240,9 @@ export async function deleteCustomTask(task, isAssigned, fillerId, taskIndex, ca
     if (!confirmed) return;
 
     if (isAssigned && fillerId && taskIndex !== null) {
-        const [removed] = planningState.assignedTasks[fillerId].splice(taskIndex, 1);
-        if (removed && removed.templateId) {
-            const template = planningState.unassignedTasks.find(t => t.id === removed.templateId);
-            if (template && removed.origDuration !== undefined) {
-                template.duration = removed.origDuration;
-            }
-        }
+        planningState.assignedTasks[fillerId].splice(taskIndex, 1);
     } else {
         planningState.unassignedTasks = planningState.unassignedTasks.filter(t => t.id !== task.id);
-        Object.keys(planningState.assignedTasks).forEach(fid => {
-            planningState.assignedTasks[fid] = planningState.assignedTasks[fid].filter(t => t.id !== task.id && t.templateId !== task.id);
-        });
     }
 
     if (callbacks.onRenderRows) callbacks.onRenderRows();

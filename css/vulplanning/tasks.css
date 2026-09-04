@@ -107,6 +107,16 @@
     background-color: rgba(249, 115, 22, 0.22);
 }
 
+.timeline-task-block.is-helper {
+    border-left: 3px solid var(--helper-color);
+    background-color: var(--helper-bg);
+}
+
+.timeline-task-block.is-helper:hover {
+    border-color: var(--helper-color);
+    background-color: var(--helper-bg-hover);
+}
+
 .task-block-header {
     display: flex;
     align-items: center;
@@ -153,6 +163,11 @@
     color: var(--pauze-color);
 }
 
+.badge-helper {
+    background-color: var(--helper-badge-bg);
+    color: var(--helper-color);
+}
+
 .task-block-footer {
     display: flex;
     align-items: center;
@@ -181,6 +196,33 @@
     font-size: 9.5px;
     line-height: 1.1;
     color: var(--text-color);
+}
+
+.timeline-task-block.is-tiny {
+    padding: 2px 4px;
+}
+
+.timeline-task-block.is-tiny .timeline-task-meta-time {
+    display: none;
+}
+
+.timeline-task-block.is-micro {
+    padding: 2px 3px;
+    align-items: center;
+    justify-content: center;
+}
+
+.timeline-task-block.is-micro .timeline-task-title,
+.timeline-task-block.is-micro .timeline-task-meta-time {
+    display: none;
+}
+
+.timeline-task-block.is-micro .task-block-header {
+    justify-content: center;
+}
+
+.timeline-task-block.is-micro .task-block-footer {
+    justify-content: center;
 }
 
 .timeline-task-overflow {

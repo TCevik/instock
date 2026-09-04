@@ -12,6 +12,7 @@ import { renderTimelineRows } from './vulplanning/timeline-renderer.js';
 import { renderUnassignedTasks } from './vulplanning/unassigned-renderer.js';
 import { setupCustomTaskModal } from './vulplanning/custom-task-modal.js';
 import { loadSavedPlanning } from './vulplanning/planning-loader.js';
+import { openComboSettingsModal, loadComboSettings } from './vulplanning/combo-settings-modal.js';
 
 window.__draggedTaskDataRef = getDraggedTaskData;
 
@@ -23,11 +24,13 @@ const btnUnifiedImport = document.getElementById('btn-unified-import');
 const btnContinue = document.getElementById('btn-continue');
 const btnBackToInput = document.getElementById('btn-back-to-input');
 const btnAddCustomTask = document.getElementById('btn-add-custom-task');
+const btnComboSettings = document.getElementById('btn-combo-settings');
 const timelineWorkersList = document.getElementById('timeline-workers-list');
 const timelineTracksContainer = document.getElementById('timeline-tracks-container');
 const timelineSchedulePane = document.getElementById('timeline-schedule-pane');
 const timelineHoursAxis = document.getElementById('timeline-hours-axis');
 const unassignedTasksList = document.getElementById('unassigned-tasks-list');
+const assignedTasksList = document.getElementById('assigned-tasks-list');
 const unassignedTasksSidebar = document.querySelector('.unassigned-tasks-sidebar');
 const zoomLevelIndicator = document.getElementById('zoom-level-indicator');
 
@@ -82,6 +85,7 @@ function doRenderUnassigned() {
     });
     renderUnassignedTasks({
         unassignedTasksList,
+        assignedTasksList,
         onRenderRows: doRenderRows,
         onRenderUnassigned: doRenderUnassigned,
         onUnassignTask: (fillerId, taskIndex) => {
@@ -215,7 +219,7 @@ if (unassignedTasksSidebar) {
 
         try {
             const data = JSON.parse(dataStr);
-            if (data.source === 'assigned' && data.fillerId && data.taskIndex !== undefined) {
+            if ((data.source === 'assigned' || data.source === 'sidebar_assigned') && data.fillerId && data.taskIndex !== undefined) {
                 unassignTask(data.fillerId, data.taskIndex, {
                     onRenderRows: doRenderRows,
                     onRenderUnassigned: doRenderUnassigned
@@ -343,6 +347,12 @@ if (unassignedListSection) {
 setupCustomTaskModal(btnAddCustomTask, {
     onRenderUnassigned: doRenderUnassigned
 });
+
+loadComboSettings();
+
+if (btnComboSettings) {
+    btnComboSettings.addEventListener('click', openComboSettingsModal);
+}
 
 loadSavedPlanning({
     stepInputView,

@@ -81,14 +81,19 @@
                     </div>
                 </div>
                 <div class="timeline-header-actions">
-                    <a href="instellingen-winkel.html" class="btn btn-secondary btn-sm" title="Winkelinstellingen">
-                        <span class="material-icons btn-icon">settings</span>
-                        <span>Instellingen</span>
-                    </a>
                     <button type="button" id="btn-add-custom-task" class="btn btn-secondary btn-sm">
                         <span class="material-icons btn-icon">add_task</span>
                         <span>Taak Toevoegen</span>
                     </button>
+                    <div class="timeline-header-divider"></div>
+                    <button type="button" id="btn-combo-settings" class="btn btn-secondary btn-sm" title="Samen Indelen Instellingen">
+                        <span class="material-icons btn-icon">tune</span>
+                        <span>Samen Indelen</span>
+                    </button>
+                    <a href="instellingen-winkel.html" class="btn btn-secondary btn-sm" title="Winkelinstellingen">
+                        <span class="material-icons btn-icon">settings</span>
+                        <span>Instellingen</span>
+                    </a>
                 </div>
             </div>
 
@@ -123,7 +128,7 @@
                 <div class="unassigned-tasks-sidebar">
                     <div class="unassigned-sidebar-header">
                         <div class="unassigned-title-row">
-                            <span class="unassigned-sidebar-title">Onverdeelde Taken</span>
+                            <span class="unassigned-sidebar-title">Taken Overzicht</span>
                         </div>
                         <div class="unassigned-filter-tabs">
                             <button type="button" class="unassigned-tab active" data-tab="vullen">VULLEN (<span id="count-tab-vullen">0</span>)</button>
@@ -133,8 +138,20 @@
                         </div>
                     </div>
                     <div class="unassigned-list-section">
-                        <div class="unassigned-section-label">Verdeelde Taken</div>
-                        <div id="unassigned-tasks-list" class="unassigned-tasks-list"></div>
+                        <div class="sidebar-tasks-group">
+                            <div class="sidebar-group-header">
+                                <span class="unassigned-section-label">Onverdeelde Taken</span>
+                                <span class="sidebar-count-badge" id="count-unassigned-badge">0</span>
+                            </div>
+                            <div id="unassigned-tasks-list" class="unassigned-tasks-list"></div>
+                        </div>
+                        <div class="sidebar-tasks-group">
+                            <div class="sidebar-group-header">
+                                <span class="unassigned-section-label">Verdeelde Taken</span>
+                                <span class="sidebar-count-badge" id="count-assigned-badge">0</span>
+                            </div>
+                            <div id="assigned-tasks-list" class="unassigned-tasks-list assigned-tasks-list"></div>
+                        </div>
                     </div>
                     <div class="sidebar-drop-overlay" id="sidebar-drop-overlay">
                         <span class="material-icons drop-icon">delete_outline</span>

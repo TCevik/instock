@@ -4,6 +4,7 @@ import { showCustomTooltip, positionCustomTooltip, hideCustomTooltip } from './t
 import { showContextMenu } from './context-menu.js';
 import { calculateTimelineBounds, renderTimelineAxis, getPixelsPerMinute, getTimelineTotalMinutes } from './timeline-axis.js';
 import { openPauseModal } from './custom-task-modal.js';
+import { addHelperToTask } from './task-actions.js';
 
 export function renderTimelineRows(options) {
     const {
@@ -214,10 +215,13 @@ export function renderTimelineRows(options) {
 
         assigned.forEach((task, taskIdx) => {
             const taskLeft = Math.max(0, (currentBlockStartMins - startMins) * pxPerMin);
-            const taskWidth = Math.max(20, task.duration * pxPerMin);
+            const taskWidth = Math.max(6, task.duration * pxPerMin);
+
+            const isMicro = taskWidth < 38;
+            const isTiny = taskWidth < 68;
 
             const block = document.createElement('div');
-            block.className = `timeline-task-block type-${task.type || 'vullen'}`;
+            block.className = `timeline-task-block type-${task.type || 'vullen'} ${task.isHelper ? 'is-helper' : ''} ${isMicro ? 'is-micro' : ''} ${isTiny ? 'is-tiny' : ''}`;
             block.style.left = `${taskLeft}px`;
             block.style.width = `${taskWidth}px`;
             block.setAttribute('draggable', 'true');
@@ -231,7 +235,9 @@ export function renderTimelineRows(options) {
             const endStr = minutesToTime(taskEndMins);
 
             let typeBadge = '';
-            if (task.type === 'vullen') {
+            if (task.isHelper) {
+                typeBadge = `<span class="task-badge-icon badge-helper">H</span>`;
+            } else if (task.type === 'vullen') {
                 typeBadge = `<span class="task-badge-icon badge-vullen">V</span>`;
             } else if (task.type === 'spiegelen') {
                 typeBadge = `<span class="task-badge-icon badge-spiegelen">S</span>`;
@@ -271,7 +277,8 @@ export function renderTimelineRows(options) {
                     duration: task.duration,
                     colli: task.colli,
                     startStr: startStr,
-                    endStr: endStr
+                    endStr: endStr,
+                    isHelper: task.isHelper
                 });
             });
 
@@ -479,6 +486,13 @@ export function renderTimelineRows(options) {
                         });
                     } else if (onAssignTask) {
                         onAssignTask(data.taskId, filler.id, targetIndex);
+                    }
+                } else if (data.source === 'sidebar_assigned') {
+                    if (data.fillerId !== filler.id) {
+                        addHelperToTask(data.fillerId, data.taskIndex, filler.id, targetIndex, {
+                            onRenderRows,
+                            onRenderUnassigned
+                        });
                     }
                 } else if (data.source === 'assigned') {
                     if (onMoveTask) onMoveTask(data.fillerId, data.taskIndex, filler.id, targetIndex);

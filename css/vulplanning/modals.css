@@ -56,6 +56,12 @@
     border: 1px solid rgba(59, 130, 246, 0.35);
 }
 
+.tooltip-badge-pill.type-pauze {
+    background-color: rgba(234, 88, 12, 0.18);
+    color: var(--pauze-color);
+    border: 1px solid rgba(234, 88, 12, 0.35);
+}
+
 .tooltip-title {
     font-size: 11px;
     font-weight: 600;
@@ -173,4 +179,354 @@
 .pdf-dropzone-subtext {
     font-size: 12px;
     color: var(--text-color-muted);
+}
+
+.helper-presets-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.helper-preset-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background-color: var(--input-background);
+    border: 1px solid var(--card-border);
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.helper-preset-btn:hover {
+    background-color: var(--card-border);
+}
+
+.helper-preset-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.helper-preset-btn.active {
+    border-color: var(--accent-color);
+    background-color: rgba(101, 141, 36, 0.08);
+}
+
+.helper-preset-title {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.helper-preset-desc {
+    font-size: 10px;
+    color: var(--text-color-muted);
+}
+
+.helper-live-preview {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+    margin-bottom: 6px;
+}
+
+.helper-preview-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+    background-color: var(--input-background);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+}
+
+.helper-preview-card.is-helper-target {
+    border-color: var(--helper-color);
+    background-color: var(--helper-bg);
+}
+
+.helper-preview-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-color-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.helper-preview-card.is-helper-target .helper-preview-label {
+    color: var(--helper-color);
+}
+
+.helper-preview-val {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-color);
+}
+
+.tooltip-badge-pill.type-helper {
+    background-color: var(--helper-badge-bg);
+    color: var(--helper-color);
+    border: 1px solid var(--helper-color);
+}
+
+.helpers-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 6px;
+    margin-bottom: 2px;
+}
+
+.btn-add-helper {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 6px;
+    background-color: var(--input-background);
+    border: 1px solid var(--card-border);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.btn-add-helper:hover {
+    background-color: var(--card-border);
+    border-color: var(--accent-color);
+}
+
+.btn-add-helper .material-icons {
+    font-size: 14px;
+}
+
+.helpers-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.helper-item-card {
+    background-color: var(--input-background);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.helper-item-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.helper-select {
+    flex: 1;
+    font-size: 12px;
+    padding: 6px 10px;
+}
+
+.btn-remove-helper {
+    background: transparent;
+    border: none;
+    color: var(--text-color-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.15s;
+}
+
+.btn-remove-helper:hover {
+    color: var(--danger-color);
+}
+
+.btn-remove-helper .material-icons {
+    font-size: 18px;
+}
+
+.helper-item-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.helper-quick-btn {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 5px 8px;
+    border-radius: 6px;
+    background-color: var(--card-border);
+    border: 1px solid var(--card-border);
+    color: var(--text-color);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.15s;
+}
+
+.helper-quick-btn:hover:not(:disabled) {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.helper-quick-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.helper-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.helper-mins-input {
+    width: 75px;
+    text-align: center;
+    font-size: 12px;
+    padding: 6px 4px;
+}
+
+.helper-input-unit {
+    font-size: 11px;
+    color: var(--text-color-muted);
+}
+
+.combo-modal-icon-wrap {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background-color: rgba(101, 141, 36, 0.15);
+    border: 1px solid rgba(101, 141, 36, 0.3);
+    color: var(--accent-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.combo-info-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background-color: var(--input-background);
+    border: 1px solid var(--card-border);
+    color: var(--text-color-muted);
+    font-size: 11.5px;
+    line-height: 1.4;
+}
+
+.combo-info-banner .material-icons {
+    font-size: 16px;
+    color: var(--accent-color);
+    flex-shrink: 0;
+}
+
+.combo-info-banner strong {
+    color: var(--text-color);
+}
+
+.combo-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.combo-option-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background-color: var(--input-background);
+    border: 1px solid var(--card-border);
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.combo-option-row:hover {
+    background-color: var(--card-border);
+}
+
+.combo-option-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.combo-option-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.combo-option-icon.icon-restanten {
+    background-color: rgba(168, 85, 247, 0.18);
+    color: var(--purple-color);
+}
+
+.combo-option-icon.icon-spiegelen {
+    background-color: rgba(245, 158, 11, 0.18);
+    color: var(--warning-color);
+}
+
+.combo-option-icon.icon-overige {
+    background-color: rgba(101, 141, 36, 0.18);
+    color: var(--accent-color);
+}
+
+.combo-option-title {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.combo-checkbox {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    border: 1.5px solid var(--card-border);
+    background-color: var(--card-background);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.combo-checkbox .material-icons {
+    font-size: 15px;
+    color: #ffffff;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.combo-option-row.is-checked .combo-checkbox {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+.combo-option-row.is-checked .combo-checkbox .material-icons {
+    opacity: 1;
 }

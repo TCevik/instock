@@ -43,7 +43,11 @@
     --success-color: #22c55e;
     --info-color: #3b82f6;
     --purple-color: #a855f7;
-    --pauze-color: #f97316;
+    --pauze-color: #ea580c;
+    --helper-color: #ec4899;
+    --helper-bg: rgba(236, 72, 153, 0.12);
+    --helper-bg-hover: rgba(236, 72, 153, 0.22);
+    --helper-badge-bg: rgba(236, 72, 153, 0.25);
     --task-item-bg: #202024;
     --task-item-border: #323238;
 }

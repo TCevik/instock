@@ -16,28 +16,46 @@ export function triggerAutoSave() {
                 if (Array.isArray(tasks) && tasks.length > 0) {
                     compactSchedule[fillerId] = tasks.map(t => {
                         if (t.type === 'overige' || t.type === 'pauze') {
-                            return { id: t.id, templateId: t.templateId || t.id, type: t.type, title: t.title, duration: t.duration, origDuration: t.origDuration };
+                            return {
+                                id: t.id,
+                                templateId: t.templateId || t.id,
+                                type: t.type,
+                                title: t.title,
+                                duration: t.duration,
+                                origDuration: t.origDuration,
+                                isHelper: t.isHelper,
+                                parentTaskId: t.parentTaskId,
+                                helperOfFillerId: t.helperOfFillerId
+                            };
                         }
-                        return { id: t.id, type: t.type, duration: t.duration, origDuration: t.origDuration };
+                        return {
+                            id: t.id,
+                            type: t.type,
+                            title: t.title,
+                            duration: t.duration,
+                            origDuration: t.origDuration,
+                            colli: t.colli,
+                            isHelper: t.isHelper,
+                            parentTaskId: t.parentTaskId,
+                            helperOfFillerId: t.helperOfFillerId
+                        };
                     });
                 }
             });
 
             const otherTasksMap = new Map();
             planningState.unassignedTasks.forEach(t => {
-                if (t.type === 'overige') {
-                    const key = t.title + '_' + t.duration;
-                    if (!otherTasksMap.has(key)) otherTasksMap.set(key, t);
-                }
-            });
-            Object.values(planningState.assignedTasks).forEach(list => {
-                if (Array.isArray(list)) {
-                    list.forEach(t => {
-                        if (t.type === 'overige') {
-                            const key = t.title + '_' + t.duration;
-                            if (!otherTasksMap.has(key)) otherTasksMap.set(key, { ...t, id: t.templateId || t.id });
-                        }
-                    });
+                if (t.type === 'overige' && !t.isHelper && !t.title.includes('(Helper)')) {
+                    const key = t.title.toLowerCase().trim();
+                    if (!otherTasksMap.has(key)) {
+                        otherTasksMap.set(key, {
+                            id: t.id,
+                            type: 'overige',
+                            title: t.title,
+                            duration: t.origDuration || t.duration || 30,
+                            colli: t.colli || 0
+                        });
+                    }
                 }
             });
 

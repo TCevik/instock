@@ -40,3 +40,15 @@ export function parsePauseMinutes(pauseStr) {
     const digits = String(pauseStr).replace(/[^0-9]/g, '');
     return parseInt(digits, 10) || 0;
 }
+
+export function getFillerShiftDuration(filler) {
+    if (!filler) return 0;
+    const shiftStart = timeToMinutes(filler.from);
+    let shiftEnd = timeToMinutes(filler.to);
+    if (shiftEnd > 0 && shiftEnd <= shiftStart) {
+        shiftEnd += 24 * 60;
+    }
+    const shiftGrossDuration = Math.max(0, shiftEnd - shiftStart);
+    const presetPause = parsePauseMinutes(filler.pause);
+    return Math.max(0, shiftGrossDuration - presetPause);
+}

@@ -31,18 +31,6 @@ export async function loadSavedPlanning(options = {}) {
         const data = plannerResult.data;
         if (plannerResult.error || !data) return;
 
-        if (Array.isArray(data.other_tasks) && data.other_tasks.length > 0) {
-            data.other_tasks.forEach(ot => {
-                if (ot && ot.title) {
-                    const exists = planningState.unassignedTasks.some(t => t.type === 'overige' && t.title === ot.title && t.duration === ot.duration);
-                    if (!exists) {
-                        planningState.unassignedTasks.push(ot);
-                    }
-                }
-            });
-            if (onRenderUnassigned) onRenderUnassigned();
-        }
-
         const savedFillers = Array.isArray(data.fillers) ? data.fillers : [];
         if (savedFillers.length === 0) return;
 
@@ -74,9 +62,20 @@ export async function loadSavedPlanning(options = {}) {
         const otherTasksList = [];
 
         if (Array.isArray(data.other_tasks) && data.other_tasks.length > 0) {
+            const seenTitles = new Set();
             data.other_tasks.forEach(ot => {
-                if (ot && ot.title) {
-                    otherTasksList.push(ot);
+                if (ot && ot.title && !ot.isHelper && !ot.title.includes('(Helper)')) {
+                    const normTitle = ot.title.toLowerCase().trim();
+                    if (!seenTitles.has(normTitle)) {
+                        seenTitles.add(normTitle);
+                        otherTasksList.push({
+                            id: ot.id || `custom_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+                            type: 'overige',
+                            title: ot.title,
+                            duration: ot.origDuration || ot.duration || 30,
+                            colli: ot.colli || 0
+                        });
+                    }
                 }
             });
         }
@@ -108,7 +107,23 @@ export async function loadSavedPlanning(options = {}) {
                             title: (ref && ref.title) || (template && template.title) || (ref.type === 'pauze' ? 'Pauze' : 'Overige taak'),
                             duration: dur,
                             origDuration: (ref && ref.origDuration !== undefined) ? ref.origDuration : (template ? template.duration : dur),
-                            colli: 0
+                            colli: 0,
+                            isHelper: !!(ref && ref.isHelper),
+                            parentTaskId: ref && ref.parentTaskId,
+                            helperOfFillerId: ref && ref.helperOfFillerId
+                        });
+                    } else if (ref && ref.isHelper) {
+                        const parent = taskPool.get(ref.parentTaskId);
+                        hydratedAssignedTasks[fillerId].push({
+                            id: refId,
+                            type: (ref && ref.type) || (parent && parent.type) || 'vullen',
+                            title: (ref && ref.title) || `${(parent && parent.title) || 'Taak'} (Helper)`,
+                            duration: (ref && ref.duration) || 30,
+                            origDuration: (ref && ref.origDuration) || (parent && parent.duration) || 30,
+                            colli: (ref && ref.colli) || (parent && parent.colli) || 0,
+                            isHelper: true,
+                            parentTaskId: ref.parentTaskId,
+                            helperOfFillerId: ref.helperOfFillerId
                         });
                     } else if (taskPool.has(refId)) {
                         const originalTask = taskPool.get(refId);

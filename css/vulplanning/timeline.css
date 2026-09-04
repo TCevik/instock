@@ -30,6 +30,14 @@
     gap: 8px;
 }
 
+.timeline-header-divider {
+    width: 1px;
+    height: 22px;
+    background-color: var(--card-border);
+    margin: 0 4px;
+    flex-shrink: 0;
+}
+
 .timeline-workspace {
     display: grid;
     grid-template-columns: 1fr 280px;
@@ -180,11 +188,11 @@
 
 .timeline-worker-info {
     height: 48px;
-    padding: 3px 8px;
+    padding: 3px 6px;
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    gap: 8px;
+    gap: 6px;
     border-bottom: 1px solid var(--card-border);
     background-color: var(--card-background);
     box-sizing: border-box;
@@ -198,9 +206,9 @@
     display: flex;
     flex-direction: column;
     gap: 1px;
-    width: 100px;
-    min-width: 100px;
-    max-width: 100px;
+    width: 98px;
+    min-width: 98px;
+    max-width: 98px;
     overflow: hidden;
     line-height: 1.15;
     flex-shrink: 0;
@@ -245,9 +253,9 @@
 .timeline-worker-center {
     display: flex;
     align-items: center;
-    width: 124px;
-    min-width: 124px;
-    max-width: 124px;
+    width: 120px;
+    min-width: 120px;
+    max-width: 120px;
     flex-shrink: 0;
 }
 
@@ -326,14 +334,17 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+    align-self: flex-start;
     gap: 2px;
-    width: 44px;
-    min-width: 44px;
-    max-width: 44px;
+    width: 50px;
+    min-width: 50px;
+    max-width: 50px;
     flex-shrink: 0;
     margin-left: auto;
     line-height: 1.1;
+    padding-top: 1px;
+    box-sizing: border-box;
 }
 
 .timeline-worker-input {
@@ -345,6 +356,7 @@
     text-align: center;
     border-radius: 4px;
     box-sizing: border-box;
+    flex-shrink: 0;
 }
 
 .timeline-worker-endtime {
@@ -355,13 +367,13 @@
     text-align: center;
 }
 
-
 .timeline-worker-prod {
-    font-size: 9.5px;
+    font-size: 8.5px;
     font-weight: 700;
-    line-height: 1.2;
+    line-height: 1.1;
     text-align: center;
     width: 100%;
+    white-space: nowrap;
 }
 
 .timeline-worker-prod.danger {

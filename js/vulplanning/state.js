@@ -5,7 +5,12 @@ export const planningState = {
     zoom: 1,
     activeTab: 'vullen',
     timelineStartHour: 0,
-    timelineEndHour: 24
+    timelineEndHour: 24,
+    comboSettings: {
+        autoRestanten: true,
+        autoSpiegelen: true,
+        autoOverige: false
+    }
 };
 
 let draggedTaskData = null;
@@ -23,7 +28,7 @@ export function getDraggedTask() {
     if (draggedTaskData.source === 'unassigned') {
         return planningState.unassignedTasks.find(t => t.id === draggedTaskData.taskId) || null;
     }
-    if (draggedTaskData.source === 'assigned') {
+    if (draggedTaskData.source === 'assigned' || draggedTaskData.source === 'sidebar_assigned') {
         const list = planningState.assignedTasks[draggedTaskData.fillerId] || [];
         return list[draggedTaskData.taskIndex] || null;
     }

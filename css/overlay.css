@@ -84,7 +84,7 @@
     z-index: 100;
 }
 
-.app-sidebar:hover {
+.app-sidebar:not(.hover-disabled):hover {
     width: 220px;
 }
 
@@ -135,7 +135,7 @@
     transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-.app-sidebar:hover .sidebar-label {
+.app-sidebar:not(.hover-disabled):hover .sidebar-label {
     opacity: 1;
     transform: translateX(0);
 }

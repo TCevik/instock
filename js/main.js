@@ -144,6 +144,35 @@ async function loadOverlay() {
             const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
             const sidebarBackdrop = document.getElementById('sidebarBackdrop');
 
+            if (sidebar) {
+                const enableHover = () => {
+                    sidebar.classList.remove('hover-disabled');
+                    window.removeEventListener('mousemove', onFirstInteraction, true);
+                    window.removeEventListener('pointerdown', onFirstInteraction, true);
+                    sidebar.removeEventListener('mouseleave', onMouseLeave);
+                };
+
+                const onMouseLeave = () => {
+                    enableHover();
+                };
+
+                const onFirstInteraction = (e) => {
+                    const rect = sidebar.getBoundingClientRect();
+                    const isOver = e.clientX >= rect.left && e.clientX <= rect.right &&
+                                   e.clientY >= rect.top && e.clientY <= rect.bottom;
+                    if (isOver) {
+                        sidebar.addEventListener('mouseleave', onMouseLeave, { once: true });
+                    } else {
+                        enableHover();
+                    }
+                    window.removeEventListener('mousemove', onFirstInteraction, true);
+                    window.removeEventListener('pointerdown', onFirstInteraction, true);
+                };
+
+                window.addEventListener('mousemove', onFirstInteraction, true);
+                window.addEventListener('pointerdown', onFirstInteraction, true);
+            }
+
             function toggleSidebar() {
                 if (!sidebar) return;
                 const isOpen = sidebar.classList.toggle('open');
