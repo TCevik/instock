@@ -3,7 +3,9 @@ import { initModal, showModal, closeModal, showConfirmModal, showPromptModal } f
 import { initToast, showToast } from './toast.js';
 
 const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000;
+const INACTIVITY_WARNING_MS = INACTIVITY_TIMEOUT_MS - 60 * 1000;
 const LAST_ACTIVITY_KEY = 'instock_last_activity';
+let inactivityWarningShown = false;
 
 function recordActivity() {
     localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
@@ -19,6 +21,23 @@ function checkInactivity() {
         if (elapsed > INACTIVITY_TIMEOUT_MS) {
             logout();
             return;
+        }
+        if (elapsed > INACTIVITY_WARNING_MS && !inactivityWarningShown) {
+            inactivityWarningShown = true;
+            showConfirmModal({
+                title: 'Ben je er nog?',
+                message: 'Je wordt over 60 seconden automatisch uitgelogd wegens inactiviteit.',
+                confirmText: 'Ja, ik ben er nog',
+                cancelText: 'Uitloggen',
+                isDanger: false
+            }).then((confirmed) => {
+                inactivityWarningShown = false;
+                if (confirmed) {
+                    recordActivity();
+                } else {
+                    logout();
+                }
+            });
         }
     }
 }
