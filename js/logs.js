@@ -134,6 +134,43 @@ function renderTable() {
         }).join('');
     }
 
+    const cardsContainer = document.getElementById('logsCardsContainer');
+    if (cardsContainer) {
+        if (currentLogs.length === 0) {
+            cardsContainer.innerHTML = `<div class="empty-state">Geen logs gevonden</div>`;
+        } else {
+            cardsContainer.innerHTML = currentLogs.map((log, idx) => {
+                const user = usersMap.get(log.user_id);
+                const fullName = user?.full_name?.trim();
+                const username = user?.username ? `@${user.username}` : '';
+                const displayName = fullName || username || (log.user_id ? 'Onbekende gebruiker' : 'Systeem');
+                const action = log.action || 'Onbekende actie';
+                const isDanger = action.toLowerCase().includes('verwijderd');
+                const timeStr = formatDateTime(log.happened_at || log.created_at);
+                const aff = getAffectedDisplay(log.affected ?? log.affected_user, log.action);
+
+                return `
+                    <div class="log-list-item" data-index="${idx}">
+                        <div class="user-avatar-sm">
+                            <span class="material-icons">${aff?.icon || 'person'}</span>
+                        </div>
+                        <div class="log-list-content">
+                            <div class="log-list-top">
+                                <span class="log-list-user">${escapeHtml(displayName)}</span>
+                                <span class="action-badge ${isDanger ? 'danger' : ''}">${escapeHtml(action)}</span>
+                            </div>
+                            <div class="log-list-sub">
+                                ${aff ? `<span class="log-affected">${escapeHtml(aff.title)}</span><span class="log-meta-dot">•</span>` : ''}
+                                <span class="log-time">${escapeHtml(timeStr)}</span>
+                            </div>
+                        </div>
+                        <span class="material-icons log-list-chevron">chevron_right</span>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
+
     if (paginationInfo) {
         if (totalCount === 0) {
             paginationInfo.textContent = '0 logs';
@@ -191,7 +228,7 @@ function openDetailsModal(log) {
 
             const formatVal = (v) => {
                 if (v === null || v === undefined) return '-';
-                if (typeof v === 'object') return JSON.stringify(v);
+                if (typeof v === 'object') return JSON.stringify(v, null, 2);
                 return String(v);
             };
 
@@ -394,6 +431,20 @@ if (logsTableBody) {
         const viewBtn = e.target.closest('.view-details-btn');
         if (viewBtn) {
             const index = Number(viewBtn.getAttribute('data-index'));
+            const log = currentLogs[index];
+            if (log) {
+                openDetailsModal(log);
+            }
+        }
+    });
+}
+
+const logsCardsContainer = document.getElementById('logsCardsContainer');
+if (logsCardsContainer) {
+    logsCardsContainer.addEventListener('click', (e) => {
+        const item = e.target.closest('.log-list-item');
+        if (item) {
+            const index = Number(item.getAttribute('data-index'));
             const log = currentLogs[index];
             if (log) {
                 openDetailsModal(log);

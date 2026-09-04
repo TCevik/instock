@@ -56,6 +56,15 @@
     text-overflow: ellipsis;
 }
 
+.timeline-task-ghost.type-pauze {
+    border-color: var(--pauze-color);
+    background-color: var(--pauze-bg);
+}
+
+.timeline-task-ghost.type-pauze .timeline-task-ghost-text {
+    color: var(--pauze-color);
+}
+
 .timeline-task-block.type-vullen {
     border-left: 3px solid var(--accent-color);
     background-color: rgba(101, 141, 36, 0.12);

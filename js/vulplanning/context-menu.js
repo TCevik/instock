@@ -61,8 +61,7 @@ export function showContextMenu(e, task, isAssigned = false, fillerId = null, ta
                 });
 
                 const presetPause = parsePauseMinutes(filler.pause);
-                const hasPauzeTask = assignedPauzeMins > 0;
-                const targetShiftDuration = hasPauzeTask ? (shiftEnd - shiftStart - presetPause + assignedPauzeMins) : Math.max(0, shiftEnd - shiftStart - presetPause);
+                const targetShiftDuration = Math.max(0, shiftEnd - shiftStart - presetPause) + assignedPauzeMins;
                 
                 remainingMins = targetShiftDuration - totalAssigned;
                 if (remainingMins > 0) {
@@ -128,12 +127,18 @@ export function showContextMenu(e, task, isAssigned = false, fillerId = null, ta
             hideContextMenu();
             if (task.type === 'pauze') {
                 openPauseModal(task.duration, (newMins) => {
-                    task.duration = newMins;
-                    task.origDuration = newMins;
-                    if (callbacks.onRenderRows) callbacks.onRenderRows();
-                    if (callbacks.onRenderUnassigned) callbacks.onRenderUnassigned();
-                    triggerAutoSave();
-                    showToast('notification', 'Pauze bijgewerkt');
+                    if (newMins <= 0) {
+                        if (callbacks.onUnassignTask) {
+                            callbacks.onUnassignTask(fillerId, taskIndex);
+                        }
+                    } else {
+                        task.duration = newMins;
+                        task.origDuration = newMins;
+                        if (callbacks.onRenderRows) callbacks.onRenderRows();
+                        if (callbacks.onRenderUnassigned) callbacks.onRenderUnassigned();
+                        triggerAutoSave(true);
+                        showToast('notification', 'Pauze bijgewerkt');
+                    }
                 });
             } else {
                 openEditCustomTaskModal(task, isAssigned, fillerId, taskIndex, callbacks);
@@ -151,6 +156,9 @@ export function showContextMenu(e, task, isAssigned = false, fillerId = null, ta
             } else if (fillerId && taskIndex !== null) {
                 if (callbacks.onUnassignTask) {
                     callbacks.onUnassignTask(fillerId, taskIndex);
+                    if (task.type === 'pauze') {
+                        showToast('notification', 'Pauze verwijderd');
+                    }
                 }
             }
         });

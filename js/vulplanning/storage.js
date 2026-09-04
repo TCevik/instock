@@ -5,18 +5,26 @@ import { recordSnapshot } from './history.js';
 
 let autoSaveTimeout = null;
 
-export function triggerAutoSave() {
+export function triggerAutoSave(immediate = false) {
     recordSnapshot();
-    if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
-    autoSaveTimeout = setTimeout(async () => {
+    if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout);
+        autoSaveTimeout = null;
+    }
+
+    const executeSave = async () => {
         try {
             const user = await getCurrentUser();
             if (!user || !user.store_id) return;
 
             const compactSchedule = {};
-            Object.entries(planningState.assignedTasks).forEach(([fillerId, tasks]) => {
-                if (Array.isArray(tasks) && tasks.length > 0) {
-                    compactSchedule[fillerId] = tasks.map(t => {
+            const processedFillerIds = new Set();
+
+            if (Array.isArray(planningState.fillers)) {
+                planningState.fillers.forEach(filler => {
+                    processedFillerIds.add(String(filler.id));
+                    const tasks = planningState.assignedTasks[filler.id] || [];
+                    compactSchedule[filler.id] = tasks.map(t => {
                         if (t.type === 'overige' || t.type === 'pauze') {
                             return {
                                 id: t.id,
@@ -25,7 +33,7 @@ export function triggerAutoSave() {
                                 title: t.title,
                                 duration: t.duration,
                                 origDuration: t.origDuration,
-                                isHelper: t.isHelper,
+                                isHelper: !!t.isHelper,
                                 parentTaskId: t.parentTaskId,
                                 helperOfFillerId: t.helperOfFillerId
                             };
@@ -37,7 +45,38 @@ export function triggerAutoSave() {
                             duration: t.duration,
                             origDuration: t.origDuration,
                             colli: t.colli,
-                            isHelper: t.isHelper,
+                            isHelper: !!t.isHelper,
+                            parentTaskId: t.parentTaskId,
+                            helperOfFillerId: t.helperOfFillerId
+                        };
+                    });
+                });
+            }
+
+            Object.entries(planningState.assignedTasks || {}).forEach(([fillerId, tasks]) => {
+                if (!processedFillerIds.has(String(fillerId))) {
+                    compactSchedule[fillerId] = (Array.isArray(tasks) ? tasks : []).map(t => {
+                        if (t.type === 'overige' || t.type === 'pauze') {
+                            return {
+                                id: t.id,
+                                templateId: t.templateId || t.id,
+                                type: t.type,
+                                title: t.title,
+                                duration: t.duration,
+                                origDuration: t.origDuration,
+                                isHelper: !!t.isHelper,
+                                parentTaskId: t.parentTaskId,
+                                helperOfFillerId: t.helperOfFillerId
+                            };
+                        }
+                        return {
+                            id: t.id,
+                            type: t.type,
+                            title: t.title,
+                            duration: t.duration,
+                            origDuration: t.origDuration,
+                            colli: t.colli,
+                            isHelper: !!t.isHelper,
                             parentTaskId: t.parentTaskId,
                             helperOfFillerId: t.helperOfFillerId
                         };
@@ -61,12 +100,18 @@ export function triggerAutoSave() {
                 }
             });
 
+            const currentColli = getColliData();
+            const tasksToSave = (currentColli && currentColli.length > 0) ? currentColli : (planningState.savedTasks || []);
+            if (currentColli && currentColli.length > 0) {
+                planningState.savedTasks = currentColli;
+            }
+
             const { error } = await supabase
                 .from('planner')
                 .upsert({
                     store_id: user.store_id,
                     fillers: planningState.fillers,
-                    tasks: getColliData(),
+                    tasks: tasksToSave,
                     schedule: compactSchedule,
                     other_tasks: Array.from(otherTasksMap.values()),
                     settings: {
@@ -83,5 +128,23 @@ export function triggerAutoSave() {
         } catch (err) {
             showToast('error', 'Opslaan mislukt: controleer verbinding');
         }
-    }, 400);
+    };
+
+    if (immediate) {
+        executeSave();
+    } else {
+        autoSaveTimeout = setTimeout(executeSave, 300);
+    }
+}
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('pagehide', () => {
+        triggerAutoSave(true);
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            triggerAutoSave(true);
+        }
+    });
 }

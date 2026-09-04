@@ -29,10 +29,24 @@ export async function loadSavedPlanning(options = {}) {
         ]);
 
         const data = plannerResult.data;
-        if (plannerResult.error || !data) return;
+        if (plannerResult.error || !data) {
+            if (window.innerWidth <= 768) {
+                if (stepInputView) stepInputView.style.display = 'none';
+                if (stepTimelineView) stepTimelineView.style.display = 'flex';
+                if (onRenderRows) onRenderRows();
+            }
+            return;
+        }
 
         const savedFillers = Array.isArray(data.fillers) ? data.fillers : [];
-        if (savedFillers.length === 0) return;
+        if (savedFillers.length === 0) {
+            if (window.innerWidth <= 768) {
+                if (stepInputView) stepInputView.style.display = 'none';
+                if (stepTimelineView) stepTimelineView.style.display = 'flex';
+                if (onRenderRows) onRenderRows();
+            }
+            return;
+        }
 
         const scheduleData = data.schedule && typeof data.schedule === 'object' ? data.schedule : {};
         planningState.fillers = savedFillers;
@@ -62,6 +76,9 @@ export async function loadSavedPlanning(options = {}) {
 
         fillRoosterShifts(savedFillers);
 
+        if (Array.isArray(data.tasks)) {
+            planningState.savedTasks = data.tasks;
+        }
         const colliMap = {};
         if (Array.isArray(data.tasks) && data.tasks.length > 0) {
             data.tasks.forEach(t => {
@@ -106,6 +123,10 @@ export async function loadSavedPlanning(options = {}) {
 
         const rawSchedule = data.schedule && typeof data.schedule === 'object' ? data.schedule : {};
         const scheduleAssignments = rawSchedule.assigned_tasks ? rawSchedule.assigned_tasks : rawSchedule;
+
+        savedFillers.forEach(f => {
+            hydratedAssignedTasks[f.id] = [];
+        });
 
         Object.entries(scheduleAssignments).forEach(([fillerId, taskRefs]) => {
             if (Array.isArray(taskRefs)) {
@@ -169,7 +190,10 @@ export async function loadSavedPlanning(options = {}) {
         calculateTimelineBounds(savedFillers);
 
         const savedStep = localStorage.getItem('instock_planner_step');
-        if (savedStep === 'input') {
+        if (window.innerWidth <= 768) {
+            if (stepInputView) stepInputView.style.display = 'none';
+            if (stepTimelineView) stepTimelineView.style.display = 'flex';
+        } else if (savedStep === 'input') {
             if (stepInputView) stepInputView.style.display = 'flex';
             if (stepTimelineView) stepTimelineView.style.display = 'none';
         } else {

@@ -44,6 +44,7 @@
     --info-color: #3b82f6;
     --purple-color: #a855f7;
     --pauze-color: #ea580c;
+    --pauze-bg: rgba(234, 88, 12, 0.18);
     --helper-color: #ec4899;
     --helper-bg: rgba(236, 72, 153, 0.12);
     --helper-bg-hover: rgba(236, 72, 153, 0.22);
@@ -78,8 +79,15 @@ body {
     transition: background-color 0.2s;
 }
 
-.btn:hover {
+@media (hover: hover) and (pointer: fine) {
+    .btn:hover {
+        background-color: var(--accent-hover);
+    }
+}
+
+.btn:active {
     background-color: var(--accent-hover);
+    transform: scale(0.98);
 }
 
 .btn-icon {

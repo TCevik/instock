@@ -54,8 +54,10 @@
     font-size: 18px;
 }
 
-.header-logout-link:hover {
-    opacity: 1;
+@media (hover: hover) and (pointer: fine) {
+    .header-logout-link:hover {
+        opacity: 1;
+    }
 }
 
 .header-divider {
@@ -84,10 +86,6 @@
     z-index: 100;
 }
 
-.app-sidebar:not(.hover-disabled):hover {
-    width: 220px;
-}
-
 .sidebar-nav {
     display: flex;
     flex-direction: column;
@@ -107,8 +105,7 @@
     transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-.sidebar-link:hover {
-    color: var(--text-color);
+.sidebar-link:active {
     background-color: var(--card-border);
 }
 
@@ -135,9 +132,20 @@
     transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-.app-sidebar:not(.hover-disabled):hover .sidebar-label {
-    opacity: 1;
-    transform: translateX(0);
+@media (hover: hover) and (pointer: fine) {
+    .app-sidebar:not(.hover-disabled):hover {
+        width: 220px;
+    }
+
+    .sidebar-link:hover {
+        color: var(--text-color);
+        background-color: var(--card-border);
+    }
+
+    .app-sidebar:not(.hover-disabled):hover .sidebar-label {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 .sidebar-toggle-btn {
@@ -209,10 +217,6 @@
         transform: translateX(-100%);
         width: 240px;
         transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .app-sidebar:hover {
-        width: 240px;
     }
 
     .app-sidebar .sidebar-label {

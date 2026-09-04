@@ -10,11 +10,46 @@ function escapeHtml(str) {
 let paths = [];
 let originalPathsJson = '[]';
 let selectedPathIndex = 0;
+let mobileView = 'list';
 
 const pathsListContainer = document.getElementById('pathsListContainer');
 const pathDetailPanel = document.getElementById('pathDetailPanel');
 const addPathBtn = document.getElementById('addPathBtn');
 const saveAllPathsBtn = document.getElementById('saveAllPathsBtn');
+
+function setMobileView(view, pushHistory = true) {
+    mobileView = view;
+    const masterDetail = document.querySelector('.paths-master-detail');
+    if (masterDetail) {
+        masterDetail.setAttribute('data-mobile-view', view);
+    }
+    const card = document.querySelector('.settings-card');
+    if (card) {
+        card.setAttribute('data-mobile-view', view);
+    }
+    if (pushHistory && view === 'detail' && window.innerWidth <= 768) {
+        if (!window.history.state || window.history.state.instellingenView !== 'detail') {
+            window.history.pushState({ instellingenView: 'detail' }, '');
+        }
+    }
+}
+
+window.addEventListener('popstate', () => {
+    if (window.innerWidth <= 768 && mobileView === 'detail') {
+        syncActiveCardToMemory();
+        setMobileView('list', false);
+        renderSidebar();
+    }
+});
+
+window.addEventListener('resize', () => {
+    if (window.innerWidth > 768 && mobileView === 'detail') {
+        syncActiveCardToMemory();
+        setMobileView('list', false);
+        renderSidebar();
+        renderDetailPanel();
+    }
+});
 
 function syncActiveCardToMemory() {
     if (selectedPathIndex < 0 || selectedPathIndex >= paths.length) return;
@@ -58,7 +93,7 @@ function renderSidebar() {
     }
 
     pathsListContainer.innerHTML = paths.map((p, idx) => {
-        const isActive = idx === selectedPathIndex;
+        const isActive = idx === selectedPathIndex && window.innerWidth > 768;
         const name = escapeHtml(p.name || 'Nieuw pad');
         const count = Array.isArray(p.categories) ? p.categories.length : 0;
 
@@ -76,11 +111,14 @@ function renderSidebar() {
     pathsListContainer.querySelectorAll('.path-nav-item').forEach(item => {
         item.addEventListener('click', () => {
             const idx = Number(item.getAttribute('data-index'));
-            if (idx === selectedPathIndex) return;
             syncActiveCardToMemory();
             selectedPathIndex = idx;
             renderSidebar();
             renderDetailPanel();
+            setMobileView('detail');
+            if (window.innerWidth <= 768) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
         });
     });
 }
@@ -89,14 +127,14 @@ function createCategoryTableRow(cat = { name: '', norm: '' }, index = 0) {
     const tr = document.createElement('tr');
     tr.className = 'category-table-row';
     tr.innerHTML = `
-        <td>
+        <td class="cat-cell-name">
             <input type="text" class="category-row-name-input" placeholder="Categorienaam..." value="${escapeHtml(cat.name || '')}">
         </td>
-        <td>
-            <input type="number" min="0" class="category-row-norm-input" placeholder="Norm" value="${cat.norm !== undefined && cat.norm !== null ? cat.norm : ''}">
+        <td class="cat-cell-norm">
+            <input type="number" inputmode="numeric" min="0" class="category-row-norm-input" placeholder="0" value="${cat.norm !== undefined && cat.norm !== null ? cat.norm : ''}">
         </td>
-        <td>
-            <button type="button" class="category-row-delete-btn" title="Categorie verwijderen">
+        <td class="cat-cell-action">
+            <button type="button" class="category-row-delete-btn" title="Categorie verwijderen" aria-label="Categorie verwijderen">
                 <span class="material-icons">delete</span>
             </button>
         </td>
@@ -139,11 +177,23 @@ function renderDetailPanel() {
 
     if (paths.length === 0 || selectedPathIndex < 0 || selectedPathIndex >= paths.length) {
         pathDetailPanel.innerHTML = `
+            <div class="mobile-detail-header">
+                <button type="button" class="btn-mobile-back" id="mobileBackBtn">
+                    <span class="material-icons">arrow_back</span>
+                    <span>Paden</span>
+                </button>
+            </div>
             <div class="empty-state" style="padding: 80px 20px;">
                 <span class="material-icons" style="font-size: 48px; color: var(--text-color-placeholder); margin-bottom: 12px; display: block;">alt_route</span>
                 <p>Geen pad geselecteerd. Voeg een nieuw pad toe om te beginnen.</p>
             </div>
         `;
+        const backBtn = pathDetailPanel.querySelector('#mobileBackBtn');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                setMobileView('list', false);
+            });
+        }
         return;
     }
 
@@ -153,12 +203,23 @@ function renderDetailPanel() {
     const restantennorm = currentPath.restantennorm !== undefined && currentPath.restantennorm !== null ? currentPath.restantennorm : '';
 
     pathDetailPanel.innerHTML = `
+        <div class="mobile-detail-header">
+            <button type="button" class="btn-mobile-back" id="mobileBackBtn">
+                <span class="material-icons">arrow_back</span>
+                <span>Paden</span>
+            </button>
+            <div class="mobile-detail-title-wrap">
+                <span class="mobile-detail-subtitle">Pad bewerken</span>
+                <span class="mobile-detail-heading" id="mobileDetailHeading">${pathName || 'Nieuw pad'}</span>
+            </div>
+        </div>
+
         <div class="detail-header">
             <div class="detail-title-field">
                 <label class="detail-title-label">Padnaam</label>
                 <input type="text" id="detailPathName" class="detail-title-input" placeholder="Bijv. Frisdrank, Bier..." value="${pathName}">
             </div>
-            <button type="button" class="detail-delete-btn" id="deleteCurrentPathBtn">
+            <button type="button" class="detail-delete-btn desktop-only-delete" id="deleteCurrentPathBtn">
                 <span class="material-icons">delete</span>
                 <span>Pad verwijderen</span>
             </button>
@@ -167,11 +228,11 @@ function renderDetailPanel() {
         <div class="detail-norms-grid">
             <div class="detail-norm-field">
                 <label class="detail-norm-label">Spiegelnorm (colli/u)</label>
-                <input type="number" min="0" id="detailPathSpiegelnorm" class="detail-norm-input" placeholder="Spiegelnorm" value="${spiegelnorm}">
+                <input type="number" inputmode="numeric" min="0" id="detailPathSpiegelnorm" class="detail-norm-input" placeholder="Spiegelnorm" value="${spiegelnorm}">
             </div>
             <div class="detail-norm-field">
                 <label class="detail-norm-label">Restantennorm (colli/u)</label>
-                <input type="number" min="0" id="detailPathRestantennorm" class="detail-norm-input" placeholder="Restantennorm" value="${restantennorm}">
+                <input type="number" inputmode="numeric" min="0" id="detailPathRestantennorm" class="detail-norm-input" placeholder="Restantennorm" value="${restantennorm}">
             </div>
         </div>
 
@@ -185,7 +246,10 @@ function renderDetailPanel() {
                     <thead>
                         <tr>
                             <th>Categorie</th>
-                            <th class="th-norm">Norm (colli/u)</th>
+                            <th class="th-norm">
+                                <span class="desktop-norm-label">Norm (colli/u)</span>
+                                <span class="mobile-norm-label">Norm</span>
+                            </th>
                             <th class="th-action"></th>
                         </tr>
                     </thead>
@@ -198,20 +262,30 @@ function renderDetailPanel() {
                 <span>Categorie toevoegen</span>
             </button>
         </div>
+
+        <div class="mobile-detail-footer">
+            <button type="button" class="detail-delete-btn mobile-only-delete" id="deleteCurrentPathBtnMobile">
+                <span class="material-icons">delete</span>
+                <span>Pad verwijderen</span>
+            </button>
+        </div>
     `;
 
     const nameInput = pathDetailPanel.querySelector('#detailPathName');
     const spiegelInput = pathDetailPanel.querySelector('#detailPathSpiegelnorm');
     const restantInput = pathDetailPanel.querySelector('#detailPathRestantennorm');
-    const deleteBtn = pathDetailPanel.querySelector('#deleteCurrentPathBtn');
     const addCatBtn = pathDetailPanel.querySelector('#addCategoryBtn');
     const tbody = pathDetailPanel.querySelector('#categoriesTableBody');
+    const mobileHeading = pathDetailPanel.querySelector('#mobileDetailHeading');
 
     nameInput.addEventListener('input', () => {
         currentPath.name = nameInput.value.trim();
         const activeNavName = pathsListContainer.querySelector('.path-nav-item.active .path-nav-name');
         if (activeNavName) {
             activeNavName.textContent = currentPath.name || 'Nieuw pad';
+        }
+        if (mobileHeading) {
+            mobileHeading.textContent = currentPath.name || 'Nieuw pad';
         }
     });
 
@@ -244,7 +318,23 @@ function renderDetailPanel() {
         if (newNameInput) newNameInput.focus();
     });
 
-    deleteBtn.addEventListener('click', async () => {
+    const backBtn = pathDetailPanel.querySelector('#mobileBackBtn');
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            syncActiveCardToMemory();
+            if (window.history.state && window.history.state.instellingenView === 'detail') {
+                window.history.back();
+            } else {
+                setMobileView('list', false);
+                renderSidebar();
+            }
+            if (window.innerWidth <= 768) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
+    }
+
+    const handleDelete = async () => {
         const pName = currentPath.name || 'dit pad';
         const confirmed = await showConfirmModal({
             title: 'Pad verwijderen',
@@ -261,8 +351,14 @@ function renderDetailPanel() {
             }
             renderSidebar();
             renderDetailPanel();
+            setMobileView('list', false);
         }
-    });
+    };
+
+    const deleteBtnDesktop = pathDetailPanel.querySelector('#deleteCurrentPathBtn');
+    const deleteBtnMobile = pathDetailPanel.querySelector('#deleteCurrentPathBtnMobile');
+    if (deleteBtnDesktop) deleteBtnDesktop.addEventListener('click', handleDelete);
+    if (deleteBtnMobile) deleteBtnMobile.addEventListener('click', handleDelete);
 }
 
 function collectCleanPaths() {
@@ -416,6 +512,10 @@ if (addPathBtn) {
         selectedPathIndex = 0;
         renderSidebar();
         renderDetailPanel();
+        setMobileView('detail');
+        if (window.innerWidth <= 768) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
 
         const nameInput = pathDetailPanel.querySelector('#detailPathName');
         if (nameInput) {
@@ -428,4 +528,5 @@ if (saveAllPathsBtn) {
     saveAllPathsBtn.addEventListener('click', saveStorePaths);
 }
 
+setMobileView('list', false);
 loadStorePaths();

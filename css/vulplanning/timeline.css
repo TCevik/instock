@@ -73,10 +73,10 @@
 }
 
 .timeline-workers-header-cell {
-    width: 300px;
-    min-width: 300px;
+    width: 360px;
+    min-width: 360px;
     height: 34px;
-    padding: 0 10px;
+    padding: 0 12px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -185,8 +185,8 @@
 }
 
 .timeline-workers-pane {
-    width: 300px;
-    min-width: 300px;
+    width: 360px;
+    min-width: 360px;
     background-color: var(--card-background);
     border-right: 1px solid var(--card-border);
     display: flex;
@@ -226,11 +226,11 @@
     max-height: 48px;
     flex: 0 0 48px;
     flex-shrink: 0;
-    padding: 3px 6px;
+    padding: 3px 8px;
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    gap: 6px;
+    gap: 8px;
     border-bottom: 1px solid var(--card-border);
     background-color: var(--card-background);
     box-sizing: border-box;
@@ -244,9 +244,9 @@
     display: flex;
     flex-direction: column;
     gap: 1px;
-    width: 98px;
-    min-width: 98px;
-    max-width: 98px;
+    width: 105px;
+    min-width: 105px;
+    max-width: 105px;
     overflow: hidden;
     line-height: 1.15;
     flex-shrink: 0;
@@ -291,15 +291,13 @@
 .timeline-worker-center {
     display: flex;
     align-items: center;
-    width: 120px;
-    min-width: 120px;
-    max-width: 120px;
-    flex-shrink: 0;
+    flex: 1 1 0%;
+    min-width: 170px;
 }
 
 .timeline-worker-statbox {
     border-radius: 4px;
-    padding: 3px 6px;
+    padding: 3px 8px;
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -307,6 +305,7 @@
     width: 100%;
     box-sizing: border-box;
     border: 1px solid transparent;
+    overflow: hidden;
 }
 
 .timeline-worker-statbox.status-over {
@@ -347,25 +346,30 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 4px;
+    gap: 6px;
     white-space: nowrap;
     width: 100%;
+    min-width: 0;
 }
 
 .statbox-label {
     font-size: 8px;
     color: var(--text-color-muted);
+    flex-shrink: 0;
 }
 
 .statbox-value {
     font-size: 8.5px;
     color: var(--text-color);
     font-weight: 600;
+    white-space: nowrap;
 }
 
 .statbox-status {
     font-size: 8px;
     text-transform: uppercase;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .timeline-worker-right {

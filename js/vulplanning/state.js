@@ -29,6 +29,15 @@ export function setDraggedTaskData(data) {
 export function getDraggedTask() {
     if (!draggedTaskData) return null;
     if (draggedTaskData.source === 'unassigned') {
+        if (draggedTaskData.taskId === 'pauze_template' || (typeof draggedTaskData.taskId === 'string' && draggedTaskData.taskId.startsWith('pauze'))) {
+            return {
+                id: 'pauze_template',
+                type: 'pauze',
+                title: 'Pauze',
+                duration: 30,
+                colli: 0
+            };
+        }
         return planningState.unassignedTasks.find(t => t.id === draggedTaskData.taskId) || null;
     }
     if (draggedTaskData.source === 'assigned' || draggedTaskData.source === 'sidebar_assigned') {

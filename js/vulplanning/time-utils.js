@@ -52,3 +52,136 @@ export function getFillerShiftDuration(filler) {
     const presetPause = parsePauseMinutes(filler.pause);
     return Math.max(0, shiftGrossDuration - presetPause);
 }
+
+export function calculateProductivity(workAssignedMins, actualEndTimeStr, shiftStartStr, shiftEndStr, effectivePauseMins = 0, assignedTasks = []) {
+    if (!actualEndTimeStr) return null;
+    let clean = String(actualEndTimeStr).trim();
+    if (!clean.includes(':') && clean.length === 4) {
+        clean = `${clean.substring(0, 2)}:${clean.substring(2, 4)}`;
+    }
+    if (clean.length < 5) return null;
+
+    const shiftStart = timeToMinutes(shiftStartStr);
+    let shiftEnd = timeToMinutes(shiftEndStr);
+    if (shiftEnd > 0 && shiftEnd <= shiftStart) {
+        shiftEnd += 24 * 60;
+    }
+
+    let actualEnd = timeToMinutes(clean);
+    if (actualEnd > 0 && actualEnd <= shiftStart && shiftEnd > 24 * 60) {
+        actualEnd += 24 * 60;
+    }
+
+    const actualGross = Math.max(0, actualEnd - shiftStart);
+    if (actualGross <= 0) return null;
+
+    const shiftGrossDuration = Math.max(0, shiftEnd - shiftStart);
+
+    let pauseDeducted = 0;
+    const pauseTasks = Array.isArray(assignedTasks) ? assignedTasks.filter(t => t && t.type === 'pauze') : [];
+
+    if (pauseTasks.length > 0) {
+        let currentMins = shiftStart;
+        assignedTasks.forEach(t => {
+            const tStart = currentMins;
+            const tEnd = currentMins + t.duration;
+            currentMins += t.duration;
+            if (t.type === 'pauze') {
+                if (actualEnd >= tEnd) {
+                    pauseDeducted += t.duration;
+                } else if (actualEnd > tStart) {
+                    pauseDeducted += (actualEnd - tStart);
+                }
+            }
+        });
+    } else if (effectivePauseMins > 0) {
+        if (actualGross >= shiftGrossDuration) {
+            pauseDeducted = effectivePauseMins;
+        } else if (actualGross >= Math.max(120, shiftGrossDuration * 0.5)) {
+            pauseDeducted = effectivePauseMins;
+        } else if (actualGross > 120 && shiftGrossDuration > 0) {
+            pauseDeducted = Math.min(effectivePauseMins, Math.round(effectivePauseMins * (actualGross / shiftGrossDuration)));
+        } else {
+            pauseDeducted = 0;
+        }
+    }
+
+    pauseDeducted = Math.min(pauseDeducted, Math.max(0, actualGross - 1));
+    const actualNet = Math.max(1, actualGross - pauseDeducted);
+
+    const percent = Math.round((workAssignedMins / actualNet) * 100);
+    let statusClass = 'danger';
+    if (percent >= 100) statusClass = 'success';
+    else if (percent >= 80) statusClass = 'yellow';
+    else if (percent >= 60) statusClass = 'orange';
+
+    return { percent, statusClass };
+}
+
+export function formatTimeInput(value, isDeleting = false) {
+    if (!value) return '';
+    let digits = String(value).replace(/\D/g, '');
+    if (digits.length > 4) digits = digits.substring(0, 4);
+    if (!digits) return '';
+
+    if (isDeleting) {
+        if (digits.length === 2 && !value.includes(':')) {
+            return digits.substring(0, 1);
+        }
+        if (value.endsWith(':')) {
+            return value;
+        }
+    }
+
+    let h1 = parseInt(digits[0], 10);
+    if (h1 > 2) {
+        digits = '0' + digits;
+        if (digits.length > 4) digits = digits.substring(0, 4);
+    }
+
+    if (digits.length === 1) {
+        if (value.includes(':')) {
+            return '0' + digits + ':';
+        }
+        return digits;
+    }
+
+    let hh = parseInt(digits.substring(0, 2), 10);
+    if (hh > 23) hh = 23;
+    let formatted = String(hh).padStart(2, '0') + ':';
+
+    if (digits.length >= 3) {
+        let mmStr = digits.substring(2);
+        if (parseInt(mmStr[0], 10) > 5) {
+            mmStr = '5' + (mmStr[1] || '');
+        }
+        if (mmStr.length >= 2) {
+            let mm = parseInt(mmStr.substring(0, 2), 10);
+            if (mm > 59) mm = 59;
+            formatted += String(mm).padStart(2, '0');
+        } else {
+            formatted += mmStr;
+        }
+    }
+
+    return formatted;
+}
+
+export function normalizeTimeOnBlur(value) {
+    if (!value) return '';
+    let digits = String(value).replace(/\D/g, '');
+    if (!digits) return '';
+    if (digits.length === 1 || digits.length === 2) {
+        let hh = Math.min(23, parseInt(digits, 10));
+        return `${String(hh).padStart(2, '0')}:00`;
+    } else if (digits.length === 3) {
+        let hh = Math.min(23, parseInt(digits.substring(0, 2), 10));
+        let mm = Math.min(59, parseInt(digits[2] + '0', 10));
+        return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+    } else if (digits.length >= 4) {
+        let hh = Math.min(23, parseInt(digits.substring(0, 2), 10));
+        let mm = Math.min(59, parseInt(digits.substring(2, 4), 10));
+        return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+    }
+    return '';
+}

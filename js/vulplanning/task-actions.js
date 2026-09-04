@@ -14,6 +14,7 @@ export function assignTaskToFiller(taskId, fillerId, insertIndex = null, callbac
         };
     }
     if (!task) return;
+    if (task.type === 'pauze' && customDuration !== null && customDuration <= 0) return;
 
     if (!planningState.assignedTasks[fillerId]) {
         planningState.assignedTasks[fillerId] = [];
@@ -139,7 +140,7 @@ export function assignTaskToFiller(taskId, fillerId, insertIndex = null, callbac
 
     if (callbacks.onRenderRows) callbacks.onRenderRows();
     if (callbacks.onRenderUnassigned) callbacks.onRenderUnassigned();
-    triggerAutoSave();
+    triggerAutoSave(true);
 }
 
 export function unassignTask(fillerId, taskIndex, callbacks = {}) {
@@ -187,7 +188,7 @@ export function unassignTask(fillerId, taskIndex, callbacks = {}) {
             }
         });
 
-        if (task.type !== 'overige' && task.type !== 'pauze') {
+        if (task.type !== 'pauze' && task.type !== 'overige') {
             if (task.origTitle) {
                 task.title = task.origTitle;
             }
@@ -221,7 +222,7 @@ export function unassignTask(fillerId, taskIndex, callbacks = {}) {
 
     if (callbacks.onRenderRows) callbacks.onRenderRows();
     if (callbacks.onRenderUnassigned) callbacks.onRenderUnassigned();
-    triggerAutoSave();
+    triggerAutoSave(true);
 }
 
 export function addHelperToTask(sourceFillerId, sourceTaskIndex, targetFillerId, targetIndex = null, callbacks = {}) {
@@ -357,7 +358,7 @@ export function applyMultiHelpers(params) {
 
     if (callbacks.onRenderRows) callbacks.onRenderRows();
     if (callbacks.onRenderUnassigned) callbacks.onRenderUnassigned();
-    triggerAutoSave();
+    triggerAutoSave(true);
 }
 
 export function moveAssignedTask(fromFillerId, fromIndex, toFillerId, insertIndex = null, callbacks = {}) {
@@ -421,5 +422,5 @@ export function moveAssignedTask(fromFillerId, fromIndex, toFillerId, insertInde
 
     if (callbacks.onRenderRows) callbacks.onRenderRows();
     if (callbacks.onRenderUnassigned) callbacks.onRenderUnassigned();
-    triggerAutoSave();
+    triggerAutoSave(true);
 }

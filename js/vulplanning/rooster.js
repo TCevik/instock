@@ -1,5 +1,6 @@
 import { supabase, showToast, showModal, closeModal } from '../main.js';
 import { openImportModal } from './import-rooster.js';
+import { formatTimeInput, normalizeTimeOnBlur } from './time-utils.js';
 
 const vullersContainer = document.getElementById('vullers-container');
 const btnAddVuller = document.getElementById('btn-add-vuller');
@@ -246,17 +247,11 @@ function finalizeTime(input, isPause) {
         let digits = input.value.replace(/\D/g, '');
         if (digits) {
             input.value = `${digits} min`;
+        } else {
+            input.value = '';
         }
     } else if (input.value) {
-        let digits = input.value.replace(/\D/g, '');
-        if (digits.length === 1 || digits.length === 2) {
-            let hh = Math.min(23, parseInt(digits, 10));
-            input.value = `${String(hh).padStart(2, '0')}:00`;
-        } else if (digits.length === 3) {
-            let hh = Math.min(23, parseInt(digits.substring(0, 2), 10));
-            let mm = parseInt(digits[2] + '0', 10);
-            input.value = `${String(hh).padStart(2, '0')}:${String(Math.min(59, mm)).padStart(2, '0')}`;
-        }
+        input.value = normalizeTimeOnBlur(input.value);
     }
 }
 
@@ -277,7 +272,7 @@ function setupTimeInput(input, dropdown, isPause = false) {
         }
 
         dropdown.innerHTML = filtered.map(opt => `
-            <div class="time-option ${opt === input.value ? 'selected' : ''}" data-val="${opt}">${opt}</div>
+            <div class="time-option ${(opt === input.value || (isPause && opt.replace(/\D/g, '') === q && q !== '')) ? 'selected' : ''}" data-val="${opt}">${opt}</div>
         `).join('');
 
         dropdown.querySelectorAll('.time-option').forEach(item => {
@@ -296,61 +291,31 @@ function setupTimeInput(input, dropdown, isPause = false) {
         input.addEventListener('input', () => {
             let digits = input.value.replace(/\D/g, '');
             if (digits.length > 3) digits = digits.substring(0, 3);
-            if (digits) {
-                input.value = `${digits} min`;
-            } else {
-                input.value = '';
-            }
+            input.value = digits;
             renderOptions(digits);
         });
     } else {
-        input.addEventListener('input', () => {
-            let digits = input.value.replace(/\D/g, '');
-            if (digits.length > 4) digits = digits.substring(0, 4);
-
-            let formatted = '';
-            if (digits.length > 0) {
-                let h1 = parseInt(digits[0], 10);
-                if (h1 > 2) {
-                    digits = '0' + digits;
-                }
-            }
-
-            if (digits.length >= 2) {
-                let hh = parseInt(digits.substring(0, 2), 10);
-                if (hh > 23) hh = 23;
-                formatted = String(hh).padStart(2, '0');
-
-                if (digits.length >= 3) {
-                    let mmStr = digits.substring(2);
-                    if (mmStr.length >= 1 && parseInt(mmStr[0], 10) > 5) {
-                        mmStr = '5' + (mmStr[1] || '');
-                    }
-                    if (mmStr.length >= 2) {
-                        let mm = parseInt(mmStr.substring(0, 2), 10);
-                        if (mm > 59) mm = 59;
-                        formatted += ':' + String(mm).padStart(2, '0');
-                    } else {
-                        formatted += ':' + mmStr;
-                    }
-                }
-            } else if (digits.length === 1) {
-                formatted = digits;
-            }
-
+        let lastVal = input.value;
+        input.addEventListener('input', (e) => {
+            const isDeleting = (e && e.inputType && e.inputType.startsWith('delete')) || (input.value.length < lastVal.length);
+            const formatted = formatTimeInput(input.value, isDeleting);
             input.value = formatted;
+            lastVal = input.value;
             renderOptions(formatted);
         });
     }
 
     input.addEventListener('focus', () => {
+        if (isPause && input.value) {
+            input.value = input.value.replace(/\D/g, '');
+        }
         renderOptions(input.value);
     });
 
     input.addEventListener('blur', () => {
+        finalizeTime(input, isPause);
         setTimeout(() => {
             dropdown.classList.remove('active');
-            finalizeTime(input, isPause);
         }, 150);
     });
 
@@ -475,7 +440,12 @@ export function getFillersData() {
         const name = (nameInput?.value || '').trim();
         const from = (fromInput?.value || '').trim();
         const to = (toInput?.value || '').trim();
-        const pause = (pauseInput?.value || '').trim();
+        const rawPause = (pauseInput?.value || '').trim();
+        let pause = rawPause;
+        if (rawPause) {
+            const d = rawPause.replace(/\D/g, '');
+            if (d) pause = `${d} min`;
+        }
 
         if (name || from || to) {
             const matchedUser = findExactUser(name);

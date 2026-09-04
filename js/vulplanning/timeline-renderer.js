@@ -1,10 +1,11 @@
-import { planningState, setDraggedTaskData, getDraggedTask } from './state.js';
-import { timeToMinutes, minutesToTime, formatDuration, parsePauseMinutes } from './time-utils.js';
+import { planningState, setDraggedTaskData, getDraggedTaskData, getDraggedTask } from './state.js';
+import { timeToMinutes, minutesToTime, formatDuration, parsePauseMinutes, calculateProductivity, formatTimeInput, normalizeTimeOnBlur } from './time-utils.js';
 import { showCustomTooltip, positionCustomTooltip, hideCustomTooltip } from './tooltip.js';
 import { showContextMenu } from './context-menu.js';
 import { calculateTimelineBounds, renderTimelineAxis, getPixelsPerMinute, getTimelineTotalMinutes } from './timeline-axis.js';
 import { openPauseModal } from './custom-task-modal.js';
 import { addHelperToTask } from './task-actions.js';
+import { triggerAutoSave } from './storage.js';
 
 export function renderTimelineRows(options) {
     const {
@@ -63,8 +64,9 @@ export function renderTimelineRows(options) {
 
         const hasPauzeTask = assignedPauzeMins > 0;
         const presetPause = parsePauseMinutes(filler.pause);
+        const presetPauseStr = formatDuration(presetPause);
         const effectivePause = hasPauzeTask ? assignedPauzeMins : presetPause;
-        const targetShiftDuration = hasPauzeTask ? (shiftGrossDuration - presetPause + assignedPauzeMins) : Math.max(0, shiftGrossDuration - presetPause);
+        const targetShiftDuration = Math.max(0, shiftGrossDuration - presetPause) + assignedPauzeMins;
 
         const diffMins = totalAssignedMins - targetShiftDuration;
         let statusClass = 'status-fit';
@@ -96,13 +98,13 @@ export function renderTimelineRows(options) {
                         <span class="statbox-value">${formatDuration(totalAssignedMins)} / ${formatDuration(targetShiftDuration)}</span>
                     </div>
                     <div class="statbox-row">
-                        <span class="statbox-label">Pauze: ${hasPauzeTask ? formatDuration(assignedPauzeMins) : (filler.pause || '0m')}</span>
+                        <span class="statbox-label">Pauze: ${formatDuration(assignedPauzeMins)} / ${presetPauseStr}</span>
                         <span class="statbox-status">${statusText}</span>
                     </div>
                 </div>
             </div>
             <div class="timeline-worker-right">
-                <input type="text" class="input-field timeline-worker-input" placeholder="" maxlength="5" />
+                <input type="text" class="input-field timeline-worker-input" placeholder="" maxlength="5" value="${filler.actualEndTime || ''}" />
 
                 <span class="timeline-worker-prod"></span>
             </div>
@@ -112,83 +114,56 @@ export function renderTimelineRows(options) {
         const prodLabel = workerCard.querySelector('.timeline-worker-prod');
 
         function calcProd() {
-            prodLabel.textContent = '';
-            prodLabel.className = 'timeline-worker-prod';
-            if (!timeInput.value || timeInput.value.length < 5) return;
-
-            let actualEnd = timeToMinutes(timeInput.value);
-            if (actualEnd > 0 && actualEnd <= shiftStart && shiftEnd > 24 * 60) actualEnd += 24 * 60;
-            const actualGross = Math.max(0, actualEnd - shiftStart);
-            const actualNet = Math.max(0, actualGross - effectivePause);
-
-            if (actualNet <= 0) return;
-
-            const prodPercent = Math.round((workAssignedMins / actualNet) * 100);
-            let prodClass = 'danger';
-            if (prodPercent >= 100) prodClass = 'success';
-            else if (prodPercent >= 80) prodClass = 'yellow';
-            else if (prodPercent >= 60) prodClass = 'orange';
-
-            prodLabel.textContent = `Prod: ${prodPercent}%`;
-            prodLabel.className = `timeline-worker-prod ${prodClass}`;
+            filler.actualEndTime = timeInput.value;
+            const res = calculateProductivity(workAssignedMins, timeInput.value, filler.from, filler.to, effectivePause, assigned);
+            if (!res) {
+                prodLabel.textContent = '';
+                prodLabel.className = 'timeline-worker-prod';
+                return;
+            }
+            prodLabel.textContent = `Prod: ${res.percent}%`;
+            prodLabel.className = `timeline-worker-prod ${res.statusClass}`;
         }
 
+        calcProd();
+
         if (timeInput) {
-            timeInput.addEventListener('input', () => {
-                let digits = timeInput.value.replace(/\D/g, '');
-                if (digits.length > 4) digits = digits.substring(0, 4);
+            let lastVal = timeInput.value;
 
-                let formatted = '';
-                if (digits.length > 0) {
-                    let h1 = parseInt(digits[0], 10);
-                    if (h1 > 2) {
-                        digits = '0' + digits;
-                    }
-                }
-
-                if (digits.length >= 2) {
-                    let hh = parseInt(digits.substring(0, 2), 10);
-                    if (hh > 23) hh = 23;
-                    formatted = String(hh).padStart(2, '0');
-
-                    if (digits.length >= 3) {
-                        let mmStr = digits.substring(2);
-                        if (mmStr.length >= 1 && parseInt(mmStr[0], 10) > 5) {
-                            mmStr = '5' + (mmStr[1] || '');
-                        }
-                        if (mmStr.length >= 2) {
-                            let mm = parseInt(mmStr.substring(0, 2), 10);
-                            if (mm > 59) mm = 59;
-                            formatted += ':' + String(mm).padStart(2, '0');
-                        } else {
-                            formatted += ':' + mmStr;
-                        }
-                    }
-                } else if (digits.length === 1) {
-                    formatted = digits;
-                }
-
-                timeInput.value = formatted;
+            timeInput.addEventListener('input', (e) => {
+                const isDeleting = (e && e.inputType && e.inputType.startsWith('delete')) || (timeInput.value.length < lastVal.length);
+                timeInput.value = formatTimeInput(timeInput.value, isDeleting);
+                lastVal = timeInput.value;
                 calcProd();
+                if (timeInput.value.length === 5 || timeInput.value === '') {
+                    triggerAutoSave(true);
+                } else {
+                    triggerAutoSave(false);
+                }
+            });
+
+            timeInput.addEventListener('change', () => {
+                if (timeInput.value) {
+                    timeInput.value = normalizeTimeOnBlur(timeInput.value);
+                    lastVal = timeInput.value;
+                }
+                calcProd();
+                triggerAutoSave(true);
             });
 
             timeInput.addEventListener('blur', () => {
                 if (timeInput.value) {
-                    let digits = timeInput.value.replace(/\D/g, '');
-                    if (digits.length === 1 || digits.length === 2) {
-                        let hh = Math.min(23, parseInt(digits, 10));
-                        timeInput.value = `${String(hh).padStart(2, '0')}:00`;
-                    } else if (digits.length === 3) {
-                        let hh = Math.min(23, parseInt(digits.substring(0, 2), 10));
-                        let mm = parseInt(digits[2] + '0', 10);
-                        timeInput.value = `${String(hh).padStart(2, '0')}:${String(Math.min(59, mm)).padStart(2, '0')}`;
-                    } else if (digits.length >= 4) {
-                        let hh = Math.min(23, parseInt(digits.substring(0, 2), 10));
-                        let mm = Math.min(59, parseInt(digits.substring(2, 4), 10));
-                        timeInput.value = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
-                    }
+                    timeInput.value = normalizeTimeOnBlur(timeInput.value);
+                    lastVal = timeInput.value;
                 }
                 calcProd();
+                triggerAutoSave(true);
+            });
+
+            timeInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    timeInput.blur();
+                }
             });
         }
 
@@ -360,7 +335,7 @@ export function renderTimelineRows(options) {
                     b.style.transform = '';
                 });
                 ghost = document.createElement('div');
-                ghost.className = 'timeline-task-ghost';
+                ghost.className = `timeline-task-ghost type-${dragged.type || 'vullen'}`;
                 ghost.innerHTML = `<span class="timeline-task-ghost-text">${dragged.title}</span>`;
                 trackRow.appendChild(ghost);
             }
@@ -369,7 +344,7 @@ export function renderTimelineRows(options) {
             const rowBaseStartMins = shiftStart >= 0 ? shiftStart : startMins;
             const draggedWidthPx = Math.max(16, dragged.duration * pxPerMin);
 
-            const dragData = window.__draggedTaskDataRef ? window.__draggedTaskDataRef() : null;
+            const dragData = getDraggedTaskData();
             const isSelfDrag = dragData && dragData.source === 'assigned' && dragData.fillerId === filler.id;
             const selfOrigIdx = isSelfDrag ? dragData.taskIndex : -1;
 

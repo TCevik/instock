@@ -14,6 +14,7 @@ import { setupCustomTaskModal } from './vulplanning/custom-task-modal.js';
 import { loadSavedPlanning } from './vulplanning/planning-loader.js';
 import { openComboSettingsModal, loadComboSettings } from './vulplanning/combo-settings-modal.js';
 import { initHistory, setupHistoryShortcuts } from './vulplanning/history.js';
+import { renderMobilePlanningView } from './vulplanning/mobile-view.js';
 
 window.__draggedTaskDataRef = getDraggedTaskData;
 
@@ -34,6 +35,7 @@ const unassignedTasksList = document.getElementById('unassigned-tasks-list');
 const assignedTasksList = document.getElementById('assigned-tasks-list');
 const unassignedTasksSidebar = document.querySelector('.unassigned-tasks-sidebar');
 const zoomLevelIndicator = document.getElementById('zoom-level-indicator');
+const mobilePlanningView = document.getElementById('mobile-planning-view');
 
 const initialSavedZoom = localStorage.getItem('instock_planner_zoom');
 if (initialSavedZoom !== null) {
@@ -76,6 +78,18 @@ function doRenderRows() {
         },
         onRenderRows: doRenderRows,
         onRenderUnassigned: doRenderUnassigned
+    });
+    doRenderMobile();
+}
+
+function doRenderMobile() {
+    renderMobilePlanningView(mobilePlanningView, {
+        onUnassignTask: (fillerId, taskIndex) => {
+            unassignTask(fillerId, taskIndex, {
+                onRenderRows: doRenderRows,
+                onRenderUnassigned: doRenderUnassigned
+            });
+        }
     });
 }
 
@@ -153,6 +167,8 @@ function switchToTimelineView() {
 }
 
 async function switchToInputView() {
+    if (window.innerWidth <= 768) return;
+
     const hasAssignments = Object.values(planningState.assignedTasks || {}).some(list => Array.isArray(list) && list.length > 0);
     if (hasAssignments) {
         const confirmed = await showConfirmModal({
@@ -384,4 +400,14 @@ loadSavedPlanning({
         onRenderRows: doRenderRows,
         onRenderUnassigned: doRenderUnassigned
     });
+});
+
+let lastWidth = window.innerWidth;
+window.addEventListener('resize', () => {
+    if (window.innerWidth !== lastWidth) {
+        lastWidth = window.innerWidth;
+        if (window.innerWidth <= 768) {
+            doRenderMobile();
+        }
+    }
 });

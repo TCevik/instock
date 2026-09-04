@@ -28,6 +28,7 @@
     max-width: 520px;
     max-height: 90vh;
     overflow-y: auto;
+    overflow-x: hidden;
     position: relative;
     box-sizing: border-box;
     padding: 32px 28px;
@@ -93,6 +94,9 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 .modal-form {
@@ -554,7 +558,7 @@
 
 @media (max-width: 768px) {
     .modal-overlay {
-        top: 60px;
+        top: 0;
         padding: 0;
         align-items: stretch;
         justify-content: stretch;
@@ -563,14 +567,19 @@
     .modal-container {
         width: 100%;
         max-width: 100%;
-        height: calc(100vh - 60px);
-        max-height: calc(100vh - 60px);
+        height: 100vh;
+        height: 100dvh;
+        max-height: 100vh;
+        max-height: 100dvh;
         border-radius: 0;
-        border-left: none;
-        border-right: none;
-        border-bottom: none;
-        padding: 24px 18px;
+        border: none;
+        padding: calc(24px + env(safe-area-inset-top, 0px)) 18px calc(24px + env(safe-area-inset-bottom, 0px));
         transform: none;
+    }
+
+    .modal-close-btn {
+        top: calc(16px + env(safe-area-inset-top, 0px));
+        right: 16px;
     }
 
     .modal-form-row {

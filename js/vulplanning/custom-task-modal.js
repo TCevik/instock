@@ -70,7 +70,7 @@ export async function openPauseModal(initialMins = 30, onConfirm) {
             </div>
             <div class="form-group">
                 <label>Aangepaste pauzeduur (minuten)</label>
-                <input type="number" min="1" id="pauseTaskDuration" class="modal-input" value="${initialMins}" placeholder="30" required>
+                <input type="number" min="0" id="pauseTaskDuration" class="modal-input" value="${initialMins}" placeholder="30" required>
             </div>
             <div class="modal-footer">
                 <button type="button" class="modal-btn-secondary" id="btnCancelPauseTask">Annuleren</button>
@@ -98,7 +98,7 @@ export async function openPauseModal(initialMins = 30, onConfirm) {
     form.addEventListener('submit', (e) => {
         e.preventDefault();
         const mins = parseInt(input.value, 10);
-        if (mins > 0) {
+        if (!isNaN(mins) && mins >= 0) {
             closeModal(overlay);
             if (onConfirm) onConfirm(mins);
         }
