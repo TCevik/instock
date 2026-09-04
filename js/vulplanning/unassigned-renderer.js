@@ -16,6 +16,10 @@ export function renderUnassignedTasks(options) {
     unassignedTasksList.innerHTML = '';
 
     planningState.unassignedTasks = planningState.unassignedTasks.filter(t => !t.isHelper && !t.title.includes('(Helper)'));
+    planningState.unassignedTasks = planningState.unassignedTasks.filter(t => {
+        if (t.type === 'vullen' && (!t.colli || t.colli <= 0)) return false;
+        return true;
+    });
     const uniqueOverige = new Set();
     planningState.unassignedTasks = planningState.unassignedTasks.filter(t => {
         if (t.type === 'overige') {

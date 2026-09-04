@@ -35,10 +35,12 @@ export function generateTasksFromPathsAndColli() {
             }
         });
 
+        if (totalColli <= 0) return;
+
         tasks.push({
             id: `task_fill_${idCounter++}`,
             type: 'vullen',
-            title: totalColli > 0 ? `${pathName} (${totalColli} c)` : pathName,
+            title: `${pathName} (${totalColli} c)`,
             pathName: pathName,
             colli: totalColli,
             duration: Math.max(1, Math.round(totalMinutes)),
@@ -47,26 +49,30 @@ export function generateTasksFromPathsAndColli() {
         });
 
         const spiegelNorm = matchedPath && matchedPath.spiegelnorm !== undefined && matchedPath.spiegelnorm !== null ? Number(matchedPath.spiegelnorm) : 0;
-        tasks.push({
-            id: `task_spiegel_${idCounter++}`,
-            type: 'spiegelen',
-            title: `Spiegelen ${pathName}`,
-            pathName: pathName,
-            colli: 0,
-            duration: Math.max(0, spiegelNorm),
-            origOrder: tasks.length
-        });
+        if (spiegelNorm > 0) {
+            tasks.push({
+                id: `task_spiegel_${idCounter++}`,
+                type: 'spiegelen',
+                title: `Spiegelen ${pathName}`,
+                pathName: pathName,
+                colli: 0,
+                duration: spiegelNorm,
+                origOrder: tasks.length
+            });
+        }
 
         const restantenNorm = matchedPath && matchedPath.restantennorm !== undefined && matchedPath.restantennorm !== null ? Number(matchedPath.restantennorm) : 0;
-        tasks.push({
-            id: `task_restant_${idCounter++}`,
-            type: 'restanten',
-            title: `Restanten ${pathName}`,
-            pathName: pathName,
-            colli: 0,
-            duration: Math.max(0, restantenNorm),
-            origOrder: tasks.length
-        });
+        if (restantenNorm > 0) {
+            tasks.push({
+                id: `task_restant_${idCounter++}`,
+                type: 'restanten',
+                title: `Restanten ${pathName}`,
+                pathName: pathName,
+                colli: 0,
+                duration: restantenNorm,
+                origOrder: tasks.length
+            });
+        }
     });
 
     return tasks;

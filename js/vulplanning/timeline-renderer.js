@@ -24,6 +24,14 @@ export function renderTimelineRows(options) {
     calculateTimelineBounds(planningState.fillers);
     renderTimelineAxis(timelineHoursAxis);
 
+    if (timelineWorkersList.parentElement && !timelineWorkersList.parentElement.querySelector('.timeline-hours-axis-spacer')) {
+        const spacer = document.createElement('div');
+        spacer.className = 'timeline-hours-axis-spacer';
+        timelineWorkersList.parentElement.insertBefore(spacer, timelineWorkersList);
+    }
+    timelineWorkersList.style.paddingTop = '0px';
+    timelineTracksContainer.style.paddingTop = '0px';
+
     timelineWorkersList.innerHTML = '';
     timelineTracksContainer.innerHTML = '';
 
