@@ -9,8 +9,7 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
-export function renderMobilePlanningView(container, options = {}) {
-    const { onUnassignTask } = options;
+export function renderMobilePlanningView(container) {
     if (!container) return;
     if (container.contains(document.activeElement)) return;
 
@@ -72,19 +71,14 @@ export function renderMobilePlanningView(container, options = {}) {
 
                 return `
                     <div class="mobile-worker-task-item ${typeClass}">
-                        <div class="mobile-task-header">
+                        <div class="mobile-task-main">
                             <span class="mobile-task-pill ${typeClass}">${typeLabel}</span>
-                            <div class="mobile-task-time-wrap">
-                                <div class="mobile-task-time-info">
-                                    <span class="mobile-task-duration">${formatDuration(t.duration)}${colliText}</span>
-                                    <span class="mobile-task-time-range">${startStr} - ${endStr}</span>
-                                </div>
-                                <button type="button" class="btn-delete-mobile-task" data-filler-id="${filler.id}" data-task-index="${taskIdx}" title="Verwijderen">
-                                    <span class="material-icons">close</span>
-                                </button>
-                            </div>
+                            <div class="mobile-task-title">${escapeHtml(t.title || 'Taak')}</div>
                         </div>
-                        <div class="mobile-task-title">${escapeHtml(t.title || 'Taak')}</div>
+                        <div class="mobile-task-time-info">
+                            <span class="mobile-task-duration">${formatDuration(t.duration)}${colliText}</span>
+                            <span class="mobile-task-time-range">${startStr} - ${endStr}</span>
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -217,16 +211,5 @@ export function renderMobilePlanningView(container, options = {}) {
                 }
             });
         }
-
-        card.querySelectorAll('.btn-delete-mobile-task').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const fId = btn.getAttribute('data-filler-id');
-                const tIdx = parseInt(btn.getAttribute('data-task-index'), 10);
-                if (!isNaN(tIdx) && onUnassignTask) {
-                    onUnassignTask(fId, tIdx);
-                }
-            });
-        });
     });
 }

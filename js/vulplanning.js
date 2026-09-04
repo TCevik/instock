@@ -83,14 +83,7 @@ function doRenderRows() {
 }
 
 function doRenderMobile() {
-    renderMobilePlanningView(mobilePlanningView, {
-        onUnassignTask: (fillerId, taskIndex) => {
-            unassignTask(fillerId, taskIndex, {
-                onRenderRows: doRenderRows,
-                onRenderUnassigned: doRenderUnassigned
-            });
-        }
-    });
+    renderMobilePlanningView(mobilePlanningView);
 }
 
 function doRenderUnassigned() {
