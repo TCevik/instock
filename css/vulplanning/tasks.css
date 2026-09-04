@@ -10,7 +10,6 @@
     font-size: 9.5px;
     color: var(--text-color);
     cursor: grab;
-    user-select: none;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;

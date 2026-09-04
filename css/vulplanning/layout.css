@@ -1,3 +1,23 @@
+body {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+input:not([readonly]):not([disabled]),
+textarea:not([readonly]):not([disabled]),
+[contenteditable="true"] {
+    user-select: text;
+    -webkit-user-select: text;
+}
+
+input[readonly],
+input[disabled],
+textarea[readonly],
+textarea[disabled] {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
 .vulplanning-main-layout {
     padding: 0 !important;
     max-width: 100%;

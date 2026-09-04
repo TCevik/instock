@@ -406,7 +406,6 @@
     top: 0;
     height: 24px;
     background-color: var(--card-background);
-    user-select: none;
     border-bottom: 1px solid var(--card-border);
     box-sizing: border-box;
     overflow: visible;
