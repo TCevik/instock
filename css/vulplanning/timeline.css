@@ -125,6 +125,14 @@
     gap: 4px;
 }
 
+.timeline-zoom-divider {
+    width: 1px;
+    height: 14px;
+    background-color: var(--card-border);
+    margin: 0 2px;
+    flex-shrink: 0;
+}
+
 .zoom-btn {
     background-color: var(--input-background);
     border: 1px solid var(--card-border);
@@ -142,6 +150,15 @@
 
 .zoom-btn:hover {
     background-color: var(--card-border);
+}
+
+.zoom-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.zoom-btn:disabled:hover {
+    background-color: var(--input-background);
 }
 
 .zoom-btn .material-icons {

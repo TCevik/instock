@@ -13,6 +13,7 @@ import { renderUnassignedTasks } from './vulplanning/unassigned-renderer.js';
 import { setupCustomTaskModal } from './vulplanning/custom-task-modal.js';
 import { loadSavedPlanning } from './vulplanning/planning-loader.js';
 import { openComboSettingsModal, loadComboSettings } from './vulplanning/combo-settings-modal.js';
+import { initHistory, setupHistoryShortcuts } from './vulplanning/history.js';
 
 window.__draggedTaskDataRef = getDraggedTaskData;
 
@@ -143,6 +144,11 @@ function switchToTimelineView() {
     doRenderRows();
     doRenderUnassigned();
     restoreTimelineScroll();
+    initHistory({
+        onRenderAxis: doRenderAxis,
+        onRenderRows: doRenderRows,
+        onRenderUnassigned: doRenderUnassigned
+    });
     triggerAutoSave();
 }
 
@@ -354,6 +360,12 @@ if (btnComboSettings) {
     btnComboSettings.addEventListener('click', openComboSettingsModal);
 }
 
+setupHistoryShortcuts({
+    onRenderAxis: doRenderAxis,
+    onRenderRows: doRenderRows,
+    onRenderUnassigned: doRenderUnassigned
+});
+
 loadSavedPlanning({
     stepInputView,
     stepTimelineView,
@@ -361,4 +373,10 @@ loadSavedPlanning({
     onRenderRows: doRenderRows,
     onRenderUnassigned: doRenderUnassigned,
     onRestoreScroll: restoreTimelineScroll
+}).then(() => {
+    initHistory({
+        onRenderAxis: doRenderAxis,
+        onRenderRows: doRenderRows,
+        onRenderUnassigned: doRenderUnassigned
+    });
 });

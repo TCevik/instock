@@ -1,10 +1,12 @@
 import { supabase, getCurrentUser, showToast } from '../main.js';
 import { planningState } from './state.js';
 import { getColliData } from './colli-invoer.js';
+import { recordSnapshot } from './history.js';
 
 let autoSaveTimeout = null;
 
 export function triggerAutoSave() {
+    recordSnapshot();
     if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
     autoSaveTimeout = setTimeout(async () => {
         try {
