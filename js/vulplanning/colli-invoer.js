@@ -1,9 +1,5 @@
 import { supabase, showToast, showModal, closeModal } from '../main.js';
-import {
-    openColliImportModal,
-    arePathsMatchingDefault,
-    getHardcodedPathsStructure
-} from './import-colli.js';
+import { resetStorePathsToDefault } from './pdf-helper.js';
 
 function escapeHtml(str) {
     if (!str) return '';
@@ -185,29 +181,7 @@ export function fillColliValues(colliMap) {
 }
 
 async function saveHardcodedPathsToStore() {
-    const defaultStructure = getHardcodedPathsStructure();
-    const { data, error } = await supabase.functions.invoke('manage-store-settings', {
-        body: {
-            action: 'update_paths',
-            default_paths: defaultStructure
-        }
-    });
-
-    if (error) {
-        let msg = error.message || 'Fout bij opslaan van instellingen';
-        if (error.context && typeof error.context.json === 'function') {
-            try {
-                const b = await error.context.json();
-                if (b && b.error) msg = b.error;
-            } catch (_) {}
-        }
-        throw new Error(msg);
-    }
-
-    if (data && data.error) {
-        throw new Error(data.error);
-    }
-
+    const defaultStructure = await resetStorePathsToDefault();
     loadedPaths = defaultStructure;
     renderColliTable(loadedPaths);
 }
@@ -254,27 +228,18 @@ function promptPathMismatch(colliMap) {
     });
 }
 
-export function handleImportedColli(colliMap) {
+export function handleImportedColli(colliMap, isMatching = true) {
     if (!colliMap || Object.keys(colliMap).length === 0) {
         showToast('error', 'Geen colli gegevens gevonden in het PDF bestand.');
         return;
     }
 
-    const isMatching = arePathsMatchingDefault(loadedPaths);
     if (!isMatching) {
         promptPathMismatch(colliMap);
     } else {
         fillColliValues(colliMap);
         showToast('notification', 'Colli succesvol geïmporteerd!');
     }
-}
-
-if (btnImportColli) {
-    btnImportColli.addEventListener('click', () => {
-        openColliImportModal((colliMap) => {
-            handleImportedColli(colliMap);
-        });
-    });
 }
 
 export function getLoadedPaths() {

@@ -1,9 +1,7 @@
 import { supabase, showToast, showModal, closeModal } from '../main.js';
-import { openImportModal } from './import-rooster.js';
 
 const vullersContainer = document.getElementById('vullers-container');
 const btnAddVuller = document.getElementById('btn-add-vuller');
-const btnImportRooster = document.getElementById('btn-import-rooster');
 
 let availableUsers = [];
 
