@@ -15,6 +15,7 @@ import { loadSavedPlanning } from './vulplanning/planning-loader.js';
 import { openComboSettingsModal, loadComboSettings } from './vulplanning/combo-settings-modal.js';
 import { initHistory, setupHistoryShortcuts } from './vulplanning/history.js';
 import { renderMobilePlanningView } from './vulplanning/mobile-view.js';
+import { hideCustomTooltip } from './vulplanning/tooltip.js';
 
 window.__draggedTaskDataRef = getDraggedTaskData;
 
@@ -335,6 +336,7 @@ function restoreTimelineScroll() {
 }
 
 const timelineBoardBody = document.querySelector('.timeline-board-body');
+const timelineBoardContainer = document.querySelector('.timeline-board-container');
 if (timelineBoardBody) {
     let scrollSaveTimeout = null;
     timelineBoardBody.addEventListener('scroll', () => {
@@ -344,6 +346,79 @@ if (timelineBoardBody) {
             localStorage.setItem(TIMELINE_SCROLL_TOP_KEY, String(timelineBoardBody.scrollTop));
         }, 150);
     }, { passive: true });
+
+    let isRightDown = false;
+    let isRightDragging = false;
+    let hasRightDragged = false;
+    let rightDragStartX = 0;
+    let rightDragStartY = 0;
+    let rightDragStartScrollLeft = 0;
+    let rightDragStartScrollTop = 0;
+
+    const dragTarget = timelineBoardContainer || timelineBoardBody;
+    dragTarget.addEventListener('mousedown', (e) => {
+        if (e.button !== 2) return;
+        if (e.target.closest('button, input, select, a')) return;
+        isRightDown = true;
+        isRightDragging = false;
+        hasRightDragged = false;
+        rightDragStartX = e.clientX;
+        rightDragStartY = e.clientY;
+        rightDragStartScrollLeft = timelineBoardBody.scrollLeft;
+        rightDragStartScrollTop = timelineBoardBody.scrollTop;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isRightDown) return;
+
+        const dx = e.clientX - rightDragStartX;
+        const dy = e.clientY - rightDragStartY;
+
+        if (!isRightDragging) {
+            if (Math.hypot(dx, dy) >= 5) {
+                isRightDragging = true;
+                hasRightDragged = true;
+                hideCustomTooltip();
+                document.body.style.userSelect = 'none';
+                document.body.style.cursor = 'grabbing';
+            }
+        }
+
+        if (isRightDragging) {
+            timelineBoardBody.scrollLeft = rightDragStartScrollLeft - dx;
+            timelineBoardBody.scrollTop = rightDragStartScrollTop - dy;
+        }
+    });
+
+    window.addEventListener('mouseup', (e) => {
+        if (e.button === 2 && isRightDown) {
+            isRightDown = false;
+            isRightDragging = false;
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
+            setTimeout(() => {
+                hasRightDragged = false;
+            }, 100);
+        }
+    });
+
+    window.addEventListener('contextmenu', (e) => {
+        if (hasRightDragged) {
+            e.preventDefault();
+            e.stopPropagation();
+            hasRightDragged = false;
+        }
+    }, true);
+
+    window.addEventListener('blur', () => {
+        if (isRightDown) {
+            isRightDown = false;
+            isRightDragging = false;
+            hasRightDragged = false;
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
+        }
+    });
 }
 
 const inputScrollContainer = document.querySelector('.vulplanning-input-scroll-container');
