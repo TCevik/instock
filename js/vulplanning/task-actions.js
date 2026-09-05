@@ -1,8 +1,10 @@
 import { planningState } from './state.js';
 import { triggerAutoSave } from './storage.js';
 import { showToast } from '../main.js';
+import { hideCustomTooltip } from './tooltip.js';
 
 export function assignTaskToFiller(taskId, fillerId, insertIndex = null, callbacks = {}, customDuration = null) {
+    hideCustomTooltip();
     let task = planningState.unassignedTasks.find(t => t.id === taskId);
     if (!task && (taskId === 'pauze_template' || taskId.startsWith('pauze'))) {
         task = {
@@ -144,6 +146,7 @@ export function assignTaskToFiller(taskId, fillerId, insertIndex = null, callbac
 }
 
 export function unassignTask(fillerId, taskIndex, callbacks = {}) {
+    hideCustomTooltip();
     const assignedList = planningState.assignedTasks[fillerId];
     if (!assignedList || taskIndex < 0 || taskIndex >= assignedList.length) return;
 
@@ -247,7 +250,7 @@ export function addHelperToTask(sourceFillerId, sourceTaskIndex, targetFillerId,
     });
 
     if (existingHelpers.some(h => h.fillerId === targetFillerId)) {
-        showToast('warning', 'Deze medewerker helpt al bij deze taak.');
+        showToast('error', 'Deze medewerker helpt al bij deze taak.');
         return;
     }
 

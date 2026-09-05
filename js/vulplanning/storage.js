@@ -1,9 +1,17 @@
-import { supabase, getCurrentUser, showToast } from '../main.js';
+import { supabase, getCurrentUser, showToast, isPermissionError } from '../main.js';
 import { planningState } from './state.js';
 import { getColliData } from './colli-invoer.js';
 import { recordSnapshot } from './history.js';
 
 let autoSaveTimeout = null;
+
+function handleSaveError(err) {
+    if (isPermissionError(err)) {
+        showToast('error', 'Opslaan mislukt: controleer rechten');
+    } else {
+        showToast('error', 'Opslaan mislukt: controleer verbinding');
+    }
+}
 
 export function triggerAutoSave(immediate = false) {
     recordSnapshot();
@@ -16,6 +24,11 @@ export function triggerAutoSave(immediate = false) {
         try {
             const user = await getCurrentUser();
             if (!user || !user.store_id) return;
+
+            if (Number(user.role) === 1) {
+                showToast('error', 'Opslaan mislukt: controleer rechten');
+                return;
+            }
 
             const compactSchedule = {};
             const processedFillerIds = new Set();
@@ -123,10 +136,10 @@ export function triggerAutoSave(immediate = false) {
                 });
 
             if (error) {
-                showToast('error', 'Opslaan mislukt: controleer verbinding');
+                handleSaveError(error);
             }
         } catch (err) {
-            showToast('error', 'Opslaan mislukt: controleer verbinding');
+            handleSaveError(err);
         }
     };
 
@@ -135,16 +148,4 @@ export function triggerAutoSave(immediate = false) {
     } else {
         autoSaveTimeout = setTimeout(executeSave, 300);
     }
-}
-
-if (typeof window !== 'undefined') {
-    window.addEventListener('pagehide', () => {
-        triggerAutoSave(true);
-    });
-
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden') {
-            triggerAutoSave(true);
-        }
-    });
 }

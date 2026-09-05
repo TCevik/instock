@@ -151,6 +151,7 @@ export function showContextMenu(e, task, isAssigned = false, fillerId = null, ta
         deleteBtn.addEventListener('click', (ev) => {
             ev.stopPropagation();
             hideContextMenu();
+            hideCustomTooltip();
             if (task.type === 'overige') {
                 deleteCustomTask(task, isAssigned, fillerId, taskIndex, callbacks);
             } else if (fillerId && taskIndex !== null) {
@@ -237,6 +238,7 @@ export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIn
 }
 
 export async function deleteCustomTask(task, isAssigned, fillerId, taskIndex, callbacks = {}) {
+    hideCustomTooltip();
     const confirmed = await showConfirmModal({
         title: 'Overige taak verwijderen',
         message: `Weet je zeker dat je "${task.title}" wilt verwijderen?`,
@@ -245,6 +247,7 @@ export async function deleteCustomTask(task, isAssigned, fillerId, taskIndex, ca
         isDanger: true
     });
 
+    hideCustomTooltip();
     if (!confirmed) return;
 
     if (isAssigned && fillerId && taskIndex !== null) {

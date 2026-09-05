@@ -189,17 +189,8 @@ export async function loadSavedPlanning(options = {}) {
 
         calculateTimelineBounds(savedFillers);
 
-        const savedStep = localStorage.getItem('instock_planner_step');
-        if (window.innerWidth <= 768) {
-            if (stepInputView) stepInputView.style.display = 'none';
-            if (stepTimelineView) stepTimelineView.style.display = 'flex';
-        } else if (savedStep === 'input') {
-            if (stepInputView) stepInputView.style.display = 'flex';
-            if (stepTimelineView) stepTimelineView.style.display = 'none';
-        } else {
-            if (stepInputView) stepInputView.style.display = 'none';
-            if (stepTimelineView) stepTimelineView.style.display = 'flex';
-        }
+        if (stepInputView) stepInputView.style.display = 'none';
+        if (stepTimelineView) stepTimelineView.style.display = 'flex';
 
         const savedTab = localStorage.getItem('instock_planner_tab');
         if (savedTab) {

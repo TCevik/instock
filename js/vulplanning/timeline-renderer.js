@@ -21,6 +21,7 @@ export function renderTimelineRows(options) {
     } = options;
 
     if (!timelineWorkersList || !timelineTracksContainer) return;
+    hideCustomTooltip();
     
     calculateTimelineBounds(planningState.fillers);
     renderTimelineAxis(timelineHoursAxis);
@@ -305,6 +306,7 @@ export function renderTimelineRows(options) {
             });
 
             block.addEventListener('dblclick', () => {
+                hideCustomTooltip();
                 if (onUnassignTask) onUnassignTask(filler.id, taskIdx);
             });
 

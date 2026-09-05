@@ -105,6 +105,28 @@ async function checkAuth() {
 
 let currentUserData = null;
 
+function isPermissionError(err) {
+    if (!err) return false;
+    const code = String(err.code || '');
+    const status = Number(err.status || err.statusCode || 0);
+    const text = `${err.message || ''} ${err.details || ''} ${err.hint || ''}`.toLowerCase();
+
+    return (
+        code === '42501' ||
+        code === 'PGRST301' ||
+        status === 401 ||
+        status === 403 ||
+        text.includes('row-level security') ||
+        text.includes('permission denied') ||
+        text.includes('insufficient_privilege') ||
+        text.includes('not authorized') ||
+        text.includes('unauthorized') ||
+        text.includes('forbidden') ||
+        text.includes('rechten') ||
+        text.includes('policy')
+    );
+}
+
 export async function getCurrentUser() {
     if (currentUserData) return currentUserData;
 
@@ -113,7 +135,7 @@ export async function getCurrentUser() {
 
     const { data, error } = await supabase
         .from('user_data')
-        .select('full_name, username, store_id')
+        .select('full_name, username, store_id, role')
         .eq('user_id', session.user.id)
         .maybeSingle();
 
@@ -363,6 +385,6 @@ initModal();
 initToast();
 initInactivityTracker();
 
-export { supabase, initModal, showModal, closeModal, showConfirmModal, showPromptModal, initToast, showToast, openChangePasswordModal };
+export { supabase, initModal, showModal, closeModal, showConfirmModal, showPromptModal, initToast, showToast, openChangePasswordModal, isPermissionError };
 
 

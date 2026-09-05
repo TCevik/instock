@@ -22,6 +22,7 @@ export { triggerAutoSave };
 
 const stepInputView = document.getElementById('step-input-view');
 const stepTimelineView = document.getElementById('step-timeline-view');
+const btnBackToTimeline = document.getElementById('btn-back-to-timeline');
 const btnUnifiedImport = document.getElementById('btn-unified-import');
 const btnContinue = document.getElementById('btn-continue');
 const btnBackToInput = document.getElementById('btn-back-to-input');
@@ -105,7 +106,7 @@ function doRenderUnassigned() {
     });
 }
 
-function switchToTimelineView() {
+async function switchToTimelineView() {
     const fillers = getFillersData();
     if (!fillers || fillers.length === 0) {
         showToast('error', 'Voer ten minste één medewerker in.');
@@ -128,6 +129,18 @@ function switchToTimelineView() {
         }
     }
 
+    const hasAssignments = Object.values(planningState.assignedTasks || {}).some(list => Array.isArray(list) && list.length > 0);
+    if (hasAssignments) {
+        const confirmed = await showConfirmModal({
+            title: 'Planning maken',
+            message: 'Weet je het zeker? De huidige planning wordt hierbij verwijderd.',
+            confirmText: 'Ja, doorgaan',
+            cancelText: 'Annuleren',
+            isDanger: true
+        });
+        if (!confirmed) return;
+    }
+
     const existingOtherTasks = (planningState.unassignedTasks || []).filter(t => t.type === 'overige');
     const newTasks = generateTasksFromPathsAndColli();
 
@@ -147,6 +160,10 @@ function switchToTimelineView() {
     stepTimelineView.style.display = 'flex';
     localStorage.setItem('instock_planner_step', 'timeline');
 
+    if (btnBackToTimeline) {
+        btnBackToTimeline.style.display = 'none';
+    }
+
     doRenderAxis();
     doRenderRows();
     doRenderUnassigned();
@@ -159,24 +176,14 @@ function switchToTimelineView() {
     triggerAutoSave();
 }
 
-async function switchToInputView() {
+function switchToInputView() {
     if (window.innerWidth <= 768) return;
-
-    const hasAssignments = Object.values(planningState.assignedTasks || {}).some(list => Array.isArray(list) && list.length > 0);
-    if (hasAssignments) {
-        const confirmed = await showConfirmModal({
-            title: 'Invoer aanpassen',
-            message: 'Weet je het zeker? De huidige planning wordt hierbij verwijderd.',
-            confirmText: 'Ja, doorgaan',
-            cancelText: 'Annuleren',
-            isDanger: true
-        });
-        if (!confirmed) return;
-    }
 
     stepTimelineView.style.display = 'none';
     stepInputView.style.display = 'flex';
-    localStorage.setItem('instock_planner_step', 'input');
+    if (btnBackToTimeline) {
+        btnBackToTimeline.style.display = 'inline-flex';
+    }
 }
 
 if (btnContinue) {
@@ -185,6 +192,14 @@ if (btnContinue) {
 
 if (btnBackToInput) {
     btnBackToInput.addEventListener('click', switchToInputView);
+}
+
+if (btnBackToTimeline) {
+    btnBackToTimeline.addEventListener('click', () => {
+        stepInputView.style.display = 'none';
+        stepTimelineView.style.display = 'flex';
+        btnBackToTimeline.style.display = 'none';
+    });
 }
 
 if (btnUnifiedImport) {

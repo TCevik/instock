@@ -13,6 +13,7 @@ export function renderUnassignedTasks(options) {
     } = options;
 
     if (!unassignedTasksList) return;
+    hideCustomTooltip();
     unassignedTasksList.innerHTML = '';
 
     planningState.unassignedTasks = planningState.unassignedTasks.filter(t => !t.isHelper && !t.title.includes('(Helper)'));
@@ -309,6 +310,7 @@ export function renderUnassignedTasks(options) {
         helperUnassignBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                hideCustomTooltip();
                 const hIdx = parseInt(btn.getAttribute('data-helper-idx'), 10);
                 const h = helpers[hIdx];
                 if (h && onUnassignTask) {
@@ -321,6 +323,7 @@ export function renderUnassignedTasks(options) {
         if (unassignBtn) {
             unassignBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                hideCustomTooltip();
                 if (onUnassignTask) {
                     onUnassignTask(filler.id, taskIndex);
                 }
@@ -329,6 +332,7 @@ export function renderUnassignedTasks(options) {
 
         card.addEventListener('dblclick', (e) => {
             if (e.target.closest('.assigned-helpers-sublist')) return;
+            hideCustomTooltip();
             if (onUnassignTask) {
                 onUnassignTask(filler.id, taskIndex);
             }
