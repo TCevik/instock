@@ -159,6 +159,62 @@ export async function getStorePaths() {
     return Array.isArray(data?.default_paths) ? data.default_paths : [];
 }
 
+const APP_MODULES = [
+    {
+        id: 'bakplan',
+        title: 'Bakplan',
+        description: 'Bekijk en beheer het actuele bakplan voor de winkel.',
+        icon: 'bakery_dining',
+        href: 'bakplan.html',
+        minRole: 1
+    },
+    {
+        id: 'vulplanning',
+        title: 'Vulplanning Maker',
+        description: 'Maak en beheer vulplanningen, taken en shifts.',
+        icon: 'assignment',
+        href: 'vulplanning.html',
+        minRole: 1
+    },
+    {
+        id: 'productenbeheer',
+        title: 'Productenbeheer',
+        description: 'Beheer het assortiment, barcodes, vakken en prijzen.',
+        icon: 'inventory_2',
+        href: 'productenbeheer.html',
+        minRole: 1
+    },
+    {
+        id: 'gebruikersbeheer',
+        title: 'Gebruikersbeheer',
+        description: 'Beheer medewerkers, rollen en winkeltoegang.',
+        icon: 'people',
+        href: 'gebruikersbeheer.html',
+        minRole: 2
+    },
+    {
+        id: 'instellingen-winkel',
+        title: 'Instellingen Winkel',
+        description: 'Configureer winkelpaden, vulnormen en categorieën.',
+        icon: 'store',
+        href: 'instellingen-winkel.html',
+        minRole: 3
+    },
+    {
+        id: 'logs',
+        title: 'Systeem Logs',
+        description: 'Bekijk de geschiedenis van acties en wijzigingen.',
+        icon: 'history',
+        href: 'logs.html',
+        minRole: 3
+    }
+];
+
+export function getAvailableModules(role) {
+    const userRole = Number(role) || 1;
+    return APP_MODULES.filter(m => userRole >= m.minRole);
+}
+
 async function loadOverlay() {
     if (window.location.pathname.endsWith('login.html')) return;
 
@@ -245,11 +301,19 @@ async function loadOverlay() {
             }
 
             const headerUserName = document.getElementById('headerUserName');
-            if (headerUserName) {
-                const user = await getCurrentUser();
-                if (user) {
+            const user = await getCurrentUser();
+            if (user) {
+                if (headerUserName) {
                     headerUserName.textContent = user.full_name?.trim() || user.username?.trim() || '';
                 }
+                const allowedHrefs = new Set(getAvailableModules(user.role).map(m => m.href));
+                allowedHrefs.add('index.html');
+                links.forEach(link => {
+                    const href = link.getAttribute('href');
+                    if (href && !allowedHrefs.has(href)) {
+                        link.style.display = 'none';
+                    }
+                });
             }
         }
     } catch (error) {

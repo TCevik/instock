@@ -1,12 +1,121 @@
+.dashboard-header {
+    margin-bottom: 28px;
+}
+
 .welcome-heading {
     font-size: 28px;
     font-weight: 700;
     color: var(--text-color);
 }
 
+.dashboard-subtitle {
+    font-size: 14px;
+    color: var(--text-color-muted);
+    margin-top: 4px;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.dashboard-tile {
+    background-color: var(--card-background);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+    cursor: pointer;
+}
+
+.dashboard-tile:hover {
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
+}
+
+.dashboard-tile:active {
+    transform: translateY(0);
+}
+
+.tile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+}
+
+.tile-icon-box {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background-color: var(--input-background);
+    border: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-color);
+    flex-shrink: 0;
+}
+
+.tile-icon-box .material-icons {
+    font-size: 26px;
+}
+
+.tile-arrow {
+    font-size: 20px;
+    color: var(--text-color-placeholder);
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.dashboard-tile:hover .tile-arrow {
+    color: var(--accent-color);
+    transform: translateX(4px);
+}
+
+.tile-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.tile-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 6px;
+}
+
+.tile-desc {
+    font-size: 13px;
+    color: var(--text-color-muted);
+    line-height: 1.5;
+    margin: 0;
+}
+
 @media (max-width: 768px) {
+    .dashboard-header {
+        margin-bottom: 20px;
+    }
+
     .welcome-heading {
         font-size: 22px;
         word-break: break-word;
+    }
+
+    .dashboard-subtitle {
+        font-size: 13px;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .dashboard-tile {
+        padding: 18px;
     }
 }
