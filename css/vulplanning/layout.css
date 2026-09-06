@@ -146,6 +146,25 @@ textarea[disabled] {
     font-size: 14px;
 }
 
+.btn-primary {
+    padding: 4px 10px;
+    font-size: 11px;
+    border-radius: 4px;
+    background-color: var(--accent-color);
+    border: 1px solid var(--accent-color);
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.btn-primary:hover {
+    background-color: var(--accent-hover);
+    border-color: var(--accent-hover);
+}
+
+.btn-primary .btn-icon {
+    font-size: 14px;
+}
+
 .btn-secondary {
     padding: 4px 10px;
     font-size: 11px;
@@ -181,6 +200,10 @@ textarea[disabled] {
     padding: 4px 10px;
     font-size: 11px;
     border-radius: 4px;
+}
+
+.btn-sm .btn-icon {
+    font-size: 14px;
 }
 
 .empty-state {

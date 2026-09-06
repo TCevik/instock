@@ -40,6 +40,7 @@ export function renderTimelineRows(options) {
     const pxPerMin = getPixelsPerMinute();
     const totalMins = getTimelineTotalMinutes();
     const startMins = planningState.timelineStartHour * 60;
+    timelineTracksContainer.style.width = `${totalMins * pxPerMin}px`;
 
     planningState.fillers.forEach(filler => {
         const shiftStart = timeToMinutes(filler.from);

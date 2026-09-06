@@ -3,7 +3,7 @@ import { timeToMinutes } from './time-utils.js';
 
 export function calculateTimelineBounds(fillers) {
     planningState.timelineStartHour = 0;
-    let maxMinutes = 24 * 60;
+    let maxMinutes = 0;
 
     (fillers || planningState.fillers || []).forEach(filler => {
         const shiftStart = timeToMinutes(filler.from);
@@ -21,12 +21,12 @@ export function calculateTimelineBounds(fillers) {
         if (cur > maxMinutes) maxMinutes = cur;
     });
 
-    const neededHours = Math.ceil(maxMinutes / 60) + 1;
-    planningState.timelineEndHour = Math.max(24, neededHours);
+    const neededHours = maxMinutes > 0 ? Math.ceil(maxMinutes / 60) : 21;
+    planningState.timelineEndHour = Math.max(24, neededHours + 3);
 }
 
 export function getPixelsPerMinute() {
-    return 2.0 * planningState.zoom;
+    return 2.5 * planningState.zoom;
 }
 
 export function getTimelineTotalMinutes() {
@@ -44,7 +44,7 @@ export function renderTimelineAxis(timelineHoursAxis) {
 
     timelineHoursAxis.style.width = `${totalMins * pxPerMin}px`;
 
-    for (let h = startH; h <= endH; h++) {
+    for (let h = startH; h < endH; h++) {
         const offsetMins = (h - startH) * 60;
         const leftPx = offsetMins * pxPerMin;
 
@@ -53,7 +53,7 @@ export function renderTimelineAxis(timelineHoursAxis) {
         marker.style.width = `${60 * pxPerMin}px`;
         if (h === startH) {
             marker.classList.add('marker-start');
-        } else if (h === endH) {
+        } else if (h === endH - 1) {
             marker.classList.add('marker-end');
         }
         marker.style.left = `${leftPx}px`;
