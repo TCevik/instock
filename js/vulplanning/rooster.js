@@ -40,30 +40,49 @@ function filterUsers(query) {
     });
 }
 
+function findUserByUsername(uname) {
+    if (!uname) return null;
+    const clean = String(uname).replace(/^@/, '').toLowerCase().trim();
+    if (!clean) return null;
+    return availableUsers.find(u => (u.username || '').toLowerCase().trim() === clean) || null;
+}
+
 function findExactUser(val) {
     const q = (val || '').toLowerCase().trim();
     if (!q) return null;
-    const exact = availableUsers.find(u => {
-        const fullName = (u.full_name || '').toLowerCase().trim();
-        const username = (u.username || '').toLowerCase().trim();
-        return fullName === q || username === q || `@${username}` === q;
-    });
-    if (exact) return exact;
+
+    const byUser = findUserByUsername(q);
+    if (byUser) return byUser;
 
     const normQ = stripDiacritics(q);
-    return availableUsers.find(u => {
-        const fullName = stripDiacritics((u.full_name || '').toLowerCase().trim());
-        const username = stripDiacritics((u.username || '').toLowerCase().trim());
-        return fullName === normQ || username === normQ || `@${username}` === normQ;
-    }) || null;
+    const exactNameMatches = availableUsers.filter(u => {
+        const fullName = (u.full_name || '').toLowerCase().trim();
+        return fullName === q || stripDiacritics(fullName) === normQ;
+    });
+
+    if (exactNameMatches.length === 1) {
+        return exactNameMatches[0];
+    }
+
+    return null;
 }
 
 function updateUsernameBadge(nameInput, userBadge) {
-    const exactUser = findExactUser(nameInput.value);
+    let exactUser = null;
+    if (nameInput?.dataset?.username) {
+        exactUser = findUserByUsername(nameInput.dataset.username);
+    }
+    if (!exactUser) {
+        exactUser = findExactUser(nameInput.value);
+    }
     if (exactUser && exactUser.username) {
+        nameInput.dataset.username = exactUser.username;
+        nameInput.dataset.userId = exactUser.user_id || '';
         userBadge.textContent = `@${exactUser.username}`;
         userBadge.classList.add('visible');
     } else {
+        nameInput.dataset.username = '';
+        nameInput.dataset.userId = '';
         userBadge.textContent = '';
         userBadge.classList.remove('visible');
     }
@@ -194,7 +213,7 @@ function setupAutocomplete(nameInput, dropdown, userBadge) {
             const displayName = u.full_name?.trim() || u.username?.trim() || '';
             const sub = u.username ? `@${u.username}` : '';
             return `
-                <div class="autocomplete-item ${idx === 0 ? 'selected' : ''}" data-name="${displayName}" data-user="${u.username || ''}">
+                <div class="autocomplete-item ${idx === 0 ? 'selected' : ''}" data-name="${displayName}" data-user="${u.username || ''}" data-id="${u.user_id || ''}">
                     <span class="autocomplete-item-name">${displayName}</span>
                     <span class="autocomplete-item-user">${sub}</span>
                 </div>
@@ -208,17 +227,40 @@ function setupAutocomplete(nameInput, dropdown, userBadge) {
         dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
             item.addEventListener('mousedown', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 nameInput.value = item.getAttribute('data-name');
+                nameInput.dataset.username = item.getAttribute('data-user') || '';
+                nameInput.dataset.userId = item.getAttribute('data-id') || '';
                 dropdown.classList.remove('active');
                 resetDropdownPosition(dropdown);
                 dropdown.innerHTML = '';
                 updateUsernameBadge(nameInput, userBadge);
                 focusNextInput(nameInput);
             });
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
         });
     }
 
     nameInput.addEventListener('input', () => {
+        const val = nameInput.value.trim();
+        const userByUname = findUserByUsername(val);
+        if (userByUname) {
+            nameInput.dataset.username = userByUname.username || '';
+            nameInput.dataset.userId = userByUname.user_id || '';
+        } else {
+            const currentUname = nameInput.dataset.username;
+            if (currentUname) {
+                const currentUser = findUserByUsername(currentUname);
+                const currentName = (currentUser?.full_name || '').toLowerCase().trim();
+                const vLower = val.toLowerCase();
+                if (currentName !== vLower && stripDiacritics(currentName) !== stripDiacritics(vLower)) {
+                    nameInput.dataset.username = '';
+                    nameInput.dataset.userId = '';
+                }
+            }
+        }
         const matches = filterUsers(nameInput.value);
         renderMatches(matches);
         updateUsernameBadge(nameInput, userBadge);
@@ -251,6 +293,8 @@ function setupAutocomplete(nameInput, dropdown, userBadge) {
                 const targetItem = items[highlightedIndex >= 0 ? highlightedIndex : 0];
                 if (targetItem) {
                     nameInput.value = targetItem.getAttribute('data-name');
+                    nameInput.dataset.username = targetItem.getAttribute('data-user') || '';
+                    nameInput.dataset.userId = targetItem.getAttribute('data-id') || '';
                     dropdown.classList.remove('active');
                     resetDropdownPosition(dropdown);
                     dropdown.innerHTML = '';
@@ -346,10 +390,14 @@ function setupTimeInput(input, dropdown, isPause = false) {
         dropdown.querySelectorAll('.time-option').forEach(item => {
             item.addEventListener('mousedown', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 input.value = item.getAttribute('data-val');
                 dropdown.classList.remove('active');
                 resetDropdownPosition(dropdown);
                 focusNextInput(input);
+            });
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
             });
         });
 
@@ -422,7 +470,7 @@ function setupTimeInput(input, dropdown, isPause = false) {
     });
 }
 
-function createVullerRow(name = '', from = '', to = '', pause = '') {
+function createVullerRow(name = '', from = '', to = '', pause = '', username = '', userId = '') {
     const row = document.createElement('div');
     row.className = 'vuller-row';
     row.innerHTML = `
@@ -453,8 +501,14 @@ function createVullerRow(name = '', from = '', to = '', pause = '') {
     const nameInput = row.querySelector('.vuller-name');
     const nameDropdown = row.querySelector('.autocomplete-dropdown');
     const userBadge = row.querySelector('.vuller-matched-user');
+    if (username) {
+        nameInput.dataset.username = username;
+    }
+    if (userId) {
+        nameInput.dataset.userId = userId;
+    }
     setupAutocomplete(nameInput, nameDropdown, userBadge);
-    if (name) {
+    if (name || username) {
         updateUsernameBadge(nameInput, userBadge);
     }
 
@@ -494,7 +548,7 @@ export function fillRoosterShifts(shifts) {
         return;
     }
     shifts.forEach(s => {
-        createVullerRow(s.name, s.from, s.to, s.pause);
+        createVullerRow(s.name, s.from, s.to, s.pause, s.username, s.user_id);
     });
 }
 
@@ -526,12 +580,20 @@ export function getFillersData() {
         }
 
         if (name || from || to) {
-            const matchedUser = findExactUser(name);
+            let matchedUser = null;
+            if (nameInput?.dataset?.username) {
+                matchedUser = findUserByUsername(nameInput.dataset.username);
+            }
+            if (!matchedUser) {
+                matchedUser = findExactUser(name);
+            }
+            const username = matchedUser ? matchedUser.username : (nameInput?.dataset?.username || null);
+            const userId = matchedUser ? matchedUser.user_id : (nameInput?.dataset?.userId || null);
             fillers.push({
                 id: idCounter++,
                 name: name,
-                user_id: matchedUser ? matchedUser.user_id : null,
-                username: matchedUser ? matchedUser.username : null,
+                user_id: userId,
+                username: username,
                 from: from,
                 to: to,
                 pause: pause
@@ -542,7 +604,7 @@ export function getFillersData() {
     return fillers;
 }
 
-export { setupAutocomplete, setupTimeInput, findExactUser, updateUsernameBadge };
+export { setupAutocomplete, setupTimeInput, findExactUser, findUserByUsername, updateUsernameBadge };
 
 loadStoreUsers();
 createVullerRow();

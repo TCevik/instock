@@ -1,7 +1,7 @@
 import { showModal, closeModal, showConfirmModal, showToast, escapeHtml } from '../main.js';
 import { planningState } from './state.js';
-import { timeToMinutes } from './time-utils.js';
-import { setupAutocomplete, setupTimeInput, findExactUser, updateUsernameBadge, fillRoosterShifts } from './rooster.js';
+import { timeToMinutes, parsePauseMinutes } from './time-utils.js';
+import { setupAutocomplete, setupTimeInput, findExactUser, findUserByUsername, updateUsernameBadge, fillRoosterShifts } from './rooster.js';
 import { calculateTimelineBounds } from './timeline-axis.js';
 import { unassignTask } from './task-actions.js';
 import { triggerAutoSave } from './storage.js';
@@ -70,8 +70,14 @@ export async function openWorkerModal(filler = null, callbacks = {}) {
     const nameInput = overlay.querySelector('#workerModalName');
     const nameDropdown = nameInput.nextElementSibling;
     const userBadge = nameDropdown.nextElementSibling;
+    if (filler?.username) {
+        nameInput.dataset.username = filler.username;
+    }
+    if (filler?.user_id) {
+        nameInput.dataset.userId = filler.user_id;
+    }
     setupAutocomplete(nameInput, nameDropdown, userBadge);
-    if (filler?.name) {
+    if (filler?.name || filler?.username) {
         updateUsernameBadge(nameInput, userBadge);
     }
 
@@ -152,18 +158,45 @@ export async function openWorkerModal(filler = null, callbacks = {}) {
             return;
         }
 
+        const shiftDuration = endMins - startMins;
+        const pauseMins = parsePauseMinutes(rawPause);
+        if (pauseMins > shiftDuration) {
+            showToast('error', 'De pauzetijd mag niet langer zijn dan de totale werktijd.');
+            return;
+        }
+
         let pause = rawPause;
         if (rawPause) {
             const d = rawPause.replace(/\D/g, '');
             pause = d ? `${d} min` : '';
         }
 
-        const matchedUser = findExactUser(name);
+        let matchedUser = null;
+        if (nameInput.dataset.username) {
+            matchedUser = findUserByUsername(nameInput.dataset.username);
+        }
+        if (!matchedUser) {
+            matchedUser = findExactUser(name);
+        }
+        const username = matchedUser ? matchedUser.username : (nameInput.dataset.username || null);
+        const userId = matchedUser ? matchedUser.user_id : (nameInput.dataset.userId || null);
+
+        if (username) {
+            const isDuplicate = planningState.fillers.some(f => {
+                if (isEdit && f.id === filler.id) return false;
+                return f.username && f.username.toLowerCase() === username.toLowerCase();
+            });
+
+            if (isDuplicate) {
+                showToast('error', `Er staat al een medewerker met gebruikersnaam @${username} in de planning.`);
+                return;
+            }
+        }
 
         if (isEdit) {
             filler.name = name;
-            filler.user_id = matchedUser ? matchedUser.user_id : null;
-            filler.username = matchedUser ? matchedUser.username : null;
+            filler.user_id = userId;
+            filler.username = username;
             filler.from = from;
             filler.to = to;
             filler.pause = pause;
@@ -173,8 +206,8 @@ export async function openWorkerModal(filler = null, callbacks = {}) {
             const newFiller = {
                 id: newId,
                 name: name,
-                user_id: matchedUser ? matchedUser.user_id : null,
-                username: matchedUser ? matchedUser.username : null,
+                user_id: userId,
+                username: username,
                 from: from,
                 to: to,
                 pause: pause

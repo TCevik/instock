@@ -189,11 +189,11 @@
     }
 
     .print-task-pill.type-spiegelen {
-        border-color: var(--purple-color);
+        border-color: var(--warning-color);
     }
 
     .print-task-pill.type-restanten {
-        border-color: var(--warning-color);
+        border-color: var(--purple-color);
     }
 
     .print-task-pill.type-pauze {
@@ -206,6 +206,17 @@
 
     .print-task-pill.is-helper {
         border-color: var(--helper-color);
+    }
+
+    .print-task-pill.is-combo-trio {
+        border: 2px solid transparent;
+        border-radius: 6px;
+        background-origin: padding-box, border-box;
+        background-clip: padding-box, border-box;
+        padding: 1.5px 5px;
+        max-width: 210px;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 
     .print-task-top {
@@ -231,5 +242,45 @@
         font-size: 8.5px;
         color: var(--print-text-muted);
         font-style: italic;
+    }
+
+    .print-notes-container {
+        margin-top: 6px;
+        padding: 4px 8px;
+        border: 1px solid var(--print-border);
+        border-radius: 4px;
+        background-color: var(--print-header-bg);
+        page-break-inside: avoid;
+        break-inside: avoid-page;
+    }
+
+    .print-notes-header {
+        font-size: 8.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--print-text-muted);
+        margin-bottom: 3px;
+    }
+
+    .print-notes-content {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .print-note-item {
+        font-size: 8.5px;
+        color: var(--print-text);
+        display: flex;
+        align-items: flex-start;
+        gap: 5px;
+        line-height: 1.25;
+    }
+
+    .print-note-bullet {
+        color: var(--accent-color);
+        font-weight: 700;
+        line-height: 1.1;
     }
 }

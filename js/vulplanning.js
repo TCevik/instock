@@ -3,7 +3,7 @@ import { openUnifiedImportModal } from './vulplanning/import-unified.js';
 import { fillRoosterShifts, getAvailableUsers, getFillersData } from './vulplanning/rooster.js';
 import { handleImportedColli } from './vulplanning/colli-invoer.js';
 import { planningState, getDraggedTaskData } from './vulplanning/state.js';
-import { timeToMinutes } from './vulplanning/time-utils.js';
+import { timeToMinutes, parsePauseMinutes } from './vulplanning/time-utils.js';
 import { triggerAutoSave } from './vulplanning/storage.js';
 import { calculateTimelineBounds, renderTimelineAxis } from './vulplanning/timeline-axis.js';
 import { generateTasksFromPathsAndColli } from './vulplanning/task-generator.js';
@@ -132,6 +132,7 @@ async function switchToTimelineView() {
         return;
     }
 
+    const seenUsernames = new Set();
     for (const f of fillers) {
         const displayName = f.name || 'Medewerker';
         if (!f.from || !f.to) {
@@ -145,6 +146,22 @@ async function switchToTimelineView() {
         if (startMins >= endMins) {
             showToast('error', `De begintijd van ${displayName} moet vroeger zijn dan de eindtijd.`);
             return;
+        }
+
+        const shiftDuration = endMins - startMins;
+        const pauseMins = parsePauseMinutes(f.pause);
+        if (pauseMins > shiftDuration) {
+            showToast('error', `De pauzetijd van ${displayName} mag niet langer zijn dan de totale werktijd.`);
+            return;
+        }
+
+        if (f.username) {
+            const u = f.username.toLowerCase();
+            if (seenUsernames.has(u)) {
+                showToast('error', `Medewerker met gebruikersnaam @${f.username} is dubbel ingevoerd.`);
+                return;
+            }
+            seenUsernames.add(u);
         }
     }
 

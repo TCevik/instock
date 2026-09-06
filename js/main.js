@@ -1,6 +1,7 @@
 import { supabase } from './supabase.js';
 import { initModal, showModal, closeModal, showConfirmModal, showPromptModal } from './modal.js';
 import { initToast, showToast } from './toast.js';
+import { initGlobalTooltips } from './tooltip.js';
 
 const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000;
 const INACTIVITY_WARNING_MS = INACTIVITY_TIMEOUT_MS - 60 * 1000;
@@ -462,6 +463,7 @@ loadOverlay();
 initModal();
 initToast();
 initInactivityTracker();
+initGlobalTooltips();
 
 function escapeHtml(str) {
     if (!str) return '';
@@ -470,6 +472,6 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
-export { supabase, initModal, showModal, closeModal, showConfirmModal, showPromptModal, initToast, showToast, openChangePasswordModal, isPermissionError, escapeHtml };
+export { supabase, initModal, showModal, closeModal, showConfirmModal, showPromptModal, initToast, showToast, openChangePasswordModal, isPermissionError, escapeHtml, initGlobalTooltips };
 
 

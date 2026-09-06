@@ -2,6 +2,7 @@ import { planningState, setDraggedTaskData, getDraggedTaskData, getDraggedTask }
 import { timeToMinutes, minutesToTime, formatDuration, parsePauseMinutes, calculateProductivity, formatTimeInput, normalizeTimeOnBlur } from './time-utils.js';
 import { showCustomTooltip, positionCustomTooltip, hideCustomTooltip } from './tooltip.js';
 import { showContextMenu } from './context-menu.js';
+import { findExactUser } from './rooster.js';
 import { calculateTimelineBounds, renderTimelineAxis, getPixelsPerMinute, getTimelineTotalMinutes } from './timeline-axis.js';
 import { openPauseModal } from './custom-task-modal.js';
 import { addHelperToTask, getComboTasksForTask } from './task-actions.js';
@@ -86,11 +87,10 @@ export function renderTimelineRows(options) {
         const workerCard = document.createElement('div');
         workerCard.className = `timeline-worker-info ${diffMins > 0 ? 'worker-has-overflow' : ''}`;
         workerCard.setAttribute('data-filler-id', filler.id);
-        workerCard.title = 'Klik om medewerker te bewerken';
         workerCard.innerHTML = `
             <div class="timeline-worker-left">
                 <div class="timeline-worker-name-row">
-                    <span class="timeline-worker-name" title="${filler.name || 'Naamloos'}">${filler.name || 'Naamloos'}</span>
+                    <span class="timeline-worker-name">${filler.name || 'Naamloos'}</span>
                     <span class="material-icons timeline-worker-edit-hint">edit</span>
                 </div>
                 <div class="timeline-worker-subrow">
@@ -173,7 +173,38 @@ export function renderTimelineRows(options) {
             });
         }
 
+        let workerUsername = filler.username || '';
+        if (!workerUsername && filler.name) {
+            const matched = findExactUser(filler.name);
+            if (matched?.username) workerUsername = matched.username;
+        }
+
+        workerCard.addEventListener('mouseenter', (e) => {
+            if (e.target.closest('.timeline-worker-input')) return;
+            showCustomTooltip(e, {
+                isWorker: true,
+                username: workerUsername
+            });
+        });
+
+        workerCard.addEventListener('mousemove', (e) => {
+            if (e.target.closest('.timeline-worker-input')) {
+                hideCustomTooltip();
+            } else {
+                showCustomTooltip(e, {
+                    isWorker: true,
+                    username: workerUsername
+                });
+                positionCustomTooltip(e);
+            }
+        });
+
+        workerCard.addEventListener('mouseleave', () => {
+            hideCustomTooltip();
+        });
+
         workerCard.addEventListener('click', (e) => {
+            hideCustomTooltip();
             if (e.target.closest('.timeline-worker-input')) return;
             if (onEditWorker) {
                 onEditWorker(filler);

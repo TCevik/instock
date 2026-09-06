@@ -1,90 +1,3 @@
-.custom-planning-tooltip {
-    position: fixed;
-    z-index: 9999;
-    pointer-events: none;
-    background-color: var(--card-background);
-    border: 1px solid var(--card-border);
-    border-radius: 6px;
-    padding: 6px 10px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
-    white-space: nowrap;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(4px);
-    transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
-}
-
-.custom-planning-tooltip.visible {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-}
-
-.tooltip-badge-pill {
-    padding: 1px 5px;
-    border-radius: 4px;
-    font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-    line-height: 1.2;
-}
-
-.tooltip-badge-pill.type-vullen {
-    background-color: rgba(101, 141, 36, 0.2);
-    color: var(--accent-color);
-    border: 1px solid rgba(101, 141, 36, 0.4);
-}
-
-.tooltip-badge-pill.type-spiegelen {
-    background-color: rgba(245, 158, 11, 0.18);
-    color: var(--warning-color);
-    border: 1px solid rgba(245, 158, 11, 0.35);
-}
-
-.tooltip-badge-pill.type-restanten {
-    background-color: rgba(168, 85, 247, 0.18);
-    color: var(--purple-color);
-    border: 1px solid rgba(168, 85, 247, 0.35);
-}
-
-.tooltip-badge-pill.type-overige {
-    background-color: rgba(59, 130, 246, 0.18);
-    color: var(--info-color);
-    border: 1px solid rgba(59, 130, 246, 0.35);
-}
-
-.tooltip-badge-pill.type-pauze {
-    background-color: rgba(234, 88, 12, 0.18);
-    color: var(--pauze-color);
-    border: 1px solid rgba(234, 88, 12, 0.35);
-}
-
-.tooltip-title {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-color);
-}
-
-.tooltip-detail-item {
-    font-size: 10px;
-    color: var(--text-color-muted);
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-}
-
-.tooltip-detail-item strong {
-    color: var(--text-color);
-}
-
-.tooltip-colli-val {
-    color: var(--accent-color);
-    font-weight: 700;
-}
-
 .custom-context-menu {
     position: fixed;
     z-index: 10000;
@@ -647,4 +560,74 @@
     background-color: var(--accent-color);
     color: #ffffff;
     cursor: pointer;
+}
+
+.print-notes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.print-note-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.print-note-row .modal-input {
+    flex: 1;
+}
+
+.print-note-delete-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background-color: var(--input-background);
+    border: 1px solid var(--card-border);
+    color: var(--text-color-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 0.15s, background-color 0.15s, border-color 0.15s;
+}
+
+.print-note-delete-btn:hover {
+    color: var(--danger-color);
+    border-color: var(--danger-color);
+    background-color: rgba(239, 68, 68, 0.12);
+}
+
+.print-note-delete-btn .material-icons {
+    font-size: 20px;
+}
+
+.print-add-note-btn {
+    background-color: var(--input-background);
+    border: 1px solid var(--card-border);
+    color: var(--text-color);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    align-self: flex-start;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.print-add-note-btn:hover {
+    background-color: var(--card-border);
+    border-color: var(--input-focus);
+}
+
+.print-modal-divider {
+    height: 1px;
+    background-color: var(--card-border);
+    margin: 4px 0;
 }

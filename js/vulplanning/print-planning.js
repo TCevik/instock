@@ -1,8 +1,23 @@
 import { planningState } from './state.js';
 import { timeToMinutes, minutesToTime, formatDuration, parsePauseMinutes } from './time-utils.js';
-import { escapeHtml, showToast } from '../main.js';
+import { escapeHtml, showToast, showModal, closeModal } from '../main.js';
 
-export function generatePrintDocument() {
+const printOptions = {
+    mergeTrio: true,
+    notes: []
+};
+
+function getTaskBaseKey(t) {
+    if (!t) return '';
+    if (t.pathName) return t.pathName.trim().toLowerCase();
+    return (t.title || '')
+        .replace(/^(restanten|spiegelen)\s*/i, '')
+        .replace(/\s*\([^)]*\)/g, '')
+        .trim()
+        .toLowerCase();
+}
+
+export function generatePrintDocument(options = printOptions) {
     const container = document.getElementById('print-planning-container');
     if (!container) return;
 
@@ -43,32 +58,79 @@ export function generatePrintDocument() {
         const targetShiftDuration = Math.max(0, shiftGrossDuration - presetPause) + assignedPauzeMins;
 
         let currentMins = shiftStart >= 0 ? shiftStart : 0;
-        const tasksHtml = assigned.length === 0
-            ? `<div class="print-no-tasks">Geen taken toegewezen</div>`
-            : assigned.map(t => {
-                const isHelper = !!t.isHelper;
-                const typeClass = isHelper ? 'is-helper' : `type-${t.type || 'overige'}`;
-                const startStr = minutesToTime(currentMins);
-                const endStr = minutesToTime(currentMins + t.duration);
-                currentMins += t.duration;
+        let tasksHtml = '';
 
-                let titleText = (t.title || 'Taak').replace(/\s*\(\d+\s*c\)/gi, '').trim();
-                if (isHelper) {
-                    titleText += ' (Hulp)';
-                } else if (t.colli) {
-                    titleText += ` (${t.colli} c)`;
-                }
+        if (assigned.length === 0) {
+            tasksHtml = `<div class="print-no-tasks">Geen taken toegewezen</div>`;
+        } else {
+            const pills = [];
+            let i = 0;
+            while (i < assigned.length) {
+                const t1 = assigned[i];
+                const t2 = assigned[i + 1];
+                const t3 = assigned[i + 2];
 
-                return `
-                    <div class="print-task-pill ${typeClass}">
-                        <div class="print-task-top" title="${escapeHtml(titleText)}">${escapeHtml(titleText)}</div>
-                        <div class="print-task-sub">
-                            <span>${formatDuration(t.duration)}</span>
-                            <span>${startStr} - ${endStr}</span>
+                const isTrio = options.mergeTrio &&
+                    t2 && t3 &&
+                    !t1.isHelper && !t2.isHelper && !t3.isHelper &&
+                    t1.type === 'restanten' &&
+                    t2.type === 'vullen' &&
+                    t3.type === 'spiegelen' &&
+                    getTaskBaseKey(t1) === getTaskBaseKey(t2) &&
+                    getTaskBaseKey(t3) === getTaskBaseKey(t2);
+
+                if (isTrio) {
+                    const totalDuration = t1.duration + t2.duration + t3.duration;
+                    const startStr = minutesToTime(currentMins);
+                    const endStr = minutesToTime(currentMins + totalDuration);
+                    currentMins += totalDuration;
+
+                    const baseName = (t2.pathName || t2.title || 'Taak').replace(/\s*\(\d+\s*c\)/gi, '').trim();
+                    const colliStr = t2.colli ? ` (${t2.colli} c)` : '';
+                    const comboTitle = `${baseName}${colliStr}`;
+
+                    const p1 = Math.max(1, Math.round((t1.duration / totalDuration) * 100));
+                    const p2 = Math.min(99, Math.max(p1 + 1, Math.round(((t1.duration + t2.duration) / totalDuration) * 100)));
+                    const grad = `linear-gradient(var(--print-bg), var(--print-bg)), linear-gradient(to right, var(--purple-color) 0%, var(--purple-color) ${p1}%, var(--accent-color) ${p1}%, var(--accent-color) ${p2}%, var(--warning-color) ${p2}%, var(--warning-color) 100%)`;
+
+                    pills.push(`
+                        <div class="print-task-pill is-combo-trio" style="background-image: ${grad};">
+                            <div class="print-task-top" title="${escapeHtml(comboTitle)}">${escapeHtml(comboTitle)}</div>
+                            <div class="print-task-sub">
+                                <span>${formatDuration(totalDuration)}</span>
+                                <span>${startStr} - ${endStr}</span>
+                            </div>
                         </div>
-                    </div>
-                `;
-            }).join('');
+                    `);
+                    i += 3;
+                } else {
+                    const isHelper = !!t1.isHelper;
+                    const typeClass = isHelper ? 'is-helper' : `type-${t1.type || 'overige'}`;
+                    const startStr = minutesToTime(currentMins);
+                    const endStr = minutesToTime(currentMins + t1.duration);
+                    currentMins += t1.duration;
+
+                    let titleText = (t1.title || 'Taak').replace(/\s*\(\d+\s*c\)/gi, '').trim();
+                    if (isHelper) {
+                        titleText += ' (Hulp)';
+                    } else if (t1.colli) {
+                        titleText += ` (${t1.colli} c)`;
+                    }
+
+                    pills.push(`
+                        <div class="print-task-pill ${typeClass}">
+                            <div class="print-task-top" title="${escapeHtml(titleText)}">${escapeHtml(titleText)}</div>
+                            <div class="print-task-sub">
+                                <span>${formatDuration(t1.duration)}</span>
+                                <span>${startStr} - ${endStr}</span>
+                            </div>
+                        </div>
+                    `);
+                    i += 1;
+                }
+            }
+            tasksHtml = pills.join('');
+        }
 
         return `
             <tr class="print-worker-row">
@@ -94,6 +156,22 @@ export function generatePrintDocument() {
         `;
     }).join('');
 
+    const notesHtml = (options.notes && options.notes.length > 0)
+        ? `
+            <div class="print-notes-container">
+                <div class="print-notes-header">Notities</div>
+                <div class="print-notes-content">
+                    ${options.notes.map(n => `
+                        <div class="print-note-item">
+                            <span class="print-note-bullet">•</span>
+                            <span>${escapeHtml(n)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `
+        : '';
+
     container.innerHTML = `
         <div class="print-header-row">
             <div class="print-main-title">Vulplanning</div>
@@ -112,16 +190,139 @@ export function generatePrintDocument() {
                 ${rowsHtml}
             </tbody>
         </table>
+        ${notesHtml}
     `;
 }
 
-export function printVulplanning() {
+export async function openPrintOptionsModal() {
     if (!planningState.fillers || planningState.fillers.length === 0) {
         showToast('error', 'Geen planning om te printen. Maak eerst een planning.');
         return;
     }
-    generatePrintDocument();
-    window.print();
+
+    const currentNotes = printOptions.notes && printOptions.notes.length > 0 ? [...printOptions.notes] : [''];
+    let isMergeChecked = printOptions.mergeTrio !== false;
+
+    const modalContent = `
+        <div class="modal-header" style="display: flex; flex-direction: row; align-items: center; gap: 14px; padding-right: 28px;">
+            <div class="combo-modal-icon-wrap">
+                <span class="material-icons" style="font-size: 22px;">print</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+                <h2 class="modal-title" style="font-size: 18px;">Notities &amp; Opties voor Vulplanning</h2>
+                <p class="modal-subtitle" style="font-size: 12px;">Voeg eventueel extra opmerkingen toe op de print</p>
+            </div>
+        </div>
+        <div class="modal-body" style="gap: 12px;">
+            <div class="print-notes-list" id="printNotesList">
+                ${currentNotes.map(note => `
+                    <div class="print-note-row">
+                        <input type="text" class="modal-input print-note-input" placeholder="Typ een notitie..." value="${escapeHtml(note)}">
+                        <button type="button" class="print-note-delete-btn" title="Verwijderen">
+                            <span class="material-icons">delete</span>
+                        </button>
+                    </div>
+                `).join('')}
+            </div>
+            <button type="button" class="print-add-note-btn" id="btnAddPrintNote">
+                <span class="material-icons" style="font-size: 18px;">add</span>
+                <span>Regel Toevoegen</span>
+            </button>
+            <div class="print-modal-divider"></div>
+            <div class="combo-option-row ${isMergeChecked ? 'is-checked' : ''}" id="printMergeOptionRow">
+                <div class="combo-option-left">
+                    <span class="material-icons" style="font-size: 18px; color: var(--accent-color);">call_merge</span>
+                    <span class="combo-option-title">Restanten, vullen &amp; spiegelen samenvoegen</span>
+                </div>
+                <div class="combo-checkbox">
+                    <span class="material-icons">check</span>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="modal-btn-secondary" id="btnPrintCancel">Annuleren</button>
+            <button type="button" class="btn" id="btnPrintConfirm">Afdrukken</button>
+        </div>
+    `;
+
+    const overlay = await showModal(modalContent);
+    const notesList = overlay.querySelector('#printNotesList');
+    const btnAddNote = overlay.querySelector('#btnAddPrintNote');
+    const mergeOptionRow = overlay.querySelector('#printMergeOptionRow');
+    const btnCancel = overlay.querySelector('#btnPrintCancel');
+    const btnConfirm = overlay.querySelector('#btnPrintConfirm');
+
+    function updateDeleteButtons() {
+        const rows = notesList.querySelectorAll('.print-note-row');
+        const isSingle = rows.length <= 1;
+        rows.forEach(r => {
+            const btn = r.querySelector('.print-note-delete-btn');
+            if (btn) {
+                btn.disabled = isSingle;
+                btn.style.opacity = isSingle ? '0.35' : '1';
+                btn.style.cursor = isSingle ? 'not-allowed' : 'pointer';
+            }
+        });
+    }
+
+    function attachDeleteListener(row) {
+        const delBtn = row.querySelector('.print-note-delete-btn');
+        if (delBtn) {
+            delBtn.addEventListener('click', () => {
+                if (notesList.querySelectorAll('.print-note-row').length <= 1) return;
+                row.remove();
+                updateDeleteButtons();
+            });
+        }
+    }
+
+    notesList.querySelectorAll('.print-note-row').forEach(attachDeleteListener);
+    updateDeleteButtons();
+
+    btnAddNote.addEventListener('click', () => {
+        const row = document.createElement('div');
+        row.className = 'print-note-row';
+        row.innerHTML = `
+            <input type="text" class="modal-input print-note-input" placeholder="Typ een notitie...">
+            <button type="button" class="print-note-delete-btn" title="Verwijderen">
+                <span class="material-icons">delete</span>
+            </button>
+        `;
+        notesList.appendChild(row);
+        attachDeleteListener(row);
+        updateDeleteButtons();
+        const input = row.querySelector('.print-note-input');
+        if (input) input.focus();
+    });
+
+    mergeOptionRow.addEventListener('click', () => {
+        isMergeChecked = !isMergeChecked;
+        mergeOptionRow.classList.toggle('is-checked', isMergeChecked);
+    });
+
+    btnCancel.addEventListener('click', () => {
+        closeModal(overlay);
+    });
+
+    btnConfirm.addEventListener('click', () => {
+        const noteInputs = notesList.querySelectorAll('.print-note-input');
+        const validNotes = [];
+        noteInputs.forEach(inp => {
+            const val = inp.value.trim();
+            if (val) validNotes.push(val);
+        });
+
+        printOptions.mergeTrio = isMergeChecked;
+        printOptions.notes = validNotes;
+
+        closeModal(overlay);
+        generatePrintDocument(printOptions);
+        window.print();
+    });
+}
+
+export function printVulplanning() {
+    openPrintOptionsModal();
 }
 
 export function setupPrintPlanning(printButton) {
@@ -132,6 +333,6 @@ export function setupPrintPlanning(printButton) {
     }
 
     window.addEventListener('beforeprint', () => {
-        generatePrintDocument();
+        generatePrintDocument(printOptions);
     });
 }

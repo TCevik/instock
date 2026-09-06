@@ -46,10 +46,16 @@ export async function showModal(contentHtml) {
         closeBtn.addEventListener('click', () => closeModal(overlay));
     }
 
+    let isOverlayMouseDown = false;
+    overlay.addEventListener('mousedown', (e) => {
+        isOverlayMouseDown = (e.target === overlay);
+    });
+
     overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) {
+        if (e.target === overlay && isOverlayMouseDown) {
             closeModal(overlay);
         }
+        isOverlayMouseDown = false;
     });
 
     return overlay;
