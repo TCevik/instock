@@ -265,11 +265,54 @@ if (unassignedTasksSidebar) {
     });
 }
 
+const TIMELINE_SCROLL_LEFT_KEY = 'instock_timeline_scroll_left';
+const TIMELINE_SCROLL_TOP_KEY = 'instock_timeline_scroll_top';
+const INPUT_SCROLL_TOP_KEY = 'instock_planner_input_scroll_top';
+const UNASSIGNED_SCROLL_TOP_KEY = 'instock_planner_unassigned_scroll_top';
+
+const timelineBoardBody = document.querySelector('.timeline-board-body');
+const timelineBoardContainer = document.querySelector('.timeline-board-container');
+
 const btnZoomIn = document.getElementById('btn-zoom-in');
 const btnZoomOut = document.getElementById('btn-zoom-out');
 const btnZoomReset = document.getElementById('btn-zoom-reset');
 
-function updateZoom() {
+function applyZoom(nextZoom) {
+    nextZoom = Math.max(0.5, Math.min(2.5, Math.round(nextZoom * 100) / 100));
+    if (nextZoom === planningState.zoom) return;
+
+    const oldZoom = planningState.zoom;
+    let targetScrollLeft = null;
+
+    if (timelineBoardBody && oldZoom > 0) {
+        const workersPane = document.querySelector('.timeline-workers-pane');
+        const workersWidth = workersPane ? workersPane.offsetWidth : 360;
+        const visibleWidth = Math.max(0, timelineBoardBody.clientWidth - workersWidth);
+        const centerTimePx = timelineBoardBody.scrollLeft + (visibleWidth > 0 ? visibleWidth / 2 : timelineBoardBody.clientWidth / 2);
+        const ratio = nextZoom / oldZoom;
+        targetScrollLeft = Math.max(0, (centerTimePx * ratio) - (visibleWidth > 0 ? visibleWidth / 2 : timelineBoardBody.clientWidth / 2));
+    }
+
+    planningState.zoom = nextZoom;
+
+    if (zoomLevelIndicator) {
+        zoomLevelIndicator.textContent = `${Math.round(planningState.zoom * 100)}%`;
+    }
+    localStorage.setItem('instock_planner_zoom', String(planningState.zoom));
+    doRenderAxis();
+    doRenderRows();
+
+    if (timelineBoardBody && targetScrollLeft !== null) {
+        timelineBoardBody.scrollLeft = targetScrollLeft;
+        localStorage.setItem(TIMELINE_SCROLL_LEFT_KEY, String(targetScrollLeft));
+    }
+}
+
+function updateZoom(newZoom) {
+    if (typeof newZoom === 'number' && newZoom !== planningState.zoom) {
+        applyZoom(newZoom);
+        return;
+    }
     if (zoomLevelIndicator) {
         zoomLevelIndicator.textContent = `${Math.round(planningState.zoom * 100)}%`;
     }
@@ -280,29 +323,21 @@ function updateZoom() {
 
 if (btnZoomIn) {
     btnZoomIn.addEventListener('click', () => {
-        planningState.zoom = Math.min(2.5, planningState.zoom + 0.25);
-        updateZoom();
+        applyZoom(planningState.zoom + 0.25);
     });
 }
 
 if (btnZoomOut) {
     btnZoomOut.addEventListener('click', () => {
-        planningState.zoom = Math.max(0.5, planningState.zoom - 0.25);
-        updateZoom();
+        applyZoom(planningState.zoom - 0.25);
     });
 }
 
 if (btnZoomReset) {
     btnZoomReset.addEventListener('click', () => {
-        planningState.zoom = 1;
-        updateZoom();
+        applyZoom(1);
     });
 }
-
-const TIMELINE_SCROLL_LEFT_KEY = 'instock_timeline_scroll_left';
-const TIMELINE_SCROLL_TOP_KEY = 'instock_timeline_scroll_top';
-const INPUT_SCROLL_TOP_KEY = 'instock_planner_input_scroll_top';
-const UNASSIGNED_SCROLL_TOP_KEY = 'instock_planner_unassigned_scroll_top';
 
 function restoreTimelineScroll() {
     const boardBody = document.querySelector('.timeline-board-body');
@@ -337,8 +372,6 @@ function restoreTimelineScroll() {
     }
 }
 
-const timelineBoardBody = document.querySelector('.timeline-board-body');
-const timelineBoardContainer = document.querySelector('.timeline-board-container');
 if (timelineBoardBody) {
     let scrollSaveTimeout = null;
     timelineBoardBody.addEventListener('scroll', () => {
@@ -358,6 +391,14 @@ if (timelineBoardBody) {
     let rightDragStartScrollTop = 0;
 
     const dragTarget = timelineBoardContainer || timelineBoardBody;
+    dragTarget.addEventListener('wheel', (e) => {
+        if (e.ctrlKey) {
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? 0.15 : -0.15;
+            applyZoom(planningState.zoom + delta);
+        }
+    }, { passive: false });
+
     dragTarget.addEventListener('mousedown', (e) => {
         if (e.button !== 2) return;
         if (e.target.closest('button, input, select, a')) return;
