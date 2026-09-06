@@ -4,6 +4,10 @@ if (window.pdfjsLib) {
     window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 }
 
+export function stripDiacritics(str) {
+    return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
 export function cleanImportedName(rawName, availableUsers = []) {
     let name = (rawName || '').replace(/[\u2026.]+/g, '').replace(/\|/g, '').trim();
 
@@ -22,6 +26,18 @@ export function cleanImportedName(rawName, availableUsers = []) {
             return exactMatches[0].full_name?.trim() || exactMatches[0].username?.trim() || name;
         }
 
+        const normQ = stripDiacritics(q);
+
+        const accentExactMatches = availableUsers.filter(u => {
+            const fullName = stripDiacritics((u.full_name || '').toLowerCase().trim());
+            const username = stripDiacritics((u.username || '').toLowerCase().trim());
+            return fullName === normQ || username === normQ || `@${username}` === normQ;
+        });
+
+        if (accentExactMatches.length === 1) {
+            return accentExactMatches[0].full_name?.trim() || accentExactMatches[0].username?.trim() || name;
+        }
+
         const prefixMatches = availableUsers.filter(u => {
             const fullName = (u.full_name || '').toLowerCase().trim();
             return fullName.startsWith(q);
@@ -29,6 +45,15 @@ export function cleanImportedName(rawName, availableUsers = []) {
 
         if (prefixMatches.length === 1) {
             return prefixMatches[0].full_name?.trim() || name;
+        }
+
+        const accentPrefixMatches = availableUsers.filter(u => {
+            const fullName = stripDiacritics((u.full_name || '').toLowerCase().trim());
+            return fullName.startsWith(normQ);
+        });
+
+        if (accentPrefixMatches.length === 1) {
+            return accentPrefixMatches[0].full_name?.trim() || name;
         }
 
         const containsMatches = availableUsers.filter(u => {
@@ -39,6 +64,16 @@ export function cleanImportedName(rawName, availableUsers = []) {
 
         if (containsMatches.length === 1) {
             return containsMatches[0].full_name?.trim() || containsMatches[0].username?.trim() || name;
+        }
+
+        const accentContainsMatches = availableUsers.filter(u => {
+            const fullName = stripDiacritics((u.full_name || '').toLowerCase().trim());
+            const username = stripDiacritics((u.username || '').toLowerCase().trim());
+            return fullName.includes(normQ) || username.includes(normQ);
+        });
+
+        if (accentContainsMatches.length === 1) {
+            return accentContainsMatches[0].full_name?.trim() || accentContainsMatches[0].username?.trim() || name;
         }
     }
 

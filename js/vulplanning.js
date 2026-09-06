@@ -18,6 +18,8 @@ import { renderMobilePlanningView } from './vulplanning/mobile-view.js';
 import { hideCustomTooltip } from './vulplanning/tooltip.js';
 import { setupPrintPlanning } from './vulplanning/print-planning.js';
 
+import { openWorkerModal } from './vulplanning/worker-modal.js';
+
 window.__draggedTaskDataRef = getDraggedTaskData;
 
 export { triggerAutoSave };
@@ -81,7 +83,21 @@ function doRenderRows() {
             });
         },
         onRenderRows: doRenderRows,
-        onRenderUnassigned: doRenderUnassigned
+        onRenderUnassigned: doRenderUnassigned,
+        onEditWorker: (filler) => {
+            openWorkerModal(filler, {
+                onRenderAxis: doRenderAxis,
+                onRenderRows: doRenderRows,
+                onRenderUnassigned: doRenderUnassigned
+            });
+        },
+        onAddWorker: () => {
+            openWorkerModal(null, {
+                onRenderAxis: doRenderAxis,
+                onRenderRows: doRenderRows,
+                onRenderUnassigned: doRenderUnassigned
+            });
+        }
     });
     doRenderMobile();
 }

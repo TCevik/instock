@@ -79,7 +79,8 @@ export function renderColliTable(pathsList) {
                 const catName = escapeHtml(cat.name || 'Categorie');
                 const norm = cat.norm !== undefined && cat.norm !== null ? cat.norm : 0;
                 const lowerCat = (cat.name || '').toLowerCase().trim();
-                const existingVal = pendingColliMap[lowerCat] !== undefined ? pendingColliMap[lowerCat] : 0;
+                const rawVal = pendingColliMap[lowerCat];
+                const existingVal = (rawVal !== undefined && rawVal !== null && rawVal > 0) ? rawVal : '';
 
                 rowsHtml += `
                     <tr class="colli-item-row" data-path-name="${pathName}" data-category-name="${catName}" data-norm="${norm}">
@@ -150,8 +151,9 @@ export function fillColliValues(colliMap) {
         }
 
         if (amount !== null && amount !== undefined) {
-            input.value = amount;
-            input.setAttribute('value', amount);
+            const valToSet = amount > 0 ? amount : '';
+            input.value = valToSet;
+            input.setAttribute('value', valToSet);
         }
     });
 
@@ -280,5 +282,18 @@ export function getColliData() {
 }
 
 loadStorePathsForColli();
+
+if (colliCategoriesContainer) {
+    colliCategoriesContainer.addEventListener('focusin', (e) => {
+        if (e.target && e.target.classList.contains('colli-amount-input')) {
+            requestAnimationFrame(() => e.target.select());
+        }
+    });
+    colliCategoriesContainer.addEventListener('click', (e) => {
+        if (e.target && e.target.classList.contains('colli-amount-input')) {
+            e.target.select();
+        }
+    });
+}
 
 

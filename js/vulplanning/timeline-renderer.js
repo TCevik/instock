@@ -17,7 +17,9 @@ export function renderTimelineRows(options) {
         onMoveTask,
         onUnassignTask,
         onRenderRows,
-        onRenderUnassigned
+        onRenderUnassigned,
+        onEditWorker,
+        onAddWorker
     } = options;
 
     if (!timelineWorkersList || !timelineTracksContainer) return;
@@ -84,10 +86,12 @@ export function renderTimelineRows(options) {
         const workerCard = document.createElement('div');
         workerCard.className = `timeline-worker-info ${diffMins > 0 ? 'worker-has-overflow' : ''}`;
         workerCard.setAttribute('data-filler-id', filler.id);
+        workerCard.title = 'Klik om medewerker te bewerken';
         workerCard.innerHTML = `
             <div class="timeline-worker-left">
                 <div class="timeline-worker-name-row">
                     <span class="timeline-worker-name" title="${filler.name || 'Naamloos'}">${filler.name || 'Naamloos'}</span>
+                    <span class="material-icons timeline-worker-edit-hint">edit</span>
                 </div>
                 <div class="timeline-worker-subrow">
                     <span class="timeline-worker-hours">${filler.from || '00:00'} - ${filler.to || '00:00'}</span>
@@ -169,6 +173,13 @@ export function renderTimelineRows(options) {
             });
         }
 
+        workerCard.addEventListener('click', (e) => {
+            if (e.target.closest('.timeline-worker-input')) return;
+            if (onEditWorker) {
+                onEditWorker(filler);
+            }
+        });
+
         timelineWorkersList.appendChild(workerCard);
 
         const trackRow = document.createElement('div');
@@ -242,7 +253,7 @@ export function renderTimelineRows(options) {
                     <span class="timeline-task-title">${task.title}</span>
                 </div>
                 <div class="task-block-footer">
-                    <span class="timeline-task-meta-dur">${!task.isHelper && task.origDuration && task.origDuration !== task.duration ? `${formatDuration(task.origDuration)} &bull; ${formatDuration(task.duration)}` : formatDuration(task.duration)}</span>
+                    <span class="timeline-task-meta-dur">${formatDuration(task.duration)}</span>
                     <span class="timeline-task-meta-time">${startStr} - ${endStr}</span>
                 </div>
             `;
@@ -262,7 +273,6 @@ export function renderTimelineRows(options) {
                     type: task.type,
                     title: task.title,
                     duration: task.duration,
-                    origDuration: !task.isHelper ? task.origDuration : null,
                     colli: task.colli,
                     startStr: startStr,
                     endStr: endStr,
@@ -512,4 +522,32 @@ export function renderTimelineRows(options) {
 
         timelineTracksContainer.appendChild(trackRow);
     });
+
+    const addRow = document.createElement('div');
+    addRow.className = 'timeline-add-worker-row';
+    addRow.innerHTML = `
+        <button type="button" class="btn-timeline-add-worker" title="Medewerker toevoegen">
+            <span class="material-icons">add</span>
+            <span>Medewerker toevoegen</span>
+        </button>
+    `;
+    const addBtn = addRow.querySelector('.btn-timeline-add-worker');
+    if (addBtn && onAddWorker) {
+        addBtn.addEventListener('click', () => {
+            onAddWorker();
+        });
+    }
+    timelineWorkersList.appendChild(addRow);
+
+    const addTrackSpacer = document.createElement('div');
+    addTrackSpacer.className = 'timeline-track-row timeline-track-add-spacer';
+    addTrackSpacer.style.width = `${totalMins * pxPerMin}px`;
+    for (let h = planningState.timelineStartHour; h <= planningState.timelineEndHour; h++) {
+        const offsetMins = (h - planningState.timelineStartHour) * 60;
+        const line = document.createElement('div');
+        line.className = `timeline-grid-line ${h % 2 === 0 ? 'major' : ''}`;
+        line.style.left = `${offsetMins * pxPerMin}px`;
+        addTrackSpacer.appendChild(line);
+    }
+    timelineTracksContainer.appendChild(addTrackSpacer);
 }

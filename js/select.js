@@ -1,3 +1,5 @@
+import { keepInViewport, resetDropdownPosition, bindViewportCheck } from './dropdown-utils.js';
+
 export function createCustomSelect(containerElement, options = [], selectedValue = '', placeholder = 'Selecteer...', onChange = null, actionOption = null, isMulti = false) {
     let currentVal = isMulti 
         ? (Array.isArray(selectedValue) ? selectedValue.map(String) : (selectedValue ? [String(selectedValue)] : []))
@@ -26,33 +28,30 @@ export function createCustomSelect(containerElement, options = [], selectedValue
     }
 
     function renderDropdownContent() {
-        let optionsHtml = '';
         if (options.length === 0 && !actionOption) {
-            optionsHtml = `<div class="custom-select-empty">Geen opties beschikbaar</div>`;
-        } else {
-            optionsHtml = options.map(opt => {
-                const selected = isOptionSelected(opt.value);
-                return `
-                    <div class="custom-select-option${selected ? ' selected' : ''}" data-value="${opt.value}">
-                        <span>${opt.label}</span>
-                        ${selected ? '<span class="material-icons custom-select-check">check</span>' : ''}
-                    </div>
-                `;
-            }).join('');
-
-            if (actionOption) {
-                if (options.length > 0) {
-                    optionsHtml += `<div class="custom-select-divider"></div>`;
-                }
-                optionsHtml += `
-                    <div class="custom-select-action-option" id="${actionOption.id || 'customSelectActionBtn'}">
-                        <span class="material-icons">${actionOption.icon || 'add'}</span>
-                        <span>${actionOption.label}</span>
-                    </div>
-                `;
-            }
+            return `<div class="custom-select-empty">Geen opties beschikbaar</div>`;
         }
-        return optionsHtml;
+
+        let html = options.map(opt => `
+            <div class="custom-select-option ${isOptionSelected(opt.value) ? 'selected' : ''}" data-value="${opt.value}">
+                <span>${opt.label}</span>
+                ${isOptionSelected(opt.value) ? '<span class="material-icons custom-select-check">check</span>' : ''}
+            </div>
+        `).join('');
+
+        if (actionOption) {
+            if (options.length > 0) {
+                html += `<div class="custom-select-divider"></div>`;
+            }
+            html += `
+                <div class="custom-select-action-option">
+                    <span class="material-icons">${actionOption.icon || 'add'}</span>
+                    <span>${actionOption.label}</span>
+                </div>
+            `;
+        }
+
+        return html;
     }
 
     containerElement.innerHTML = `
@@ -74,14 +73,18 @@ export function createCustomSelect(containerElement, options = [], selectedValue
     const hiddenVal = root.querySelector('.custom-select-value');
     const dropdown = root.querySelector('.custom-select-dropdown');
 
+    bindViewportCheck(dropdown, trigger);
+
     function openDropdown() {
         dropdown.classList.add('active');
         trigger.classList.add('active');
+        keepInViewport(dropdown, trigger);
     }
 
     function closeDropdown() {
         dropdown.classList.remove('active');
         trigger.classList.remove('active');
+        resetDropdownPosition(dropdown);
     }
 
     trigger.addEventListener('click', (e) => {

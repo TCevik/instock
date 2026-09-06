@@ -37,39 +37,45 @@ export function generateTasksFromPathsAndColli() {
 
         if (totalColli <= 0) return;
 
+        const fillDuration = Math.min(5760, Math.max(1, Math.round(totalMinutes)));
         tasks.push({
             id: `task_fill_${idCounter++}`,
             type: 'vullen',
             title: pathName,
             pathName: pathName,
             colli: totalColli,
-            duration: Math.max(1, Math.round(totalMinutes)),
+            duration: fillDuration,
+            origDuration: fillDuration,
             categoryDetails: items,
             origOrder: tasks.length
         });
 
         const spiegelNorm = matchedPath && matchedPath.spiegelnorm !== undefined && matchedPath.spiegelnorm !== null ? Number(matchedPath.spiegelnorm) : 0;
         if (spiegelNorm > 0) {
+            const spiegelDuration = Math.min(5760, Math.max(1, Math.round(spiegelNorm)));
             tasks.push({
                 id: `task_spiegel_${idCounter++}`,
                 type: 'spiegelen',
                 title: `Spiegelen ${pathName}`,
                 pathName: pathName,
                 colli: 0,
-                duration: spiegelNorm,
+                duration: spiegelDuration,
+                origDuration: spiegelDuration,
                 origOrder: tasks.length
             });
         }
 
         const restantenNorm = matchedPath && matchedPath.restantennorm !== undefined && matchedPath.restantennorm !== null ? Number(matchedPath.restantennorm) : 0;
         if (restantenNorm > 0) {
+            const restantenDuration = Math.min(5760, Math.max(1, Math.round(restantenNorm)));
             tasks.push({
                 id: `task_restant_${idCounter++}`,
                 type: 'restanten',
                 title: `Restanten ${pathName}`,
                 pathName: pathName,
                 colli: 0,
-                duration: restantenNorm,
+                duration: restantenDuration,
+                origDuration: restantenDuration,
                 origOrder: tasks.length
             });
         }

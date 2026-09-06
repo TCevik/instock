@@ -1,6 +1,7 @@
 import { supabase, showToast, showModal, closeModal } from '../main.js';
-import { openImportModal } from './import-rooster.js';
+import { openImportModal, stripDiacritics } from './import-rooster.js';
 import { formatTimeInput, normalizeTimeOnBlur } from './time-utils.js';
+import { keepInViewport, resetDropdownPosition, bindViewportCheck } from '../dropdown-utils.js';
 
 const vullersContainer = document.getElementById('vullers-container');
 const btnAddVuller = document.getElementById('btn-add-vuller');
@@ -28,20 +29,32 @@ export function loadStoreUsers() {
 function filterUsers(query) {
     const q = query.toLowerCase().trim();
     if (!q) return [];
+    const normQ = stripDiacritics(q);
     return availableUsers.filter(u => {
         const fullName = (u.full_name || '').toLowerCase();
         const username = (u.username || '').toLowerCase();
-        return fullName.includes(q) || username.includes(q);
+        if (fullName.includes(q) || username.includes(q)) return true;
+        const normFull = stripDiacritics(fullName);
+        const normUser = stripDiacritics(username);
+        return normFull.includes(normQ) || normUser.includes(normQ);
     });
 }
 
 function findExactUser(val) {
     const q = (val || '').toLowerCase().trim();
     if (!q) return null;
-    return availableUsers.find(u => {
+    const exact = availableUsers.find(u => {
         const fullName = (u.full_name || '').toLowerCase().trim();
         const username = (u.username || '').toLowerCase().trim();
         return fullName === q || username === q || `@${username}` === q;
+    });
+    if (exact) return exact;
+
+    const normQ = stripDiacritics(q);
+    return availableUsers.find(u => {
+        const fullName = stripDiacritics((u.full_name || '').toLowerCase().trim());
+        const username = stripDiacritics((u.username || '').toLowerCase().trim());
+        return fullName === normQ || username === normQ || `@${username}` === normQ;
     }) || null;
 }
 
@@ -57,6 +70,25 @@ function updateUsernameBadge(nameInput, userBadge) {
 }
 
 function focusNextInput(currentInput) {
+    const modalForm = currentInput.closest('.modal-worker-form');
+    if (modalForm) {
+        const nameInput = modalForm.querySelector('.vuller-name');
+        const fromInput = modalForm.querySelector('.vuller-from');
+        const toInput = modalForm.querySelector('.vuller-to');
+        const pauseInput = modalForm.querySelector('.vuller-pause');
+        if (currentInput === nameInput) {
+            fromInput?.focus();
+            fromInput?.select();
+        } else if (currentInput === fromInput) {
+            toInput?.focus();
+            toInput?.select();
+        } else if (currentInput === toInput) {
+            pauseInput?.focus();
+            pauseInput?.select();
+        }
+        return;
+    }
+
     const row = currentInput.closest('.vuller-row');
     if (!row) return;
 
@@ -97,6 +129,25 @@ function focusNextInput(currentInput) {
 }
 
 function focusPreviousInput(currentInput) {
+    const modalForm = currentInput.closest('.modal-worker-form');
+    if (modalForm) {
+        const nameInput = modalForm.querySelector('.vuller-name');
+        const fromInput = modalForm.querySelector('.vuller-from');
+        const toInput = modalForm.querySelector('.vuller-to');
+        const pauseInput = modalForm.querySelector('.vuller-pause');
+        if (currentInput === pauseInput) {
+            toInput?.focus();
+            toInput?.select();
+        } else if (currentInput === toInput) {
+            fromInput?.focus();
+            fromInput?.select();
+        } else if (currentInput === fromInput) {
+            nameInput?.focus();
+            nameInput?.select();
+        }
+        return;
+    }
+
     const row = currentInput.closest('.vuller-row');
     if (!row) return;
 
@@ -128,11 +179,13 @@ function focusPreviousInput(currentInput) {
 
 function setupAutocomplete(nameInput, dropdown, userBadge) {
     let highlightedIndex = -1;
+    bindViewportCheck(dropdown, nameInput);
 
     function renderMatches(matches) {
         if (matches.length === 0) {
             dropdown.innerHTML = '';
             dropdown.classList.remove('active');
+            resetDropdownPosition(dropdown);
             highlightedIndex = -1;
             return;
         }
@@ -150,12 +203,14 @@ function setupAutocomplete(nameInput, dropdown, userBadge) {
 
         highlightedIndex = 0;
         dropdown.classList.add('active');
+        keepInViewport(dropdown, nameInput);
 
         dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
             item.addEventListener('mousedown', (e) => {
                 e.preventDefault();
                 nameInput.value = item.getAttribute('data-name');
                 dropdown.classList.remove('active');
+                resetDropdownPosition(dropdown);
                 dropdown.innerHTML = '';
                 updateUsernameBadge(nameInput, userBadge);
                 focusNextInput(nameInput);
@@ -176,6 +231,7 @@ function setupAutocomplete(nameInput, dropdown, userBadge) {
             if (nameInput.value.length === 0) {
                 e.preventDefault();
                 dropdown.classList.remove('active');
+                resetDropdownPosition(dropdown);
                 focusPreviousInput(nameInput);
                 return;
             }
@@ -196,6 +252,7 @@ function setupAutocomplete(nameInput, dropdown, userBadge) {
                 if (targetItem) {
                     nameInput.value = targetItem.getAttribute('data-name');
                     dropdown.classList.remove('active');
+                    resetDropdownPosition(dropdown);
                     dropdown.innerHTML = '';
                     updateUsernameBadge(nameInput, userBadge);
                 }
@@ -205,6 +262,7 @@ function setupAutocomplete(nameInput, dropdown, userBadge) {
             }
         } else if (e.key === 'Escape') {
             dropdown.classList.remove('active');
+            resetDropdownPosition(dropdown);
         }
     });
 
@@ -222,6 +280,7 @@ function setupAutocomplete(nameInput, dropdown, userBadge) {
     nameInput.addEventListener('blur', () => {
         setTimeout(() => {
             dropdown.classList.remove('active');
+            resetDropdownPosition(dropdown);
             updateUsernameBadge(nameInput, userBadge);
         }, 150);
     });
@@ -264,6 +323,7 @@ function finalizeTime(input, isPause) {
 
 function setupTimeInput(input, dropdown, isPause = false) {
     const options = isPause ? PAUSE_OPTIONS : ALL_TIME_OPTIONS;
+    bindViewportCheck(dropdown, input);
 
     function renderOptions(filterStr = '') {
         const q = filterStr.toLowerCase().replace(/[^0-9]/g, '');
@@ -275,6 +335,7 @@ function setupTimeInput(input, dropdown, isPause = false) {
         if (filtered.length === 0) {
             dropdown.innerHTML = '';
             dropdown.classList.remove('active');
+            resetDropdownPosition(dropdown);
             return;
         }
 
@@ -287,11 +348,13 @@ function setupTimeInput(input, dropdown, isPause = false) {
                 e.preventDefault();
                 input.value = item.getAttribute('data-val');
                 dropdown.classList.remove('active');
+                resetDropdownPosition(dropdown);
                 focusNextInput(input);
             });
         });
 
         dropdown.classList.add('active');
+        keepInViewport(dropdown, input);
     }
 
     if (isPause) {
@@ -323,6 +386,7 @@ function setupTimeInput(input, dropdown, isPause = false) {
         finalizeTime(input, isPause);
         setTimeout(() => {
             dropdown.classList.remove('active');
+            resetDropdownPosition(dropdown);
         }, 150);
     });
 
@@ -331,6 +395,7 @@ function setupTimeInput(input, dropdown, isPause = false) {
             if (input.value.length === 0) {
                 e.preventDefault();
                 dropdown.classList.remove('active');
+                resetDropdownPosition(dropdown);
                 focusPreviousInput(input);
                 return;
             }
@@ -345,12 +410,14 @@ function setupTimeInput(input, dropdown, isPause = false) {
                 finalizeTime(input, isPause);
             }
             dropdown.classList.remove('active');
+            resetDropdownPosition(dropdown);
 
             if (input.value.trim().length > 0) {
                 focusNextInput(input);
             }
         } else if (e.key === 'Escape') {
             dropdown.classList.remove('active');
+            resetDropdownPosition(dropdown);
         }
     });
 }
@@ -420,8 +487,12 @@ if (btnAddVuller) {
 }
 
 export function fillRoosterShifts(shifts) {
-    if (!shifts || shifts.length === 0) return;
+    if (!vullersContainer) return;
     vullersContainer.innerHTML = '';
+    if (!shifts || shifts.length === 0) {
+        createVullerRow();
+        return;
+    }
     shifts.forEach(s => {
         createVullerRow(s.name, s.from, s.to, s.pause);
     });
@@ -470,6 +541,8 @@ export function getFillersData() {
 
     return fillers;
 }
+
+export { setupAutocomplete, setupTimeInput, findExactUser, updateUsernameBadge };
 
 loadStoreUsers();
 createVullerRow();

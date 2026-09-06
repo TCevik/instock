@@ -124,6 +124,10 @@ export function showContextMenu(e, task, isAssigned = false, fillerId = null, ta
             ev.stopPropagation();
             hideContextMenu();
             if (remainingMins > 0) {
+                if (task.duration + remainingMins > 5760) {
+                    showToast('error', 'De maximale tijdsduur is 96 uur (5760 minuten).');
+                    return;
+                }
                 if (task.isHelper && mainInfo && mainInfo.task) {
                     if (mainInfo.task.duration - remainingMins < 1) {
                         showToast('error', 'Hoofdtaak kan niet minder dan 1 minuut duren');
@@ -211,6 +215,27 @@ export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIn
         }
     }
 
+    let origDuration = task.origDuration;
+    if (task.type === 'vullen' && Array.isArray(task.categoryDetails) && task.categoryDetails.length > 0) {
+        let totalMins = 0;
+        task.categoryDetails.forEach(it => {
+            const c = Number(it.colli) || 0;
+            const norm = Number(it.norm) || 50;
+            if (c > 0 && norm > 0) {
+                totalMins += (c / norm) * 60;
+            }
+        });
+        if (totalMins > 0) {
+            const calculated = Math.max(1, Math.round(totalMins));
+            if (origDuration === undefined || origDuration === null || (origDuration === task.duration && calculated !== task.duration)) {
+                origDuration = calculated;
+                task.origDuration = calculated;
+            }
+        }
+    }
+
+    const hasModifiedDuration = isAssigned && origDuration !== undefined && origDuration !== null && origDuration !== task.duration;
+
     let subtitle = '';
     if (isHelper) {
         subtitle = mainInfo && mainInfo.task
@@ -227,15 +252,21 @@ export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIn
             <h2 class="modal-title">${isHelper ? 'Helpertaak Bewerken' : (isAssigned ? 'Taak in Planning Bewerken' : 'Taak Bewerken')}</h2>
             <p class="modal-subtitle">${subtitle}</p>
         </div>
-        <form id="editCustomTaskForm" class="modal-form">
+        <form id="editCustomTaskForm" class="modal-form" novalidate>
             <div class="form-group">
                 <label>Taakomschrijving *</label>
                 <input type="text" id="editCustomTaskTitle" class="modal-input" value="${task.title || ''}" ${isHelper ? 'readonly style="opacity:0.75;cursor:not-allowed;"' : ''} required>
             </div>
             <div class="form-group">
                 <label>Tijdsduur (minuten) *</label>
-                <input type="number" min="1" ${maxHelperDuration !== null ? `max="${maxHelperDuration}"` : ''} id="editCustomTaskDuration" class="modal-input" value="${task.duration || 30}" required>
+                <input type="number" min="1" id="editCustomTaskDuration" class="modal-input" value="${task.duration || 30}" required>
+                <div id="editCustomTaskDurationError" style="display:none;font-size:12px;color:var(--danger-color);margin-top:2px;"></div>
                 ${isHelper && mainInfo && mainInfo.task ? `<small style="font-size:11px;color:var(--text-color-muted);margin-top:4px;display:block;">Hoofdtaak heeft nu ${mainInfo.task.duration} min (max. ${maxHelperDuration} min voor deze helper)</small>` : ''}
+                ${hasModifiedDuration ? `
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">
+                    <small style="font-size:12px;color:var(--text-color-muted);">Originele tijd: <strong style="color:var(--text-color);">${origDuration} min</strong> (${formatDuration(origDuration)})</small>
+                    <button type="button" id="btnRestoreOrigDuration" style="background:none;border:none;color:var(--accent-color);font-size:12px;font-weight:500;cursor:pointer;padding:0;">Herstellen en opslaan</button>
+                </div>` : ''}
             </div>
             <div class="modal-footer">
                 <button type="button" class="modal-btn-secondary" id="btnCancelEditCustomTask">Annuleren</button>
@@ -247,13 +278,57 @@ export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIn
     const overlay = await showModal(modalContent);
     const form = overlay.querySelector('#editCustomTaskForm');
     const cancelBtn = overlay.querySelector('#btnCancelEditCustomTask');
+    const restoreBtn = overlay.querySelector('#btnRestoreOrigDuration');
+    const durInput = overlay.querySelector('#editCustomTaskDuration');
+    const durError = overlay.querySelector('#editCustomTaskDurationError');
+
+    const validateDuration = () => {
+        const val = parseInt(durInput.value, 10);
+        if (isNaN(val) || val < 1) {
+            durInput.style.borderColor = 'var(--danger-color)';
+            durError.textContent = 'Voer een geldige tijdsduur in (minimaal 1 minuut).';
+            durError.style.display = 'block';
+            return false;
+        }
+        if (val > 5760) {
+            durInput.style.borderColor = 'var(--danger-color)';
+            durError.textContent = 'De maximale tijdsduur is 96 uur (5760 minuten).';
+            durError.style.display = 'block';
+            return false;
+        }
+        durInput.style.borderColor = '';
+        durError.style.display = 'none';
+        return true;
+    };
+
+    durInput.addEventListener('input', validateDuration);
+
+    if (restoreBtn) {
+        restoreBtn.addEventListener('click', () => {
+            if (durInput && origDuration) {
+                durInput.value = origDuration;
+                validateDuration();
+                if (typeof form.requestSubmit === 'function') {
+                    form.requestSubmit();
+                } else {
+                    form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                }
+            }
+        });
+    }
 
     cancelBtn.addEventListener('click', () => closeModal(overlay));
 
     form.addEventListener('submit', async (ev) => {
         ev.preventDefault();
         const newTitle = overlay.querySelector('#editCustomTaskTitle').value.trim();
-        const newDuration = parseInt(overlay.querySelector('#editCustomTaskDuration').value, 10) || 0;
+        const newDuration = parseInt(durInput.value, 10) || 0;
+
+        if (!validateDuration()) {
+            showToast('error', durError.textContent);
+            durInput.focus();
+            return;
+        }
 
         if (newTitle && newDuration > 0) {
             if (isHelper) {
@@ -275,8 +350,8 @@ export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIn
                 task.duration = newDuration;
                 currentMain.task.duration -= diff;
             } else if (isAssigned) {
-                if (task.origDuration === undefined) {
-                    task.origDuration = task.duration;
+                if (task.origDuration === undefined || task.origDuration === null) {
+                    task.origDuration = origDuration || task.duration;
                 }
                 if (task.origTitle === undefined) {
                     task.origTitle = task.title;
@@ -285,9 +360,6 @@ export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIn
                 task.duration = newDuration;
 
                 const helpers = findHelpersForMainTask(task);
-                const sumHelpers = helpers.reduce((acc, h) => acc + (h.task.duration || 0), 0);
-                task.origDuration = newDuration + sumHelpers;
-
                 helpers.forEach(h => {
                     h.task.title = `${newTitle} (Helper)`;
                     h.task.origTitle = `${newTitle} (Helper)`;

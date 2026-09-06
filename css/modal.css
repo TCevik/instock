@@ -13,6 +13,7 @@
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.2s ease, visibility 0.2s ease;
+    overflow-y: auto;
 }
 
 .modal-overlay.active {
@@ -26,12 +27,11 @@
     border-radius: 16px;
     width: 100%;
     max-width: 520px;
-    max-height: 90vh;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: visible;
     position: relative;
     box-sizing: border-box;
     padding: 32px 28px;
+    margin: auto;
     transform: scale(0.95);
     transition: transform 0.2s ease;
 }
@@ -96,13 +96,14 @@
     gap: 16px;
     min-width: 0;
     max-width: 100%;
-    overflow-x: hidden;
+    overflow: visible;
 }
 
 .modal-form {
     display: flex;
     flex-direction: column;
     gap: 16px;
+    overflow: visible;
 }
 
 .modal-form-row {
@@ -201,7 +202,7 @@
     border: 1px solid var(--card-border);
     border-radius: 12px;
     padding: 8px;
-    z-index: 20;
+    z-index: 100;
     display: none;
     flex-direction: column;
     gap: 4px;
@@ -351,7 +352,7 @@
     border: 1px solid var(--card-border);
     border-radius: 14px;
     padding: 12px;
-    z-index: 10;
+    z-index: 100;
     display: none;
     flex-direction: column;
     gap: 8px;
@@ -567,7 +568,8 @@
         width: 100%;
         max-width: 420px;
         height: auto;
-        max-height: calc(100dvh - 32px);
+        overflow: visible;
+        margin: auto;
         border-radius: 18px;
         border: 1px solid var(--card-border);
         padding: 22px 18px;

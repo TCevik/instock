@@ -1,3 +1,5 @@
+import { keepInViewport, resetDropdownPosition, bindViewportCheck } from './dropdown-utils.js';
+
 const MONTH_NAMES = [
     'Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni',
     'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'
@@ -287,6 +289,8 @@ export function createDatePicker(containerElement, initialDateStr = '', onSelect
         });
     }
 
+    bindViewportCheck(dropdown, root);
+
     function renderCalendar() {
         if (viewMode === 'years') {
             renderYears();
@@ -295,6 +299,9 @@ export function createDatePicker(containerElement, initialDateStr = '', onSelect
         } else {
             renderDays();
         }
+        if (dropdown.classList.contains('active')) {
+            keepInViewport(dropdown, root);
+        }
     }
 
     function openDropdown() {
@@ -302,10 +309,12 @@ export function createDatePicker(containerElement, initialDateStr = '', onSelect
         viewDate = selectedDate ? new Date(selectedDate) : new Date(2000, 0, 1);
         renderCalendar();
         dropdown.classList.add('active');
+        keepInViewport(dropdown, root);
     }
 
     function closeDropdown() {
         dropdown.classList.remove('active');
+        resetDropdownPosition(dropdown);
     }
 
     iconBtn.addEventListener('click', (e) => {
