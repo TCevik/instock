@@ -197,7 +197,7 @@ function renderTable() {
                     <td>${price}</td>
                     <td>${stock}</td>
                     <td class="td-actions">
-                        <button type="button" class="action-btn edit-btn" data-ean="${escapeHtml(product.ean)}" title="Bewerken">
+                        <button type="button" class="action-btn edit-btn" data-ean="${escapeHtml(product.ean)}" title="Product Bewerken - Gegevens en voorraad aanpassen">
                             <span class="material-icons">edit</span>
                         </button>
                     </td>

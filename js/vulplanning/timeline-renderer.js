@@ -557,7 +557,7 @@ export function renderTimelineRows(options) {
     const addRow = document.createElement('div');
     addRow.className = 'timeline-add-worker-row';
     addRow.innerHTML = `
-        <button type="button" class="btn-timeline-add-worker" title="Medewerker toevoegen">
+        <button type="button" class="btn-timeline-add-worker">
             <span class="material-icons">add</span>
             <span>Medewerker toevoegen</span>
         </button>

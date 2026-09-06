@@ -569,7 +569,7 @@ function renderTable() {
                     <td>${productivity}</td>
                     <td class="time-cell">${lastSignIn}</td>
                     <td class="td-actions">
-                        <button type="button" class="action-btn edit-btn" data-user-id="${escapeHtml(user.user_id)}" title="Bewerken">
+                        <button type="button" class="action-btn edit-btn" data-user-id="${escapeHtml(user.user_id)}" title="Gebruiker Bewerken - Gegevens en rechten aanpassen">
                             <span class="material-icons">edit</span>
                         </button>
                     </td>

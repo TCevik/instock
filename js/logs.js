@@ -125,7 +125,7 @@ function renderTable() {
                     </td>
                     <td class="time-cell">${escapeHtml(timeStr)}</td>
                     <td class="td-actions">
-                        <button type="button" class="action-btn view-details-btn" data-index="${idx}" title="Details bekijken">
+                        <button type="button" class="action-btn view-details-btn" data-index="${idx}" title="Log Details - Uitgebreide informatie van deze gebeurtenis inzien">
                             <span class="material-icons">visibility</span>
                         </button>
                     </td>

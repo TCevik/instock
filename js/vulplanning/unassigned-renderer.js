@@ -218,7 +218,7 @@ export function renderUnassignedTasks(options) {
                 <span class="unassigned-task-title" title="${task.title}">${task.title}</span>
                 <div class="assigned-card-top-right">
                     ${task.colli > 0 ? `<span class="unassigned-task-colli">${task.colli}c</span>` : ''}
-                    <button type="button" class="btn-card-unassign" title="Terug naar onverdeeld">
+                    <button type="button" class="btn-card-unassign" title="Terug naar Onverdeeld - Taak verwijderen bij medewerker">
                         <span class="material-icons">close</span>
                     </button>
                 </div>
@@ -228,7 +228,7 @@ export function renderUnassignedTasks(options) {
                 <div class="assigned-tags-wrapper">
                     <span class="assigned-filler-tag">${filler.name || 'Medewerker'}</span>
                     ${hasHelpers ? `
-                        <button type="button" class="btn-helpers-dropdown-toggle" title="Toon helpers">
+                        <button type="button" class="btn-helpers-dropdown-toggle" title="Helpers Tonen - Gekoppelde helpers voor deze taak inzien">
                             <span class="badge-helper-pill">${helpers.length} Helper${helpers.length > 1 ? 's' : ''}</span>
                             <span class="material-icons dropdown-arrow">expand_more</span>
                         </button>
@@ -243,7 +243,7 @@ export function renderUnassignedTasks(options) {
                                 <span class="assigned-helper-name" title="${h.filler.name || 'Helper'}">${h.filler.name || 'Helper'}</span>
                                 <span class="assigned-helper-dur">${formatDuration(h.task.duration)}</span>
                             </div>
-                            <button type="button" class="btn-card-unassign btn-helper-unassign" data-helper-idx="${hIdx}" title="Helper verwijderen">
+                            <button type="button" class="btn-card-unassign btn-helper-unassign" data-helper-idx="${hIdx}" title="Helper Verwijderen - Deze helper ontkoppelen van de taak">
                                 <span class="material-icons">close</span>
                             </button>
                         </div>

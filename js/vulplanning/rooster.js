@@ -493,7 +493,7 @@ function createVullerRow(name = '', from = '', to = '', pause = '', username = '
                 <div class="time-dropdown"></div>
             </div>
         </div>
-        <button type="button" class="btn-delete-row" title="Verwijder rij">
+        <button type="button" class="btn-delete-row" title="Rij Verwijderen - Medewerker uit het rooster verwijderen">
             <span class="material-icons">delete</span>
         </button>
     `;
