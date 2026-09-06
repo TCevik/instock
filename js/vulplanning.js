@@ -515,6 +515,15 @@ setupHistoryShortcuts({
     onRenderUnassigned: doRenderUnassigned
 });
 
+function hideLoadingScreen() {
+    const screen = document.getElementById('vulplanning-loading-screen');
+    if (!screen) return;
+    screen.classList.add('fade-out');
+    setTimeout(() => {
+        screen.remove();
+    }, 300);
+}
+
 loadSavedPlanning({
     stepInputView,
     stepTimelineView,
@@ -528,6 +537,8 @@ loadSavedPlanning({
         onRenderRows: doRenderRows,
         onRenderUnassigned: doRenderUnassigned
     });
+}).finally(() => {
+    hideLoadingScreen();
 });
 
 let lastWidth = window.innerWidth;

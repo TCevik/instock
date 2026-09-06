@@ -4,6 +4,7 @@ import { timeToMinutes, formatDuration, parsePauseMinutes } from './time-utils.j
 import { hideCustomTooltip } from './tooltip.js';
 import { triggerAutoSave } from './storage.js';
 import { openPauseModal } from './custom-task-modal.js';
+import { findMainTaskForHelper, findHelpersForMainTask } from './task-actions.js';
 
 let contextMenuElement = null;
 
@@ -39,6 +40,11 @@ export function showContextMenu(e, task, isAssigned = false, fillerId = null, ta
 
     let expandButtonHtml = '';
     let remainingMins = 0;
+    let mainInfo = null;
+
+    if (isAssigned && task.isHelper) {
+        mainInfo = findMainTaskForHelper(task);
+    }
 
     if (isAssigned && fillerId && taskIndex !== null) {
         const assignedList = planningState.assignedTasks[fillerId] || [];
@@ -64,6 +70,15 @@ export function showContextMenu(e, task, isAssigned = false, fillerId = null, ta
                 const targetShiftDuration = Math.max(0, shiftEnd - shiftStart - presetPause) + assignedPauzeMins;
                 
                 remainingMins = targetShiftDuration - totalAssigned;
+
+                if (task.isHelper) {
+                    if (!mainInfo || !mainInfo.task || mainInfo.task.duration <= 1) {
+                        remainingMins = 0;
+                    } else {
+                        remainingMins = Math.min(remainingMins, mainInfo.task.duration - 1);
+                    }
+                }
+
                 if (remainingMins > 0) {
                     expandButtonHtml = `
                         <button type="button" class="context-menu-item expand" id="ctx-expand-task">
@@ -109,13 +124,25 @@ export function showContextMenu(e, task, isAssigned = false, fillerId = null, ta
             ev.stopPropagation();
             hideContextMenu();
             if (remainingMins > 0) {
-                if (task.origDuration === undefined) {
-                    task.origDuration = task.duration;
+                if (task.isHelper && mainInfo && mainInfo.task) {
+                    if (mainInfo.task.duration - remainingMins < 1) {
+                        showToast('error', 'Hoofdtaak kan niet minder dan 1 minuut duren');
+                        return;
+                    }
+                    if (task.origDuration === undefined) {
+                        task.origDuration = task.duration;
+                    }
+                    task.duration += remainingMins;
+                    mainInfo.task.duration -= remainingMins;
+                } else {
+                    if (task.origDuration === undefined) {
+                        task.origDuration = task.duration;
+                    }
+                    task.duration += remainingMins;
                 }
-                task.duration += remainingMins;
                 if (callbacks.onRenderRows) callbacks.onRenderRows();
                 if (callbacks.onRenderUnassigned) callbacks.onRenderUnassigned();
-                triggerAutoSave();
+                triggerAutoSave(true);
             }
         });
     }
@@ -173,23 +200,42 @@ export function showContextMenu(e, task, isAssigned = false, fillerId = null, ta
 }
 
 export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIndex, callbacks = {}) {
-    const subtitle = isAssigned
-        ? 'Pas de tijdsduur of titel aan voor deze planning. De originele tijd blijft behouden.'
-        : 'Pas de taakomschrijving of standaardtijd aan in het overzicht.';
+    const isHelper = Boolean(isAssigned && task.isHelper);
+    let mainInfo = null;
+    let maxHelperDuration = null;
+
+    if (isHelper) {
+        mainInfo = findMainTaskForHelper(task);
+        if (mainInfo && mainInfo.task) {
+            maxHelperDuration = task.duration + mainInfo.task.duration - 1;
+        }
+    }
+
+    let subtitle = '';
+    if (isHelper) {
+        subtitle = mainInfo && mainInfo.task
+            ? `Helpertaak van "${mainInfo.task.title}". Tijd die je hier aanpast, wordt verrekend met de hoofdtaak.`
+            : 'Helpertaak in de planning.';
+    } else if (isAssigned) {
+        subtitle = 'Pas de tijdsduur of titel aan voor deze planning. De originele tijd blijft behouden.';
+    } else {
+        subtitle = 'Pas de taakomschrijving of standaardtijd aan in het overzicht.';
+    }
 
     const modalContent = `
         <div class="modal-header">
-            <h2 class="modal-title">${isAssigned ? 'Taak in Planning Bewerken' : 'Taak Bewerken'}</h2>
+            <h2 class="modal-title">${isHelper ? 'Helpertaak Bewerken' : (isAssigned ? 'Taak in Planning Bewerken' : 'Taak Bewerken')}</h2>
             <p class="modal-subtitle">${subtitle}</p>
         </div>
         <form id="editCustomTaskForm" class="modal-form">
             <div class="form-group">
                 <label>Taakomschrijving *</label>
-                <input type="text" id="editCustomTaskTitle" class="modal-input" value="${task.title || ''}" required>
+                <input type="text" id="editCustomTaskTitle" class="modal-input" value="${task.title || ''}" ${isHelper ? 'readonly style="opacity:0.75;cursor:not-allowed;"' : ''} required>
             </div>
             <div class="form-group">
                 <label>Tijdsduur (minuten) *</label>
-                <input type="number" min="1" id="editCustomTaskDuration" class="modal-input" value="${task.duration || 30}" required>
+                <input type="number" min="1" ${maxHelperDuration !== null ? `max="${maxHelperDuration}"` : ''} id="editCustomTaskDuration" class="modal-input" value="${task.duration || 30}" required>
+                ${isHelper && mainInfo && mainInfo.task ? `<small style="font-size:11px;color:var(--text-color-muted);margin-top:4px;display:block;">Hoofdtaak heeft nu ${mainInfo.task.duration} min (max. ${maxHelperDuration} min voor deze helper)</small>` : ''}
             </div>
             <div class="modal-footer">
                 <button type="button" class="modal-btn-secondary" id="btnCancelEditCustomTask">Annuleren</button>
@@ -210,7 +256,25 @@ export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIn
         const newDuration = parseInt(overlay.querySelector('#editCustomTaskDuration').value, 10) || 0;
 
         if (newTitle && newDuration > 0) {
-            if (isAssigned) {
+            if (isHelper) {
+                const currentMain = findMainTaskForHelper(task);
+                if (!currentMain || !currentMain.task) {
+                    showToast('error', 'Hoofdtaak niet gevonden');
+                    return;
+                }
+                const oldDuration = task.duration;
+                const diff = newDuration - oldDuration;
+                if (currentMain.task.duration - diff < 1) {
+                    showToast('error', `Te veel tijd! Hoofdtaak moet minimaal 1 minuut overhouden.`);
+                    return;
+                }
+
+                if (task.origDuration === undefined) {
+                    task.origDuration = oldDuration;
+                }
+                task.duration = newDuration;
+                currentMain.task.duration -= diff;
+            } else if (isAssigned) {
                 if (task.origDuration === undefined) {
                     task.origDuration = task.duration;
                 }
@@ -219,6 +283,15 @@ export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIn
                 }
                 task.title = newTitle;
                 task.duration = newDuration;
+
+                const helpers = findHelpersForMainTask(task);
+                const sumHelpers = helpers.reduce((acc, h) => acc + (h.task.duration || 0), 0);
+                task.origDuration = newDuration + sumHelpers;
+
+                helpers.forEach(h => {
+                    h.task.title = `${newTitle} (Helper)`;
+                    h.task.origTitle = `${newTitle} (Helper)`;
+                });
             } else {
                 task.title = newTitle;
                 task.duration = newDuration;
@@ -231,7 +304,7 @@ export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIn
             closeModal(overlay);
             if (callbacks.onRenderRows) callbacks.onRenderRows();
             if (callbacks.onRenderUnassigned) callbacks.onRenderUnassigned();
-            triggerAutoSave();
+            triggerAutoSave(true);
             showToast('notification', isAssigned ? 'Taak in planning bijgewerkt' : 'Taak succesvol bijgewerkt');
         }
     });

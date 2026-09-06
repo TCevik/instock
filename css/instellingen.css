@@ -1,96 +1,93 @@
-.page-header-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 24px;
-    gap: 16px;
-    flex-wrap: wrap;
-}
-
-.page-title {
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--text-color);
-}
-
-.page-header-actions {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.settings-card {
-    background-color: var(--card-background);
-    border: 1px solid var(--card-border);
-    border-radius: 14px;
-    padding: 24px;
+.instellingen-main-layout {
+    padding: 0 !important;
+    max-width: 100%;
+    height: calc(100vh - 60px);
+    height: calc(100dvh - 60px);
+    max-height: calc(100vh - 60px);
+    max-height: calc(100dvh - 60px);
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
-.settings-card-header {
+.instellingen-top-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: 12px;
+    margin: 0;
+    padding: 10px 16px;
+    background-color: var(--card-background);
+    border-bottom: 1px solid var(--card-border);
     flex-wrap: wrap;
-}
-
-.settings-card-title-group {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-}
-
-.settings-card-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    background-color: var(--input-background);
-    border: 1px solid var(--card-border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--accent-color);
     flex-shrink: 0;
 }
 
-.settings-card-icon .material-icons {
-    font-size: 24px;
+.instellingen-top-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
-.settings-card-title {
-    font-size: 18px;
+.instellingen-page-title {
+    font-size: 16px;
     font-weight: 700;
     color: var(--text-color);
+    margin: 0;
+    line-height: 1.2;
 }
 
-.settings-card-subtitle {
-    font-size: 13px;
+.instellingen-page-subtitle {
+    font-size: 11px;
     color: var(--text-color-muted);
+    margin: 0;
+}
+
+.instellingen-top-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.instellingen-top-actions .btn {
+    padding: 6px 14px;
+    font-size: 12px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+}
+
+.instellingen-top-actions .btn .btn-icon {
+    font-size: 16px;
 }
 
 .btn-secondary {
     background-color: var(--input-background);
     border: 1px solid var(--card-border);
     color: var(--text-color);
-    border-radius: 12px;
-    padding: 10px 18px;
-    font-size: 14px;
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
     transition: background-color 0.2s, border-color 0.2s;
 }
 
 .btn-secondary.btn-sm {
-    padding: 8px 12px;
-    font-size: 13px;
-    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 11px;
+    border-radius: 4px;
+}
+
+.btn-secondary.btn-sm .btn-icon {
+    font-size: 14px;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -106,34 +103,37 @@
 }
 
 .paths-master-detail {
-    display: grid;
-    grid-template-columns: 320px 1fr;
-    gap: 20px;
-    min-height: 520px;
-    align-items: start;
+    display: flex;
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .paths-sidebar {
-    background-color: var(--input-background);
-    border: 1px solid var(--card-border);
-    border-radius: 12px;
+    width: 300px;
+    min-width: 300px;
+    max-width: 300px;
+    background-color: var(--card-background);
+    border-right: 1px solid var(--card-border);
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    max-height: 700px;
+    height: 100%;
+    flex-shrink: 0;
 }
 
 .paths-sidebar-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 16px;
+    padding: 10px 16px;
     border-bottom: 1px solid var(--card-border);
     background-color: var(--card-background);
+    flex-shrink: 0;
 }
 
 .paths-sidebar-title {
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.5px;
     text-transform: uppercase;
@@ -145,7 +145,9 @@
     flex-direction: column;
     overflow-y: auto;
     gap: 4px;
-    padding: 8px;
+    padding: 10px 8px;
+    flex: 1 1 0%;
+    min-height: 0;
 }
 
 .path-nav-item {
@@ -209,14 +211,16 @@
 }
 
 .paths-detail-panel {
-    background-color: var(--input-background);
-    border: 1px solid var(--card-border);
-    border-radius: 12px;
-    padding: 24px;
+    flex: 1 1 0%;
+    min-width: 0;
+    height: 100%;
+    overflow-y: auto;
+    background-color: var(--background-color);
+    padding: 24px 32px;
     display: flex;
     flex-direction: column;
     gap: 20px;
-    min-height: 520px;
+    box-sizing: border-box;
 }
 
 .detail-header {
@@ -518,79 +522,52 @@
 }
 
 @media (max-width: 960px) and (min-width: 769px) {
-    .paths-master-detail {
-        grid-template-columns: 280px 1fr;
+    .paths-sidebar {
+        width: 260px;
+        min-width: 260px;
+        max-width: 260px;
     }
 }
 
 @media (max-width: 768px) {
-    .page-header-row {
-        margin-bottom: 14px;
+    .instellingen-top-bar {
+        padding: 8px 12px;
     }
 
-    .page-title {
-        font-size: 22px;
-    }
-
-    .page-header-actions {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background-color: var(--card-background);
-        border-top: 1px solid var(--card-border);
-        padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
-        z-index: 90;
-    }
-
-    .page-header-actions .btn {
-        width: 100%;
-        height: 48px;
+    .instellingen-page-title {
         font-size: 15px;
-        font-weight: 600;
-        border-radius: 12px;
     }
 
-    .page-container {
-        padding: 16px 14px 96px;
+    .instellingen-page-subtitle {
+        font-size: 11px;
     }
 
-    .settings-card {
-        background-color: transparent;
-        border: none;
-        border-radius: 0;
-        padding: 0;
-        gap: 16px;
-    }
-
-    .settings-card[data-mobile-view="detail"] .settings-card-header {
-        display: none;
+    .instellingen-top-actions .btn {
+        padding: 6px 12px;
+        font-size: 12px;
     }
 
     .paths-master-detail {
-        grid-template-columns: 1fr;
-        gap: 0;
-        min-height: auto;
+        flex-direction: column;
     }
 
-    .paths-master-detail[data-mobile-view="list"] .paths-sidebar {
-        display: flex;
+    .paths-sidebar {
         width: 100%;
-        max-height: none;
+        min-width: 100%;
+        max-width: 100%;
+        border-right: none;
         background-color: transparent;
-        border: none;
-        border-radius: 0;
     }
 
     .paths-sidebar-header {
         background-color: transparent;
         border-bottom: 1px solid var(--card-border);
-        padding: 8px 2px;
+        padding: 10px 12px;
     }
 
     .paths-list {
-        padding: 8px 0;
-        gap: 8px;
+        padding: 8px 12px;
+        gap: 6px;
     }
 
     .paths-master-detail[data-mobile-view="list"] .paths-detail-panel {

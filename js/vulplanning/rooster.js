@@ -7,15 +7,22 @@ const btnAddVuller = document.getElementById('btn-add-vuller');
 const btnImportRooster = document.getElementById('btn-import-rooster');
 
 let availableUsers = [];
+let storeUsersPromise = null;
 
-async function loadStoreUsers() {
-    const { data: users, error } = await supabase
-        .from('user_data')
-        .select('user_id, full_name, username');
+export function loadStoreUsers() {
+    if (!storeUsersPromise) {
+        storeUsersPromise = (async () => {
+            const { data: users, error } = await supabase
+                .from('user_data')
+                .select('user_id, full_name, username');
 
-    if (!error && users) {
-        availableUsers = users;
+            if (!error && users) {
+                availableUsers = users;
+            }
+            return availableUsers;
+        })();
     }
+    return storeUsersPromise;
 }
 
 function filterUsers(query) {

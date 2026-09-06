@@ -1,6 +1,6 @@
 import { supabase, getCurrentUser } from '../main.js';
 import { planningState } from './state.js';
-import { fillRoosterShifts } from './rooster.js';
+import { fillRoosterShifts, loadStoreUsers } from './rooster.js';
 import { fillColliValues, loadStorePathsForColli } from './colli-invoer.js';
 import { generateTasksFromPathsAndColli } from './task-generator.js';
 import { calculateTimelineBounds } from './timeline-axis.js';
@@ -25,7 +25,8 @@ export async function loadSavedPlanning(options = {}) {
                 .select('*')
                 .eq('store_id', user.store_id)
                 .maybeSingle(),
-            loadStorePathsForColli()
+            loadStorePathsForColli(),
+            loadStoreUsers()
         ]);
 
         const data = plannerResult.data;

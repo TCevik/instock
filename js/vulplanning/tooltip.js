@@ -29,7 +29,10 @@ export function showCustomTooltip(e, data) {
 
     let durationHtml = '';
     if (data.duration && !data.isFlexible) {
-        durationHtml = `<span class="tooltip-detail-item">${formatDuration(data.duration)}</span>`;
+        const durText = data.origDuration && data.origDuration !== data.duration
+            ? `${formatDuration(data.origDuration)} &bull; ${formatDuration(data.duration)}`
+            : formatDuration(data.duration);
+        durationHtml = `<span class="tooltip-detail-item">${durText}</span>`;
     }
 
     tip.innerHTML = `

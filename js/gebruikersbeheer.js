@@ -41,13 +41,15 @@ function formatDateTime(isoString) {
 }
 
 const PAGE_SIZE = 30;
-let allUsers = [];
-let filteredUsers = [];
+let currentUsers = [];
+let totalUsers = 0;
 let currentPage = 1;
 let currentRoleFilter = 'all';
 let searchQuery = '';
+let searchDebounceTimer = null;
 let currentSortKey = 'name';
 let currentSortDirection = 'asc';
+let knownDepartments = new Set();
 
 function getRoleLabel(role) {
     return ROLE_MAP[role] || String(role ?? 'Onbekend');
@@ -76,9 +78,22 @@ function renderDepartmentBadges(deptVal, maxVisible = 2, fallback = '-') {
     return `<div class="departments-list">${badges}${more}</div>`;
 }
 
+async function loadDistinctDepartments() {
+    const { data } = await supabase.from('user_data').select('departments');
+    if (data) {
+        data.forEach(u => {
+            parseUserDepartments(u.departments).forEach(d => {
+                if (d && String(d).trim()) {
+                    knownDepartments.add(String(d).trim());
+                }
+            });
+        });
+    }
+}
+
 function getDistinctDepartments(extraDepts = []) {
-    const set = new Set();
-    allUsers.forEach(u => {
+    const set = new Set(knownDepartments);
+    currentUsers.forEach(u => {
         const depts = parseUserDepartments(u.departments);
         depts.forEach(d => {
             if (d && String(d).trim()) {
@@ -113,6 +128,7 @@ async function promptNewDepartment(selectInstance) {
     });
     if (!newDept || !newDept.trim()) return;
     const cleanDept = newDept.trim();
+    knownDepartments.add(cleanDept);
     const currentSelected = selectInstance.getValue();
     const nextSelected = Array.isArray(currentSelected) 
         ? (currentSelected.includes(cleanDept) ? currentSelected : [...currentSelected, cleanDept])
@@ -151,6 +167,7 @@ async function invokeUserManagement(action, payload) {
 }
 
 async function openCreateModal() {
+    await loadDistinctDepartments();
     await showModal(`
         <div class="modal-header">
             <h2 class="modal-title">Nieuwe gebruiker</h2>
@@ -270,7 +287,16 @@ async function openCreateModal() {
 }
 
 async function openEditModal(userId) {
-    const user = allUsers.find(u => String(u.user_id) === String(userId));
+    await loadDistinctDepartments();
+    let user = currentUsers.find(u => String(u.user_id) === String(userId));
+    if (!user) {
+        const { data } = await supabase
+            .from('user_data')
+            .select('user_id, full_name, username, role, departments, birthday, productivity, last_sign_in_at')
+            .eq('user_id', userId)
+            .maybeSingle();
+        user = data;
+    }
     if (!user) return;
 
     const fullName = escapeHtml(user.full_name || '');
@@ -448,74 +474,43 @@ function updateSortIcons() {
     });
 }
 
-function applyFiltersAndSort() {
-    let result = [...allUsers];
+function getDbSortColumn(sortKey) {
+    if (sortKey === 'name') return 'full_name';
+    return sortKey;
+}
+
+async function loadUsers() {
+    const from = (currentPage - 1) * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+
+    let query = supabase
+        .from('user_data')
+        .select('user_id, full_name, username, role, departments, birthday, productivity, last_sign_in_at', { count: 'exact' });
 
     if (currentRoleFilter && currentRoleFilter !== 'all') {
-        const roleNum = Number(currentRoleFilter);
-        result = result.filter(u => Number(u.role) === roleNum);
+        query = query.eq('role', Number(currentRoleFilter));
     }
 
-    const q = searchQuery.toLowerCase().trim();
+    const q = searchQuery.trim();
     if (q) {
-        result = result.filter(user => {
-            const name = (user.full_name || '').toLowerCase();
-            const username = (user.username || '').toLowerCase();
-            const departments = parseUserDepartments(user.departments).join(' ').toLowerCase();
-            return name.includes(q) || username.includes(q) || departments.includes(q);
-        });
+        query = query.or(`full_name.ilike.%${q}%,username.ilike.%${q}%`);
     }
 
-    result.sort((a, b) => {
-        let valA, valB;
+    const sortCol = getDbSortColumn(currentSortKey);
+    query = query
+        .order(sortCol, { ascending: currentSortDirection === 'asc', nullsFirst: false })
+        .range(from, to);
 
-        if (currentSortKey === 'name') {
-            valA = (a.full_name || a.username || '').toLowerCase();
-            valB = (b.full_name || b.username || '').toLowerCase();
-            return currentSortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-        }
+    const { data: users, count, error } = await query;
 
-        if (currentSortKey === 'username') {
-            valA = (a.username || '').toLowerCase();
-            valB = (b.username || '').toLowerCase();
-            return currentSortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-        }
+    if (!error && users) {
+        currentUsers = users;
+        totalUsers = count ?? 0;
+    } else {
+        currentUsers = [];
+        totalUsers = 0;
+    }
 
-        if (currentSortKey === 'role') {
-            valA = Number(a.role) || 0;
-            valB = Number(b.role) || 0;
-            return currentSortDirection === 'asc' ? valA - valB : valB - valA;
-        }
-
-        if (currentSortKey === 'departments') {
-            valA = parseUserDepartments(a.departments).join(', ').toLowerCase();
-            valB = parseUserDepartments(b.departments).join(', ').toLowerCase();
-            return currentSortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-        }
-
-        if (currentSortKey === 'birthday') {
-            valA = a.birthday ? new Date(a.birthday).getTime() : 0;
-            valB = b.birthday ? new Date(b.birthday).getTime() : 0;
-            return currentSortDirection === 'asc' ? valA - valB : valB - valA;
-        }
-
-        if (currentSortKey === 'productivity') {
-            valA = a.productivity !== null && a.productivity !== undefined ? Number(a.productivity) : -1;
-            valB = b.productivity !== null && b.productivity !== undefined ? Number(b.productivity) : -1;
-            return currentSortDirection === 'asc' ? valA - valB : valB - valA;
-        }
-
-        if (currentSortKey === 'last_sign_in_at') {
-            valA = a.last_sign_in_at ? new Date(a.last_sign_in_at).getTime() : 0;
-            valB = b.last_sign_in_at ? new Date(b.last_sign_in_at).getTime() : 0;
-            return currentSortDirection === 'asc' ? valA - valB : valB - valA;
-        }
-
-        return 0;
-    });
-
-    filteredUsers = result;
-    currentPage = 1;
     updateSortIcons();
     renderTable();
 }
@@ -530,17 +525,15 @@ function renderTable() {
 
     if (!tbody) return;
 
-    const totalUsers = filteredUsers.length;
     const totalPages = Math.max(1, Math.ceil(totalUsers / PAGE_SIZE));
 
     if (currentPage > totalPages) currentPage = totalPages;
     if (currentPage < 1) currentPage = 1;
 
     const startIndex = (currentPage - 1) * PAGE_SIZE;
-    const endIndex = Math.min(startIndex + PAGE_SIZE, totalUsers);
-    const pageUsers = filteredUsers.slice(startIndex, endIndex);
+    const endIndex = Math.min(startIndex + currentUsers.length, totalUsers);
 
-    if (pageUsers.length === 0) {
+    if (currentUsers.length === 0) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="8" class="empty-state">Geen gebruikers gevonden</td>
@@ -550,7 +543,7 @@ function renderTable() {
             cardsContainer.innerHTML = `<div class="empty-state">Geen gebruikers gevonden</div>`;
         }
     } else {
-        tbody.innerHTML = pageUsers.map(user => {
+        tbody.innerHTML = currentUsers.map(user => {
             const displayName = escapeHtml(user.full_name?.trim() || user.username?.trim() || 'Gebruiker');
             const username = escapeHtml(user.username ? `@${user.username}` : '-');
             const role = escapeHtml(getRoleLabel(user.role));
@@ -585,7 +578,7 @@ function renderTable() {
         }).join('');
 
         if (cardsContainer) {
-            cardsContainer.innerHTML = pageUsers.map(user => {
+            cardsContainer.innerHTML = currentUsers.map(user => {
                 const displayName = escapeHtml(user.full_name?.trim() || user.username?.trim() || 'Gebruiker');
                 const username = escapeHtml(user.username ? `@${user.username}` : '');
                 const role = escapeHtml(getRoleLabel(user.role));
@@ -634,17 +627,6 @@ function renderTable() {
     if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
 }
 
-async function loadUsers() {
-    const { data: users, error } = await supabase
-        .from('user_data')
-        .select('user_id, full_name, username, role, departments, birthday, productivity, last_sign_in_at');
-
-    if (error || !users) return;
-
-    allUsers = users;
-    applyFiltersAndSort();
-}
-
 const roleFilterContainer = document.getElementById('roleFilterContainer');
 if (roleFilterContainer) {
     createCustomSelect(roleFilterContainer, [
@@ -654,7 +636,8 @@ if (roleFilterContainer) {
         { value: '3', label: 'Beheerder' }
     ], 'all', 'Filter op rol', (val) => {
         currentRoleFilter = val;
-        applyFiltersAndSort();
+        currentPage = 1;
+        loadUsers();
     });
 }
 
@@ -662,7 +645,11 @@ const searchInput = document.getElementById('searchInput');
 if (searchInput) {
     searchInput.addEventListener('input', (e) => {
         searchQuery = e.target.value;
-        applyFiltersAndSort();
+        if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => {
+            currentPage = 1;
+            loadUsers();
+        }, 300);
     });
 }
 
@@ -677,7 +664,8 @@ document.querySelectorAll('.th-sortable').forEach(th => {
             currentSortKey = key;
             currentSortDirection = 'asc';
         }
-        applyFiltersAndSort();
+        currentPage = 1;
+        loadUsers();
     });
 });
 
@@ -693,7 +681,7 @@ if (prevPageBtn) {
     prevPageBtn.addEventListener('click', () => {
         if (currentPage > 1) {
             currentPage--;
-            renderTable();
+            loadUsers();
         }
     });
 }
@@ -701,10 +689,10 @@ if (prevPageBtn) {
 const nextPageBtn = document.getElementById('nextPageBtn');
 if (nextPageBtn) {
     nextPageBtn.addEventListener('click', () => {
-        const totalPages = Math.ceil(filteredUsers.length / PAGE_SIZE);
+        const totalPages = Math.ceil(totalUsers / PAGE_SIZE);
         if (currentPage < totalPages) {
             currentPage++;
-            renderTable();
+            loadUsers();
         }
     });
 }

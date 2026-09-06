@@ -185,36 +185,10 @@ export function unassignTask(fillerId, taskIndex, callbacks = {}) {
 
     const [task] = assignedList.splice(taskIndex, 1);
 
-    if (task.isHelper && task.parentTaskId && task.helperOfFillerId) {
-        const rootTaskId = task.parentTaskId;
-        const mainFillerId = task.helperOfFillerId;
-        const mainList = planningState.assignedTasks[mainFillerId];
-        const mainTask = mainList ? mainList.find(t => t.id === rootTaskId) : null;
-
-        if (mainTask) {
-            const existingHelpers = [];
-            planningState.fillers.forEach(f => {
-                const flist = planningState.assignedTasks[f.id] || [];
-                flist.forEach((t, idx) => {
-                    if (t.isHelper && t.parentTaskId === rootTaskId) {
-                        existingHelpers.push({ fillerId: f.id, taskIndex: idx, task: t });
-                    }
-                });
-            });
-
-            const totalOrig = mainTask.origDuration || (mainTask.duration + task.duration);
-            const totalPeople = 1 + existingHelpers.length;
-            const baseMinutes = Math.floor(totalOrig / totalPeople);
-            let remainder = totalOrig % totalPeople;
-
-            mainTask.duration = baseMinutes + (remainder > 0 ? 1 : 0);
-            if (remainder > 0) remainder--;
-
-            existingHelpers.forEach(h => {
-                const add = remainder > 0 ? 1 : 0;
-                if (remainder > 0) remainder--;
-                h.task.duration = baseMinutes + add;
-            });
+    if (task.isHelper && task.parentTaskId) {
+        const mainInfo = findMainTaskForHelper(task);
+        if (mainInfo && mainInfo.task) {
+            mainInfo.task.duration += task.duration;
         }
     } else {
         const rootTaskId = task.id;
@@ -421,30 +395,6 @@ export function moveAssignedTask(fromFillerId, fromIndex, toFillerId, insertInde
                     }
                 });
             });
-
-            const remainingHelpers = [];
-            planningState.fillers.forEach(f => {
-                const flist = planningState.assignedTasks[f.id] || [];
-                flist.forEach(t => {
-                    if (t.isHelper && t.parentTaskId === rootTaskId) {
-                        remainingHelpers.push(t);
-                    }
-                });
-            });
-
-            const totalOrig = task.origDuration || task.duration;
-            const totalPeople = 1 + remainingHelpers.length;
-            const baseMinutes = Math.floor(totalOrig / totalPeople);
-            let remainder = totalOrig % totalPeople;
-
-            task.duration = baseMinutes + (remainder > 0 ? 1 : 0);
-            if (remainder > 0) remainder--;
-
-            remainingHelpers.forEach(h => {
-                const add = remainder > 0 ? 1 : 0;
-                if (remainder > 0) remainder--;
-                h.duration = baseMinutes + add;
-            });
         }
     }
 
@@ -459,4 +409,32 @@ export function moveAssignedTask(fromFillerId, fromIndex, toFillerId, insertInde
     if (callbacks.onRenderRows) callbacks.onRenderRows();
     if (callbacks.onRenderUnassigned) callbacks.onRenderUnassigned();
     triggerAutoSave(true);
+}
+
+export function findMainTaskForHelper(helperTask) {
+    if (!helperTask || !helperTask.isHelper || !helperTask.parentTaskId) return null;
+    const rootId = helperTask.parentTaskId;
+    for (const f of planningState.fillers) {
+        const list = planningState.assignedTasks[f.id] || [];
+        const found = list.find(t => t.id === rootId && !t.isHelper);
+        if (found) {
+            return { fillerId: f.id, task: found };
+        }
+    }
+    return null;
+}
+
+export function findHelpersForMainTask(mainTask) {
+    if (!mainTask) return [];
+    const rootId = mainTask.id;
+    const helpers = [];
+    planningState.fillers.forEach(f => {
+        const list = planningState.assignedTasks[f.id] || [];
+        list.forEach((t, idx) => {
+            if (t.isHelper && t.parentTaskId === rootId) {
+                helpers.push({ fillerId: f.id, taskIndex: idx, task: t });
+            }
+        });
+    });
+    return helpers;
 }

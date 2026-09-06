@@ -29,6 +29,7 @@ textarea[disabled] {
     flex-direction: column;
     overflow: hidden;
     box-sizing: border-box;
+    position: relative;
 }
 
 .vulplanning-step-view {
@@ -211,4 +212,50 @@ textarea[disabled] {
     padding: 16px 12px;
     color: var(--text-color-muted);
     font-size: 12px;
+}
+
+.vulplanning-loading-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--background-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    z-index: 50;
+    opacity: 1;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+    visibility: visible;
+}
+
+.vulplanning-loading-screen.fade-out {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.vulplanning-loading-spinner {
+    width: 42px;
+    height: 42px;
+    border: 3px solid var(--card-border);
+    border-top-color: var(--accent-color);
+    border-radius: 50%;
+    animation: vulplanning-spin 0.8s linear infinite;
+}
+
+.vulplanning-loading-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-color-muted);
+    letter-spacing: 0.3px;
+}
+
+@keyframes vulplanning-spin {
+    to {
+        transform: rotate(360deg);
+    }
 }

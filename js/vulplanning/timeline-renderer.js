@@ -242,7 +242,7 @@ export function renderTimelineRows(options) {
                     <span class="timeline-task-title">${task.title}</span>
                 </div>
                 <div class="task-block-footer">
-                    <span class="timeline-task-meta-dur">${formatDuration(task.duration)}</span>
+                    <span class="timeline-task-meta-dur">${!task.isHelper && task.origDuration && task.origDuration !== task.duration ? `${formatDuration(task.origDuration)} &bull; ${formatDuration(task.duration)}` : formatDuration(task.duration)}</span>
                     <span class="timeline-task-meta-time">${startStr} - ${endStr}</span>
                 </div>
             `;
@@ -262,6 +262,7 @@ export function renderTimelineRows(options) {
                     type: task.type,
                     title: task.title,
                     duration: task.duration,
+                    origDuration: !task.isHelper ? task.origDuration : null,
                     colli: task.colli,
                     startStr: startStr,
                     endStr: endStr,

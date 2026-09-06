@@ -224,7 +224,7 @@ export function renderUnassignedTasks(options) {
                 </div>
             </div>
             <div class="assigned-card-subrow">
-                <span class="unassigned-task-duration">${formatDuration(task.duration)}</span>
+                <span class="unassigned-task-duration">${hasHelpers && task.origDuration && task.origDuration !== task.duration ? `${formatDuration(task.origDuration)} &bull; ${formatDuration(task.duration)}` : formatDuration(task.duration)}</span>
                 <div class="assigned-tags-wrapper">
                     <span class="assigned-filler-tag">${filler.name || 'Medewerker'}</span>
                     ${hasHelpers ? `
@@ -253,17 +253,32 @@ export function renderUnassignedTasks(options) {
         `;
 
         card.addEventListener('mouseenter', (e) => {
+            if (e.target.closest('.assigned-helper-row')) return;
             showCustomTooltip(e, {
                 type: task.type,
                 title: task.title,
                 duration: task.duration,
+                origDuration: hasHelpers ? task.origDuration : null,
                 colli: task.colli,
                 isHelper: false
             });
         });
 
         card.addEventListener('mousemove', (e) => {
-            positionCustomTooltip(e);
+            if (e.target.closest('.assigned-helper-row')) return;
+            const tip = document.querySelector('.custom-planning-tooltip');
+            if (!tip || !tip.classList.contains('visible') || tip.querySelector('.tooltip-badge-pill.type-helper')) {
+                showCustomTooltip(e, {
+                    type: task.type,
+                    title: task.title,
+                    duration: task.duration,
+                    origDuration: hasHelpers ? task.origDuration : null,
+                    colli: task.colli,
+                    isHelper: false
+                });
+            } else {
+                positionCustomTooltip(e);
+            }
         });
 
         card.addEventListener('mouseleave', () => {
@@ -305,6 +320,62 @@ export function renderUnassignedTasks(options) {
                 toggleBtn.classList.toggle('is-open', isOpen);
             });
         }
+
+        const helperRows = card.querySelectorAll('.assigned-helper-row');
+        helperRows.forEach(row => {
+            const hIdx = parseInt(row.getAttribute('data-helper-idx'), 10);
+            const h = helpers[hIdx];
+            if (!h) return;
+
+            row.addEventListener('mouseenter', (e) => {
+                e.stopPropagation();
+                showCustomTooltip(e, {
+                    type: h.task.type,
+                    title: `${task.title} (Helper: ${h.filler.name || 'Medewerker'})`,
+                    duration: h.task.duration,
+                    colli: 0,
+                    isHelper: true
+                });
+            });
+
+            row.addEventListener('mousemove', (e) => {
+                e.stopPropagation();
+                positionCustomTooltip(e);
+            });
+
+            row.addEventListener('mouseleave', (e) => {
+                e.stopPropagation();
+                if (e.relatedTarget && card.contains(e.relatedTarget) && !e.relatedTarget.closest('.assigned-helper-row')) {
+                    showCustomTooltip(e, {
+                        type: task.type,
+                        title: task.title,
+                        duration: task.duration,
+                        origDuration: hasHelpers ? task.origDuration : null,
+                        colli: task.colli,
+                        isHelper: false
+                    });
+                } else {
+                    hideCustomTooltip();
+                }
+            });
+
+            row.addEventListener('contextmenu', (e) => {
+                e.stopPropagation();
+                showContextMenu(e, h.task, true, h.filler.id, h.taskIndex, {
+                    onRenderRows,
+                    onRenderUnassigned,
+                    onUnassignTask
+                });
+            });
+
+            row.addEventListener('dblclick', (e) => {
+                e.stopPropagation();
+                hideCustomTooltip();
+                if (onUnassignTask) {
+                    onUnassignTask(h.filler.id, h.taskIndex);
+                }
+            });
+        });
 
         const helperUnassignBtns = card.querySelectorAll('.btn-helper-unassign');
         helperUnassignBtns.forEach(btn => {
