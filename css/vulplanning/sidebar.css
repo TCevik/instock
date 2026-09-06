@@ -60,7 +60,6 @@
 
 .unassigned-sidebar-header {
     padding: 6px 10px;
-    border-bottom: 1px solid var(--card-border);
     background-color: var(--card-background);
     display: flex;
     flex-direction: column;
