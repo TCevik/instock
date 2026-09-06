@@ -36,6 +36,14 @@
     }
 
     .timeline-header-actions {
+        display: flex !important;
+        gap: 6px;
+    }
+
+    .timeline-header-actions #btn-add-custom-task,
+    .timeline-header-actions #btn-combo-settings,
+    .timeline-header-actions a[title="Winkelinstellingen"],
+    .timeline-header-actions .timeline-header-divider {
         display: none !important;
     }
 

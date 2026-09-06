@@ -16,6 +16,7 @@ import { openComboSettingsModal, loadComboSettings } from './vulplanning/combo-s
 import { initHistory, setupHistoryShortcuts } from './vulplanning/history.js';
 import { renderMobilePlanningView } from './vulplanning/mobile-view.js';
 import { hideCustomTooltip } from './vulplanning/tooltip.js';
+import { setupPrintPlanning } from './vulplanning/print-planning.js';
 
 window.__draggedTaskDataRef = getDraggedTaskData;
 
@@ -27,6 +28,7 @@ const btnBackToTimeline = document.getElementById('btn-back-to-timeline');
 const btnUnifiedImport = document.getElementById('btn-unified-import');
 const btnContinue = document.getElementById('btn-continue');
 const btnBackToInput = document.getElementById('btn-back-to-input');
+const btnPrintPlanning = document.getElementById('btn-print-planning');
 const btnAddCustomTask = document.getElementById('btn-add-custom-task');
 const btnComboSettings = document.getElementById('btn-combo-settings');
 const timelineWorkersList = document.getElementById('timeline-workers-list');
@@ -455,6 +457,8 @@ if (unassignedListSection) {
 setupCustomTaskModal(btnAddCustomTask, {
     onRenderUnassigned: doRenderUnassigned
 });
+
+setupPrintPlanning(btnPrintPlanning);
 
 loadComboSettings();
 

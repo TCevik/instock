@@ -40,7 +40,7 @@ export function generateTasksFromPathsAndColli() {
         tasks.push({
             id: `task_fill_${idCounter++}`,
             type: 'vullen',
-            title: `${pathName} (${totalColli} c)`,
+            title: pathName,
             pathName: pathName,
             colli: totalColli,
             duration: Math.max(1, Math.round(totalMinutes)),

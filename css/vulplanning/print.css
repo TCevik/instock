@@ -1,0 +1,235 @@
+#print-planning-container {
+    display: none;
+}
+
+@media print {
+    @page {
+        size: landscape;
+        margin: 3mm 5mm 3mm 5mm;
+    }
+
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+        text-shadow: none !important;
+        box-shadow: none !important;
+    }
+
+    html,
+    body {
+        background-color: var(--print-bg) !important;
+        color: var(--print-text) !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+        font-family: 'Poppins', sans-serif !important;
+        font-size: 9.5px;
+        line-height: 1.15;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .app-header,
+    .app-sidebar,
+    #sidebarBackdrop,
+    .vulplanning-main-layout,
+    .modal-backdrop,
+    .custom-tooltip,
+    .context-menu,
+    .toast-container {
+        display: none !important;
+    }
+
+    #print-planning-container {
+        display: block !important;
+        width: 100% !important;
+        background-color: var(--print-bg) !important;
+        color: var(--print-text) !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid-page !important;
+    }
+
+    .print-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        border-bottom: 2px solid var(--accent-color);
+        padding-bottom: 2px;
+        margin-bottom: 3px;
+    }
+
+    .print-main-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--print-text);
+        line-height: 1;
+        letter-spacing: -0.2px;
+    }
+
+    .print-timestamp {
+        font-size: 9.5px;
+        font-weight: 600;
+        color: var(--print-text-muted);
+    }
+
+    .print-planning-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .print-planning-table thead th {
+        text-align: left;
+        font-size: 8.5px;
+        font-weight: 700;
+        letter-spacing: 0.4px;
+        color: var(--print-text-muted);
+        text-transform: uppercase;
+        padding: 1px 5px 3px 5px;
+        border-bottom: 1px solid var(--print-border);
+    }
+
+    .print-th-worker {
+        width: 120px;
+    }
+
+    .print-th-time {
+        width: 125px;
+    }
+
+    .print-th-endtime {
+        width: 55px;
+    }
+
+    .print-th-tasks {
+        width: auto;
+    }
+
+    .print-worker-row {
+        page-break-inside: avoid;
+        break-inside: avoid-page;
+        border-bottom: 1px solid var(--print-border);
+    }
+
+    .print-worker-row td {
+        padding: 2.5px 5px;
+        vertical-align: middle;
+    }
+
+    .print-worker-cell-name {
+        font-size: 10.5px;
+        font-weight: 700;
+        color: var(--print-text);
+        line-height: 1.15;
+    }
+
+    .print-worker-cell-hours {
+        font-size: 8.5px;
+        font-weight: 500;
+        color: var(--print-text-muted);
+        margin-top: 1px;
+    }
+
+    .print-statbox {
+        border: 1px solid var(--print-border);
+        border-radius: 4px;
+        background-color: var(--print-header-bg);
+        padding: 2px 4px;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        font-size: 8px;
+        color: var(--print-text-muted);
+        width: fit-content;
+        line-height: 1.1;
+    }
+
+    .print-statbox-line {
+        white-space: nowrap;
+    }
+
+    .print-statbox-line strong {
+        color: var(--print-text);
+        font-weight: 600;
+    }
+
+    .print-endtime-box {
+        width: 40px;
+        height: 19px;
+        border: 1px solid var(--print-border);
+        border-radius: 4px;
+        background-color: var(--print-bg);
+    }
+
+    .print-tasks-wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2px 4px;
+        align-items: center;
+    }
+
+    .print-task-pill {
+        border: 1px solid var(--print-border);
+        border-left-width: 2.5px;
+        border-radius: 3px;
+        background-color: var(--print-bg);
+        padding: 1.5px 4px;
+        display: flex;
+        flex-direction: column;
+        gap: 0px;
+        font-size: 8px;
+        min-width: 48px;
+        max-width: 175px;
+        box-sizing: border-box;
+    }
+
+    .print-task-pill.type-vullen {
+        border-color: var(--accent-color);
+    }
+
+    .print-task-pill.type-spiegelen {
+        border-color: var(--purple-color);
+    }
+
+    .print-task-pill.type-restanten {
+        border-color: var(--warning-color);
+    }
+
+    .print-task-pill.type-pauze {
+        border-color: var(--pauze-color);
+    }
+
+    .print-task-pill.type-overige {
+        border-color: var(--info-color);
+    }
+
+    .print-task-pill.is-helper {
+        border-color: var(--helper-color);
+    }
+
+    .print-task-top {
+        font-weight: 700;
+        font-size: 8.5px;
+        color: var(--print-text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.15;
+    }
+
+    .print-task-sub {
+        font-size: 7.5px;
+        color: var(--print-text-muted);
+        display: flex;
+        gap: 4px;
+        white-space: nowrap;
+        line-height: 1.1;
+    }
+
+    .print-no-tasks {
+        font-size: 8.5px;
+        color: var(--print-text-muted);
+        font-style: italic;
+    }
+}

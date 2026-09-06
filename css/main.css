@@ -45,12 +45,22 @@
     --purple-color: #a855f7;
     --pauze-color: #ea580c;
     --pauze-bg: rgba(234, 88, 12, 0.18);
+    --vullen-ghost-bg: rgba(101, 141, 36, 0.18);
+    --restanten-ghost-bg: rgba(168, 85, 247, 0.18);
+    --spiegelen-ghost-bg: rgba(245, 158, 11, 0.18);
+    --overige-ghost-bg: rgba(59, 130, 246, 0.18);
     --helper-color: #ec4899;
     --helper-bg: rgba(236, 72, 153, 0.12);
     --helper-bg-hover: rgba(236, 72, 153, 0.22);
     --helper-badge-bg: rgba(236, 72, 153, 0.25);
     --task-item-bg: #202024;
     --task-item-border: #323238;
+    --print-bg: #ffffff;
+    --print-text: #111111;
+    --print-text-muted: #555555;
+    --print-border: #d1d5db;
+    --print-header-bg: #f3f4f6;
+    --print-row-alt: #f9fafb;
 }
 
 html {

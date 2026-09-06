@@ -1,13 +1,7 @@
 import { planningState } from './state.js';
 import { timeToMinutes, minutesToTime, formatDuration, parsePauseMinutes, calculateProductivity, formatTimeInput, normalizeTimeOnBlur } from './time-utils.js';
 import { triggerAutoSave } from './storage.js';
-
-function escapeHtml(str) {
-    if (!str) return '';
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-}
+import { escapeHtml } from '../main.js';
 
 export function renderMobilePlanningView(container) {
     if (!container) return;

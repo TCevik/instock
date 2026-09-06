@@ -4,7 +4,7 @@ import { showCustomTooltip, positionCustomTooltip, hideCustomTooltip } from './t
 import { showContextMenu } from './context-menu.js';
 import { calculateTimelineBounds, renderTimelineAxis, getPixelsPerMinute, getTimelineTotalMinutes } from './timeline-axis.js';
 import { openPauseModal } from './custom-task-modal.js';
-import { addHelperToTask } from './task-actions.js';
+import { addHelperToTask, getComboTasksForTask } from './task-actions.js';
 import { triggerAutoSave } from './storage.js';
 
 export function renderTimelineRows(options) {
@@ -198,14 +198,16 @@ export function renderTimelineRows(options) {
         let currentBlockStartMins = shiftStart >= 0 ? shiftStart : startMins;
 
         assigned.forEach((task, taskIdx) => {
+            const taskDurationMins = Number(task.duration) || 1;
             const taskLeft = Math.max(0, (currentBlockStartMins - startMins) * pxPerMin);
-            const taskWidth = Math.max(6, task.duration * pxPerMin);
+            const taskWidth = Math.max(2, taskDurationMins * pxPerMin);
 
             const isMicro = taskWidth < 38;
             const isTiny = taskWidth < 68;
+            const isNano = taskWidth < 20;
 
             const block = document.createElement('div');
-            block.className = `timeline-task-block type-${task.type || 'vullen'} ${task.isHelper ? 'is-helper' : ''} ${isMicro ? 'is-micro' : ''} ${isTiny ? 'is-tiny' : ''}`;
+            block.className = `timeline-task-block type-${task.type || 'vullen'} ${task.isHelper ? 'is-helper' : ''} ${isMicro ? 'is-micro' : ''} ${isTiny ? 'is-tiny' : ''} ${isNano ? 'is-nano' : ''}`;
             block.style.left = `${taskLeft}px`;
             block.style.width = `${taskWidth}px`;
             block.setAttribute('draggable', 'true');
@@ -327,26 +329,37 @@ export function renderTimelineRows(options) {
             const dragged = getDraggedTask();
             if (!dragged) return;
 
+            const dragData = getDraggedTaskData();
+            let previewTasks = [dragged];
+            if (dragData && dragData.source === 'unassigned' && dragged.type === 'vullen') {
+                const { prependedTasks, appendedTasks } = getComboTasksForTask(dragged);
+                previewTasks = [...prependedTasks, dragged, ...appendedTasks];
+            }
+
             const rect = trackRow.getBoundingClientRect();
             const hoverX = e.clientX - rect.left;
 
-            let ghost = trackRow.querySelector('.timeline-task-ghost');
-            if (!ghost) {
+            let ghosts = Array.from(trackRow.querySelectorAll('.timeline-task-ghost'));
+            const matchesExisting = ghosts.length === previewTasks.length && ghosts.every((g, i) => g.getAttribute('data-task-id') === String(previewTasks[i].id));
+            if (!matchesExisting) {
                 document.querySelectorAll('.timeline-task-ghost').forEach(el => el.remove());
                 document.querySelectorAll('.timeline-task-block').forEach(b => {
                     b.style.transform = '';
                 });
-                ghost = document.createElement('div');
-                ghost.className = `timeline-task-ghost type-${dragged.type || 'vullen'}`;
-                ghost.innerHTML = `<span class="timeline-task-ghost-text">${dragged.title}</span>`;
-                trackRow.appendChild(ghost);
+                ghosts = previewTasks.map(item => {
+                    const g = document.createElement('div');
+                    g.className = `timeline-task-ghost type-${item.type || 'vullen'}`;
+                    g.setAttribute('data-task-id', String(item.id));
+                    g.innerHTML = `<span class="timeline-task-ghost-text">${item.title}</span>`;
+                    trackRow.appendChild(g);
+                    return g;
+                });
             }
 
             const allAssigned = planningState.assignedTasks[filler.id] || [];
             const rowBaseStartMins = shiftStart >= 0 ? shiftStart : startMins;
-            const draggedWidthPx = Math.max(16, dragged.duration * pxPerMin);
+            const totalWidthPx = previewTasks.reduce((sum, item) => sum + (Number(item.duration) || 1), 0) * pxPerMin;
 
-            const dragData = getDraggedTaskData();
             const isSelfDrag = dragData && dragData.source === 'assigned' && dragData.fillerId === filler.id;
             const selfOrigIdx = isSelfDrag ? dragData.taskIndex : -1;
 
@@ -365,7 +378,7 @@ export function renderTimelineRows(options) {
             for (let s = 0; s < currentSlot; s++) {
                 slotStart += otherItems[s].duration * pxPerMin;
             }
-            const slotEnd = slotStart + draggedWidthPx;
+            const slotEnd = slotStart + totalWidthPx;
 
             let bestSlot = currentSlot;
 
@@ -389,13 +402,24 @@ export function renderTimelineRows(options) {
                 }
             }
 
-            let ghostLeftPx = (rowBaseStartMins - startMins) * pxPerMin;
+            let currentGhostLeftPx = (rowBaseStartMins - startMins) * pxPerMin;
             for (let j = 0; j < bestSlot; j++) {
-                ghostLeftPx += otherItems[j].duration * pxPerMin;
+                currentGhostLeftPx += otherItems[j].duration * pxPerMin;
             }
 
-            ghost.style.left = `${Math.max(0, ghostLeftPx)}px`;
-            ghost.style.width = `${draggedWidthPx}px`;
+            ghosts.forEach((g, idx) => {
+                const item = previewTasks[idx];
+                const itemDurationMins = Number(item.duration) || 1;
+                const itemWidthPx = Math.max(2, itemDurationMins * pxPerMin);
+                const isMicro = itemWidthPx < 38;
+                const isTiny = itemWidthPx < 68;
+                const isNano = itemWidthPx < 20;
+
+                g.className = `timeline-task-ghost type-${item.type || 'vullen'} ${isMicro ? 'is-micro' : ''} ${isTiny ? 'is-tiny' : ''} ${isNano ? 'is-nano' : ''}`;
+                g.style.left = `${Math.max(0, currentGhostLeftPx)}px`;
+                g.style.width = `${itemWidthPx}px`;
+                currentGhostLeftPx += itemDurationMins * pxPerMin;
+            });
             trackRow.setAttribute('data-target-index', String(bestSlot));
 
             let runningBasePx = (rowBaseStartMins - startMins) * pxPerMin;
@@ -406,7 +430,7 @@ export function renderTimelineRows(options) {
                 const origLeft = parseFloat(blockEl.style.left) || 0;
                 let desiredLeft = runningBasePx;
                 if (idx >= bestSlot) {
-                    desiredLeft += draggedWidthPx;
+                    desiredLeft += totalWidthPx;
                 }
                 const diffX = desiredLeft - origLeft;
                 blockEl.style.transform = diffX !== 0 ? `translateX(${diffX}px)` : '';
@@ -422,7 +446,7 @@ export function renderTimelineRows(options) {
                     sourceBlocks.forEach(sb => {
                         const sIdx = parseInt(sb.getAttribute('data-task-index'), 10);
                         if (sIdx > dragData.taskIndex) {
-                            sb.style.transform = `translateX(-${draggedWidthPx}px)`;
+                            sb.style.transform = `translateX(-${totalWidthPx}px)`;
                         } else {
                             sb.style.transform = '';
                         }
@@ -437,8 +461,7 @@ export function renderTimelineRows(options) {
 
         trackRow.addEventListener('dragleave', (e) => {
             if (!trackRow.contains(e.relatedTarget)) {
-                const ghost = trackRow.querySelector('.timeline-task-ghost');
-                if (ghost) ghost.remove();
+                trackRow.querySelectorAll('.timeline-task-ghost').forEach(el => el.remove());
                 trackRow.removeAttribute('data-target-index');
                 trackRow.querySelectorAll('.timeline-task-block').forEach(b => {
                     b.style.transform = '';
@@ -448,8 +471,7 @@ export function renderTimelineRows(options) {
 
         trackRow.addEventListener('drop', (e) => {
             e.preventDefault();
-            const ghost = trackRow.querySelector('.timeline-task-ghost');
-            if (ghost) ghost.remove();
+            trackRow.querySelectorAll('.timeline-task-ghost').forEach(el => el.remove());
 
             trackRow.querySelectorAll('.timeline-task-block').forEach(b => {
                 b.style.transform = '';

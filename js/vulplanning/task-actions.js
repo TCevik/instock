@@ -3,6 +3,88 @@ import { triggerAutoSave } from './storage.js';
 import { showToast } from '../main.js';
 import { hideCustomTooltip } from './tooltip.js';
 
+export function getComboTasksForTask(task) {
+    if (!task || task.type !== 'vullen') {
+        return { prependedTasks: [], appendedTasks: [] };
+    }
+
+    const combo = planningState.comboSettings || {
+        autoRestanten: true,
+        autoSpiegelen: true,
+        autoOverige: false
+    };
+
+    const pathName = task.pathName || task.title.replace(/\s*\([^)]*\)/g, '').trim();
+    const prependedTasks = [];
+    const appendedTasks = [];
+
+    if (combo.autoOverige) {
+        let oTask = null;
+        if (combo.selectedOverigeTaskId) {
+            oTask = planningState.unassignedTasks.find(t => 
+                t.type === 'overige' && !t.isHelper && String(t.id) === String(combo.selectedOverigeTaskId)
+            );
+        }
+        if (!oTask && combo.selectedOverigeTitle) {
+            oTask = planningState.unassignedTasks.find(t => 
+                t.type === 'overige' && !t.isHelper && t.title.toLowerCase().trim() === combo.selectedOverigeTitle.toLowerCase().trim()
+            );
+        }
+        if (!oTask) {
+            oTask = planningState.unassignedTasks.find(t => t.type === 'overige' && !t.isHelper);
+        }
+        if (!oTask && combo.selectedOverigeTitle) {
+            const inAssigned = Object.values(planningState.assignedTasks || {}).flat().find(t => 
+                t && t.type === 'overige' && !t.isHelper && (
+                    (combo.selectedOverigeTaskId && String(t.templateId || t.id) === String(combo.selectedOverigeTaskId)) ||
+                    (t.title && t.title.toLowerCase().trim() === combo.selectedOverigeTitle.toLowerCase().trim())
+                )
+            );
+            if (inAssigned) {
+                oTask = {
+                    id: inAssigned.templateId || inAssigned.id,
+                    type: 'overige',
+                    title: inAssigned.origTitle || inAssigned.title,
+                    duration: inAssigned.origDuration || inAssigned.duration || 30,
+                    colli: 0
+                };
+            }
+        }
+        if (oTask) {
+            prependedTasks.push({
+                ...oTask,
+                id: `combo_overige_${oTask.id}`,
+                templateId: oTask.id,
+                duration: oTask.duration || 30,
+                origTitle: oTask.title,
+                origDuration: oTask.duration || 30
+            });
+        }
+    }
+
+    if (combo.autoRestanten) {
+        const rTask = planningState.unassignedTasks.find(t => 
+            t.type === 'restanten' && 
+            (t.pathName === pathName || t.title.toLowerCase().includes(pathName.toLowerCase()))
+        );
+        if (rTask) {
+            prependedTasks.push(rTask);
+        }
+    }
+
+    if (combo.autoSpiegelen) {
+        const sTask = planningState.unassignedTasks.find(t => 
+            t.type === 'spiegelen' && 
+            (t.pathName === pathName || t.title.toLowerCase().includes(pathName.toLowerCase()))
+        );
+        if (sTask) {
+            appendedTasks.push(sTask);
+        }
+    }
+
+    return { prependedTasks, appendedTasks };
+}
+
 export function assignTaskToFiller(taskId, fillerId, insertIndex = null, callbacks = {}, customDuration = null) {
     hideCustomTooltip();
     let task = planningState.unassignedTasks.find(t => t.id === taskId);
@@ -31,79 +113,30 @@ export function assignTaskToFiller(taskId, fillerId, insertIndex = null, callbac
     const appendedTasks = [];
 
     if (task.type === 'vullen') {
-        const combo = planningState.comboSettings || {
-            autoRestanten: true,
-            autoSpiegelen: true,
-            autoOverige: false
-        };
-
-        const pathName = task.pathName || task.title.replace(/\s*\([^)]*\)/g, '').trim();
-
-        if (combo.autoOverige) {
-            let oTask = null;
-            if (combo.selectedOverigeTaskId) {
-                oTask = planningState.unassignedTasks.find(t => 
-                    t.type === 'overige' && !t.isHelper && String(t.id) === String(combo.selectedOverigeTaskId)
-                );
-            }
-            if (!oTask && combo.selectedOverigeTitle) {
-                oTask = planningState.unassignedTasks.find(t => 
-                    t.type === 'overige' && !t.isHelper && t.title.toLowerCase().trim() === combo.selectedOverigeTitle.toLowerCase().trim()
-                );
-            }
-            if (!oTask) {
-                oTask = planningState.unassignedTasks.find(t => t.type === 'overige' && !t.isHelper);
-            }
-            if (!oTask && combo.selectedOverigeTitle) {
-                const inAssigned = Object.values(planningState.assignedTasks || {}).flat().find(t => 
-                    t && t.type === 'overige' && !t.isHelper && (
-                        (combo.selectedOverigeTaskId && String(t.templateId || t.id) === String(combo.selectedOverigeTaskId)) ||
-                        (t.title && t.title.toLowerCase().trim() === combo.selectedOverigeTitle.toLowerCase().trim())
-                    )
-                );
-                if (inAssigned) {
-                    oTask = {
-                        id: inAssigned.templateId || inAssigned.id,
-                        type: 'overige',
-                        title: inAssigned.origTitle || inAssigned.title,
-                        duration: inAssigned.origDuration || inAssigned.duration || 30,
-                        colli: 0
-                    };
-                }
-            }
-            if (oTask) {
+        const { prependedTasks: cPre, appendedTasks: cApp } = getComboTasksForTask(task);
+        cPre.forEach(pt => {
+            if (pt.type === 'overige') {
                 prependedTasks.push({
-                    ...oTask,
-                    id: `overige_inst_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-                    templateId: oTask.id,
-                    duration: oTask.duration || 30,
-                    origTitle: oTask.title,
-                    origDuration: oTask.duration || 30
+                    ...pt,
+                    id: `overige_inst_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`
                 });
+            } else if (pt.type === 'restanten') {
+                const rIdx = planningState.unassignedTasks.findIndex(t => t.id === pt.id);
+                if (rIdx !== -1) {
+                    planningState.unassignedTasks.splice(rIdx, 1);
+                }
+                prependedTasks.push(pt);
             }
-        }
-
-        if (combo.autoRestanten) {
-            const rIdx = planningState.unassignedTasks.findIndex(t => 
-                t.type === 'restanten' && 
-                (t.pathName === pathName || t.title.toLowerCase().includes(pathName.toLowerCase()))
-            );
-            if (rIdx !== -1) {
-                const [rTask] = planningState.unassignedTasks.splice(rIdx, 1);
-                prependedTasks.push(rTask);
+        });
+        cApp.forEach(at => {
+            if (at.type === 'spiegelen') {
+                const sIdx = planningState.unassignedTasks.findIndex(t => t.id === at.id);
+                if (sIdx !== -1) {
+                    planningState.unassignedTasks.splice(sIdx, 1);
+                }
+                appendedTasks.push(at);
             }
-        }
-
-        if (combo.autoSpiegelen) {
-            const sIdx = planningState.unassignedTasks.findIndex(t => 
-                t.type === 'spiegelen' && 
-                (t.pathName === pathName || t.title.toLowerCase().includes(pathName.toLowerCase()))
-            );
-            if (sIdx !== -1) {
-                const [sTask] = planningState.unassignedTasks.splice(sIdx, 1);
-                appendedTasks.push(sTask);
-            }
-        }
+        });
     }
 
     prependedTasks.forEach(pt => {

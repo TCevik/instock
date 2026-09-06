@@ -1,16 +1,9 @@
-import { supabase, showToast, showModal, closeModal, getStorePaths } from '../main.js';
+import { supabase, showToast, showModal, closeModal, getStorePaths, escapeHtml } from '../main.js';
 import {
     openColliImportModal,
     arePathsMatchingDefault,
     getHardcodedPathsStructure
 } from './import-colli.js';
-
-function escapeHtml(str) {
-    if (!str) return '';
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-}
 
 let loadedPaths = [];
 const colliCategoriesContainer = document.getElementById('colli-categories-container');
