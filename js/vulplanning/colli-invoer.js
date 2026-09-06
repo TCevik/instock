@@ -1,4 +1,4 @@
-import { supabase, showToast, showModal, closeModal } from '../main.js';
+import { supabase, showToast, showModal, closeModal, getStorePaths } from '../main.js';
 import {
     openColliImportModal,
     arePathsMatchingDefault,
@@ -26,26 +26,7 @@ export function loadStorePathsForColli() {
         if (!colliCategoriesContainer) return [];
 
         try {
-            const { data, error } = await supabase.functions.invoke('manage-store-settings', {
-                body: { action: 'get_paths' }
-            });
-
-            if (error) {
-                let msg = error.message || 'Kon paden niet laden';
-                if (error.context && typeof error.context.json === 'function') {
-                    try {
-                        const b = await error.context.json();
-                        if (b && b.error) msg = b.error;
-                    } catch (_) {}
-                }
-                throw new Error(msg);
-            }
-
-            if (data && Array.isArray(data.default_paths)) {
-                loadedPaths = data.default_paths;
-            } else {
-                loadedPaths = [];
-            }
+            loadedPaths = await getStorePaths();
 
             renderColliTable(loadedPaths);
             if (pendingColliMap && Object.keys(pendingColliMap).length > 0) {

@@ -145,6 +145,20 @@ export async function getCurrentUser() {
     return currentUserData;
 }
 
+export async function getStorePaths() {
+    const user = await getCurrentUser();
+    if (!user || !user.store_id) return [];
+
+    const { data, error } = await supabase
+        .from('store_data')
+        .select('default_paths')
+        .eq('store_id', user.store_id)
+        .maybeSingle();
+
+    if (error) throw error;
+    return Array.isArray(data?.default_paths) ? data.default_paths : [];
+}
+
 async function loadOverlay() {
     if (window.location.pathname.endsWith('login.html')) return;
 

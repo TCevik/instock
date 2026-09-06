@@ -1,4 +1,4 @@
-import { supabase, showToast, showModal, closeModal, showConfirmModal } from './main.js';
+import { supabase, showToast, showModal, closeModal, showConfirmModal, getStorePaths } from './main.js';
 
 function escapeHtml(str) {
     if (!str) return '';
@@ -380,27 +380,7 @@ function collectCleanPaths() {
 
 async function loadStorePaths() {
     try {
-        const { data, error } = await supabase.functions.invoke('manage-store-settings', {
-            body: { action: 'get_paths' }
-        });
-
-        if (error) {
-            let msg = error.message || 'Kon winkelinstellingen niet ophalen';
-            if (error.context && typeof error.context.json === 'function') {
-                try {
-                    const b = await error.context.json();
-                    if (b && b.error) msg = b.error;
-                } catch (_) {}
-            }
-            throw new Error(msg);
-        }
-
-        if (data && Array.isArray(data.default_paths)) {
-            paths = data.default_paths;
-        } else {
-            paths = [];
-        }
-
+        paths = await getStorePaths();
         originalPathsJson = JSON.stringify(collectCleanPaths());
         selectedPathIndex = 0;
         renderSidebar();
