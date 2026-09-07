@@ -544,12 +544,6 @@
     border-right: 1px solid var(--card-border);
 }
 
-.timeline-hour-marker.marker-start {
-}
-
-.timeline-hour-marker.marker-end {
-}
-
 .timeline-tracks-container {
     display: flex;
     flex-direction: column;
