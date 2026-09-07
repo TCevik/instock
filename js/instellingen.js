@@ -364,6 +364,7 @@ function renderDetailPanel() {
 function collectCleanPaths() {
     syncActiveCardToMemory();
     return paths.map(p => ({
+        id: p.id || undefined,
         name: String(p.name || '').trim(),
         spiegelnorm: p.spiegelnorm !== '' && !isNaN(Number(p.spiegelnorm)) ? Number(p.spiegelnorm) : 0,
         restantennorm: p.restantennorm !== '' && !isNaN(Number(p.restantennorm)) ? Number(p.restantennorm) : 0,
@@ -371,6 +372,7 @@ function collectCleanPaths() {
             ? p.categories
                 .filter(c => c && (String(c.name || '').trim() || c.norm !== ''))
                 .map(c => ({
+                    id: c.id || undefined,
                     name: String(c.name || '').trim(),
                     norm: c.norm !== '' && !isNaN(Number(c.norm)) ? Number(c.norm) : 0
                 }))

@@ -4,6 +4,7 @@ import { escapeHtml, showToast, showModal, closeModal } from '../main.js';
 
 const printOptions = {
     mergeTrio: true,
+    hideWorkersWithoutTasks: true,
     notes: []
 };
 
@@ -30,11 +31,24 @@ export function generatePrintDocument(options = printOptions) {
         return;
     }
 
+    const fillersToPrint = options.hideWorkersWithoutTasks
+        ? planningState.fillers.filter(filler => (planningState.assignedTasks[filler.id] || []).length > 0)
+        : planningState.fillers;
+
+    if (fillersToPrint.length === 0) {
+        container.innerHTML = `
+            <div style="padding: 24px; text-align: center; font-size: 14px; color: var(--print-text);">
+                Geen medewerkers met toegewezen taken gevonden om te printen.
+            </div>
+        `;
+        return;
+    }
+
     const pad = n => String(n).padStart(2, '0');
     const now = new Date();
     const dateFormatted = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
-    const rowsHtml = planningState.fillers.map(filler => {
+    const rowsHtml = fillersToPrint.map(filler => {
         const shiftStart = timeToMinutes(filler.from);
         let shiftEnd = timeToMinutes(filler.to);
         if (shiftEnd > 0 && shiftEnd <= shiftStart) {
@@ -202,6 +216,7 @@ export async function openPrintOptionsModal() {
 
     const currentNotes = printOptions.notes && printOptions.notes.length > 0 ? [...printOptions.notes] : [''];
     let isMergeChecked = printOptions.mergeTrio !== false;
+    let isHideEmptyChecked = printOptions.hideWorkersWithoutTasks !== false;
 
     const modalContent = `
         <div class="modal-header" style="display: flex; flex-direction: row; align-items: center; gap: 14px; padding-right: 28px;">
@@ -238,6 +253,15 @@ export async function openPrintOptionsModal() {
                     <span class="material-icons">check</span>
                 </div>
             </div>
+            <div class="combo-option-row ${isHideEmptyChecked ? 'is-checked' : ''}" id="printEmptyOptionRow">
+                <div class="combo-option-left">
+                    <span class="material-icons" style="font-size: 18px; color: var(--accent-color);">person_off</span>
+                    <span class="combo-option-title">Medewerkers zonder taken niet tonen</span>
+                </div>
+                <div class="combo-checkbox">
+                    <span class="material-icons">check</span>
+                </div>
+            </div>
         </div>
         <div class="modal-footer">
             <button type="button" class="modal-btn-secondary" id="btnPrintCancel">Annuleren</button>
@@ -249,6 +273,7 @@ export async function openPrintOptionsModal() {
     const notesList = overlay.querySelector('#printNotesList');
     const btnAddNote = overlay.querySelector('#btnAddPrintNote');
     const mergeOptionRow = overlay.querySelector('#printMergeOptionRow');
+    const emptyOptionRow = overlay.querySelector('#printEmptyOptionRow');
     const btnCancel = overlay.querySelector('#btnPrintCancel');
     const btnConfirm = overlay.querySelector('#btnPrintConfirm');
 
@@ -300,6 +325,13 @@ export async function openPrintOptionsModal() {
         mergeOptionRow.classList.toggle('is-checked', isMergeChecked);
     });
 
+    if (emptyOptionRow) {
+        emptyOptionRow.addEventListener('click', () => {
+            isHideEmptyChecked = !isHideEmptyChecked;
+            emptyOptionRow.classList.toggle('is-checked', isHideEmptyChecked);
+        });
+    }
+
     btnCancel.addEventListener('click', () => {
         closeModal(overlay);
     });
@@ -313,6 +345,7 @@ export async function openPrintOptionsModal() {
         });
 
         printOptions.mergeTrio = isMergeChecked;
+        printOptions.hideWorkersWithoutTasks = isHideEmptyChecked;
         printOptions.notes = validNotes;
 
         closeModal(overlay);

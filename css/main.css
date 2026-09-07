@@ -71,14 +71,15 @@
     --prod-danger-border: rgba(239, 68, 68, 0.4);
 }
 
-html {
-    scrollbar-gutter: stable;
+html,
+body {
+    height: 100%;
+    overflow: hidden;
 }
 
 body {
     background-color: var(--background-color);
     color: var(--text-color);
-    overflow-x: hidden;
 }
 
 .btn {

@@ -7,6 +7,9 @@ import { calculateTimelineBounds, renderTimelineAxis, getPixelsPerMinute, getTim
 import { openPauseModal } from './custom-task-modal.js';
 import { addHelperToTask, getComboTasksForTask } from './task-actions.js';
 import { triggerAutoSave } from './storage.js';
+import { recordSnapshot } from './history.js';
+
+let draggedWorkerFillerId = null;
 
 export function renderTimelineRows(options) {
     const {
@@ -74,9 +77,13 @@ export function renderTimelineRows(options) {
         const workerCard = document.createElement('div');
         workerCard.className = `timeline-worker-info ${diffMins > 0 ? 'worker-has-overflow' : ''}`;
         workerCard.setAttribute('data-filler-id', filler.id);
+        workerCard.draggable = true;
+        let isDraggingThisWorker = false;
+
         workerCard.innerHTML = `
             <div class="timeline-worker-left">
                 <div class="timeline-worker-name-row">
+                    <span class="material-icons timeline-worker-drag-handle" title="Sleep om volgorde te wijzigen">drag_indicator</span>
                     <span class="timeline-worker-name">${filler.name || 'Naamloos'}</span>
                     <span class="material-icons timeline-worker-edit-hint">edit</span>
                 </div>
@@ -123,6 +130,11 @@ export function renderTimelineRows(options) {
         if (timeInput) {
             let lastVal = timeInput.value;
 
+            timeInput.addEventListener('mouseenter', () => { workerCard.draggable = false; });
+            timeInput.addEventListener('mouseleave', () => { workerCard.draggable = true; });
+            timeInput.addEventListener('focus', () => { workerCard.draggable = false; });
+            timeInput.addEventListener('blur', () => { workerCard.draggable = true; });
+
             timeInput.addEventListener('input', (e) => {
                 const isDeleting = (e && e.inputType && e.inputType.startsWith('delete')) || (timeInput.value.length < lastVal.length);
                 timeInput.value = formatTimeInput(timeInput.value, isDeleting);
@@ -166,7 +178,76 @@ export function renderTimelineRows(options) {
             if (matched?.username) workerUsername = matched.username;
         }
 
+        workerCard.addEventListener('dragstart', (e) => {
+            if (e.target.closest('.timeline-worker-input') || e.target.closest('button')) {
+                e.preventDefault();
+                return;
+            }
+            draggedWorkerFillerId = filler.id;
+            isDraggingThisWorker = true;
+            hideCustomTooltip();
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', JSON.stringify({
+                source: 'worker',
+                fillerId: filler.id
+            }));
+            setTimeout(() => {
+                workerCard.classList.add('is-dragging');
+            }, 0);
+        });
+
+        workerCard.addEventListener('dragend', () => {
+            draggedWorkerFillerId = null;
+            setTimeout(() => {
+                isDraggingThisWorker = false;
+            }, 50);
+            workerCard.classList.remove('is-dragging');
+            document.querySelectorAll('.timeline-worker-info, .timeline-add-worker-row').forEach(card => {
+                card.classList.remove('drag-over-top', 'drag-over-bottom');
+            });
+        });
+
+        workerCard.addEventListener('dragover', (e) => {
+            if (!draggedWorkerFillerId || draggedWorkerFillerId === filler.id) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const rect = workerCard.getBoundingClientRect();
+            const isTopHalf = (e.clientY - rect.top) < (rect.height / 2);
+            workerCard.classList.toggle('drag-over-top', isTopHalf);
+            workerCard.classList.toggle('drag-over-bottom', !isTopHalf);
+        });
+
+        workerCard.addEventListener('dragleave', (e) => {
+            if (!workerCard.contains(e.relatedTarget)) {
+                workerCard.classList.remove('drag-over-top', 'drag-over-bottom');
+            }
+        });
+
+        workerCard.addEventListener('drop', (e) => {
+            if (!draggedWorkerFillerId || draggedWorkerFillerId === filler.id) return;
+            e.preventDefault();
+            workerCard.classList.remove('drag-over-top', 'drag-over-bottom');
+
+            const sourceIdx = planningState.fillers.findIndex(f => f.id === draggedWorkerFillerId);
+            if (sourceIdx === -1) return;
+
+            const rect = workerCard.getBoundingClientRect();
+            const isTopHalf = (e.clientY - rect.top) < (rect.height / 2);
+
+            const [movedWorker] = planningState.fillers.splice(sourceIdx, 1);
+            let targetIdx = planningState.fillers.findIndex(f => f.id === filler.id);
+            if (!isTopHalf) {
+                targetIdx += 1;
+            }
+            planningState.fillers.splice(targetIdx, 0, movedWorker);
+
+            recordSnapshot();
+            triggerAutoSave(true);
+            if (onRenderRows) onRenderRows();
+        });
+
         workerCard.addEventListener('mouseenter', (e) => {
+            if (draggedWorkerFillerId) return;
             if (e.target.closest('.timeline-worker-input')) return;
             showCustomTooltip(e, {
                 isWorker: true,
@@ -175,6 +256,7 @@ export function renderTimelineRows(options) {
         });
 
         workerCard.addEventListener('mousemove', (e) => {
+            if (draggedWorkerFillerId) return;
             if (e.target.closest('.timeline-worker-input')) {
                 hideCustomTooltip();
             } else {
@@ -192,6 +274,7 @@ export function renderTimelineRows(options) {
 
         workerCard.addEventListener('click', (e) => {
             hideCustomTooltip();
+            if (isDraggingThisWorker) return;
             if (e.target.closest('.timeline-worker-input')) return;
             if (onEditWorker) {
                 onEditWorker(filler);
@@ -355,6 +438,18 @@ export function renderTimelineRows(options) {
         });
 
         trackRow.addEventListener('dragover', (e) => {
+            if (draggedWorkerFillerId) {
+                if (draggedWorkerFillerId !== filler.id) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    const rect = trackRow.getBoundingClientRect();
+                    const isTopHalf = (e.clientY - rect.top) < (rect.height / 2);
+                    workerCard.classList.toggle('drag-over-top', isTopHalf);
+                    workerCard.classList.toggle('drag-over-bottom', !isTopHalf);
+                }
+                return;
+            }
+
             e.preventDefault();
             const dragged = getDraggedTask();
             if (!dragged) return;
@@ -490,6 +585,13 @@ export function renderTimelineRows(options) {
         });
 
         trackRow.addEventListener('dragleave', (e) => {
+            if (draggedWorkerFillerId) {
+                if (!trackRow.contains(e.relatedTarget)) {
+                    workerCard.classList.remove('drag-over-top', 'drag-over-bottom');
+                }
+                return;
+            }
+
             if (!trackRow.contains(e.relatedTarget)) {
                 trackRow.querySelectorAll('.timeline-task-ghost').forEach(el => el.remove());
                 trackRow.removeAttribute('data-target-index');
@@ -501,6 +603,25 @@ export function renderTimelineRows(options) {
 
         trackRow.addEventListener('drop', (e) => {
             e.preventDefault();
+            if (draggedWorkerFillerId) {
+                workerCard.classList.remove('drag-over-top', 'drag-over-bottom');
+                if (draggedWorkerFillerId !== filler.id) {
+                    const sourceIdx = planningState.fillers.findIndex(f => f.id === draggedWorkerFillerId);
+                    if (sourceIdx !== -1) {
+                        const rect = trackRow.getBoundingClientRect();
+                        const isTopHalf = (e.clientY - rect.top) < (rect.height / 2);
+                        const [movedWorker] = planningState.fillers.splice(sourceIdx, 1);
+                        let targetIdx = planningState.fillers.findIndex(f => f.id === filler.id);
+                        if (!isTopHalf) targetIdx += 1;
+                        planningState.fillers.splice(targetIdx, 0, movedWorker);
+                        recordSnapshot();
+                        triggerAutoSave(true);
+                        if (onRenderRows) onRenderRows();
+                    }
+                }
+                return;
+            }
+
             trackRow.querySelectorAll('.timeline-task-ghost').forEach(el => el.remove());
 
             trackRow.querySelectorAll('.timeline-task-block').forEach(b => {
@@ -555,6 +676,33 @@ export function renderTimelineRows(options) {
             onAddWorker();
         });
     }
+
+    addRow.addEventListener('dragover', (e) => {
+        if (!draggedWorkerFillerId) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        addRow.classList.add('drag-over-top');
+    });
+
+    addRow.addEventListener('dragleave', (e) => {
+        if (!addRow.contains(e.relatedTarget)) {
+            addRow.classList.remove('drag-over-top');
+        }
+    });
+
+    addRow.addEventListener('drop', (e) => {
+        if (!draggedWorkerFillerId) return;
+        e.preventDefault();
+        addRow.classList.remove('drag-over-top');
+        const sourceIdx = planningState.fillers.findIndex(f => f.id === draggedWorkerFillerId);
+        if (sourceIdx === -1) return;
+        const [movedWorker] = planningState.fillers.splice(sourceIdx, 1);
+        planningState.fillers.push(movedWorker);
+        recordSnapshot();
+        triggerAutoSave(true);
+        if (onRenderRows) onRenderRows();
+    });
+
     timelineWorkersList.appendChild(addRow);
 
     const addTrackSpacer = document.createElement('div');
@@ -567,5 +715,32 @@ export function renderTimelineRows(options) {
         line.style.left = `${offsetMins * pxPerMin}px`;
         addTrackSpacer.appendChild(line);
     }
+
+    addTrackSpacer.addEventListener('dragover', (e) => {
+        if (!draggedWorkerFillerId) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        addRow.classList.add('drag-over-top');
+    });
+
+    addTrackSpacer.addEventListener('dragleave', (e) => {
+        if (!addTrackSpacer.contains(e.relatedTarget)) {
+            addRow.classList.remove('drag-over-top');
+        }
+    });
+
+    addTrackSpacer.addEventListener('drop', (e) => {
+        if (!draggedWorkerFillerId) return;
+        e.preventDefault();
+        addRow.classList.remove('drag-over-top');
+        const sourceIdx = planningState.fillers.findIndex(f => f.id === draggedWorkerFillerId);
+        if (sourceIdx === -1) return;
+        const [movedWorker] = planningState.fillers.splice(sourceIdx, 1);
+        planningState.fillers.push(movedWorker);
+        recordSnapshot();
+        triggerAutoSave(true);
+        if (onRenderRows) onRenderRows();
+    });
+
     timelineTracksContainer.appendChild(addTrackSpacer);
 }

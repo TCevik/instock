@@ -17,7 +17,8 @@ export async function openFinalizeModal() {
         }
     });
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
     (planningState.fillers || []).forEach(filler => {
         let uname = filler.username;
@@ -39,31 +40,33 @@ export async function openFinalizeModal() {
         const stats = getFillerStats(filler, assigned);
         const hasEndTime = !!(filler.actualEndTime && String(filler.actualEndTime).trim().length >= 4 && stats.prodResult);
 
-        let existingRecord = null;
+        let existingTodayRecord = null;
         if (dbUser?.productivity) {
             const prodObj = dbUser.productivity;
             if (typeof prodObj === 'object' && !Array.isArray(prodObj)) {
-                if (prodObj.date === todayStr) {
-                    existingRecord = prodObj;
-                } else if (Array.isArray(prodObj.history)) {
-                    existingRecord = prodObj.history.find(h => h && h.date === todayStr) || null;
+                if (Array.isArray(prodObj.history)) {
+                    existingTodayRecord = prodObj.history.find(h => h && String(h.date) === todayStr) || null;
+                }
+                if (!existingTodayRecord && String(prodObj.date) === todayStr) {
+                    existingTodayRecord = prodObj;
                 }
             } else if (Array.isArray(prodObj)) {
-                existingRecord = prodObj.find(h => h && h.date === todayStr) || null;
+                existingTodayRecord = prodObj.find(h => h && String(h.date) === todayStr) || null;
             }
         }
 
         let isIdentical = false;
         let isOverwrite = false;
         let prevProdPercent = null;
+        let checked = false;
 
-        if (existingRecord && hasEndTime) {
-            prevProdPercent = existingRecord.productivity;
-            const oldEnd = String(existingRecord.actual_end_time || existingRecord.shift?.actual_end || '').trim();
+        if (existingTodayRecord && hasEndTime) {
+            prevProdPercent = existingTodayRecord.productivity;
+            const oldEnd = String(existingTodayRecord.actual_end_time || existingTodayRecord.shift?.actual_end || '').trim();
             const newEnd = String(filler.actualEndTime || '').trim();
-            const oldColli = Number(existingRecord.total_colli) || 0;
+            const oldColli = Number(existingTodayRecord.total_colli) || 0;
             const newColli = Number(stats.totalColli) || 0;
-            const oldTasksLen = Array.isArray(existingRecord.tasks) ? existingRecord.tasks.length : null;
+            const oldTasksLen = Array.isArray(existingTodayRecord.tasks) ? existingTodayRecord.tasks.length : null;
             const newTasksLen = assigned.length;
 
             const sameProd = Number(prevProdPercent) === Number(stats.prodResult?.percent);
@@ -73,9 +76,13 @@ export async function openFinalizeModal() {
 
             if (sameProd && sameEnd && sameColli && sameTasks) {
                 isIdentical = true;
+                checked = false;
             } else {
                 isOverwrite = true;
+                checked = hasEndTime;
             }
+        } else {
+            checked = hasEndTime;
         }
 
         fillersWithUser.push({
@@ -88,7 +95,7 @@ export async function openFinalizeModal() {
             isIdentical,
             isOverwrite,
             prevProdPercent,
-            checked: hasEndTime && !isIdentical
+            checked
         });
     });
 
@@ -137,7 +144,7 @@ export async function openFinalizeModal() {
 
         <div class="finalize-controls-row">
             <label class="finalize-select-all-label">
-                <input type="checkbox" id="finalize-select-all" ${readyCount > 0 ? 'checked' : 'disabled'} />
+                <input type="checkbox" id="finalize-select-all" ${readyCount > 0 ? 'checked' : ''} />
                 <span>Alles selecteren</span>
             </label>
             <span class="finalize-count-indicator" id="finalize-selected-count">0 geselecteerd</span>
@@ -252,6 +259,8 @@ export async function openFinalizeModal() {
 
     function updateUiState() {
         const checkedCount = fillersWithUser.filter(f => f.hasEndTime && !f.isIdentical && f.checked).length;
+        const eligibleCount = fillersWithUser.filter(f => f.hasEndTime && !f.isIdentical).length;
+
         if (selectedCountLabel) {
             selectedCountLabel.textContent = `${checkedCount} geselecteerd`;
         }
@@ -263,9 +272,10 @@ export async function openFinalizeModal() {
             btnSubmit.style.opacity = checkedCount === 0 ? '0.5' : '1';
             btnSubmit.style.cursor = checkedCount === 0 ? 'not-allowed' : 'pointer';
         }
-        if (selectAllCheckbox && readyCount > 0) {
-            selectAllCheckbox.checked = checkedCount === readyCount;
-            selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < readyCount;
+        if (selectAllCheckbox) {
+            selectAllCheckbox.disabled = eligibleCount === 0;
+            selectAllCheckbox.checked = eligibleCount > 0 && checkedCount === eligibleCount;
+            selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < eligibleCount;
         }
     }
 
@@ -335,7 +345,7 @@ export async function openFinalizeModal() {
                         productivity: {
                             productivity: prodPercent,
                             finalized_at: new Date().toISOString(),
-                            date: new Date().toISOString().split('T')[0],
+                            date: todayStr,
                             shift: {
                                 start: item.filler.from,
                                 planned_end: item.filler.to,

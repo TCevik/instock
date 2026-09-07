@@ -230,12 +230,48 @@
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    gap: 8px;
+    gap: 6px;
     border-bottom: 1px solid var(--card-border);
     background-color: var(--card-background);
     box-sizing: border-box;
-    cursor: pointer;
-    transition: background-color 0.15s ease;
+    cursor: grab;
+    transition: background-color 0.15s ease, box-shadow 0.1s ease;
+}
+
+.timeline-worker-info:active {
+    cursor: grabbing;
+}
+
+.timeline-worker-info.is-dragging {
+    opacity: 0.35;
+    background-color: var(--task-item-bg);
+}
+
+.timeline-worker-info.drag-over-top {
+    box-shadow: inset 0 3px 0 0 var(--accent-color);
+}
+
+.timeline-worker-info.drag-over-bottom {
+    box-shadow: inset 0 -3px 0 0 var(--accent-color);
+}
+
+.timeline-add-worker-row.drag-over-top {
+    box-shadow: inset 0 3px 0 0 var(--accent-color);
+}
+
+.timeline-worker-drag-handle {
+    font-size: 14px;
+    color: var(--text-color-muted);
+    opacity: 0.35;
+    transition: opacity 0.15s ease, color 0.15s ease;
+    cursor: grab;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.timeline-worker-info:hover .timeline-worker-drag-handle {
+    opacity: 0.9;
+    color: var(--accent-color);
 }
 
 .timeline-worker-info:hover {
@@ -276,9 +312,9 @@
     display: flex;
     flex-direction: column;
     gap: 1px;
-    width: 105px;
-    min-width: 105px;
-    max-width: 105px;
+    width: 110px;
+    min-width: 110px;
+    max-width: 110px;
     overflow: hidden;
     line-height: 1.15;
     flex-shrink: 0;

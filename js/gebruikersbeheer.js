@@ -504,6 +504,13 @@ async function loadUsers() {
     const { data: users, count, error } = await query;
 
     if (!error && users) {
+        if (currentSortKey === 'productivity') {
+            users.sort((a, b) => {
+                const valA = getUserAverageProductivity(a) ?? -1;
+                const valB = getUserAverageProductivity(b) ?? -1;
+                return currentSortDirection === 'asc' ? valA - valB : valB - valA;
+            });
+        }
         currentUsers = users;
         totalUsers = count ?? 0;
     } else {
@@ -513,6 +520,36 @@ async function loadUsers() {
 
     updateSortIcons();
     renderTable();
+}
+
+function getUserAverageProductivity(user) {
+    if (!user || user.productivity === null || user.productivity === undefined) return null;
+    if (typeof user.productivity === 'number') return Math.round(user.productivity);
+
+    let entries = [];
+    if (Array.isArray(user.productivity)) {
+        entries = user.productivity;
+    } else if (typeof user.productivity === 'object') {
+        if (Array.isArray(user.productivity.history) && user.productivity.history.length > 0) {
+            entries = user.productivity.history;
+        } else if (typeof user.productivity.productivity === 'number') {
+            return Math.round(user.productivity.productivity);
+        }
+    }
+
+    const scores = entries
+        .map(h => typeof h === 'object' && h !== null ? h.productivity : h)
+        .filter(v => typeof v === 'number' && !isNaN(v));
+
+    if (scores.length === 0) {
+        if (typeof user.productivity?.productivity === 'number') {
+            return Math.round(user.productivity.productivity);
+        }
+        return null;
+    }
+
+    const sum = scores.reduce((acc, val) => acc + val, 0);
+    return Math.round(sum / scores.length);
 }
 
 function renderTable() {
@@ -549,7 +586,7 @@ function renderTable() {
             const role = escapeHtml(getRoleLabel(user.role));
             const departmentsHtml = renderDepartmentBadges(user.departments, 2, '-');
             const birthday = escapeHtml(formatDutchDate(user.birthday));
-            const prodVal = typeof user.productivity === 'object' && user.productivity !== null ? user.productivity.productivity : user.productivity;
+            const prodVal = getUserAverageProductivity(user);
             const productivity = prodVal !== null && prodVal !== undefined ? `${escapeHtml(String(prodVal))}%` : '-';
             const lastSignIn = escapeHtml(formatDateTime(user.last_sign_in_at));
 
@@ -586,7 +623,7 @@ function renderTable() {
                 const departmentsHtml = renderDepartmentBadges(user.departments, 3, '');
                 const birthday = escapeHtml(formatDutchDate(user.birthday));
                 const hasBirthday = user.birthday && birthday !== '-';
-                const prodCardVal = typeof user.productivity === 'object' && user.productivity !== null ? user.productivity.productivity : user.productivity;
+                const prodCardVal = getUserAverageProductivity(user);
                 const productivity = prodCardVal !== null && prodCardVal !== undefined ? `${prodCardVal}% prod.` : '';
 
                 return `
