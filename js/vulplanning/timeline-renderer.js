@@ -1,5 +1,5 @@
 import { planningState, setDraggedTaskData, getDraggedTaskData, getDraggedTask } from './state.js';
-import { timeToMinutes, minutesToTime, formatDuration, parsePauseMinutes, calculateProductivity, formatTimeInput, normalizeTimeOnBlur } from './time-utils.js';
+import { timeToMinutes, minutesToTime, formatDuration, parsePauseMinutes, calculateProductivity, formatTimeInput, normalizeTimeOnBlur, getFillerStats } from './time-utils.js';
 import { showCustomTooltip, positionCustomTooltip, hideCustomTooltip } from './tooltip.js';
 import { showContextMenu } from './context-menu.js';
 import { findExactUser } from './rooster.js';
@@ -54,24 +54,11 @@ export function renderTimelineRows(options) {
         const shiftGrossDuration = Math.max(0, shiftEnd - shiftStart);
 
         const assigned = planningState.assignedTasks[filler.id] || [];
-
-        let assignedPauzeMins = 0;
-        let workAssignedMins = 0;
-        let totalAssignedMins = 0;
-        assigned.forEach(t => {
-            totalAssignedMins += t.duration;
-            if (t.type === 'pauze') {
-                assignedPauzeMins += t.duration;
-            } else {
-                workAssignedMins += t.duration;
-            }
-        });
-
-        const hasPauzeTask = assignedPauzeMins > 0;
-        const presetPause = parsePauseMinutes(filler.pause);
-        const presetPauseStr = formatDuration(presetPause);
-        const effectivePause = hasPauzeTask ? assignedPauzeMins : presetPause;
-        const targetShiftDuration = Math.max(0, shiftGrossDuration - presetPause) + assignedPauzeMins;
+        const stats = getFillerStats(filler, assigned);
+        const assignedPauzeMins = stats.assignedPauzeMins;
+        const totalAssignedMins = stats.workAssignedMins + assignedPauzeMins;
+        const presetPauseStr = formatDuration(stats.presetPause);
+        const targetShiftDuration = Math.max(0, shiftGrossDuration - stats.presetPause) + assignedPauzeMins;
 
         const diffMins = totalAssignedMins - targetShiftDuration;
         let statusClass = 'status-fit';
@@ -121,7 +108,7 @@ export function renderTimelineRows(options) {
 
         function calcProd() {
             filler.actualEndTime = timeInput.value;
-            const res = calculateProductivity(workAssignedMins, timeInput.value, filler.from, filler.to, effectivePause, assigned);
+            const res = getFillerStats(filler, assigned).prodResult;
             if (!res) {
                 prodLabel.textContent = '';
                 prodLabel.className = 'timeline-worker-prod';

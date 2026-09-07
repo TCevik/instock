@@ -185,3 +185,56 @@ export function normalizeTimeOnBlur(value) {
     }
     return '';
 }
+
+export function getFillerStats(filler, assignedTasks = []) {
+    let assignedPauzeMins = 0;
+    let workAssignedMins = 0;
+    let totalColli = 0;
+
+    assignedTasks.forEach(t => {
+        if (t.type === 'pauze') {
+            assignedPauzeMins += (t.duration || 0);
+        } else {
+            workAssignedMins += (t.duration || 0);
+            if (t.colli && Number(t.colli) > 0) {
+                totalColli += Number(t.colli);
+            }
+        }
+    });
+
+    const presetPause = parsePauseMinutes(filler.pause);
+    const effectivePause = assignedPauzeMins > 0 ? assignedPauzeMins : presetPause;
+    const prodResult = calculateProductivity(workAssignedMins, filler.actualEndTime, filler.from, filler.to, effectivePause, assignedTasks);
+
+    return {
+        assignedPauzeMins,
+        workAssignedMins,
+        totalColli,
+        presetPause,
+        effectivePause,
+        prodResult
+    };
+}
+
+export function getFormattedTasksWithTimes(filler, assignedTasks = []) {
+    const shiftStart = timeToMinutes(filler.from);
+    let currentMins = shiftStart >= 0 ? shiftStart : 0;
+    return (assignedTasks || []).map(t => {
+        const dur = Number(t.duration) || 0;
+        const tStart = currentMins;
+        const tEnd = currentMins + dur;
+        currentMins = tEnd;
+        const taskData = {
+            title: t.title || t.pathName || 'Taak',
+            type: t.type || 'overige',
+            duration_minutes: dur,
+            start_time: minutesToTime(tStart),
+            end_time: minutesToTime(tEnd)
+        };
+        if (t.colli !== undefined && t.colli !== null && Number(t.colli) > 0) {
+            taskData.colli = Number(t.colli);
+        }
+        return taskData;
+    });
+}
+

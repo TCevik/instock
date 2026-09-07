@@ -549,7 +549,8 @@ function renderTable() {
             const role = escapeHtml(getRoleLabel(user.role));
             const departmentsHtml = renderDepartmentBadges(user.departments, 2, '-');
             const birthday = escapeHtml(formatDutchDate(user.birthday));
-            const productivity = user.productivity !== null && user.productivity !== undefined ? escapeHtml(String(user.productivity)) : '-';
+            const prodVal = typeof user.productivity === 'object' && user.productivity !== null ? user.productivity.productivity : user.productivity;
+            const productivity = prodVal !== null && prodVal !== undefined ? `${escapeHtml(String(prodVal))}%` : '-';
             const lastSignIn = escapeHtml(formatDateTime(user.last_sign_in_at));
 
             return `
@@ -585,7 +586,8 @@ function renderTable() {
                 const departmentsHtml = renderDepartmentBadges(user.departments, 3, '');
                 const birthday = escapeHtml(formatDutchDate(user.birthday));
                 const hasBirthday = user.birthday && birthday !== '-';
-                const productivity = user.productivity !== null && user.productivity !== undefined ? `${user.productivity}% prod.` : '';
+                const prodCardVal = typeof user.productivity === 'object' && user.productivity !== null ? user.productivity.productivity : user.productivity;
+                const productivity = prodCardVal !== null && prodCardVal !== undefined ? `${prodCardVal}% prod.` : '';
 
                 return `
                     <div class="user-list-item edit-btn" data-user-id="${escapeHtml(user.user_id)}">

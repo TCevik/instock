@@ -1,5 +1,5 @@
 import { planningState } from './state.js';
-import { timeToMinutes, minutesToTime, formatDuration, parsePauseMinutes, calculateProductivity, formatTimeInput, normalizeTimeOnBlur } from './time-utils.js';
+import { timeToMinutes, minutesToTime, formatDuration, parsePauseMinutes, calculateProductivity, formatTimeInput, normalizeTimeOnBlur, getFillerStats } from './time-utils.js';
 import { triggerAutoSave } from './storage.js';
 import { escapeHtml } from '../main.js';
 
@@ -18,7 +18,15 @@ export function renderMobilePlanningView(container) {
         return;
     }
 
-    container.innerHTML = planningState.fillers.map(filler => {
+    const sortedFillers = [...planningState.fillers].sort((a, b) => {
+        const aCount = (planningState.assignedTasks[a.id] || []).length;
+        const bCount = (planningState.assignedTasks[b.id] || []).length;
+        if (aCount === 0 && bCount > 0) return 1;
+        if (aCount > 0 && bCount === 0) return -1;
+        return 0;
+    });
+
+    container.innerHTML = sortedFillers.map(filler => {
         const shiftStart = timeToMinutes(filler.from);
         let shiftEnd = timeToMinutes(filler.to);
         if (shiftEnd > 0 && shiftEnd <= shiftStart) {
@@ -26,26 +34,14 @@ export function renderMobilePlanningView(container) {
         }
         const shiftGrossDuration = Math.max(0, shiftEnd - shiftStart);
         const assigned = planningState.assignedTasks[filler.id] || [];
+        const stats = getFillerStats(filler, assigned);
+        const workAssignedMins = stats.workAssignedMins;
+        const assignedPauzeMins = stats.assignedPauzeMins;
+        const totalAssignedMins = workAssignedMins + assignedPauzeMins;
+        const presetPauseStr = formatDuration(stats.presetPause);
+        const targetShiftDuration = Math.max(0, shiftGrossDuration - stats.presetPause) + assignedPauzeMins;
 
-        let assignedPauzeMins = 0;
-        let workAssignedMins = 0;
-        let totalAssignedMins = 0;
-        assigned.forEach(t => {
-            totalAssignedMins += t.duration;
-            if (t.type === 'pauze') {
-                assignedPauzeMins += t.duration;
-            } else {
-                workAssignedMins += t.duration;
-            }
-        });
-
-        const hasPauzeTask = assignedPauzeMins > 0;
-        const presetPause = parsePauseMinutes(filler.pause);
-        const presetPauseStr = formatDuration(presetPause);
-        const effectivePause = hasPauzeTask ? assignedPauzeMins : presetPause;
-        const targetShiftDuration = Math.max(0, shiftGrossDuration - presetPause) + assignedPauzeMins;
-
-        const prodResult = calculateProductivity(workAssignedMins, filler.actualEndTime, filler.from, filler.to, effectivePause, assigned);
+        const prodResult = stats.prodResult;
         const prodText = prodResult ? `Prod: ${prodResult.percent}%` : '';
         const prodClass = prodResult ? prodResult.statusClass : '';
 
@@ -130,33 +126,13 @@ export function renderMobilePlanningView(container) {
         const filler = planningState.fillers.find(f => String(f.id) === String(fillerId));
         if (!filler) return;
 
-        const shiftStart = timeToMinutes(filler.from);
-        let shiftEnd = timeToMinutes(filler.to);
-        if (shiftEnd > 0 && shiftEnd <= shiftStart) {
-            shiftEnd += 24 * 60;
-        }
-
         const assigned = planningState.assignedTasks[filler.id] || [];
-        let assignedPauzeMins = 0;
-        let workAssignedMins = 0;
-        assigned.forEach(t => {
-            if (t.type === 'pauze') {
-                assignedPauzeMins += t.duration;
-            } else {
-                workAssignedMins += t.duration;
-            }
-        });
-
-        const hasPauzeTask = assignedPauzeMins > 0;
-        const presetPause = parsePauseMinutes(filler.pause);
-        const effectivePause = hasPauzeTask ? assignedPauzeMins : presetPause;
-
         const timeInput = card.querySelector('.mobile-prod-input');
         const badge = card.querySelector('.mobile-prod-badge');
 
         const updateProd = () => {
             filler.actualEndTime = timeInput.value;
-            const res = calculateProductivity(workAssignedMins, timeInput.value, filler.from, filler.to, effectivePause, assigned);
+            const res = getFillerStats(filler, assigned).prodResult;
             if (!res) {
                 badge.textContent = '';
                 badge.className = 'mobile-prod-badge';

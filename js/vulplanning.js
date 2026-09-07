@@ -17,6 +17,7 @@ import { initHistory, setupHistoryShortcuts } from './vulplanning/history.js';
 import { renderMobilePlanningView } from './vulplanning/mobile-view.js';
 import { hideCustomTooltip } from './vulplanning/tooltip.js';
 import { setupPrintPlanning } from './vulplanning/print-planning.js';
+import { openFinalizeModal } from './vulplanning/finalize-modal.js';
 
 import { openWorkerModal } from './vulplanning/worker-modal.js';
 
@@ -31,6 +32,7 @@ const btnUnifiedImport = document.getElementById('btn-unified-import');
 const btnContinue = document.getElementById('btn-continue');
 const btnBackToInput = document.getElementById('btn-back-to-input');
 const btnPrintPlanning = document.getElementById('btn-print-planning');
+const btnFinalizeProductivity = document.getElementById('btn-finalize-productivity');
 const btnAddCustomTask = document.getElementById('btn-add-custom-task');
 const btnComboSettings = document.getElementById('btn-combo-settings');
 const timelineWorkersList = document.getElementById('timeline-workers-list');
@@ -533,6 +535,10 @@ setupCustomTaskModal(btnAddCustomTask, {
 });
 
 setupPrintPlanning(btnPrintPlanning);
+
+if (btnFinalizeProductivity) {
+    btnFinalizeProductivity.addEventListener('click', () => openFinalizeModal());
+}
 
 loadComboSettings();
 
