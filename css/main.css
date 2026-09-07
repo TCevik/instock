@@ -243,4 +243,119 @@ body {
 .tooltip-colli-val {
     color: var(--accent-color);
     font-weight: 700;
-}
+}
+
+.page-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.page-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-color);
+}
+
+@media (max-width: 768px) {
+    .page-title {
+        font-size: 22px;
+    }
+}
+
+.spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-top-color: var(--accent-color);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.prod-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.prod-badge.success {
+    background-color: var(--prod-success-bg);
+    color: var(--accent-color);
+    border: 1px solid var(--prod-success-border);
+}
+
+.prod-badge.yellow {
+    background-color: var(--prod-yellow-bg);
+    color: var(--yellow-color);
+    border: 1px solid var(--prod-yellow-border);
+}
+
+.prod-badge.orange {
+    background-color: var(--prod-orange-bg);
+    color: var(--warning-color);
+    border: 1px solid var(--prod-orange-border);
+}
+
+.prod-badge.danger {
+    background-color: var(--prod-danger-bg);
+    color: var(--danger-color);
+    border: 1px solid var(--prod-danger-border);
+}
+
+.task-badge-pill {
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    line-height: 1.2;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.task-badge-pill.type-vullen {
+    background-color: var(--vullen-ghost-bg);
+    color: var(--accent-color);
+    border: 1px solid rgba(101, 141, 36, 0.4);
+}
+
+.task-badge-pill.type-spiegelen {
+    background-color: var(--spiegelen-ghost-bg);
+    color: var(--warning-color);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.task-badge-pill.type-restanten {
+    background-color: var(--restanten-ghost-bg);
+    color: var(--purple-color);
+    border: 1px solid rgba(168, 85, 247, 0.35);
+}
+
+.task-badge-pill.type-overige {
+    background-color: var(--overige-ghost-bg);
+    color: var(--info-color);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.task-badge-pill.type-pauze {
+    background-color: var(--pauze-bg);
+    color: var(--pauze-color);
+    border: 1px solid rgba(234, 88, 12, 0.35);
+}
+
+

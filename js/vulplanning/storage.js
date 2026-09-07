@@ -25,11 +25,6 @@ export function triggerAutoSave(immediate = false) {
             const user = await getCurrentUser();
             if (!user || !user.store_id) return;
 
-            if (Number(user.role) === 1) {
-                showToast('error', 'Opslaan mislukt: controleer rechten');
-                return;
-            }
-
             const compactSchedule = {};
             const processedFillerIds = new Set();
 

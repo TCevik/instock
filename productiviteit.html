@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="nl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="css/main.css">
+    <script type="module" src="js/main.js"></script>
+
+    <link rel="stylesheet" href="css/productiviteit.css">
+    <script type="module" src="js/productiviteit.js"></script>
+
+    <title>Productiviteit</title>
+</head>
+
+<body>
+    <div class="page-container">
+        <div class="page-header-row">
+            <div>
+                <h1 class="page-title">Mijn Productiviteit</h1>
+                <p class="productivity-subtitle">Bekijk je behaalde productiviteit en uitgevoerde paden per shift.</p>
+            </div>
+            <div class="productivity-summary-stats" id="productivitySummaryStats" style="display: none;">
+                <div class="stat-card">
+                    <span class="stat-label">Gem. Productiviteit</span>
+                    <span class="stat-value accent" id="statAvgProd">-</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Totaal Colli</span>
+                    <span class="stat-value" id="statTotalColli">-</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Aantal Shifts</span>
+                    <span class="stat-value" id="statTotalDays">-</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="productivityLoading" class="productivity-loading">
+            <div class="spinner"></div>
+            <span>Gegevens laden...</span>
+        </div>
+
+        <div id="productivityEmpty" class="productivity-empty" style="display: none;">
+            <span class="material-icons empty-icon">trending_up</span>
+            <h3 class="empty-title">Geen productiviteitsgegevens gevonden</h3>
+            <p class="empty-text">Er zijn nog geen gefinaliseerde vulplanningen gekoppeld aan jouw account.</p>
+        </div>
+
+        <div id="topFillersSection" class="top-fillers-section" style="display: none;">
+            <div class="section-title-row">
+                <div class="section-title-left">
+                    <span class="material-icons section-title-icon">leaderboard</span>
+                    <div>
+                        <h2 class="section-heading">Top 5 Vullers</h2>
+                        <p class="section-subtext">Gemiddelde productiviteit op basis van de laatste 10 shifts</p>
+                    </div>
+                </div>
+            </div>
+            <div id="topFillersList" class="top-fillers-grid"></div>
+        </div>
+
+        <div id="productivityList" class="productivity-list" style="display: none;"></div>
+    </div>
+</body>
+
+</html>

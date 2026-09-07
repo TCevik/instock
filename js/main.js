@@ -178,6 +178,14 @@ const APP_MODULES = [
         minRole: 1
     },
     {
+        id: 'productiviteit',
+        title: 'Productiviteit',
+        description: 'Bekijk en analyseer vulprestaties en statistieken.',
+        icon: 'trending_up',
+        href: 'productiviteit.html',
+        minRole: 1
+    },
+    {
         id: 'productenbeheer',
         title: 'Productenbeheer',
         description: 'Beheer het assortiment, barcodes, vakken en prijzen.',
@@ -191,7 +199,7 @@ const APP_MODULES = [
         description: 'Beheer medewerkers, rollen en winkeltoegang.',
         icon: 'people',
         href: 'gebruikersbeheer.html',
-        minRole: 2
+        minRole: 1
     },
     {
         id: 'instellingen-winkel',
@@ -199,7 +207,7 @@ const APP_MODULES = [
         description: 'Configureer winkelpaden, vulnormen en categorieën.',
         icon: 'store',
         href: 'instellingen-winkel.html',
-        minRole: 3
+        minRole: 1
     },
     {
         id: 'logs',
@@ -207,13 +215,12 @@ const APP_MODULES = [
         description: 'Bekijk de geschiedenis van acties en wijzigingen.',
         icon: 'history',
         href: 'logs.html',
-        minRole: 3
+        minRole: 1
     }
 ];
 
-export function getAvailableModules(role) {
-    const userRole = Number(role) || 1;
-    return APP_MODULES.filter(m => userRole >= m.minRole);
+export function getAvailableModules() {
+    return APP_MODULES;
 }
 
 async function loadOverlay() {
@@ -303,18 +310,8 @@ async function loadOverlay() {
 
             const headerUserName = document.getElementById('headerUserName');
             const user = await getCurrentUser();
-            if (user) {
-                if (headerUserName) {
-                    headerUserName.textContent = user.full_name?.trim() || user.username?.trim() || '';
-                }
-                const allowedHrefs = new Set(getAvailableModules(user.role).map(m => m.href));
-                allowedHrefs.add('index.html');
-                links.forEach(link => {
-                    const href = link.getAttribute('href');
-                    if (href && !allowedHrefs.has(href)) {
-                        link.style.display = 'none';
-                    }
-                });
+            if (user && headerUserName) {
+                headerUserName.textContent = user.full_name?.trim() || user.username?.trim() || '';
             }
         }
     } catch (error) {
