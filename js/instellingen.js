@@ -73,15 +73,37 @@ function syncActiveCardToMemory() {
         const catNormVal = row.querySelector('.category-row-norm-input')?.value;
         const catNorm = catNormVal !== '' && !isNaN(Number(catNormVal)) ? Number(catNormVal) : '';
         if (catName || catNorm !== '') {
-            cats.push({ name: catName, norm: catNorm });
+            const catObj = { name: catName, norm: catNorm };
+            if (row.dataset.id) {
+                catObj.id = row.dataset.id;
+            }
+            cats.push(catObj);
         }
     });
     currentPath.categories = cats;
 }
 
+function getPathsSnapshot() {
+    syncActiveCardToMemory();
+    return JSON.stringify(
+        paths.map(p => ({
+            name: String(p.name || '').trim(),
+            spiegelnorm: p.spiegelnorm !== '' && !isNaN(Number(p.spiegelnorm)) ? Number(p.spiegelnorm) : 0,
+            restantennorm: p.restantennorm !== '' && !isNaN(Number(p.restantennorm)) ? Number(p.restantennorm) : 0,
+            categories: Array.isArray(p.categories)
+                ? p.categories
+                    .map(c => ({
+                        name: String(c?.name || '').trim(),
+                        norm: c?.norm !== '' && c?.norm !== null && c?.norm !== undefined && !isNaN(Number(c.norm)) ? Number(c.norm) : 0
+                    }))
+                    .filter(c => c.name !== '' || c.norm !== 0)
+                : []
+        })).filter(p => p.name !== '' || p.categories.length > 0 || p.spiegelnorm !== 0 || p.restantennorm !== 0)
+    );
+}
+
 function hasUnsavedChanges() {
-    const currentClean = collectCleanPaths();
-    return JSON.stringify(currentClean) !== originalPathsJson;
+    return getPathsSnapshot() !== originalPathsJson;
 }
 
 function renderSidebar() {
@@ -126,6 +148,9 @@ function renderSidebar() {
 function createCategoryTableRow(cat = { name: '', norm: '' }, index = 0) {
     const tr = document.createElement('tr');
     tr.className = 'category-table-row';
+    if (cat.id) {
+        tr.dataset.id = cat.id;
+    }
     tr.innerHTML = `
         <td class="cat-cell-name">
             <input type="text" class="category-row-name-input" placeholder="Categorienaam..." value="${escapeHtml(cat.name || '')}">
@@ -383,16 +408,17 @@ function collectCleanPaths() {
 async function loadStorePaths() {
     try {
         paths = await getStorePaths();
-        originalPathsJson = JSON.stringify(collectCleanPaths());
         selectedPathIndex = 0;
         renderSidebar();
         renderDetailPanel();
+        originalPathsJson = getPathsSnapshot();
     } catch (err) {
         showToast('error', err.message || 'Fout bij ophalen van paden');
         paths = [];
-        originalPathsJson = '[]';
+        selectedPathIndex = 0;
         renderSidebar();
         renderDetailPanel();
+        originalPathsJson = getPathsSnapshot();
     }
 }
 
@@ -433,10 +459,10 @@ async function saveStorePaths() {
         showToast('notification', 'Standaard paden en categorieën succesvol opgeslagen');
         if (data && Array.isArray(data.default_paths)) {
             paths = data.default_paths;
-            originalPathsJson = JSON.stringify(collectCleanPaths());
             if (selectedPathIndex >= paths.length) selectedPathIndex = 0;
             renderSidebar();
             renderDetailPanel();
+            originalPathsJson = getPathsSnapshot();
         }
     } catch (err) {
         showToast('error', err.message || 'Fout bij opslaan');
@@ -476,7 +502,7 @@ document.addEventListener('click', async (e) => {
         });
 
         if (confirmed) {
-            originalPathsJson = JSON.stringify(collectCleanPaths());
+            originalPathsJson = getPathsSnapshot();
             window.location.href = href;
         }
     }
