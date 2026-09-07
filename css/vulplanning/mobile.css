@@ -44,6 +44,7 @@
     .timeline-header-actions #btn-settings-planning,
     .timeline-header-actions a[href*="instellingen"],
     .timeline-header-actions #btn-add-custom-task,
+    .timeline-header-actions #clear-planning-btn,
     .timeline-header-actions #btn-combo-settings,
     .timeline-header-actions a[title="Winkelinstellingen"],
     .timeline-header-actions .timeline-header-divider {

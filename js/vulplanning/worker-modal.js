@@ -3,7 +3,7 @@ import { planningState } from './state.js';
 import { timeToMinutes, parsePauseMinutes } from './time-utils.js';
 import { setupAutocomplete, setupTimeInput, findExactUser, findUserByUsername, updateUsernameBadge, fillRoosterShifts } from './rooster.js';
 import { calculateTimelineBounds } from './timeline-axis.js';
-import { unassignTask } from './task-actions.js';
+import { unassignWorkerTasks } from './task-actions.js';
 import { triggerAutoSave } from './storage.js';
 import { recordSnapshot } from './history.js';
 
@@ -110,12 +110,7 @@ export async function openWorkerModal(filler = null, callbacks = {}) {
 
             if (!confirmed) return;
 
-            while ((planningState.assignedTasks[filler.id] || []).length > 0) {
-                unassignTask(filler.id, 0, {
-                    onRenderRows: () => {},
-                    onRenderUnassigned: () => {}
-                });
-            }
+            unassignWorkerTasks(filler.id, { skipAutoSave: true });
 
             delete planningState.assignedTasks[filler.id];
             planningState.fillers = planningState.fillers.filter(f => f.id !== filler.id);

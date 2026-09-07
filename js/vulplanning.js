@@ -7,7 +7,7 @@ import { timeToMinutes, parsePauseMinutes } from './vulplanning/time-utils.js';
 import { triggerAutoSave } from './vulplanning/storage.js';
 import { calculateTimelineBounds, renderTimelineAxis } from './vulplanning/timeline-axis.js';
 import { generateTasksFromPathsAndColli } from './vulplanning/task-generator.js';
-import { assignTaskToFiller, unassignTask, moveAssignedTask } from './vulplanning/task-actions.js';
+import { assignTaskToFiller, unassignTask, moveAssignedTask, unassignAllTasks } from './vulplanning/task-actions.js';
 import { renderTimelineRows } from './vulplanning/timeline-renderer.js';
 import { renderUnassignedTasks } from './vulplanning/unassigned-renderer.js';
 import { setupCustomTaskModal } from './vulplanning/custom-task-modal.js';
@@ -35,6 +35,7 @@ const btnBackToInput = document.getElementById('btn-back-to-input');
 const btnPrintPlanning = document.getElementById('btn-print-planning');
 const btnFinalizeProductivity = document.getElementById('btn-finalize-productivity');
 const btnAddCustomTask = document.getElementById('btn-add-custom-task');
+const clearPlanningBtn = document.getElementById('clear-planning-btn');
 const btnComboSettings = document.getElementById('btn-combo-settings');
 const timelineWorkersList = document.getElementById('timeline-workers-list');
 const timelineTracksContainer = document.getElementById('timeline-tracks-container');
@@ -293,6 +294,35 @@ if (btnClearInput) {
         localStorage.removeItem('instock_planner_step');
         triggerAutoSave(true);
         showToast('notification', 'Invoer is leeggemaakt');
+    });
+}
+
+if (clearPlanningBtn) {
+    clearPlanningBtn.addEventListener('click', async () => {
+        const hasAssignments = Object.values(planningState.assignedTasks || {}).some(list => Array.isArray(list) && list.length > 0);
+        const hasProdInputs = (planningState.fillers || []).some(f => f.actualEndTime && f.actualEndTime.trim().length > 0);
+        if (!hasAssignments && !hasProdInputs) {
+            showToast('notification', 'Er is geen planning of productiviteit om leeg te maken');
+            return;
+        }
+
+        const confirmed = await showConfirmModal({
+            title: 'Planning leegmaken',
+            message: 'Weet je zeker dat je alle toegewezen taken en ingevoerde eindtijden wilt wissen? De taken worden teruggezet naar Onverdeelde Taken.',
+            confirmText: 'Maak leeg',
+            cancelText: 'Annuleren',
+            isDanger: true
+        });
+
+        if (!confirmed) return;
+
+        unassignAllTasks({
+            onRenderAxis: doRenderAxis,
+            onRenderRows: doRenderRows,
+            onRenderUnassigned: doRenderUnassigned
+        });
+
+        showToast('notification', 'Planning is leeggemaakt');
     });
 }
 

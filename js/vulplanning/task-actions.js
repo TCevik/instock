@@ -232,7 +232,52 @@ export function unassignTask(fillerId, taskIndex, callbacks = {}) {
 
     if (callbacks.onRenderRows) callbacks.onRenderRows();
     if (callbacks.onRenderUnassigned) callbacks.onRenderUnassigned();
-    triggerAutoSave(true);
+    if (!callbacks.skipAutoSave) triggerAutoSave(true);
+}
+
+export function unassignWorkerTasks(fillerId, callbacks = {}) {
+    let unassignedAny = false;
+    while ((planningState.assignedTasks[fillerId] || []).length > 0) {
+        unassignTask(fillerId, 0, {
+            onRenderRows: () => {},
+            onRenderUnassigned: () => {},
+            skipAutoSave: true
+        });
+        unassignedAny = true;
+    }
+    if (unassignedAny) {
+        if (callbacks.onRenderRows) callbacks.onRenderRows();
+        if (callbacks.onRenderUnassigned) callbacks.onRenderUnassigned();
+        if (!callbacks.skipAutoSave) triggerAutoSave(true);
+    }
+    return unassignedAny;
+}
+
+export function unassignAllTasks(callbacks = {}) {
+    hideCustomTooltip();
+    let hasAny = false;
+    const fillerIds = Object.keys(planningState.assignedTasks || {});
+    for (const fillerId of fillerIds) {
+        if ((planningState.assignedTasks[fillerId] || []).length > 0) {
+            unassignWorkerTasks(fillerId, { skipAutoSave: true });
+            hasAny = true;
+        }
+    }
+    if (planningState.fillers && planningState.fillers.length > 0) {
+        planningState.fillers.forEach(f => {
+            if (f.actualEndTime) {
+                f.actualEndTime = '';
+                hasAny = true;
+            }
+        });
+    }
+    if (hasAny) {
+        if (callbacks.onRenderAxis) callbacks.onRenderAxis();
+        if (callbacks.onRenderRows) callbacks.onRenderRows();
+        if (callbacks.onRenderUnassigned) callbacks.onRenderUnassigned();
+        triggerAutoSave(true);
+    }
+    return hasAny;
 }
 
 export function addHelperToTask(sourceFillerId, sourceTaskIndex, targetFillerId, targetIndex = null, callbacks = {}) {
