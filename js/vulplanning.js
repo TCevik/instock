@@ -1,7 +1,7 @@
 import { showToast, showConfirmModal } from './main.js';
 import { openUnifiedImportModal } from './vulplanning/import-unified.js';
 import { fillRoosterShifts, getAvailableUsers, getFillersData } from './vulplanning/rooster.js';
-import { handleImportedColli } from './vulplanning/colli-invoer.js';
+import { handleImportedColli, clearColliValues, getColliData } from './vulplanning/colli-invoer.js';
 import { planningState, getDraggedTaskData } from './vulplanning/state.js';
 import { timeToMinutes, parsePauseMinutes } from './vulplanning/time-utils.js';
 import { triggerAutoSave } from './vulplanning/storage.js';
@@ -28,6 +28,7 @@ export { triggerAutoSave };
 const stepInputView = document.getElementById('step-input-view');
 const stepTimelineView = document.getElementById('step-timeline-view');
 const btnBackToTimeline = document.getElementById('btn-back-to-timeline');
+const btnClearInput = document.getElementById('btn-clear-input');
 const btnUnifiedImport = document.getElementById('btn-unified-import');
 const btnContinue = document.getElementById('btn-continue');
 const btnBackToInput = document.getElementById('btn-back-to-input');
@@ -251,6 +252,47 @@ if (btnUnifiedImport) {
             },
             availableUsers: getAvailableUsers()
         });
+    });
+}
+
+if (btnClearInput) {
+    btnClearInput.addEventListener('click', async () => {
+        const fillers = getFillersData();
+        const colli = getColliData();
+        const hasRooster = fillers.length > 0;
+        const hasColli = colli.some(c => c.colli > 0);
+        const hasAssignments = Object.values(planningState.assignedTasks || {}).some(list => Array.isArray(list) && list.length > 0);
+        const hasNames = Array.from(document.querySelectorAll('.vuller-name')).some(inp => inp.value.trim());
+
+        if (!hasRooster && !hasColli && !hasAssignments && !hasNames) {
+            showToast('notification', 'Er is geen invoer om leeg te maken');
+            return;
+        }
+
+        const confirmed = await showConfirmModal({
+            title: 'Invoer leegmaken',
+            message: 'Weet je zeker dat je alle ingevoerde gegevens (rooster en colli) wilt wissen?',
+            confirmText: 'Maak leeg',
+            cancelText: 'Annuleren',
+            isDanger: true
+        });
+
+        if (!confirmed) return;
+
+        fillRoosterShifts([]);
+        clearColliValues();
+        planningState.fillers = [];
+        planningState.unassignedTasks = [];
+        planningState.assignedTasks = {};
+        planningState.savedTasks = [];
+
+        if (btnBackToTimeline) {
+            btnBackToTimeline.style.display = 'none';
+        }
+
+        localStorage.removeItem('instock_planner_step');
+        triggerAutoSave(true);
+        showToast('notification', 'Invoer is leeggemaakt');
     });
 }
 

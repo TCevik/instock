@@ -281,6 +281,16 @@ export function getColliData() {
     return result;
 }
 
+export function clearColliValues() {
+    pendingColliMap = {};
+    if (!colliCategoriesContainer) return;
+    const inputs = colliCategoriesContainer.querySelectorAll('.colli-amount-input');
+    inputs.forEach(input => {
+        input.value = '';
+        input.removeAttribute('value');
+    });
+}
+
 loadStorePathsForColli();
 
 if (colliCategoriesContainer) {
