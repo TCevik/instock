@@ -426,7 +426,21 @@
     width: 100%;
     min-width: 0;
     box-sizing: border-box;
-    margin-bottom: 20px;
+}
+
+.section-divider {
+    height: 1px;
+    background-color: var(--card-border);
+    margin: 28px 0;
+    width: 100%;
+}
+
+.my-shifts-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    min-width: 0;
 }
 
 .section-title-row {

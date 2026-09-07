@@ -31,15 +31,20 @@ async function initProductivityPage() {
 
         const entries = extractProductivities(userData?.productivity);
 
+        const myShiftsSection = document.getElementById('myShiftsSection');
+        const sectionDivider = document.getElementById('productivitySectionDivider');
+
         if (!entries || entries.length === 0) {
             if (emptyEl) emptyEl.style.display = 'flex';
-            if (listEl) listEl.style.display = 'none';
+            if (myShiftsSection) myShiftsSection.style.display = 'none';
+            if (sectionDivider) sectionDivider.style.display = 'none';
             if (statsEl) statsEl.style.display = 'none';
+            loadTopFillers(session.user.id);
             return;
         }
 
         if (emptyEl) emptyEl.style.display = 'none';
-        if (listEl) listEl.style.display = 'flex';
+        if (myShiftsSection) myShiftsSection.style.display = 'flex';
         if (statsEl) statsEl.style.display = 'flex';
 
         renderSummaryStats(entries);
@@ -56,19 +61,26 @@ async function initProductivityPage() {
 async function loadTopFillers(currentUserId) {
     const sectionEl = document.getElementById('topFillersSection');
     const listEl = document.getElementById('topFillersList');
+    const myShiftsSection = document.getElementById('myShiftsSection');
+    const sectionDivider = document.getElementById('productivitySectionDivider');
     if (!sectionEl || !listEl) return;
 
     try {
         const { data, error } = await supabase.functions.invoke('get-top-fillers');
         if (error || !data || !Array.isArray(data.topFillers) || data.topFillers.length === 0) {
             sectionEl.style.display = 'none';
+            if (sectionDivider) sectionDivider.style.display = 'none';
             return;
         }
 
         renderTopFillers(data.topFillers, listEl, currentUserId);
         sectionEl.style.display = 'flex';
+        if (sectionDivider) {
+            sectionDivider.style.display = (myShiftsSection && myShiftsSection.style.display !== 'none') ? 'block' : 'none';
+        }
     } catch (_) {
         sectionEl.style.display = 'none';
+        if (sectionDivider) sectionDivider.style.display = 'none';
     }
 }
 
