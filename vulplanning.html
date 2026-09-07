@@ -130,8 +130,51 @@
                 <div class="timeline-board-container">
                     <div class="timeline-board-topbar">
                         <div class="timeline-workers-header-cell">
-                            <span class="timeline-col-title-main">MEDEWERKER TIJD & PAUZE</span>
-                            <span class="timeline-col-title-sub">EINDTIJD</span>
+                            <div class="timeline-workers-header-left">
+                                <span class="timeline-col-title-main sortable-header" id="header-sort-name" title="Klik om te sorteren op naam">MEDEWERKERS</span>
+                                <div class="timeline-sort-dropdown-container">
+                                    <button type="button" id="btn-sort-fillers" class="timeline-sort-btn" title="Medewerkers sorteren">
+                                        <span class="material-icons sort-main-icon">sort</span>
+                                        <span class="sort-btn-text">Sorteren</span>
+                                        <span class="material-icons sort-chevron-icon">expand_more</span>
+                                    </button>
+                                    <div id="timeline-sort-menu" class="timeline-sort-menu">
+                                        <div class="sort-menu-header">Sorteren op</div>
+                                        <button type="button" class="sort-menu-item" data-sort="start-asc">
+                                            <span class="material-icons">schedule</span>
+                                            <span class="sort-item-text">Begintijd (omhoog)</span>
+                                        </button>
+                                        <button type="button" class="sort-menu-item" data-sort="start-desc">
+                                            <span class="material-icons">schedule</span>
+                                            <span class="sort-item-text">Begintijd (omlaag)</span>
+                                        </button>
+                                        <div class="sort-menu-divider"></div>
+                                        <button type="button" class="sort-menu-item" data-sort="end-asc">
+                                            <span class="material-icons">update</span>
+                                            <span class="sort-item-text">Eindtijd (omhoog)</span>
+                                        </button>
+                                        <button type="button" class="sort-menu-item" data-sort="end-desc">
+                                            <span class="material-icons">update</span>
+                                            <span class="sort-item-text">Eindtijd (omlaag)</span>
+                                        </button>
+                                        <div class="sort-menu-divider"></div>
+                                        <button type="button" class="sort-menu-item" data-sort="name-asc">
+                                            <span class="material-icons">sort_by_alpha</span>
+                                            <span class="sort-item-text">Naam (A-Z)</span>
+                                        </button>
+                                        <button type="button" class="sort-menu-item" data-sort="name-desc">
+                                            <span class="material-icons">sort_by_alpha</span>
+                                            <span class="sort-item-text">Naam (Z-A)</span>
+                                        </button>
+                                        <div class="sort-menu-divider"></div>
+                                        <button type="button" class="sort-menu-item" data-sort="custom">
+                                            <span class="material-icons">tune</span>
+                                            <span class="sort-item-text">Aangepast (volgorde)</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="timeline-col-title-sub sortable-header" id="header-sort-end" title="Klik om te sorteren op eindtijd">EINDTIJD</span>
                         </div>
                         <div class="timeline-axis-label-row">
                             <span class="timeline-axis-title">TOEGEWEZEN TAKEN</span>

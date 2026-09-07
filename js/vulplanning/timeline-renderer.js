@@ -1,13 +1,14 @@
 import { planningState, setDraggedTaskData, getDraggedTaskData, getDraggedTask } from './state.js';
 import { timeToMinutes, minutesToTime, formatDuration, parsePauseMinutes, calculateProductivity, formatTimeInput, normalizeTimeOnBlur, getFillerStats } from './time-utils.js';
 import { showCustomTooltip, positionCustomTooltip, hideCustomTooltip } from './tooltip.js';
-import { showContextMenu } from './context-menu.js';
-import { findExactUser } from './rooster.js';
+import { showContextMenu, showWorkerContextMenu } from './context-menu.js';
+import { findExactUser, fillRoosterShifts } from './rooster.js';
 import { calculateTimelineBounds, renderTimelineAxis, getPixelsPerMinute, getTimelineTotalMinutes } from './timeline-axis.js';
 import { openPauseModal } from './custom-task-modal.js';
 import { addHelperToTask, getComboTasksForTask } from './task-actions.js';
 import { triggerAutoSave } from './storage.js';
 import { recordSnapshot } from './history.js';
+import { clearFillerSortState } from './filler-sort.js';
 
 let draggedWorkerFillerId = null;
 
@@ -25,6 +26,14 @@ export function renderTimelineRows(options) {
         onEditWorker,
         onAddWorker
     } = options;
+
+    function onWorkerOrderChanged() {
+        clearFillerSortState();
+        fillRoosterShifts(planningState.fillers);
+        recordSnapshot();
+        triggerAutoSave(true);
+        if (onRenderRows) onRenderRows();
+    }
 
     if (!timelineWorkersList || !timelineTracksContainer) return;
     hideCustomTooltip();
@@ -240,10 +249,7 @@ export function renderTimelineRows(options) {
                 targetIdx += 1;
             }
             planningState.fillers.splice(targetIdx, 0, movedWorker);
-
-            recordSnapshot();
-            triggerAutoSave(true);
-            if (onRenderRows) onRenderRows();
+            onWorkerOrderChanged();
         });
 
         workerCard.addEventListener('mouseenter', (e) => {
@@ -279,6 +285,15 @@ export function renderTimelineRows(options) {
             if (onEditWorker) {
                 onEditWorker(filler);
             }
+        });
+
+        workerCard.addEventListener('contextmenu', (e) => {
+            if (isDraggingThisWorker) return;
+            if (e.target.closest('.timeline-worker-input')) return;
+            showWorkerContextMenu(e, filler, {
+                onRenderRows,
+                onEditWorker
+            });
         });
 
         timelineWorkersList.appendChild(workerCard);
@@ -614,9 +629,7 @@ export function renderTimelineRows(options) {
                         let targetIdx = planningState.fillers.findIndex(f => f.id === filler.id);
                         if (!isTopHalf) targetIdx += 1;
                         planningState.fillers.splice(targetIdx, 0, movedWorker);
-                        recordSnapshot();
-                        triggerAutoSave(true);
-                        if (onRenderRows) onRenderRows();
+                        onWorkerOrderChanged();
                     }
                 }
                 return;
@@ -698,9 +711,7 @@ export function renderTimelineRows(options) {
         if (sourceIdx === -1) return;
         const [movedWorker] = planningState.fillers.splice(sourceIdx, 1);
         planningState.fillers.push(movedWorker);
-        recordSnapshot();
-        triggerAutoSave(true);
-        if (onRenderRows) onRenderRows();
+        onWorkerOrderChanged();
     });
 
     timelineWorkersList.appendChild(addRow);
@@ -737,9 +748,7 @@ export function renderTimelineRows(options) {
         if (sourceIdx === -1) return;
         const [movedWorker] = planningState.fillers.splice(sourceIdx, 1);
         planningState.fillers.push(movedWorker);
-        recordSnapshot();
-        triggerAutoSave(true);
-        if (onRenderRows) onRenderRows();
+        onWorkerOrderChanged();
     });
 
     timelineTracksContainer.appendChild(addTrackSpacer);

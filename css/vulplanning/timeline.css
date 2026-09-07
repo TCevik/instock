@@ -100,6 +100,147 @@
     color: var(--text-color-muted);
 }
 
+.timeline-workers-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.timeline-col-title-main.sortable-header,
+.timeline-col-title-sub.sortable-header {
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    transition: color 0.15s;
+    user-select: none;
+}
+
+.timeline-col-title-main.sortable-header:hover,
+.timeline-col-title-sub.sortable-header:hover {
+    color: var(--text-color);
+}
+
+.timeline-sort-dropdown-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.timeline-sort-btn {
+    background-color: var(--input-background);
+    border: 1px solid var(--card-border);
+    color: var(--text-color-muted);
+    border-radius: 4px;
+    height: 22px;
+    padding: 0 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 600;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    user-select: none;
+}
+
+.timeline-sort-btn:hover {
+    background-color: var(--card-border);
+    color: var(--text-color);
+}
+
+.timeline-sort-btn.active {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+    background-color: rgba(101, 141, 36, 0.1);
+}
+
+.timeline-sort-btn .sort-main-icon {
+    font-size: 13px;
+}
+
+.timeline-sort-btn .sort-chevron-icon {
+    font-size: 14px;
+    margin-left: -2px;
+    transition: transform 0.15s;
+}
+
+.timeline-sort-btn.open .sort-chevron-icon {
+    transform: rotate(180deg);
+}
+
+.timeline-sort-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 10000;
+    background-color: var(--card-background);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 4px;
+    min-width: 220px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.timeline-sort-menu.active {
+    display: flex;
+}
+
+.sort-menu-header {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--text-color-muted);
+    padding: 4px 8px 2px 8px;
+    text-transform: uppercase;
+}
+
+.sort-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-color);
+    border-radius: 4px;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.sort-menu-item:hover {
+    background-color: var(--input-background);
+}
+
+.sort-menu-item.selected {
+    color: var(--accent-color);
+    background-color: rgba(101, 141, 36, 0.12);
+}
+
+.sort-menu-item .material-icons {
+    font-size: 14px;
+    color: var(--text-color-muted);
+}
+
+.sort-menu-item.selected .material-icons {
+    color: var(--accent-color);
+}
+
+.sort-menu-divider,
+.context-menu-divider {
+    height: 1px;
+    background-color: var(--card-border);
+    margin: 2px 0;
+}
+
 .timeline-axis-label-row {
     flex: 1;
     display: flex;

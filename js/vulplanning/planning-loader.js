@@ -4,6 +4,7 @@ import { fillRoosterShifts, loadStoreUsers } from './rooster.js';
 import { fillColliValues, loadStorePathsForColli } from './colli-invoer.js';
 import { generateTasksFromPathsAndColli } from './task-generator.js';
 import { calculateTimelineBounds } from './timeline-axis.js';
+import { applyStoredFillerSort } from './filler-sort.js';
 
 export async function loadSavedPlanning(options = {}) {
     const {
@@ -39,7 +40,10 @@ export async function loadSavedPlanning(options = {}) {
             return;
         }
 
-        const savedFillers = Array.isArray(data.fillers) ? data.fillers : [];
+        const savedFillers = (Array.isArray(data.fillers) ? data.fillers : []).map((f, idx) => ({
+            ...f,
+            customOrder: (f && typeof f.customOrder === 'number') ? f.customOrder : idx
+        }));
         if (savedFillers.length === 0) {
             if (window.innerWidth <= 768) {
                 if (stepInputView) stepInputView.style.display = 'none';
@@ -188,10 +192,11 @@ export async function loadSavedPlanning(options = {}) {
         planningState.assignedTasks = hydratedAssignedTasks;
         planningState.unassignedTasks = [...unassignedNormal, ...otherTasksList];
 
-        calculateTimelineBounds(savedFillers);
-
         if (stepInputView) stepInputView.style.display = 'none';
         if (stepTimelineView) stepTimelineView.style.display = 'flex';
+
+        applyStoredFillerSort();
+        calculateTimelineBounds(planningState.fillers);
 
         const savedTab = localStorage.getItem('instock_planner_tab');
         if (savedTab) {

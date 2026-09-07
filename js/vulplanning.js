@@ -18,8 +18,8 @@ import { renderMobilePlanningView } from './vulplanning/mobile-view.js';
 import { hideCustomTooltip } from './vulplanning/tooltip.js';
 import { setupPrintPlanning } from './vulplanning/print-planning.js';
 import { openFinalizeModal } from './vulplanning/finalize-modal.js';
-
 import { openWorkerModal } from './vulplanning/worker-modal.js';
+import { initFillerSort } from './vulplanning/filler-sort.js';
 
 window.__draggedTaskDataRef = getDraggedTaskData;
 
@@ -647,6 +647,9 @@ loadSavedPlanning({
         onRenderAxis: doRenderAxis,
         onRenderRows: doRenderRows,
         onRenderUnassigned: doRenderUnassigned
+    });
+    initFillerSort({
+        onRenderRows: doRenderRows
     });
 }).finally(() => {
     hideLoadingScreen();

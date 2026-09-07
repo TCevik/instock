@@ -5,6 +5,7 @@ import { hideCustomTooltip } from './tooltip.js';
 import { triggerAutoSave } from './storage.js';
 import { openPauseModal } from './custom-task-modal.js';
 import { findMainTaskForHelper, findHelpersForMainTask } from './task-actions.js';
+import { sortFillers } from './filler-sort.js';
 
 let contextMenuElement = null;
 
@@ -405,4 +406,77 @@ export async function deleteCustomTask(task, isAssigned, fillerId, taskIndex, ca
     if (callbacks.onRenderUnassigned) callbacks.onRenderUnassigned();
     triggerAutoSave();
     showToast('notification', 'Taak verwijderd');
+}
+
+export function showWorkerContextMenu(e, filler, callbacks = {}) {
+    e.preventDefault();
+    hideCustomTooltip();
+    const menu = getOrCreateContextMenu();
+
+    menu.innerHTML = `
+        <button type="button" class="context-menu-item" id="ctx-edit-worker">
+            <span class="material-icons">edit</span>
+            <span>${filler?.name || 'Medewerker'} bewerken</span>
+        </button>
+        <div class="context-menu-divider"></div>
+        <button type="button" class="context-menu-item" data-sort="start-asc">
+            <span class="material-icons">schedule</span>
+            <span>Begintijd (omhoog)</span>
+        </button>
+        <button type="button" class="context-menu-item" data-sort="start-desc">
+            <span class="material-icons">schedule</span>
+            <span>Begintijd (omlaag)</span>
+        </button>
+        <div class="context-menu-divider"></div>
+        <button type="button" class="context-menu-item" data-sort="end-asc">
+            <span class="material-icons">update</span>
+            <span>Eindtijd (omhoog)</span>
+        </button>
+        <button type="button" class="context-menu-item" data-sort="end-desc">
+            <span class="material-icons">update</span>
+            <span>Eindtijd (omlaag)</span>
+        </button>
+        <div class="context-menu-divider"></div>
+        <button type="button" class="context-menu-item" data-sort="name-asc">
+            <span class="material-icons">sort_by_alpha</span>
+            <span>Naam (A-Z)</span>
+        </button>
+        <button type="button" class="context-menu-item" data-sort="name-desc">
+            <span class="material-icons">sort_by_alpha</span>
+            <span>Naam (Z-A)</span>
+        </button>
+        <div class="context-menu-divider"></div>
+        <button type="button" class="context-menu-item" data-sort="custom">
+            <span class="material-icons">tune</span>
+            <span>Aangepast (volgorde)</span>
+        </button>
+    `;
+
+    const editBtn = menu.querySelector('#ctx-edit-worker');
+    if (editBtn) {
+        editBtn.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            hideContextMenu();
+            if (callbacks.onEditWorker) {
+                callbacks.onEditWorker(filler);
+            }
+        });
+    }
+
+    menu.querySelectorAll('.context-menu-item[data-sort]').forEach(btn => {
+        btn.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            const sortType = btn.getAttribute('data-sort');
+            hideContextMenu();
+            if (sortType) {
+                sortFillers(sortType, callbacks);
+            }
+        });
+    });
+
+    const x = e.clientX;
+    const y = e.clientY;
+    menu.style.left = `${Math.min(window.innerWidth - 240, Math.max(10, x))}px`;
+    menu.style.top = `${Math.min(window.innerHeight - 300, Math.max(10, y))}px`;
+    menu.classList.add('active');
 }
