@@ -301,4 +301,23 @@ export function initGlobalTooltips() {
     window.addEventListener('mousedown', hideCustomTooltip, { passive: true });
     window.addEventListener('scroll', hideCustomTooltip, { passive: true });
     window.addEventListener('blur', hideCustomTooltip);
+
+    document.addEventListener('touchstart', (e) => {
+        const touch = e.touches[0];
+        if (!touch) return;
+        const target = e.target.closest('[title], [data-tooltip]');
+        if (!target || target.tagName === 'TITLE') {
+            hideCustomTooltip();
+            return;
+        }
+        if (target.hasAttribute('title')) {
+            const val = target.getAttribute('title');
+            if (val) target.setAttribute('data-tooltip', val);
+            target.removeAttribute('title');
+        }
+        const text = target.getAttribute('data-tooltip');
+        if (text && text.trim()) {
+            showCustomTooltip({ clientX: touch.clientX, clientY: touch.clientY }, text);
+        }
+    }, { passive: true });
 }

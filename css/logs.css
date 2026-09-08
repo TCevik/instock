@@ -277,69 +277,7 @@
     font-size: 18px;
 }
 
-.table-pagination {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px;
-    border-top: 1px solid var(--card-border);
-    background-color: var(--card-background);
-    flex-wrap: wrap;
-    gap: 12px;
-}
 
-.pagination-info {
-    font-size: 13px;
-    color: var(--text-color-muted);
-}
-
-.pagination-buttons {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.pagination-btn {
-    background-color: var(--input-background);
-    border: 1px solid var(--card-border);
-    color: var(--text-color);
-    border-radius: 8px;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background-color 0.2s, border-color 0.2s;
-}
-
-@media (hover: hover) and (pointer: fine) {
-    .pagination-btn:hover:not(:disabled) {
-        background-color: var(--card-border);
-        border-color: var(--input-focus);
-    }
-}
-
-.pagination-btn:active:not(:disabled) {
-    background-color: var(--card-border);
-    border-color: var(--input-focus);
-}
-
-.pagination-btn:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-}
-
-.pagination-btn .material-icons {
-    font-size: 20px;
-}
-
-.pagination-current {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-color);
-    padding: 0 6px;
-}
 
 .empty-state {
     text-align: center;
@@ -743,17 +681,6 @@
 
     .logs-cards {
         display: flex;
-    }
-
-    .table-pagination {
-        flex-direction: column;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .pagination-buttons {
-        width: 100%;
-        justify-content: center;
     }
 }
 

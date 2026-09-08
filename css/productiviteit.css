@@ -100,6 +100,13 @@
     font-size: 14px;
 }
 
+.productivity-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+}
+
 .productivity-empty {
     display: flex;
     flex-direction: column;
@@ -547,6 +554,10 @@
     padding-bottom: 14px;
     border-bottom: 1px solid var(--card-border);
     width: 100%;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
 }
 
 .day-card-header-left {
@@ -619,7 +630,36 @@
 .day-card-header-right {
     display: flex;
     align-items: center;
+    gap: 4px;
     flex-shrink: 0;
+}
+
+.day-card-chevron {
+    font-size: 20px;
+    color: var(--text-color-muted);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.day-card-header:hover .day-card-chevron {
+    color: var(--text-color);
+}
+
+.productivity-day-card.collapsed .day-card-chevron {
+    transform: rotate(-90deg);
+}
+
+.productivity-day-card.collapsed .day-card-header {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.productivity-day-card.collapsed .day-card-body {
+    display: none;
+}
+
+.productivity-day-card.collapsed {
+    padding-bottom: 20px;
 }
 
 .day-card-body {
@@ -823,34 +863,382 @@
     }
 }
 
+.my-shifts-pagination {
+    border-radius: 14px;
+    border: 1px solid var(--card-border);
+    margin-top: 10px;
+}
+
+.shifts-date-filter-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.shifts-datepicker-container {
+    width: 190px;
+}
+
+.shifts-datepicker-container .custom-datepicker {
+    width: 100%;
+}
+
+.shifts-datepicker-container .datepicker-input {
+    height: 38px;
+    padding: 8px 36px 8px 12px;
+    font-size: 13px;
+    border-radius: 10px;
+}
+
+.shifts-datepicker-container .datepicker-icon-btn {
+    top: 5px;
+    right: 5px;
+}
+
+.shifts-date-clear-btn {
+    background-color: var(--input-background);
+    border: 1px solid var(--card-border);
+    color: var(--text-color-muted);
+    border-radius: 8px;
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: color 0.2s, background-color 0.2s, border-color 0.2s;
+    flex-shrink: 0;
+}
+
+.shifts-date-clear-btn:hover {
+    color: var(--text-color);
+    background-color: var(--card-border);
+    border-color: var(--input-focus);
+}
+
+.shifts-date-clear-btn .material-icons {
+    font-size: 18px;
+}
+
+.chart-point-group {
+    cursor: pointer;
+}
+
+.chart-point-group circle {
+    cursor: pointer;
+    transition: r 0.2s ease, stroke-width 0.2s ease;
+}
+
+.chart-point-group:hover circle {
+    r: 7;
+    stroke-width: 4;
+}
+
+@media (hover: none) and (pointer: coarse) {
+    .stat-card:active,
+    .top-filler-card:active,
+    .day-task-card:active,
+    .pagination-btn:active,
+    .shifts-date-clear-btn:active,
+    .chart-toggle-btn:active,
+    .day-card-header:active {
+        transform: scale(0.98);
+        opacity: 0.88;
+        transition: transform 0.08s ease, opacity 0.08s ease;
+    }
+}
+
 @media (max-width: 768px) {
+    .page-container {
+        padding: 16px 12px;
+        padding-bottom: calc(44px + env(safe-area-inset-bottom, 24px));
+        overscroll-behavior-y: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .page-header-title-group .page-title {
+        font-size: 22px;
+        line-height: 1.2;
+    }
+
+    .productivity-subtitle {
+        font-size: 12.5px;
+        line-height: 1.4;
+    }
+
+    .section-heading {
+        font-size: 15.5px;
+    }
+
+    .section-subtext {
+        font-size: 11.5px;
+    }
+
     .productivity-summary-stats {
+        display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 8px;
+        width: 100%;
     }
 
     .stat-card {
         min-width: 0;
         padding: 10px;
-        gap: 8px;
+        gap: 6px;
+        border-radius: 12px;
+        min-height: auto;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: space-between;
     }
 
     .stat-card-icon-wrapper {
-        display: none;
+        display: flex;
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+    }
+
+    .stat-card-icon-wrapper .material-icons {
+        font-size: 16px;
     }
 
     .stat-label {
-        font-size: 9.5px;
+        font-size: 9px;
+        line-height: 1.2;
+        min-height: unset;
+        white-space: normal;
     }
 
     .stat-value {
-        font-size: 17px;
+        font-size: 18px;
+        line-height: 1;
+    }
+
+    .productivity-overview-row {
+        gap: 14px;
+    }
+
+    .top-fillers-section {
+        padding: 16px;
+        border-radius: 14px;
+    }
+
+    .top-filler-card {
+        padding: 10px 12px;
+        border-radius: 12px;
+        gap: 10px;
+    }
+
+    .top-filler-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 11px;
+    }
+
+    .rank-badge {
+        height: 26px;
+        min-width: 26px;
+        font-size: 11px;
+    }
+
+    .top-filler-name {
+        font-size: 13px;
+    }
+
+    .productivity-chart-card {
+        padding: 16px;
+        border-radius: 14px;
+        gap: 12px;
+    }
+
+    .chart-header-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding-bottom: 12px;
+    }
+
+    .chart-header-right {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .chart-timeframe-select-wrapper {
+        flex: 1;
+        min-width: 130px;
+    }
+
+    .chart-timeframe-select-wrapper .custom-select {
+        width: 100%;
+        height: 38px;
+    }
+
+    .chart-toggle-group {
+        flex: 1;
+        min-width: 150px;
+        display: flex;
+        height: 38px;
+        padding: 3px;
+        border-radius: 10px;
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-user-select: none;
+    }
+
+    .chart-toggle-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11.5px;
+        padding: 0 6px;
+        border-radius: 7px;
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-user-select: none;
+    }
+
+    .chart-target-badge {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .chart-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .chart-container::-webkit-scrollbar {
+        display: none;
+    }
+
+    .productivity-svg-chart {
+        min-width: 300px;
+        height: 220px;
+    }
+
+    .section-title-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .section-title-right {
+        width: 100%;
+    }
+
+    .shifts-date-filter-wrapper {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .shifts-datepicker-container {
+        width: 100%;
+        flex: 1;
+    }
+
+    .shifts-datepicker-container .datepicker-input {
+        height: 42px;
+        font-size: 14px;
+        border-radius: 10px;
+    }
+
+    .shifts-datepicker-container .datepicker-icon-btn {
+        top: 7px;
+        right: 8px;
+        width: 28px;
+        height: 28px;
+    }
+
+    .shifts-date-clear-btn {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        touch-action: manipulation;
     }
 
     .productivity-day-card {
         padding: 14px;
         gap: 12px;
-        border-radius: 12px;
+        border-radius: 14px;
+    }
+
+    .day-card-header {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+            "date badge"
+            "pills pills";
+        align-items: center;
+        gap: 8px 10px;
+        padding-bottom: 12px;
+    }
+
+    .day-card-header-left {
+        display: contents;
+    }
+
+    .day-date-row {
+        grid-area: date;
+        min-width: 0;
+    }
+
+    .day-date-text {
+        font-size: 14px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .day-date-icon-box {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+    }
+
+    .day-date-icon-box .material-icons {
+        font-size: 16px;
+    }
+
+    .day-card-header-right {
+        grid-area: badge;
+        align-self: center;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .day-card-chevron {
+        font-size: 22px;
+    }
+
+    .productivity-day-card.collapsed {
+        padding-bottom: 14px;
+    }
+
+    .day-meta-pills {
+        grid-area: pills;
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .day-meta-pill {
+        font-size: 11px;
+        padding: 3px 8px;
+        border-radius: 6px;
+    }
+
+    .day-meta-pill .material-icons {
+        font-size: 13px;
     }
 
     .day-tasks-grid {
@@ -858,25 +1246,44 @@
         gap: 8px;
     }
 
-    .day-card-header {
+    .day-task-card {
+        padding: 10px 12px;
+        border-radius: 10px;
+    }
+
+    .my-shifts-pagination {
+        border-radius: 12px;
+        padding: 12px 14px;
         flex-direction: column;
-        align-items: flex-start;
         gap: 10px;
-        padding-bottom: 12px;
+        align-items: stretch;
     }
 
-    .day-card-header-right {
-        align-self: flex-start;
+    .my-shifts-pagination .pagination-info {
+        text-align: center;
+        font-size: 12px;
     }
 
-    .day-date-text {
-        font-size: 15px;
+    .my-shifts-pagination .pagination-buttons {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
     }
 
-    .section-title-row {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
+    .my-shifts-pagination .pagination-btn {
+        flex: 1;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: manipulation;
+    }
+
+    .my-shifts-pagination .pagination-current {
+        flex: 2;
+        text-align: center;
+        font-size: 12.5px;
     }
 
     .top-filler-user-rank {
@@ -891,19 +1298,84 @@
     }
 
     .stat-card {
-        padding: 8px;
+        padding: 8px 6px;
+        border-radius: 10px;
+        gap: 4px;
+    }
+
+    .stat-card-icon-wrapper {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+    }
+
+    .stat-card-icon-wrapper .material-icons {
+        font-size: 13px;
     }
 
     .stat-label {
-        font-size: 8.5px;
+        font-size: 8px;
+        letter-spacing: 0.2px;
+        line-height: 1.15;
     }
 
     .stat-value {
         font-size: 15px;
     }
 
-    .day-meta-pill {
-        font-size: 11px;
+    .top-filler-card {
+        padding: 8px 10px;
+        gap: 8px;
+    }
+
+    .top-filler-avatar {
+        width: 28px;
+        height: 28px;
+        font-size: 10px;
+    }
+
+    .rank-badge {
+        height: 24px;
+        min-width: 24px;
+        font-size: 10px;
+        padding: 0 4px;
+    }
+
+    .top-filler-name {
+        font-size: 12px;
+    }
+
+    .top-filler-shifts {
+        font-size: 10px;
+    }
+
+    .prod-badge {
+        font-size: 10px;
         padding: 2px 6px;
     }
+
+    .day-date-text {
+        font-size: 13px;
+    }
+
+    .day-date-icon-box {
+        width: 26px;
+        height: 26px;
+    }
+
+    .day-date-icon-box .material-icons {
+        font-size: 14px;
+    }
+
+    .day-meta-pill {
+        font-size: 10.5px;
+        padding: 2px 6px;
+    }
+
+    .shifts-datepicker-container .datepicker-dropdown {
+        width: min(290px, calc(100vw - 24px));
+        right: 0;
+    }
 }
+
+

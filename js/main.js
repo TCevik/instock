@@ -223,12 +223,17 @@ export function getAvailableModules() {
     return APP_MODULES;
 }
 
+let overlayLoadingOrLoaded = false;
+
 async function loadOverlay() {
     if (window.location.pathname.endsWith('login.html')) return;
+    if (overlayLoadingOrLoaded || document.querySelector('.app-header')) return;
+    overlayLoadingOrLoaded = true;
 
     try {
         const response = await fetch('overlay.html');
         if (response.ok) {
+            if (document.querySelector('.app-header')) return;
             const html = await response.text();
             document.body.insertAdjacentHTML('afterbegin', html);
 

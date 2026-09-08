@@ -1,15 +1,26 @@
 import { supabase, showToast, escapeHtml } from './main.js';
 import { formatDuration, timeToMinutes, getProductivityStatusClass, getProductivityStatusIcon } from './vulplanning/time-utils.js';
 import { createCustomSelect } from './select.js';
+import { createDatePicker } from './datepicker.js';
 
 let cachedProductivityEntries = [];
 let currentChartMode = 'individual';
 let currentTimeframe = 'all';
+let currentShiftPage = 1;
+const SHIFTS_PER_PAGE = 50;
+let paginationControlsInitialized = false;
+let selectedDateFilter = '';
+let shiftsDatePicker = null;
 
-document.addEventListener('DOMContentLoaded', initProductivityPage);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initProductivityPage);
+} else {
+    initProductivityPage();
+}
 
 async function initProductivityPage() {
-    const loadingEl = document.getElementById('productivityLoading');
+    const skeletonEl = document.getElementById('productivitySkeleton');
+    const statsSkeletonEl = document.getElementById('productivityStatsSkeleton');
     const emptyEl = document.getElementById('productivityEmpty');
     const listEl = document.getElementById('productivityList');
     const statsEl = document.getElementById('productivitySummaryStats');
@@ -17,22 +28,29 @@ async function initProductivityPage() {
     try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user) {
-            if (loadingEl) loadingEl.style.display = 'none';
+            if (skeletonEl) skeletonEl.style.display = 'none';
+            if (statsSkeletonEl) statsSkeletonEl.style.display = 'none';
             if (emptyEl) emptyEl.style.display = 'flex';
             return;
         }
 
-        const { data: userData, error } = await supabase
-            .from('user_data')
-            .select('user_id, username, full_name, productivity')
-            .eq('user_id', session.user.id)
-            .maybeSingle();
+        const [userDataResult] = await Promise.all([
+            supabase
+                .from('user_data')
+                .select('user_id, username, full_name, productivity')
+                .eq('user_id', session.user.id)
+                .maybeSingle(),
+            loadTopFillers(session.user.id)
+        ]);
+
+        const { data: userData, error } = userDataResult;
 
         if (error) {
             throw error;
         }
 
-        if (loadingEl) loadingEl.style.display = 'none';
+        if (skeletonEl) skeletonEl.style.display = 'none';
+        if (statsSkeletonEl) statsSkeletonEl.style.display = 'none';
 
         const entries = extractProductivities(userData?.productivity);
 
@@ -50,7 +68,6 @@ async function initProductivityPage() {
             if (sectionDivider) sectionDivider.style.display = 'none';
             if (statsEl) statsEl.style.display = 'none';
             if (chartCard) chartCard.style.display = 'none';
-            loadTopFillers(session.user.id);
             return;
         }
 
@@ -59,13 +76,21 @@ async function initProductivityPage() {
         if (statsEl) statsEl.style.display = 'flex';
         if (chartCard) chartCard.style.display = 'flex';
 
+        const topFillersSection = document.getElementById('topFillersSection');
+        if (sectionDivider && topFillersSection && topFillersSection.style.display !== 'none') {
+            sectionDivider.style.display = 'block';
+        }
+
+        currentShiftPage = 1;
+        initPaginationControls();
+        initShiftsDatePicker();
         renderSummaryStats(entries);
-        renderProductivityList(entries, listEl);
+        renderPaginatedProductivityList();
         renderProductivityChart(entries);
-        loadTopFillers(session.user.id);
 
     } catch (err) {
-        if (loadingEl) loadingEl.style.display = 'none';
+        if (skeletonEl) skeletonEl.style.display = 'none';
+        if (statsSkeletonEl) statsSkeletonEl.style.display = 'none';
         if (emptyEl) emptyEl.style.display = 'flex';
         showToast('error', err.message || 'Kon productiviteitsgegevens niet ophalen');
     }
@@ -135,7 +160,7 @@ function createTopFillerCard(filler, rank, isCurrentUser) {
             <div class="top-filler-avatar">${initials}</div>
             <div class="top-filler-info">
                 <div class="top-filler-name-row">
-                    <span class="top-filler-name" title="${name}">${name}</span>
+                    <span class="top-filler-name" data-tooltip="${name}">${name}</span>
                     ${isCurrentUser ? '<span class="you-pill">Jij</span>' : ''}
                 </div>
                 <span class="top-filler-shifts">${shiftCount} ${shiftCount === 1 ? 'shift' : 'shifts'} afgerond</span>
@@ -467,10 +492,8 @@ function renderProductivityChart(entries) {
                 : `${escapeHtml(c.dateLabel)}: ${c.percent}%${c.colli > 0 ? ` (${c.colli} colli)` : ''}`);
 
         return `
-            <g class="chart-point-group">
-                <circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="5" fill="var(--card-background)" stroke="${dotColor}" stroke-width="3">
-                    <title>${titleText}</title>
-                </circle>
+            <g class="chart-point-group" data-tooltip="${titleText}">
+                <circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="5" fill="var(--card-background)" stroke="${dotColor}" stroke-width="3" data-tooltip="${titleText}"></circle>
                 <text x="${c.x.toFixed(1)}" y="${(c.y - 10).toFixed(1)}" text-anchor="middle" fill="var(--text-color)" font-size="11" font-weight="700">
                     ${c.percent}%
                 </text>
@@ -549,7 +572,17 @@ function renderSummaryStats(entries) {
 function renderProductivityList(entries, container) {
     container.innerHTML = '';
 
-    entries.forEach(entry => {
+    if (!entries || entries.length === 0) {
+        container.innerHTML = `
+            <div style="padding: 40px 20px; text-align: center; color: var(--text-color-muted); background-color: var(--card-background); border: 1px solid var(--card-border); border-radius: 14px; width: 100%;">
+                <span class="material-icons" style="font-size: 32px; margin-bottom: 8px; display: block; color: var(--text-color-placeholder);">event_busy</span>
+                <span>Geen shifts gevonden voor de geselecteerde datum.</span>
+            </div>
+        `;
+        return;
+    }
+
+    entries.forEach((entry, index) => {
         const card = document.createElement('div');
         card.className = 'productivity-day-card';
 
@@ -670,7 +703,7 @@ function renderProductivityList(entries, container) {
                                 <div class="day-task-icon-box">
                                     <span class="material-icons day-task-icon">${getTaskIcon(type)}</span>
                                 </div>
-                                <span class="day-task-name" title="${title}">${title}</span>
+                                <span class="day-task-name" data-tooltip="${title}">${title}</span>
                             </div>
                             ${getTypeBadge(type)}
                         </div>
@@ -708,6 +741,7 @@ function renderProductivityList(entries, container) {
                             <span>${percent}%</span>
                         </span>
                     ` : ''}
+                    <span class="material-icons day-card-chevron">expand_more</span>
                 </div>
             </div>
             <div class="day-card-body">
@@ -722,6 +756,124 @@ function renderProductivityList(entries, container) {
             </div>
         `;
 
+        const headerEl = card.querySelector('.day-card-header');
+        if (headerEl) {
+            headerEl.addEventListener('click', () => {
+                card.classList.toggle('collapsed');
+            });
+        }
+
+        if (window.innerWidth <= 768) {
+            card.classList.add('collapsed');
+        }
+
         container.appendChild(card);
     });
+}
+
+function getFilteredShiftEntries() {
+    if (!selectedDateFilter) return cachedProductivityEntries;
+    return cachedProductivityEntries.filter(entry => {
+        const itemDate = (entry.date || entry.finalized_at || '').split('T')[0];
+        return itemDate === selectedDateFilter;
+    });
+}
+
+function renderPaginatedProductivityList() {
+    const listEl = document.getElementById('productivityList');
+    const paginationEl = document.getElementById('productivityPagination');
+    const infoEl = document.getElementById('productivityPaginationInfo');
+    const currentEl = document.getElementById('productivityPaginationCurrent');
+    const prevBtn = document.getElementById('productivityPrevPageBtn');
+    const nextBtn = document.getElementById('productivityNextPageBtn');
+
+    if (!listEl) return;
+
+    const filteredEntries = getFilteredShiftEntries();
+    const totalCount = filteredEntries.length;
+    const totalPages = Math.max(1, Math.ceil(totalCount / SHIFTS_PER_PAGE));
+
+    if (currentShiftPage > totalPages) currentShiftPage = totalPages;
+    if (currentShiftPage < 1) currentShiftPage = 1;
+
+    const startIndex = (currentShiftPage - 1) * SHIFTS_PER_PAGE;
+    const endIndex = Math.min(startIndex + SHIFTS_PER_PAGE, totalCount);
+    const pageEntries = filteredEntries.slice(startIndex, endIndex);
+
+    renderProductivityList(pageEntries, listEl);
+
+    if (paginationEl) {
+        paginationEl.style.display = totalCount > SHIFTS_PER_PAGE ? 'flex' : 'none';
+    }
+
+    if (infoEl) {
+        if (totalCount === 0) {
+            infoEl.textContent = '0 shifts';
+        } else {
+            infoEl.textContent = `${startIndex + 1}-${endIndex} van ${totalCount} shifts`;
+        }
+    }
+
+    if (currentEl) {
+        currentEl.textContent = `Pagina ${currentShiftPage} van ${totalPages}`;
+    }
+
+    if (prevBtn) prevBtn.disabled = currentShiftPage <= 1;
+    if (nextBtn) nextBtn.disabled = currentShiftPage >= totalPages;
+}
+
+function initShiftsDatePicker() {
+    const container = document.getElementById('shiftsDatePickerContainer');
+    const clearBtn = document.getElementById('shiftsDateFilterClearBtn');
+    if (!container || container.hasChildNodes()) return;
+
+    shiftsDatePicker = createDatePicker(container, '', (val) => {
+        selectedDateFilter = val || '';
+        if (clearBtn) {
+            clearBtn.style.display = selectedDateFilter ? 'inline-flex' : 'none';
+        }
+        currentShiftPage = 1;
+        renderPaginatedProductivityList();
+    });
+
+    if (clearBtn && !clearBtn.dataset.bound) {
+        clearBtn.dataset.bound = 'true';
+        clearBtn.addEventListener('click', () => {
+            selectedDateFilter = '';
+            if (shiftsDatePicker) shiftsDatePicker.setValue('');
+            clearBtn.style.display = 'none';
+            currentShiftPage = 1;
+            renderPaginatedProductivityList();
+        });
+    }
+}
+
+function initPaginationControls() {
+    if (paginationControlsInitialized) return;
+    paginationControlsInitialized = true;
+
+    const prevBtn = document.getElementById('productivityPrevPageBtn');
+    const nextBtn = document.getElementById('productivityNextPageBtn');
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            if (currentShiftPage > 1) {
+                currentShiftPage--;
+                renderPaginatedProductivityList();
+                document.getElementById('myShiftsSection')?.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    }
+
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            const filteredEntries = getFilteredShiftEntries();
+            const totalPages = Math.ceil(filteredEntries.length / SHIFTS_PER_PAGE);
+            if (currentShiftPage < totalPages) {
+                currentShiftPage++;
+                renderPaginatedProductivityList();
+                document.getElementById('myShiftsSection')?.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    }
 }

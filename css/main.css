@@ -87,6 +87,8 @@
     --chart-grid-line: #27272a;
     --chart-target-line: rgba(101, 141, 36, 0.45);
     --chart-area-stop: rgba(101, 141, 36, 0.02);
+    --skeleton-bg: #202024;
+    --skeleton-shimmer: #2c2c33;
 }
 
 html,
@@ -355,6 +357,26 @@ button:not(.btn-loading) .btn-dots,
     display: none;
 }
 
+.skeleton {
+    background: linear-gradient(90deg, var(--skeleton-bg) 25%, var(--skeleton-shimmer) 50%, var(--skeleton-bg) 75%);
+    background-size: 200% 100%;
+    animation: skeletonShimmer 1.5s infinite ease-in-out;
+    border-radius: 6px;
+}
+
+.skeleton-circle {
+    border-radius: 50% !important;
+}
+
+@keyframes skeletonShimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
 .prod-badge {
     font-size: 11px;
     font-weight: 700;
@@ -430,6 +452,77 @@ button:not(.btn-loading) .btn-dots,
     background-color: var(--pauze-bg);
     color: var(--pauze-color);
     border: 1px solid rgba(234, 88, 12, 0.35);
+}
+
+.table-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-top: 1px solid var(--card-border);
+    background-color: var(--card-background);
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.pagination-info {
+    font-size: 13px;
+    color: var(--text-color-muted);
+}
+
+.pagination-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pagination-btn {
+    background-color: var(--input-background);
+    border: 1px solid var(--card-border);
+    color: var(--text-color);
+    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background-color: var(--card-border);
+    border-color: var(--input-focus);
+}
+
+.pagination-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.pagination-btn .material-icons {
+    font-size: 20px;
+}
+
+.pagination-current {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-color);
+    padding: 0 6px;
+}
+
+@media (max-width: 768px) {
+    .table-pagination {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 14px;
+    }
+
+    .pagination-buttons {
+        width: 100%;
+        justify-content: center;
+    }
 }
 
 
