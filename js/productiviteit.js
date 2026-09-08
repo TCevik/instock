@@ -1,5 +1,10 @@
 import { supabase, showToast, escapeHtml } from './main.js';
-import { formatDuration, timeToMinutes } from './vulplanning/time-utils.js';
+import { formatDuration, timeToMinutes, getProductivityStatusClass, getProductivityStatusIcon } from './vulplanning/time-utils.js';
+import { createCustomSelect } from './select.js';
+
+let cachedProductivityEntries = [];
+let currentChartMode = 'individual';
+let currentTimeframe = 'all';
 
 document.addEventListener('DOMContentLoaded', initProductivityPage);
 
@@ -34,11 +39,17 @@ async function initProductivityPage() {
         const myShiftsSection = document.getElementById('myShiftsSection');
         const sectionDivider = document.getElementById('productivitySectionDivider');
 
+        cachedProductivityEntries = entries || [];
+        initChartControls();
+
+        const chartCard = document.getElementById('productivityChartCard');
+
         if (!entries || entries.length === 0) {
             if (emptyEl) emptyEl.style.display = 'flex';
             if (myShiftsSection) myShiftsSection.style.display = 'none';
             if (sectionDivider) sectionDivider.style.display = 'none';
             if (statsEl) statsEl.style.display = 'none';
+            if (chartCard) chartCard.style.display = 'none';
             loadTopFillers(session.user.id);
             return;
         }
@@ -46,9 +57,11 @@ async function initProductivityPage() {
         if (emptyEl) emptyEl.style.display = 'none';
         if (myShiftsSection) myShiftsSection.style.display = 'flex';
         if (statsEl) statsEl.style.display = 'flex';
+        if (chartCard) chartCard.style.display = 'flex';
 
         renderSummaryStats(entries);
         renderProductivityList(entries, listEl);
+        renderProductivityChart(entries);
         loadTopFillers(session.user.id);
 
     } catch (err) {
@@ -101,28 +114,35 @@ async function loadTopFillers(currentUserId) {
 }
 
 function createTopFillerCard(filler, rank, isCurrentUser) {
-    const name = escapeHtml(filler.full_name || filler.username || 'Medewerker');
+    const rawName = filler.full_name || filler.username || 'Medewerker';
+    const name = escapeHtml(rawName);
     const avgProd = Math.round(Number(filler.average_productivity) || 0);
     const shiftCount = Number(filler.shifts_count) || 0;
-    const statusClass = getStatusClass(avgProd);
-    const statusIcon = getStatusIcon(avgProd);
+    const statusClass = getProductivityStatusClass(avgProd);
+    const statusIcon = getProductivityStatusIcon(avgProd);
+    const initials = rawName.split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'M';
+    const rankIcon = rank === 1 ? 'workspace_premium' : (rank === 2 ? 'military_tech' : (rank === 3 ? 'stars' : ''));
 
     const card = document.createElement('div');
-    card.className = `top-filler-card${isCurrentUser ? ' is-current-user' : ''}`;
+    card.className = `top-filler-card${isCurrentUser ? ' is-current-user' : ''}${rank <= 3 ? ` podium-card rank-${rank}` : ''}`;
 
     card.innerHTML = `
         <div class="top-filler-left">
-            <span class="rank-badge${rank <= 3 ? ` rank-${rank}` : ''}">#${rank}</span>
+            <div class="rank-badge${rank <= 3 ? ` rank-${rank}` : ''}">
+                ${rankIcon ? `<span class="material-icons rank-medal-icon">${rankIcon}</span>` : ''}
+                <span>#${rank}</span>
+            </div>
+            <div class="top-filler-avatar">${initials}</div>
             <div class="top-filler-info">
                 <div class="top-filler-name-row">
                     <span class="top-filler-name" title="${name}">${name}</span>
                     ${isCurrentUser ? '<span class="you-pill">Jij</span>' : ''}
                 </div>
-                <span class="top-filler-shifts">${shiftCount} ${shiftCount === 1 ? 'shift' : 'shifts'}</span>
+                <span class="top-filler-shifts">${shiftCount} ${shiftCount === 1 ? 'shift' : 'shifts'} afgerond</span>
             </div>
         </div>
         <span class="prod-badge ${statusClass}">
-            <span class="material-icons" style="font-size:13px;">${statusIcon}</span>
+            <span class="material-icons">${statusIcon}</span>
             <span>${avgProd}%</span>
         </span>
     `;
@@ -171,23 +191,7 @@ function extractProductivities(prodData) {
     });
 }
 
-function getStatusClass(percent) {
-    const p = Number(percent);
-    if (isNaN(p)) return 'orange';
-    if (p >= 100) return 'success';
-    if (p >= 80) return 'yellow';
-    if (p >= 60) return 'orange';
-    return 'danger';
-}
 
-function getStatusIcon(percent) {
-    const p = Number(percent);
-    if (isNaN(p)) return 'trending_flat';
-    if (p >= 100) return 'trending_up';
-    if (p >= 80) return 'check_circle';
-    if (p >= 60) return 'trending_flat';
-    return 'trending_down';
-}
 
 function formatDate(dateStr) {
     if (!dateStr) return 'Onbekende datum';
@@ -245,6 +249,264 @@ function getTaskIcon(type) {
     }
 }
 
+function initChartControls() {
+    const btnIndividual = document.getElementById('chartModeIndividual');
+    const btnAverage = document.getElementById('chartModeAverage');
+    if (btnIndividual && btnAverage && !btnIndividual.dataset.bound) {
+        btnIndividual.dataset.bound = 'true';
+        btnIndividual.addEventListener('click', () => {
+            if (currentChartMode === 'individual') return;
+            currentChartMode = 'individual';
+            btnIndividual.classList.add('active');
+            btnAverage.classList.remove('active');
+            renderProductivityChart(cachedProductivityEntries);
+        });
+
+        btnAverage.addEventListener('click', () => {
+            if (currentChartMode === 'average') return;
+            currentChartMode = 'average';
+            btnAverage.classList.add('active');
+            btnIndividual.classList.remove('active');
+            renderProductivityChart(cachedProductivityEntries);
+        });
+    }
+
+    const selectContainer = document.getElementById('chartTimeframeSelectContainer');
+    if (selectContainer && !selectContainer.hasChildNodes()) {
+        const timeframeOptions = [
+            { value: 'all', label: 'Altijd' },
+            { value: '1y', label: 'Laatste jaar' },
+            { value: '6m', label: 'Laatste 6 maanden' },
+            { value: '1m', label: 'Laatste maand' },
+            { value: '2w', label: '2 weken' },
+            { value: '1w', label: 'Een week' }
+        ];
+
+        createCustomSelect(
+            selectContainer,
+            timeframeOptions,
+            currentTimeframe,
+            'Periode...',
+            (newVal) => {
+                if (newVal === currentTimeframe) return;
+                currentTimeframe = newVal;
+                renderProductivityChart(cachedProductivityEntries);
+            }
+        );
+    }
+}
+
+function renderProductivityChart(entries) {
+    const container = document.getElementById('productivityChartContainer');
+    if (!container) return;
+
+
+
+    if (!entries || entries.length === 0) {
+        container.innerHTML = `
+            <div class="chart-empty-msg">
+                <span class="material-icons">info</span>
+                <span>Nog geen gewerkte diensten om een voortgangsgrafiek weer te geven.</span>
+            </div>
+        `;
+        return;
+    }
+
+    const chronological = [...entries].sort((a, b) => {
+        const timeA = new Date(a.date || a.finalized_at || 0).getTime();
+        const timeB = new Date(b.date || b.finalized_at || 0).getTime();
+        return timeA - timeB;
+    });
+
+    const enriched = chronological.map((e, idx) => {
+        const rawP = Math.round(Number(e.productivity) || 0);
+        const windowSlice = chronological.slice(Math.max(0, idx - 9), idx + 1);
+        const windowProdList = windowSlice
+            .map(item => Number(item.productivity))
+            .filter(val => !isNaN(val));
+        const windowAvg = windowProdList.length > 0
+            ? Math.round(windowProdList.reduce((sum, val) => sum + val, 0) / windowProdList.length)
+            : rawP;
+
+        const dObj = new Date(e.date || e.finalized_at || 0);
+        let dateLabel = '';
+        if (!isNaN(dObj.getTime())) {
+            dateLabel = dObj.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
+        }
+
+        const timestamp = dObj.getTime() || 0;
+
+        return {
+            timestamp,
+            rawPercent: rawP,
+            avgPercent: windowAvg,
+            windowSize: windowProdList.length,
+            dateLabel,
+            colli: Number(e.total_colli) || 0
+        };
+    });
+
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+    let cutoff = 0;
+    if (currentTimeframe === '1w') cutoff = now - 7 * dayMs;
+    else if (currentTimeframe === '2w') cutoff = now - 14 * dayMs;
+    else if (currentTimeframe === '1m') cutoff = now - 31 * dayMs;
+    else if (currentTimeframe === '6m') cutoff = now - 183 * dayMs;
+    else if (currentTimeframe === '1y') cutoff = now - 365 * dayMs;
+
+    const filtered = cutoff > 0 ? enriched.filter(e => e.timestamp >= cutoff) : enriched;
+
+    const subtitleEl = document.getElementById('chartCardSubtitle');
+    if (subtitleEl) {
+        if (filtered.length > 12) {
+            subtitleEl.textContent = currentChartMode === 'average'
+                ? 'Gemiddelde trend per periode'
+                : 'Productiviteit per periode';
+        } else {
+            subtitleEl.textContent = currentChartMode === 'average'
+                ? 'Gemiddelde van de laatste 10 shifts per punt'
+                : 'Productiviteit per gewerkte shift';
+        }
+    }
+
+    if (filtered.length === 0) {
+        container.innerHTML = `
+            <div class="chart-empty-msg">
+                <span class="material-icons">info</span>
+                <span>Geen diensten gevonden binnen de geselecteerde periode.</span>
+            </div>
+        `;
+        return;
+    }
+
+    const maxPoints = 12;
+    let dataPoints = [];
+
+    if (filtered.length <= maxPoints) {
+        dataPoints = filtered.map(e => {
+            const percent = currentChartMode === 'average' ? e.avgPercent : e.rawPercent;
+            return {
+                ...e,
+                percent,
+                statusClass: getProductivityStatusClass(percent)
+            };
+        });
+    } else {
+        const bucketSize = filtered.length / maxPoints;
+        for (let b = 0; b < maxPoints; b++) {
+            const start = Math.floor(b * bucketSize);
+            const end = Math.min(filtered.length, Math.floor((b + 1) * bucketSize));
+            const chunk = filtered.slice(start, end);
+            if (chunk.length === 0) continue;
+
+            const avgRaw = Math.round(chunk.reduce((sum, c) => sum + c.rawPercent, 0) / chunk.length);
+            const avgRoll = Math.round(chunk.reduce((sum, c) => sum + c.avgPercent, 0) / chunk.length);
+            const totalColli = chunk.reduce((sum, c) => sum + c.colli, 0);
+
+            const repItem = b === 0 ? chunk[0] : (b === maxPoints - 1 ? chunk[chunk.length - 1] : chunk[Math.floor(chunk.length / 2)]);
+            const percent = currentChartMode === 'average' ? avgRoll : avgRaw;
+
+            dataPoints.push({
+                timestamp: repItem.timestamp,
+                rawPercent: avgRaw,
+                avgPercent: avgRoll,
+                percent,
+                windowSize: chunk.length,
+                dateLabel: repItem.dateLabel,
+                colli: totalColli,
+                statusClass: getProductivityStatusClass(percent)
+            });
+        }
+    }
+
+    const width = 600;
+    const height = 240;
+    const padLeft = 46;
+    const padRight = 32;
+    const padTop = 32;
+    const padBottom = 42;
+    const chartW = width - padLeft - padRight;
+    const chartH = height - padTop - padBottom;
+
+    const maxVal = Math.max(120, Math.ceil((Math.max(...dataPoints.map(d => d.percent)) + 10) / 10) * 10);
+    const minVal = 0;
+
+    const getY = (val) => padTop + chartH - ((val - minVal) / (maxVal - minVal)) * chartH;
+    const getX = (index) => {
+        if (dataPoints.length === 1) return padLeft + chartW / 2;
+        return padLeft + (index / (dataPoints.length - 1)) * chartW;
+    };
+
+    const targetY = getY(100);
+    const midY = getY(50);
+    const zeroY = getY(0);
+
+    const coords = dataPoints.map((d, i) => ({
+        x: getX(i),
+        y: getY(d.percent),
+        ...d
+    }));
+
+    const pathD = coords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(' ');
+    const areaD = `${pathD} L ${coords[coords.length - 1].x.toFixed(1)} ${zeroY.toFixed(1)} L ${coords[0].x.toFixed(1)} ${zeroY.toFixed(1)} Z`;
+
+    const statusColors = {
+        success: 'var(--accent-color)',
+        yellow: 'var(--yellow-color)',
+        orange: 'var(--warning-color)',
+        danger: 'var(--danger-color)'
+    };
+
+    const circlesSvg = coords.map((c) => {
+        const dotColor = statusColors[c.statusClass] || 'var(--accent-color)';
+        const titleText = c.windowSize > 1
+            ? `${escapeHtml(c.dateLabel)}: ${c.percent}% (gemiddeld over ${c.windowSize} shifts)`
+            : (currentChartMode === 'average'
+                ? `${escapeHtml(c.dateLabel)}: ${c.percent}% (gemiddelde over ${c.windowSize} ${c.windowSize === 1 ? 'shift' : 'shifts'})`
+                : `${escapeHtml(c.dateLabel)}: ${c.percent}%${c.colli > 0 ? ` (${c.colli} colli)` : ''}`);
+
+        return `
+            <g class="chart-point-group">
+                <circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="5" fill="var(--card-background)" stroke="${dotColor}" stroke-width="3">
+                    <title>${titleText}</title>
+                </circle>
+                <text x="${c.x.toFixed(1)}" y="${(c.y - 10).toFixed(1)}" text-anchor="middle" fill="var(--text-color)" font-size="11" font-weight="700">
+                    ${c.percent}%
+                </text>
+                <text x="${c.x.toFixed(1)}" y="${(padTop + chartH + 20).toFixed(1)}" text-anchor="middle" fill="var(--text-color-muted)" font-size="10.5">
+                    ${escapeHtml(c.dateLabel)}
+                </text>
+            </g>
+        `;
+    }).join('');
+
+    container.innerHTML = `
+        <svg viewBox="0 0 ${width} ${height}" class="productivity-svg-chart" preserveAspectRatio="none">
+            <defs>
+                <linearGradient id="prodChartAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="var(--accent-color)" stop-opacity="0.28"/>
+                    <stop offset="100%" stop-color="var(--chart-area-stop)" stop-opacity="0.0"/>
+                </linearGradient>
+            </defs>
+
+            <line x1="${padLeft}" y1="${zeroY.toFixed(1)}" x2="${width - padRight}" y2="${zeroY.toFixed(1)}" stroke="var(--chart-grid-line)" stroke-width="1"/>
+            <text x="${padLeft - 8}" y="${(zeroY + 4).toFixed(1)}" text-anchor="end" fill="var(--text-color-muted)" font-size="10">0%</text>
+
+            <line x1="${padLeft}" y1="${midY.toFixed(1)}" x2="${width - padRight}" y2="${midY.toFixed(1)}" stroke="var(--chart-grid-line)" stroke-width="1" stroke-dasharray="3,3"/>
+            <text x="${padLeft - 8}" y="${(midY + 4).toFixed(1)}" text-anchor="end" fill="var(--text-color-muted)" font-size="10">50%</text>
+
+            <line x1="${padLeft}" y1="${targetY.toFixed(1)}" x2="${width - padRight}" y2="${targetY.toFixed(1)}" stroke="var(--chart-target-line)" stroke-width="1.5" stroke-dasharray="5,4"/>
+            <text x="${padLeft - 8}" y="${(targetY + 4).toFixed(1)}" text-anchor="end" fill="var(--accent-color)" font-size="10.5" font-weight="700">100%</text>
+
+            <path d="${areaD}" fill="url(#prodChartAreaGrad)"/>
+            <path d="${pathD}" fill="none" stroke="var(--accent-color)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+            ${circlesSvg}
+        </svg>
+    `;
+}
+
 function renderSummaryStats(entries) {
     const avgEl = document.getElementById('statAvgProd');
     const colliEl = document.getElementById('statTotalColli');
@@ -292,8 +554,8 @@ function renderProductivityList(entries, container) {
         card.className = 'productivity-day-card';
 
         const percent = entry.productivity !== undefined ? Math.round(Number(entry.productivity)) : null;
-        const statusClass = percent !== null ? getStatusClass(percent) : 'orange';
-        const statusIcon = percent !== null ? getStatusIcon(percent) : 'trending_flat';
+        const statusClass = percent !== null ? getProductivityStatusClass(percent) : 'danger';
+        const statusIcon = percent !== null ? getProductivityStatusIcon(percent) : 'trending_down';
 
         const shift = entry.shift || {};
         const startTime = shift.start || '';
@@ -405,7 +667,9 @@ function renderProductivityList(entries, container) {
                     <div class="day-task-card">
                         <div class="day-task-top">
                             <div class="day-task-name-group">
-                                <span class="material-icons day-task-icon">${getTaskIcon(type)}</span>
+                                <div class="day-task-icon-box">
+                                    <span class="material-icons day-task-icon">${getTaskIcon(type)}</span>
+                                </div>
                                 <span class="day-task-name" title="${title}">${title}</span>
                             </div>
                             ${getTypeBadge(type)}
@@ -421,14 +685,16 @@ function renderProductivityList(entries, container) {
                 </div>
             `;
         } else {
-            tasksHtml = `<div class="day-tasks-empty">Geen afzonderlijke paden geregistreerd voor deze shift.</div>`;
+            tasksHtml = `<div class="day-tasks-empty"><span class="material-icons" style="font-size:18px;">info</span><span>Geen afzonderlijke paden geregistreerd voor deze shift.</span></div>`;
         }
 
         card.innerHTML = `
             <div class="day-card-header">
                 <div class="day-card-header-left">
                     <div class="day-date-row">
-                        <span class="material-icons day-date-icon">event</span>
+                        <div class="day-date-icon-box">
+                            <span class="material-icons day-date-icon">event</span>
+                        </div>
                         <span class="day-date-text">${escapeHtml(dateStr)}</span>
                     </div>
                     <div class="day-meta-pills">
@@ -438,7 +704,7 @@ function renderProductivityList(entries, container) {
                 <div class="day-card-header-right">
                     ${percent !== null ? `
                         <span class="prod-badge ${statusClass}">
-                            <span class="material-icons" style="font-size:14px;">${statusIcon}</span>
+                            <span class="material-icons">${statusIcon}</span>
                             <span>${percent}%</span>
                         </span>
                     ` : ''}

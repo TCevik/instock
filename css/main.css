@@ -69,6 +69,24 @@
     --prod-orange-border: rgba(245, 158, 11, 0.4);
     --prod-danger-bg: rgba(239, 68, 68, 0.18);
     --prod-danger-border: rgba(239, 68, 68, 0.4);
+    --card-background-hover: #1c1c20;
+    --card-border-hover: #38383e;
+    --stat-icon-bg: #202024;
+    --stat-icon-border: #2c2c32;
+    --stat-icon-accent-bg: rgba(101, 141, 36, 0.15);
+    --stat-icon-accent-border: rgba(101, 141, 36, 0.35);
+    --rank-gold-bg: rgba(234, 179, 8, 0.14);
+    --rank-gold-border: rgba(234, 179, 8, 0.35);
+    --rank-silver-bg: rgba(255, 255, 255, 0.07);
+    --rank-silver-border: rgba(255, 255, 255, 0.18);
+    --rank-bronze-bg: rgba(245, 158, 11, 0.14);
+    --rank-bronze-border: rgba(245, 158, 11, 0.35);
+    --avatar-bg: #26262b;
+    --avatar-border: #32323a;
+    --top-filler-current-bg: rgba(101, 141, 36, 0.08);
+    --chart-grid-line: #27272a;
+    --chart-target-line: rgba(101, 141, 36, 0.45);
+    --chart-area-stop: rgba(101, 141, 36, 0.02);
 }
 
 html,
@@ -279,6 +297,62 @@ body {
     to {
         transform: rotate(360deg);
     }
+}
+
+.btn-content {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-dots {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 24px;
+}
+
+.btn-dots span {
+    width: 7px;
+    height: 7px;
+    background-color: currentColor;
+    border-radius: 50%;
+    animation: dotBounce 1.2s infinite ease-in-out both;
+}
+
+.btn-dots span:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.btn-dots span:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+@keyframes dotBounce {
+    0%, 80%, 100% {
+        transform: scale(0.6) translateY(0);
+        opacity: 0.45;
+    }
+    40% {
+        transform: scale(1) translateY(-6px);
+        opacity: 1;
+    }
+}
+
+.btn-loading {
+    pointer-events: none;
+    opacity: 0.85;
+}
+
+.btn-loading .btn-content {
+    display: none;
+}
+
+button:not(.btn-loading) .btn-dots,
+.btn:not(.btn-loading) .btn-dots {
+    display: none;
 }
 
 .prod-badge {

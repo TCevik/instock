@@ -1,5 +1,6 @@
 import { supabase, showModal, closeModal } from './main.js';
 import { createCustomSelect } from './select.js';
+import { getProductivityStatusClass } from './vulplanning/time-utils.js';
 
 function escapeHtml(str) {
     if (!str) return '';
@@ -676,12 +677,7 @@ function openDetailsModal(log) {
     }
 
     if (isProductivityLog && prodItems.length > 0) {
-        function getProdClass(pct) {
-            if (pct >= 100) return 'success';
-            if (pct >= 80) return 'yellow';
-            if (pct >= 60) return 'orange';
-            return 'danger';
-        }
+
 
         const bannerText = prodBatchDate 
             ? `${prodItems.length} ${prodItems.length === 1 ? 'medewerker' : 'medewerkers'} gefinaliseerd voor ${formatDutchDate(prodBatchDate)}`
@@ -698,7 +694,7 @@ function openDetailsModal(log) {
                         const name = escapeHtml(item.full_name || item.username || 'Medewerker');
                         const uname = item.username ? `@${escapeHtml(item.username)}` : '';
                         const pct = Number(item.productivity || 0);
-                        const statusClass = getProdClass(pct);
+                        const statusClass = getProductivityStatusClass(pct);
                         const dateStr = item.date ? formatDutchDate(item.date) : '';
 
                         let subParts = [];

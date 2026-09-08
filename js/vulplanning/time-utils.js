@@ -110,12 +110,23 @@ export function calculateProductivity(workAssignedMins, actualEndTimeStr, shiftS
     const actualNet = Math.max(1, actualGross - pauseDeducted);
 
     const percent = Math.round((workAssignedMins / actualNet) * 100);
-    let statusClass = 'danger';
-    if (percent >= 100) statusClass = 'success';
-    else if (percent >= 80) statusClass = 'yellow';
-    else if (percent >= 60) statusClass = 'orange';
+    const statusClass = getProductivityStatusClass(percent);
 
     return { percent, statusClass };
+}
+
+export function getProductivityStatusClass(percent) {
+    const p = Number(percent);
+    if (isNaN(p) || p < 60) return 'danger';
+    if (p >= 100) return 'success';
+    if (p >= 80) return 'yellow';
+    return 'orange';
+}
+
+export function getProductivityStatusIcon(percent) {
+    const p = Number(percent);
+    if (isNaN(p) || p < 100) return 'trending_down';
+    return 'check_circle';
 }
 
 export function formatTimeInput(value, isDeleting = false) {

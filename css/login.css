@@ -214,6 +214,7 @@ body {
     justify-content: center;
     gap: 8px;
     margin-top: 4px;
+    min-height: 54px;
     transition: background-color 0.2s;
 }
 
