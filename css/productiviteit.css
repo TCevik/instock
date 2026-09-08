@@ -389,6 +389,16 @@
     .day-task-name {
         font-size: 13px;
     }
+
+    .section-title-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .top-filler-user-rank {
+        width: 100%;
+    }
 }
 
 @media (max-width: 480px) {
@@ -470,6 +480,18 @@
 .section-subtext {
     font-size: 12px;
     color: var(--text-color-muted);
+}
+
+.top-filler-user-rank {
+    display: flex;
+    align-items: center;
+    width: 320px;
+    max-width: 100%;
+    flex-shrink: 0;
+}
+
+.top-filler-user-rank .top-filler-card {
+    width: 100%;
 }
 
 .top-fillers-grid {

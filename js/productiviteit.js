@@ -61,6 +61,7 @@ async function initProductivityPage() {
 async function loadTopFillers(currentUserId) {
     const sectionEl = document.getElementById('topFillersSection');
     const listEl = document.getElementById('topFillersList');
+    const userRankEl = document.getElementById('topFillerUserRank');
     const myShiftsSection = document.getElementById('myShiftsSection');
     const sectionDivider = document.getElementById('productivitySectionDivider');
     if (!sectionEl || !listEl) return;
@@ -69,54 +70,72 @@ async function loadTopFillers(currentUserId) {
         const { data, error } = await supabase.functions.invoke('get-top-fillers');
         if (error || !data || !Array.isArray(data.topFillers) || data.topFillers.length === 0) {
             sectionEl.style.display = 'none';
+            if (userRankEl) userRankEl.style.display = 'none';
             if (sectionDivider) sectionDivider.style.display = 'none';
             return;
         }
 
         renderTopFillers(data.topFillers, listEl, currentUserId);
+
+        const isInTop5 = data.topFillers.some(f => f.user_id === currentUserId);
+        if (userRankEl) {
+            if (!isInTop5 && data.currentUserRanking && data.currentUserRanking.rank) {
+                userRankEl.innerHTML = '';
+                userRankEl.appendChild(createTopFillerCard(data.currentUserRanking, data.currentUserRanking.rank, true));
+                userRankEl.style.display = 'flex';
+            } else {
+                userRankEl.innerHTML = '';
+                userRankEl.style.display = 'none';
+            }
+        }
+
         sectionEl.style.display = 'flex';
         if (sectionDivider) {
             sectionDivider.style.display = (myShiftsSection && myShiftsSection.style.display !== 'none') ? 'block' : 'none';
         }
     } catch (_) {
         sectionEl.style.display = 'none';
+        if (userRankEl) userRankEl.style.display = 'none';
         if (sectionDivider) sectionDivider.style.display = 'none';
     }
+}
+
+function createTopFillerCard(filler, rank, isCurrentUser) {
+    const name = escapeHtml(filler.full_name || filler.username || 'Medewerker');
+    const avgProd = Math.round(Number(filler.average_productivity) || 0);
+    const shiftCount = Number(filler.shifts_count) || 0;
+    const statusClass = getStatusClass(avgProd);
+    const statusIcon = getStatusIcon(avgProd);
+
+    const card = document.createElement('div');
+    card.className = `top-filler-card${isCurrentUser ? ' is-current-user' : ''}`;
+
+    card.innerHTML = `
+        <div class="top-filler-left">
+            <span class="rank-badge${rank <= 3 ? ` rank-${rank}` : ''}">#${rank}</span>
+            <div class="top-filler-info">
+                <div class="top-filler-name-row">
+                    <span class="top-filler-name" title="${name}">${name}</span>
+                    ${isCurrentUser ? '<span class="you-pill">Jij</span>' : ''}
+                </div>
+                <span class="top-filler-shifts">${shiftCount} ${shiftCount === 1 ? 'shift' : 'shifts'}</span>
+            </div>
+        </div>
+        <span class="prod-badge ${statusClass}">
+            <span class="material-icons" style="font-size:13px;">${statusIcon}</span>
+            <span>${avgProd}%</span>
+        </span>
+    `;
+
+    return card;
 }
 
 function renderTopFillers(topFillers, container, currentUserId) {
     container.innerHTML = '';
 
     topFillers.forEach((filler, index) => {
-        const rank = index + 1;
-        const name = escapeHtml(filler.full_name || filler.username || 'Medewerker');
-        const avgProd = Math.round(Number(filler.average_productivity) || 0);
-        const shiftCount = Number(filler.shifts_count) || 0;
         const isCurrentUser = filler.user_id === currentUserId;
-        const statusClass = getStatusClass(avgProd);
-        const statusIcon = getStatusIcon(avgProd);
-
-        const card = document.createElement('div');
-        card.className = `top-filler-card${isCurrentUser ? ' is-current-user' : ''}`;
-
-        card.innerHTML = `
-            <div class="top-filler-left">
-                <span class="rank-badge rank-${rank}">#${rank}</span>
-                <div class="top-filler-info">
-                    <div class="top-filler-name-row">
-                        <span class="top-filler-name" title="${name}">${name}</span>
-                        ${isCurrentUser ? '<span class="you-pill">Jij</span>' : ''}
-                    </div>
-                    <span class="top-filler-shifts">${shiftCount} ${shiftCount === 1 ? 'shift' : 'shifts'}</span>
-                </div>
-            </div>
-            <span class="prod-badge ${statusClass}">
-                <span class="material-icons" style="font-size:13px;">${statusIcon}</span>
-                <span>${avgProd}%</span>
-            </span>
-        `;
-
-        container.appendChild(card);
+        container.appendChild(createTopFillerCard(filler, index + 1, isCurrentUser));
     });
 }
 
