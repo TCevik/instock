@@ -1,7 +1,7 @@
 import { supabase, showToast, escapeHtml } from './main.js';
 import { formatDuration, timeToMinutes, getProductivityStatusClass, getProductivityStatusIcon } from './vulplanning/time-utils.js';
 import { createCustomSelect } from './select.js';
-import { createDatePicker } from './datepicker.js';
+import { createDatePicker, MONTH_NAMES, SHORT_MONTH_NAMES, parseDate } from './datepicker.js';
 
 let cachedProductivityEntries = [];
 let currentChartMode = 'average';
@@ -326,33 +326,16 @@ function extractProductivities(prodData) {
     }
 
     return entries.sort((a, b) => {
-        const timeA = new Date(a.date || a.finalized_at || 0).getTime();
-        const timeB = new Date(b.date || b.finalized_at || 0).getTime();
+        const timeA = (parseDate(a.date || a.finalized_at) || new Date(0)).getTime();
+        const timeB = (parseDate(b.date || b.finalized_at) || new Date(0)).getTime();
         return timeB - timeA;
     });
 }
 
-
-
 function formatDate(dateStr) {
     if (!dateStr) return 'Onbekende datum';
-    const parts = String(dateStr).split('T')[0].split('-');
-    if (parts.length === 3) {
-        const year = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10) - 1;
-        const day = parseInt(parts[2], 10);
-        const d = new Date(year, month, day);
-        if (!isNaN(d.getTime())) {
-            return d.toLocaleDateString('nl-NL', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-        }
-    }
-    const d = new Date(dateStr);
-    if (!isNaN(d.getTime())) {
+    const d = parseDate(dateStr);
+    if (d && !isNaN(d.getTime())) {
         return d.toLocaleDateString('nl-NL', {
             weekday: 'long',
             year: 'numeric',
@@ -454,8 +437,8 @@ function renderProductivityChart(entries) {
     }
 
     const chronological = [...entries].sort((a, b) => {
-        const timeA = new Date(a.date || a.finalized_at || 0).getTime();
-        const timeB = new Date(b.date || b.finalized_at || 0).getTime();
+        const timeA = (parseDate(a.date || a.finalized_at) || new Date(0)).getTime();
+        const timeB = (parseDate(b.date || b.finalized_at) || new Date(0)).getTime();
         return timeA - timeB;
     });
 
@@ -469,7 +452,7 @@ function renderProductivityChart(entries) {
             ? Math.round(windowProdList.reduce((sum, val) => sum + val, 0) / windowProdList.length)
             : rawP;
 
-        const dObj = new Date(e.date || e.finalized_at || 0);
+        const dObj = parseDate(e.date || e.finalized_at) || new Date(0);
         let dateLabel = '';
         if (!isNaN(dObj.getTime())) {
             dateLabel = dObj.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
@@ -479,6 +462,7 @@ function renderProductivityChart(entries) {
 
         return {
             timestamp,
+            dateObj: dObj,
             rawPercent: rawP,
             avgPercent: windowAvg,
             windowSize: windowProdList.length,
@@ -498,9 +482,15 @@ function renderProductivityChart(entries) {
 
     const filtered = cutoff > 0 ? enriched.filter(e => e.timestamp >= cutoff) : enriched;
 
+    const isMonthView = ['6m', '1y', 'all'].includes(currentTimeframe);
+
     const subtitleEl = document.getElementById('chartCardSubtitle');
     if (subtitleEl) {
-        if (filtered.length > 12) {
+        if (isMonthView) {
+            subtitleEl.textContent = currentChartMode === 'average'
+                ? 'Gemiddelde productiviteit per maand'
+                : 'Productiviteit per maand';
+        } else if (filtered.length > 12) {
             subtitleEl.textContent = currentChartMode === 'average'
                 ? 'Gemiddelde trend per periode'
                 : 'Productiviteit per periode';
@@ -524,40 +514,105 @@ function renderProductivityChart(entries) {
     const maxPoints = 12;
     let dataPoints = [];
 
-    if (filtered.length <= maxPoints) {
-        dataPoints = filtered.map(e => {
-            const percent = currentChartMode === 'average' ? e.avgPercent : e.rawPercent;
-            return {
-                ...e,
-                percent,
-                statusClass: getProductivityStatusClass(percent)
-            };
+    if (isMonthView) {
+        const monthMap = new Map();
+        filtered.forEach(e => {
+            const d = e.dateObj;
+            if (!d || isNaN(d.getTime())) return;
+            const key = `${d.getFullYear()}-${d.getMonth()}`;
+            if (!monthMap.has(key)) {
+                monthMap.set(key, {
+                    year: d.getFullYear(),
+                    month: d.getMonth(),
+                    items: []
+                });
+            }
+            monthMap.get(key).items.push(e);
         });
-    } else {
-        const bucketSize = filtered.length / maxPoints;
-        for (let b = 0; b < maxPoints; b++) {
-            const start = Math.floor(b * bucketSize);
-            const end = Math.min(filtered.length, Math.floor((b + 1) * bucketSize));
-            const chunk = filtered.slice(start, end);
-            if (chunk.length === 0) continue;
 
-            const avgRaw = Math.round(chunk.reduce((sum, c) => sum + c.rawPercent, 0) / chunk.length);
-            const avgRoll = Math.round(chunk.reduce((sum, c) => sum + c.avgPercent, 0) / chunk.length);
-            const totalColli = chunk.reduce((sum, c) => sum + c.colli, 0);
-
-            const repItem = b === 0 ? chunk[0] : (b === maxPoints - 1 ? chunk[chunk.length - 1] : chunk[Math.floor(chunk.length / 2)]);
+        const monthGroups = Array.from(monthMap.values()).map(g => {
+            const avgRaw = Math.round(g.items.reduce((sum, c) => sum + c.rawPercent, 0) / g.items.length);
+            const avgRoll = Math.round(g.items.reduce((sum, c) => sum + c.avgPercent, 0) / g.items.length);
+            const totalColli = g.items.reduce((sum, c) => sum + c.colli, 0);
             const percent = currentChartMode === 'average' ? avgRoll : avgRaw;
-
-            dataPoints.push({
-                timestamp: repItem.timestamp,
+            return {
+                timestamp: new Date(g.year, g.month, 1).getTime(),
                 rawPercent: avgRaw,
                 avgPercent: avgRoll,
                 percent,
-                windowSize: chunk.length,
-                dateLabel: repItem.dateLabel,
+                windowSize: g.items.length,
+                dateLabel: SHORT_MONTH_NAMES[g.month] || '',
+                fullDateLabel: `${MONTH_NAMES[g.month]} ${g.year}`,
                 colli: totalColli,
                 statusClass: getProductivityStatusClass(percent)
+            };
+        });
+
+        if (monthGroups.length <= maxPoints) {
+            dataPoints = monthGroups;
+        } else {
+            const step = (monthGroups.length - 1) / (maxPoints - 1);
+            for (let b = 0; b < maxPoints; b++) {
+                const centerIdx = Math.round(b * step);
+                const start = Math.max(0, Math.floor(b * (monthGroups.length / maxPoints)));
+                const end = Math.min(monthGroups.length, Math.floor((b + 1) * (monthGroups.length / maxPoints)));
+                const chunk = monthGroups.slice(start, end);
+                const items = chunk.length > 0 ? chunk : [monthGroups[centerIdx]];
+                const avgRaw = Math.round(items.reduce((sum, c) => sum + c.rawPercent, 0) / items.length);
+                const avgRoll = Math.round(items.reduce((sum, c) => sum + c.avgPercent, 0) / items.length);
+                const totalColli = items.reduce((sum, c) => sum + c.colli, 0);
+                const repItem = monthGroups[centerIdx];
+                const percent = currentChartMode === 'average' ? avgRoll : avgRaw;
+
+                dataPoints.push({
+                    timestamp: repItem.timestamp,
+                    rawPercent: avgRaw,
+                    avgPercent: avgRoll,
+                    percent,
+                    windowSize: items.reduce((sum, c) => sum + c.windowSize, 0),
+                    dateLabel: repItem.dateLabel,
+                    fullDateLabel: repItem.fullDateLabel,
+                    colli: totalColli,
+                    statusClass: getProductivityStatusClass(percent)
+                });
+            }
+        }
+    } else {
+        if (filtered.length <= maxPoints) {
+            dataPoints = filtered.map(e => {
+                const percent = currentChartMode === 'average' ? e.avgPercent : e.rawPercent;
+                return {
+                    ...e,
+                    percent,
+                    statusClass: getProductivityStatusClass(percent)
+                };
             });
+        } else {
+            const bucketSize = filtered.length / maxPoints;
+            for (let b = 0; b < maxPoints; b++) {
+                const start = Math.floor(b * bucketSize);
+                const end = Math.min(filtered.length, Math.floor((b + 1) * bucketSize));
+                const chunk = filtered.slice(start, end);
+                if (chunk.length === 0) continue;
+
+                const avgRaw = Math.round(chunk.reduce((sum, c) => sum + c.rawPercent, 0) / chunk.length);
+                const avgRoll = Math.round(chunk.reduce((sum, c) => sum + c.avgPercent, 0) / chunk.length);
+                const totalColli = chunk.reduce((sum, c) => sum + c.colli, 0);
+
+                const repItem = b === 0 ? chunk[0] : (b === maxPoints - 1 ? chunk[chunk.length - 1] : chunk[Math.floor(chunk.length / 2)]);
+                const percent = currentChartMode === 'average' ? avgRoll : avgRaw;
+
+                dataPoints.push({
+                    timestamp: repItem.timestamp,
+                    rawPercent: avgRaw,
+                    avgPercent: avgRoll,
+                    percent,
+                    windowSize: chunk.length,
+                    dateLabel: repItem.dateLabel,
+                    colli: totalColli,
+                    statusClass: getProductivityStatusClass(percent)
+                });
+            }
         }
     }
 
@@ -601,11 +656,14 @@ function renderProductivityChart(entries) {
 
     const circlesSvg = coords.map((c) => {
         const dotColor = statusColors[c.statusClass] || 'var(--accent-color)';
-        const titleText = c.windowSize > 1
-            ? `${escapeHtml(c.dateLabel)}: ${c.percent}% (gemiddeld over ${c.windowSize} shifts)`
-            : (currentChartMode === 'average'
-                ? `${escapeHtml(c.dateLabel)}: ${c.percent}% (gemiddelde over ${c.windowSize} ${c.windowSize === 1 ? 'shift' : 'shifts'})`
-                : `${escapeHtml(c.dateLabel)}: ${c.percent}%${c.colli > 0 ? ` (${c.colli} colli)` : ''}`);
+        const labelText = c.fullDateLabel || c.dateLabel;
+        const titleText = isMonthView
+            ? `${escapeHtml(labelText)}: ${c.percent}% (${c.windowSize} ${c.windowSize === 1 ? 'shift' : 'shifts'}${c.colli > 0 ? `, ${c.colli.toLocaleString('nl-NL')} colli` : ''})`
+            : (c.windowSize > 1
+                ? `${escapeHtml(c.dateLabel)}: ${c.percent}% (gemiddeld over ${c.windowSize} shifts)`
+                : (currentChartMode === 'average'
+                    ? `${escapeHtml(c.dateLabel)}: ${c.percent}% (gemiddelde over ${c.windowSize} ${c.windowSize === 1 ? 'shift' : 'shifts'})`
+                    : `${escapeHtml(c.dateLabel)}: ${c.percent}%${c.colli > 0 ? ` (${c.colli.toLocaleString('nl-NL')} colli)` : ''}`));
 
         return `
             <g class="chart-point-group" data-tooltip="${titleText}">

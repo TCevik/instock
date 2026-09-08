@@ -1,31 +1,39 @@
 import { keepInViewport, resetDropdownPosition, bindViewportCheck } from './dropdown-utils.js';
 
-const MONTH_NAMES = [
+export const MONTH_NAMES = [
     'Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni',
     'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'
 ];
+
+export const SHORT_MONTH_NAMES = [
+    'Jan', 'Feb', 'Mrt', 'Apr', 'Mei', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'
+];
+
+export function parseDate(str) {
+    if (!str) return null;
+    if (str instanceof Date) return isNaN(str.getTime()) ? null : str;
+    const clean = String(str).trim();
+    if (clean.includes('-')) {
+        const parts = clean.split('T')[0].split('-');
+        if (parts.length === 3) {
+            if (parts[0].length === 4) {
+                const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                return isNaN(d.getTime()) ? null : d;
+            } else if (parts[2].length === 4) {
+                const d = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+                return isNaN(d.getTime()) ? null : d;
+            }
+        }
+    }
+    const d = new Date(clean);
+    return isNaN(d.getTime()) ? null : d;
+}
 
 export function createDatePicker(containerElement, initialDateStr = '', onSelect = null) {
     let selectedDate = parseDate(initialDateStr);
     let viewDate = selectedDate ? new Date(selectedDate) : new Date(2000, 0, 1);
     let viewMode = 'days';
-
-    function parseDate(str) {
-        if (!str) return null;
-        if (str.includes('-')) {
-            const parts = str.split('-');
-            if (parts.length === 3) {
-                if (parts[0].length === 4) {
-                    const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-                    return isNaN(d.getTime()) ? null : d;
-                } else if (parts[2].length === 4) {
-                    const d = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
-                    return isNaN(d.getTime()) ? null : d;
-                }
-            }
-        }
-        return null;
-    }
 
     function formatDate(d) {
         if (!d) return '';
