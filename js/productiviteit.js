@@ -1,5 +1,5 @@
 import { supabase, showToast, escapeHtml } from './main.js';
-import { formatDuration } from './vulplanning/time-utils.js';
+import { formatDuration, timeToMinutes } from './vulplanning/time-utils.js';
 
 document.addEventListener('DOMContentLoaded', initProductivityPage);
 
@@ -354,9 +354,16 @@ function renderProductivityList(entries, container) {
                 const title = escapeHtml(task.title || task.pathName || task.name || 'Taak');
                 const type = task.type || 'overige';
                 const colli = Number(task.colli) || 0;
-                const dur = Number(task.duration_minutes) || Number(task.duration) || 0;
-                const sTime = task.start_time || '';
-                const eTime = task.end_time || '';
+                let dur = Number(task.duration_minutes) || Number(task.duration) || 0;
+                const sTime = task.start_time || task.start || '';
+                const eTime = task.end_time || task.end || '';
+
+                if (dur <= 0 && sTime && eTime) {
+                    const startM = timeToMinutes(sTime);
+                    let endM = timeToMinutes(eTime);
+                    if (endM < startM) endM += 24 * 60;
+                    dur = Math.max(0, endM - startM);
+                }
 
                 let timeHtml = '';
                 if (sTime && eTime) {
@@ -364,6 +371,13 @@ function renderProductivityList(entries, container) {
                         <span class="day-task-time">
                             <span class="material-icons">schedule</span>
                             <span>${escapeHtml(sTime)} - ${escapeHtml(eTime)}${dur > 0 ? ` (${formatDuration(dur)})` : ''}</span>
+                        </span>
+                    `;
+                } else if (sTime) {
+                    timeHtml = `
+                        <span class="day-task-time">
+                            <span class="material-icons">schedule</span>
+                            <span>Vanaf ${escapeHtml(sTime)}</span>
                         </span>
                     `;
                 } else if (dur > 0) {
