@@ -413,9 +413,20 @@
     background-color: var(--card-background-hover);
 }
 
-.top-filler-card.is-current-user {
+.top-filler-card.is-viewed {
     border-color: var(--accent-color);
     background-color: var(--top-filler-current-bg);
+}
+
+.top-filler-card.is-clickable {
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+
+.top-filler-card.is-clickable:hover {
+    border-color: var(--accent-color);
 }
 
 .top-filler-left {
@@ -428,9 +439,9 @@
 
 .rank-badge {
     height: 28px;
-    min-width: 28px;
-    width: auto;
-    padding: 0 6px;
+    width: 48px;
+    min-width: 48px;
+    padding: 0 4px;
     border-radius: 7px;
     background-color: var(--card-background);
     border: 1px solid var(--card-border);
@@ -1055,7 +1066,8 @@
 
     .rank-badge {
         height: 26px;
-        min-width: 26px;
+        width: 46px;
+        min-width: 46px;
         font-size: 11px;
     }
 
@@ -1361,7 +1373,8 @@
 
     .rank-badge {
         height: 24px;
-        min-width: 24px;
+        width: 42px;
+        min-width: 42px;
         font-size: 10px;
         padding: 0 4px;
     }

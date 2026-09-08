@@ -337,6 +337,9 @@ export function createDatePicker(containerElement, initialDateStr = '', onSelect
         setValue: (val) => {
             const parsed = parseDate(val);
             applyDate(parsed, true);
+        },
+        clear: () => {
+            applyDate(null, true);
         }
     };
 }

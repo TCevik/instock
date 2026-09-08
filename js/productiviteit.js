@@ -4,13 +4,17 @@ import { createCustomSelect } from './select.js';
 import { createDatePicker } from './datepicker.js';
 
 let cachedProductivityEntries = [];
-let currentChartMode = 'individual';
+let currentChartMode = 'average';
 let currentTimeframe = 'all';
 let currentShiftPage = 1;
 const SHIFTS_PER_PAGE = 50;
 let paginationControlsInitialized = false;
 let selectedDateFilter = '';
 let shiftsDatePicker = null;
+let currentUserId = null;
+let currentUserRole = 1;
+let ownUserData = null;
+let selectedFillerUserId = null;
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initProductivityPage);
@@ -34,20 +38,22 @@ async function initProductivityPage() {
             return;
         }
 
-        const [userDataResult] = await Promise.all([
-            supabase
-                .from('user_data')
-                .select('user_id, username, full_name, productivity')
-                .eq('user_id', session.user.id)
-                .maybeSingle(),
-            loadTopFillers(session.user.id)
-        ]);
+        currentUserId = session.user.id;
 
-        const { data: userData, error } = userDataResult;
+        const { data: userData, error } = await supabase
+            .from('user_data')
+            .select('user_id, username, full_name, productivity, role')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
 
         if (error) {
             throw error;
         }
+
+        currentUserRole = Number(userData?.role) || 1;
+        ownUserData = userData;
+
+        await loadTopFillers(session.user.id);
 
         if (skeletonEl) skeletonEl.style.display = 'none';
         if (statsSkeletonEl) statsSkeletonEl.style.display = 'none';
@@ -96,7 +102,7 @@ async function initProductivityPage() {
     }
 }
 
-async function loadTopFillers(currentUserId) {
+async function loadTopFillers(userId) {
     const sectionEl = document.getElementById('topFillersSection');
     const listEl = document.getElementById('topFillersList');
     const userRankEl = document.getElementById('topFillerUserRank');
@@ -113,18 +119,21 @@ async function loadTopFillers(currentUserId) {
             return;
         }
 
+        const isManager = Boolean(data.isManager) || currentUserRole === 2 || currentUserRole === 3;
+        currentUserRole = isManager ? (currentUserRole > 1 ? currentUserRole : 2) : 1;
+
         const headingEl = document.getElementById('topFillersHeading');
         if (headingEl) {
             headingEl.textContent = data.topFillers.length > 5 ? 'Ranglijst Vullers' : 'Top 5 Vullers';
         }
 
-        renderTopFillers(data.topFillers, listEl, currentUserId);
+        renderTopFillers(data.topFillers, listEl, userId, isManager);
 
-        const isInList = data.topFillers.some(f => f.user_id === currentUserId);
+        const isInList = data.topFillers.some(f => f.user_id === userId);
         if (userRankEl) {
             if (!isInList && data.currentUserRanking && data.currentUserRanking.rank) {
                 userRankEl.innerHTML = '';
-                userRankEl.appendChild(createTopFillerCard(data.currentUserRanking, data.currentUserRanking.rank, true));
+                userRankEl.appendChild(createTopFillerCard(data.currentUserRanking, data.currentUserRanking.rank, true, isManager));
                 userRankEl.style.display = 'flex';
             } else {
                 userRankEl.innerHTML = '';
@@ -143,7 +152,7 @@ async function loadTopFillers(currentUserId) {
     }
 }
 
-function createTopFillerCard(filler, rank, isCurrentUser) {
+function createTopFillerCard(filler, rank, isCurrentUser, canClick) {
     const rawName = filler.full_name || filler.username || 'Medewerker';
     const name = escapeHtml(rawName);
     const avgProd = Math.round(Number(filler.average_productivity) || 0);
@@ -153,8 +162,15 @@ function createTopFillerCard(filler, rank, isCurrentUser) {
     const initials = rawName.split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'M';
     const rankIcon = rank === 1 ? 'workspace_premium' : (rank === 2 ? 'military_tech' : (rank === 3 ? 'stars' : ''));
 
+    const activeUserId = selectedFillerUserId || currentUserId;
+    const isViewed = filler.user_id === activeUserId;
+
     const card = document.createElement('div');
-    card.className = `top-filler-card${isCurrentUser ? ' is-current-user' : ''}${rank <= 3 ? ` podium-card rank-${rank}` : ''}`;
+    card.className = `top-filler-card${isCurrentUser ? ' is-current-user' : ''}${isViewed ? ' is-viewed' : ''}${canClick ? ' is-clickable' : ''}${rank <= 3 ? ` podium-card rank-${rank}` : ''}`;
+    card.dataset.userId = filler.user_id;
+    if (canClick) {
+        card.setAttribute('data-tooltip', isViewed ? (isCurrentUser ? 'Je bekijkt nu je eigen productiviteit' : 'Klik om terug te gaan naar je eigen productiviteit') : `Klik om de productiviteit van ${name} te bekijken`);
+    }
 
     card.innerHTML = `
         <div class="top-filler-left">
@@ -177,15 +193,110 @@ function createTopFillerCard(filler, rank, isCurrentUser) {
         </span>
     `;
 
+    if (canClick) {
+        card.addEventListener('click', () => handleFillerClick(filler));
+    }
+
     return card;
 }
 
-function renderTopFillers(topFillers, container, currentUserId) {
+function renderTopFillers(topFillers, container, userId, canClick) {
     container.innerHTML = '';
 
     topFillers.forEach((filler, index) => {
-        const isCurrentUser = filler.user_id === currentUserId;
-        container.appendChild(createTopFillerCard(filler, index + 1, isCurrentUser));
+        const isCurrentUser = filler.user_id === userId;
+        container.appendChild(createTopFillerCard(filler, index + 1, isCurrentUser, canClick));
+    });
+}
+
+async function handleFillerClick(filler) {
+    if (currentUserRole !== 2 && currentUserRole !== 3) return;
+
+    if (selectedFillerUserId === filler.user_id || filler.user_id === currentUserId) {
+        selectedFillerUserId = null;
+        applyUserProductivity(ownUserData, true);
+        updateTopFillerCardSelection();
+        return;
+    }
+
+    try {
+        const { data, error } = await supabase.functions.invoke('get-top-fillers', {
+            body: { target_user_id: filler.user_id }
+        });
+
+        if (error) throw error;
+        if (!data || !data.user) {
+            throw new Error('Gegevens van medewerker niet ontvangen');
+        }
+
+        selectedFillerUserId = filler.user_id;
+        applyUserProductivity(data.user, false);
+        updateTopFillerCardSelection();
+    } catch (err) {
+        showToast('error', err.message || 'Kon productiviteit niet ophalen');
+    }
+}
+
+function applyUserProductivity(user, isSelf) {
+    const rawName = user?.full_name || user?.username || 'Medewerker';
+    const name = escapeHtml(rawName);
+
+    const chartTitleEl = document.getElementById('productivityChartTitle');
+    const chartSubEl = document.getElementById('chartCardSubtitle');
+    const shiftsHeadingEl = document.getElementById('myShiftsSectionHeading');
+    const shiftsSubEl = document.getElementById('myShiftsSectionSubtext');
+
+    if (chartTitleEl) {
+        chartTitleEl.textContent = isSelf ? 'Mijn Voortgang' : `Voortgang van ${name}`;
+    }
+    if (chartSubEl) {
+        chartSubEl.textContent = isSelf
+            ? 'Productiviteit per gewerkte shift'
+            : `Productiviteit per gewerkte shift van ${name}`;
+    }
+    if (shiftsHeadingEl) {
+        shiftsHeadingEl.textContent = isSelf ? 'Mijn Gewerkte Diensten' : `Gewerkte Diensten van ${name}`;
+    }
+    if (shiftsSubEl) {
+        shiftsSubEl.textContent = isSelf
+            ? 'Overzicht van al jouw afgeronde shifts en behaalde productiviteit'
+            : `Overzicht van afgeronde shifts en behaalde productiviteit van ${name}`;
+    }
+
+    const entries = extractProductivities(user?.productivity);
+    cachedProductivityEntries = entries || [];
+    currentShiftPage = 1;
+    selectedDateFilter = '';
+
+    const clearDateBtn = document.getElementById('shiftsDateFilterClearBtn');
+    if (clearDateBtn) clearDateBtn.style.display = 'none';
+    if (shiftsDatePicker) shiftsDatePicker.setValue('');
+
+    renderSummaryStats(cachedProductivityEntries);
+    renderProductivityChart(cachedProductivityEntries);
+    renderPaginatedProductivityList();
+}
+
+function updateTopFillerCardSelection() {
+    const activeUserId = selectedFillerUserId || currentUserId;
+    const cards = document.querySelectorAll('.top-filler-card');
+    cards.forEach(card => {
+        const uId = card.dataset.userId;
+        const isViewed = uId === activeUserId;
+        if (isViewed) {
+            card.classList.add('is-viewed');
+        } else {
+            card.classList.remove('is-viewed');
+        }
+        if (card.classList.contains('is-clickable')) {
+            const rawName = card.querySelector('.top-filler-name')?.textContent || 'medewerker';
+            const isSelf = uId === currentUserId;
+            if (isViewed) {
+                card.setAttribute('data-tooltip', isSelf ? 'Je bekijkt nu je eigen productiviteit' : 'Klik om terug te gaan naar je eigen productiviteit');
+            } else {
+                card.setAttribute('data-tooltip', isSelf ? 'Klik om je eigen productiviteit te bekijken' : `Klik om de productiviteit van ${rawName} te bekijken`);
+            }
+        }
     });
 }
 
