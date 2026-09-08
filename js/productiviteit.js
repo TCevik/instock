@@ -113,11 +113,16 @@ async function loadTopFillers(currentUserId) {
             return;
         }
 
+        const headingEl = document.getElementById('topFillersHeading');
+        if (headingEl) {
+            headingEl.textContent = data.topFillers.length > 5 ? 'Ranglijst Vullers' : 'Top 5 Vullers';
+        }
+
         renderTopFillers(data.topFillers, listEl, currentUserId);
 
-        const isInTop5 = data.topFillers.some(f => f.user_id === currentUserId);
+        const isInList = data.topFillers.some(f => f.user_id === currentUserId);
         if (userRankEl) {
-            if (!isInTop5 && data.currentUserRanking && data.currentUserRanking.rank) {
+            if (!isInList && data.currentUserRanking && data.currentUserRanking.rank) {
                 userRankEl.innerHTML = '';
                 userRankEl.appendChild(createTopFillerCard(data.currentUserRanking, data.currentUserRanking.rank, true));
                 userRankEl.style.display = 'flex';
