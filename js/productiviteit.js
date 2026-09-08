@@ -28,6 +28,7 @@ async function initProductivityPage() {
     const emptyEl = document.getElementById('productivityEmpty');
     const listEl = document.getElementById('productivityList');
     const statsEl = document.getElementById('productivitySummaryStats');
+    const overviewRow = document.getElementById('productivityOverviewRow');
 
     try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -35,6 +36,7 @@ async function initProductivityPage() {
             if (skeletonEl) skeletonEl.style.display = 'none';
             if (statsSkeletonEl) statsSkeletonEl.style.display = 'none';
             if (emptyEl) emptyEl.style.display = 'flex';
+            if (overviewRow) overviewRow.classList.add('no-top-fillers');
             return;
         }
 
@@ -57,52 +59,25 @@ async function initProductivityPage() {
 
         if (skeletonEl) skeletonEl.style.display = 'none';
         if (statsSkeletonEl) statsSkeletonEl.style.display = 'none';
-
-        const entries = extractProductivities(userData?.productivity);
-
-        const myShiftsSection = document.getElementById('myShiftsSection');
-        const sectionDivider = document.getElementById('productivitySectionDivider');
-
-        cachedProductivityEntries = entries || [];
-        initChartControls();
-
-        const chartCard = document.getElementById('productivityChartCard');
-
-        if (!entries || entries.length === 0) {
-            if (emptyEl) emptyEl.style.display = 'flex';
-            if (myShiftsSection) myShiftsSection.style.display = 'none';
-            if (sectionDivider) sectionDivider.style.display = 'none';
-            if (statsEl) statsEl.style.display = 'none';
-            if (chartCard) chartCard.style.display = 'none';
-            return;
-        }
-
-        if (emptyEl) emptyEl.style.display = 'none';
-        if (myShiftsSection) myShiftsSection.style.display = 'flex';
         if (statsEl) statsEl.style.display = 'flex';
-        if (chartCard) chartCard.style.display = 'flex';
 
-        const topFillersSection = document.getElementById('topFillersSection');
-        if (sectionDivider && topFillersSection && topFillersSection.style.display !== 'none') {
-            sectionDivider.style.display = 'block';
-        }
-
-        currentShiftPage = 1;
+        initChartControls();
         initPaginationControls();
         initShiftsDatePicker();
-        renderSummaryStats(entries);
-        renderPaginatedProductivityList();
-        renderProductivityChart(entries);
+
+        applyUserProductivity(userData, true);
 
     } catch (err) {
         if (skeletonEl) skeletonEl.style.display = 'none';
         if (statsSkeletonEl) statsSkeletonEl.style.display = 'none';
         if (emptyEl) emptyEl.style.display = 'flex';
+        if (overviewRow) overviewRow.classList.add('no-top-fillers');
         showToast('error', err.message || 'Kon productiviteitsgegevens niet ophalen');
     }
 }
 
 async function loadTopFillers(userId) {
+    const overviewRow = document.getElementById('productivityOverviewRow');
     const sectionEl = document.getElementById('topFillersSection');
     const listEl = document.getElementById('topFillersList');
     const userRankEl = document.getElementById('topFillerUserRank');
@@ -116,8 +91,11 @@ async function loadTopFillers(userId) {
             sectionEl.style.display = 'none';
             if (userRankEl) userRankEl.style.display = 'none';
             if (sectionDivider) sectionDivider.style.display = 'none';
+            if (overviewRow) overviewRow.classList.add('no-top-fillers');
             return;
         }
+
+        if (overviewRow) overviewRow.classList.remove('no-top-fillers');
 
         const isManager = Boolean(data.isManager) || currentUserRole === 2 || currentUserRole === 3;
         currentUserRole = isManager ? (currentUserRole > 1 ? currentUserRole : 2) : 1;
@@ -149,6 +127,7 @@ async function loadTopFillers(userId) {
         sectionEl.style.display = 'none';
         if (userRankEl) userRankEl.style.display = 'none';
         if (sectionDivider) sectionDivider.style.display = 'none';
+        if (overviewRow) overviewRow.classList.add('no-top-fillers');
     }
 }
 
@@ -245,6 +224,13 @@ function applyUserProductivity(user, isSelf) {
     const chartSubEl = document.getElementById('chartCardSubtitle');
     const shiftsHeadingEl = document.getElementById('myShiftsSectionHeading');
     const shiftsSubEl = document.getElementById('myShiftsSectionSubtext');
+    const emptyEl = document.getElementById('productivityEmpty');
+    const emptyTitleEl = document.getElementById('emptyTitle');
+    const emptyTextEl = document.getElementById('emptyText');
+    const chartCard = document.getElementById('productivityChartCard');
+    const myShiftsSection = document.getElementById('myShiftsSection');
+    const sectionDivider = document.getElementById('productivitySectionDivider');
+    const topFillersSection = document.getElementById('topFillersSection');
 
     if (chartTitleEl) {
         chartTitleEl.textContent = isSelf ? 'Mijn Voortgang' : `Voortgang van ${name}`;
@@ -272,9 +258,31 @@ function applyUserProductivity(user, isSelf) {
     if (clearDateBtn) clearDateBtn.style.display = 'none';
     if (shiftsDatePicker) shiftsDatePicker.setValue('');
 
+    if (!entries || entries.length === 0) {
+        if (emptyTitleEl) {
+            emptyTitleEl.textContent = isSelf ? 'Geen productiviteitsgegevens gevonden' : 'Geen gegevens gevonden';
+        }
+        if (emptyTextEl) {
+            emptyTextEl.textContent = isSelf
+                ? 'Er zijn nog geen gefinaliseerde vulplanningen gekoppeld aan jouw account.'
+                : `Er zijn nog geen gefinaliseerde vulplanningen gekoppeld aan ${name}.`;
+        }
+        if (emptyEl) emptyEl.style.display = 'flex';
+        if (chartCard) chartCard.style.display = 'none';
+        if (myShiftsSection) myShiftsSection.style.display = 'none';
+        if (sectionDivider) sectionDivider.style.display = 'none';
+    } else {
+        if (emptyEl) emptyEl.style.display = 'none';
+        if (chartCard) chartCard.style.display = 'flex';
+        if (myShiftsSection) myShiftsSection.style.display = 'flex';
+        if (sectionDivider) {
+            sectionDivider.style.display = (topFillersSection && topFillersSection.style.display !== 'none') ? 'block' : 'none';
+        }
+        renderProductivityChart(cachedProductivityEntries);
+        renderPaginatedProductivityList();
+    }
+
     renderSummaryStats(cachedProductivityEntries);
-    renderProductivityChart(cachedProductivityEntries);
-    renderPaginatedProductivityList();
 }
 
 function updateTopFillerCardSelection() {
@@ -782,8 +790,8 @@ function renderSummaryStats(entries) {
     });
 
     if (avgEl) {
-        const avg = prodCount > 0 ? Math.round(totalProd / prodCount) : 0;
-        avgEl.textContent = `${avg}%`;
+        const avg = prodCount > 0 ? Math.round(totalProd / prodCount) : null;
+        avgEl.textContent = avg !== null ? `${avg}%` : '-';
     }
 
     if (colliEl) {

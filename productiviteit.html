@@ -202,13 +202,7 @@
             </div>
         </div>
 
-        <div id="productivityEmpty" class="productivity-empty" style="display: none;">
-            <span class="material-icons empty-icon">trending_up</span>
-            <h3 class="empty-title">Geen productiviteitsgegevens gevonden</h3>
-            <p class="empty-text">Er zijn nog geen gefinaliseerde vulplanningen gekoppeld aan jouw account.</p>
-        </div>
-
-        <div class="productivity-overview-row">
+        <div class="productivity-overview-row" id="productivityOverviewRow">
             <div id="topFillersSection" class="top-fillers-section" style="display: none;">
                 <div class="section-title-row">
                     <div class="section-title-left">
@@ -245,6 +239,12 @@
                     </div>
                 </div>
                 <div class="chart-container" id="productivityChartContainer"></div>
+            </div>
+
+            <div id="productivityEmpty" class="productivity-empty" style="display: none;">
+                <span class="material-icons empty-icon">trending_up</span>
+                <h3 class="empty-title" id="emptyTitle">Geen productiviteitsgegevens gevonden</h3>
+                <p class="empty-text" id="emptyText">Er zijn nog geen gefinaliseerde vulplanningen gekoppeld aan jouw account.</p>
             </div>
         </div>
 
