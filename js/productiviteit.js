@@ -373,12 +373,44 @@ function getTaskIcon(type) {
     }
 }
 
+let chartResizeBound = false;
+let chartResizeTimer = null;
+
+function handleChartResize() {
+    clearTimeout(chartResizeTimer);
+    chartResizeTimer = setTimeout(() => {
+        renderProductivityChart(cachedProductivityEntries);
+    }, 100);
+}
+
+function updateChartModeControls() {
+    const btnIndividual = document.getElementById('chartModeIndividual');
+    const btnAverage = document.getElementById('chartModeAverage');
+    const isAllowed = currentTimeframe === '1w' || currentTimeframe === '2w';
+
+    if (btnIndividual) {
+        btnIndividual.disabled = !isAllowed;
+        btnIndividual.title = isAllowed ? '' : 'Alleen beschikbaar bij 1 of 2 weken';
+        if (!isAllowed && currentChartMode === 'individual') {
+            currentChartMode = 'average';
+            if (btnAverage) btnAverage.classList.add('active');
+            btnIndividual.classList.remove('active');
+        }
+    }
+}
+
 function initChartControls() {
+    if (!chartResizeBound) {
+        chartResizeBound = true;
+        window.addEventListener('resize', handleChartResize);
+    }
+
     const btnIndividual = document.getElementById('chartModeIndividual');
     const btnAverage = document.getElementById('chartModeAverage');
     if (btnIndividual && btnAverage && !btnIndividual.dataset.bound) {
         btnIndividual.dataset.bound = 'true';
         btnIndividual.addEventListener('click', () => {
+            if (currentTimeframe !== '1w' && currentTimeframe !== '2w') return;
             if (currentChartMode === 'individual') return;
             currentChartMode = 'individual';
             btnIndividual.classList.add('active');
@@ -394,6 +426,8 @@ function initChartControls() {
             renderProductivityChart(cachedProductivityEntries);
         });
     }
+
+    updateChartModeControls();
 
     const selectContainer = document.getElementById('chartTimeframeSelectContainer');
     if (selectContainer && !selectContainer.hasChildNodes()) {
@@ -414,6 +448,7 @@ function initChartControls() {
             (newVal) => {
                 if (newVal === currentTimeframe) return;
                 currentTimeframe = newVal;
+                updateChartModeControls();
                 renderProductivityChart(cachedProductivityEntries);
             }
         );
@@ -423,6 +458,23 @@ function initChartControls() {
 function renderProductivityChart(entries) {
     const container = document.getElementById('productivityChartContainer');
     if (!container) return;
+
+    updateChartModeControls();
+
+    if (window.ResizeObserver && !container._chartObserver) {
+        let lastObservedWidth = 0;
+        const ro = new ResizeObserver(roEntries => {
+            for (const entry of roEntries) {
+                const w = Math.floor(entry.contentRect.width);
+                if (w > 0 && w !== lastObservedWidth) {
+                    lastObservedWidth = w;
+                    handleChartResize();
+                }
+            }
+        });
+        ro.observe(container);
+        container._chartObserver = ro;
+    }
 
 
 
@@ -616,7 +668,7 @@ function renderProductivityChart(entries) {
         }
     }
 
-    const width = 600;
+    const width = Math.max(300, Math.floor(container.clientWidth || 600));
     const height = 240;
     const padLeft = 46;
     const padRight = 32;
@@ -679,7 +731,7 @@ function renderProductivityChart(entries) {
     }).join('');
 
     container.innerHTML = `
-        <svg viewBox="0 0 ${width} ${height}" class="productivity-svg-chart" preserveAspectRatio="none">
+        <svg viewBox="0 0 ${width} ${height}" class="productivity-svg-chart">
             <defs>
                 <linearGradient id="prodChartAreaGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stop-color="var(--accent-color)" stop-opacity="0.28"/>
