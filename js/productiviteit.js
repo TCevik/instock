@@ -149,7 +149,7 @@ async function loadTopFillers(userId, date = selectedScoreboardDate) {
             if (date) {
                 subtextEl.textContent = formatDate(date);
             } else {
-                subtextEl.textContent = 'Laatste 10 shifts';
+                subtextEl.textContent = 'Laatste 10 shifts per persoon';
             }
         }
 
