@@ -673,3 +673,98 @@
         width: 100%;
     }
 }
+
+.modal-overlay.modal-wide .modal-container {
+    max-width: 640px;
+}
+
+.modal-tasks-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.modal-tasks-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.modal-tasks-header label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    color: var(--text-color-muted);
+    text-transform: uppercase;
+}
+
+.modal-tasks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.modal-task-item {
+    background-color: var(--input-background);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.modal-task-item-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.modal-task-item-top .task-title-input {
+    flex: 1;
+}
+
+.modal-task-item-top .task-title-input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: transparent;
+}
+
+.modal-task-item-top .task-type-select {
+    width: 130px;
+    flex-shrink: 0;
+}
+
+.modal-task-item-bottom {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.modal-task-item-bottom .modal-input {
+    flex: 1;
+    font-size: 13px;
+    padding: 8px 10px;
+}
+
+.modal-task-item-bottom .modal-input:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background-color: transparent;
+}
+
+.modal-tasks-empty {
+    padding: 16px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-color-muted);
+    background-color: var(--input-background);
+    border: 1px dashed var(--card-border);
+    border-radius: 10px;
+}
+

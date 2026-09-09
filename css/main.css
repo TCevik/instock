@@ -133,6 +133,30 @@ body {
     font-size: 20px;
 }
 
+.action-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-color-muted);
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: color 0.2s, background-color 0.2s, border-color 0.2s;
+}
+
+.action-btn:hover {
+    color: var(--text-color);
+    background-color: var(--card-border);
+    border-color: var(--input-focus);
+}
+
+.action-btn .material-icons {
+    font-size: 18px;
+}
+
 ::-webkit-scrollbar {
     width: 8px;
 }

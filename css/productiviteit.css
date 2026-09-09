@@ -689,8 +689,19 @@
 .day-card-header-right {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 8px;
     flex-shrink: 0;
+}
+
+.day-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.action-btn.delete-shift-btn:hover {
+    color: var(--danger-color);
+    border-color: var(--danger-color);
 }
 
 .day-card-chevron {

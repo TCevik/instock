@@ -1,4 +1,4 @@
-import { supabase, showModal, closeModal } from './main.js';
+import { supabase, showModal, closeModal, parseUserDisplay } from './main.js';
 import { createCustomSelect } from './select.js';
 import { getProductivityStatusClass } from './vulplanning/time-utils.js';
 
@@ -463,6 +463,215 @@ function renderPathsDiff(oldPaths, newPaths) {
     };
 }
 
+function renderShiftDiff(oldShift, newShift) {
+    const oldObj = oldShift || {};
+    const newObj = newShift || {};
+
+    const diffs = [];
+
+    const oldDate = oldObj.date || '';
+    const newDate = newObj.date || '';
+    if (oldDate && newDate && oldDate !== newDate) {
+        diffs.push({
+            label: 'Datum',
+            icon: 'event',
+            oldVal: formatDutchDate(oldDate),
+            newVal: formatDutchDate(newDate)
+        });
+    }
+
+    const oldProd = oldObj.productivity !== undefined ? Math.round(Number(oldObj.productivity)) : null;
+    const newProd = newObj.productivity !== undefined ? Math.round(Number(newObj.productivity)) : null;
+    if (oldProd !== null && newProd !== null && oldProd !== newProd) {
+        diffs.push({
+            label: 'Productiviteit',
+            icon: 'trending_up',
+            oldVal: `${oldProd}%`,
+            newVal: `${newProd}%`
+        });
+    }
+
+    const oldS = oldObj.shift || {};
+    const newS = newObj.shift || {};
+
+    if ((oldS.start || '') !== (newS.start || '')) {
+        diffs.push({
+            label: 'Starttijd',
+            icon: 'schedule',
+            oldVal: oldS.start || '-',
+            newVal: newS.start || '-'
+        });
+    }
+
+    const oldEnd = oldS.actual_end || oldS.planned_end || '';
+    const newEnd = newS.actual_end || newS.planned_end || '';
+    if (oldEnd !== newEnd) {
+        diffs.push({
+            label: 'Eindtijd',
+            icon: 'schedule',
+            oldVal: oldEnd || '-',
+            newVal: newEnd || '-'
+        });
+    }
+
+    const oldPause = Number(oldS.pause_minutes) || 0;
+    const newPause = Number(newS.pause_minutes) || 0;
+    if (oldPause !== newPause) {
+        diffs.push({
+            label: 'Pauze',
+            icon: 'free_breakfast',
+            oldVal: `${oldPause} min`,
+            newVal: `${newPause} min`
+        });
+    }
+
+    const oldColli = Number(oldObj.total_colli) || 0;
+    const newColli = Number(newObj.total_colli) || 0;
+    if (oldColli !== newColli) {
+        diffs.push({
+            label: 'Totaal colli',
+            icon: 'inventory_2',
+            oldVal: `${oldColli} colli`,
+            newVal: `${newColli} colli`
+        });
+    }
+
+    const oldTasks = Array.isArray(oldObj.tasks) ? oldObj.tasks : [];
+    const newTasks = Array.isArray(newObj.tasks) ? newObj.tasks : [];
+    const taskCards = [];
+
+    const maxLen = Math.max(oldTasks.length, newTasks.length);
+    for (let i = 0; i < maxLen; i++) {
+        const oT = oldTasks[i];
+        const nT = newTasks[i];
+
+        if (!oT && nT) {
+            const tTitle = nT.title || nT.pathName || nT.name || 'Taak';
+            const details = [];
+            if (nT.type) details.push(`Type: ${nT.type}`);
+            if (nT.colli > 0) details.push(`${nT.colli} colli`);
+            if (nT.start_time || nT.end_time) details.push(`${nT.start_time || ''} - ${nT.end_time || ''}`);
+            if (nT.duration_minutes > 0) details.push(`${nT.duration_minutes}m`);
+
+            taskCards.push(`
+                <div class="log-detail-card">
+                    <div class="log-detail-header">
+                        <div class="log-detail-icon-wrap" style="border-color: var(--prod-success-border);">
+                            <span class="material-icons" style="color: var(--accent-color);">add</span>
+                        </div>
+                        <span class="log-detail-title">Taak toegevoegd: ${escapeHtml(tTitle)}</span>
+                    </div>
+                    <div class="log-detail-diff-row">
+                        <div class="log-val-badge new">
+                            <span class="material-icons val-icon">check</span>
+                            <span>${escapeHtml(details.join(' • ') || tTitle)}</span>
+                        </div>
+                    </div>
+                </div>
+            `);
+        } else if (oT && !nT) {
+            const tTitle = oT.title || oT.pathName || oT.name || 'Taak';
+            taskCards.push(`
+                <div class="log-detail-card">
+                    <div class="log-detail-header">
+                        <div class="log-detail-icon-wrap" style="border-color: var(--prod-danger-border);">
+                            <span class="material-icons" style="color: var(--danger-color);">delete_outline</span>
+                        </div>
+                        <span class="log-detail-title">Taak verwijderd: ${escapeHtml(tTitle)}</span>
+                    </div>
+                    <div class="log-detail-diff-row">
+                        <div class="log-val-badge old">
+                            <span class="material-icons val-icon">close</span>
+                            <span>${escapeHtml(tTitle)}</span>
+                        </div>
+                    </div>
+                </div>
+            `);
+        } else if (oT && nT) {
+            const oTitle = oT.title || oT.pathName || oT.name || 'Taak';
+            const nTitle = nT.title || nT.pathName || nT.name || 'Taak';
+            const oType = oT.type || 'overige';
+            const nType = nT.type || 'overige';
+            const oColli = Number(oT.colli) || 0;
+            const nColli = Number(nT.colli) || 0;
+            const oStart = oT.start_time || oT.start || '';
+            const nStart = nT.start_time || nT.start || '';
+            const oEnd = oT.end_time || oT.end || '';
+            const nEnd = nT.end_time || nT.end || '';
+            const oDur = Number(oT.duration_minutes) || Number(oT.duration) || 0;
+            const nDur = Number(nT.duration_minutes) || Number(nT.duration) || 0;
+
+            const tFieldDiffs = [];
+            if (oTitle !== nTitle) tFieldDiffs.push({ label: 'Naam', oldVal: oTitle, newVal: nTitle });
+            if (oType !== nType) tFieldDiffs.push({ label: 'Type', oldVal: oType, newVal: nType });
+            if (oColli !== nColli) tFieldDiffs.push({ label: 'Colli', oldVal: `${oColli} colli`, newVal: `${nColli} colli` });
+            if (oStart !== nStart || oEnd !== nEnd) tFieldDiffs.push({ label: 'Tijd', oldVal: `${oStart || '-'} - ${oEnd || '-'}`, newVal: `${nStart || '-'} - ${nEnd || '-'}` });
+            if (oDur !== nDur) tFieldDiffs.push({ label: 'Duur', oldVal: `${oDur}m`, newVal: `${nDur}m` });
+
+            if (tFieldDiffs.length > 0) {
+                taskCards.push(`
+                    <div class="log-detail-card">
+                        <div class="log-detail-header">
+                            <div class="log-detail-icon-wrap">
+                                <span class="material-icons">route</span>
+                            </div>
+                            <span class="log-detail-title">Taak: ${escapeHtml(nTitle)}</span>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            ${tFieldDiffs.map(f => `
+                                <div class="log-detail-diff-row">
+                                    <span class="log-detail-title" style="min-width: 80px;">${escapeHtml(f.label)}:</span>
+                                    <div class="log-val-badge old">
+                                        <span class="material-icons val-icon">close</span>
+                                        <span>${escapeHtml(f.oldVal)}</span>
+                                    </div>
+                                    <span class="material-icons log-arrow-icon">arrow_forward</span>
+                                    <div class="log-val-badge new">
+                                        <span class="material-icons val-icon">check</span>
+                                        <span>${escapeHtml(f.newVal)}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `);
+            }
+        }
+    }
+
+    let html = '';
+    diffs.forEach(d => {
+        html += `
+            <div class="log-detail-card">
+                <div class="log-detail-header">
+                    <div class="log-detail-icon-wrap">
+                        <span class="material-icons">${d.icon}</span>
+                    </div>
+                    <span class="log-detail-title">${escapeHtml(d.label)}</span>
+                </div>
+                <div class="log-detail-diff-row">
+                    <div class="log-val-badge old">
+                        <span class="material-icons val-icon">close</span>
+                        <span>${escapeHtml(d.oldVal)}</span>
+                    </div>
+                    <span class="material-icons log-arrow-icon">arrow_forward</span>
+                    <div class="log-val-badge new">
+                        <span class="material-icons val-icon">check</span>
+                        <span>${escapeHtml(d.newVal)}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    html += taskCards.join('');
+
+    return {
+        count: diffs.length + taskCards.length,
+        html
+    };
+}
+
 const PAGE_SIZE = 50;
 let currentLogs = [];
 let usersMap = new Map();
@@ -473,9 +682,38 @@ let currentActionFilter = 'all';
 let searchQuery = '';
 let searchDebounceTimer = null;
 
-function getAffectedDisplay(affected, action = '') {
+function getLogAction(log) {
+    if (log.action) return log.action;
+    const t = log.new_value?.type;
+    if (t === 'update_shift') return 'Dienst aangepast';
+    if (t === 'delete_shift') return 'Dienst verwijderd';
+    if (t === 'update_task') return 'Taak aangepast';
+    if (t === 'delete_task') return 'Taak verwijderd';
+    if (t === 'finalize_productivity') return 'Productiviteiten gefinaliseerd';
+    return 'Onbekende actie';
+}
+
+function getAffectedDisplay(affected, action = '', log = null) {
     if (!affected) return null;
     if (String(affected).toLowerCase() === 'productiviteit') {
+        const targetUId = log?.new_value?.user_id;
+        const targetU = targetUId ? usersMap.get(targetUId) : null;
+        if (targetU) {
+            const parsed = parseUserDisplay(targetU.full_name, targetU.username);
+            return {
+                title: parsed.title || 'Medewerker',
+                sub: parsed.sub,
+                icon: 'person_outline'
+            };
+        }
+        if (log?.new_value?.username) {
+            const parsed = parseUserDisplay(log.new_value.full_name, log.new_value.username);
+            return {
+                title: parsed.title || 'Medewerker',
+                sub: parsed.sub,
+                icon: 'person_outline'
+            };
+        }
         return {
             title: 'Productiviteit',
             sub: '',
@@ -484,20 +722,18 @@ function getAffectedDisplay(affected, action = '') {
     }
     const user = usersMap.get(affected);
     if (user) {
-        const fullName = user.full_name?.trim();
-        const username = user.username ? `@${user.username}` : '';
-        const displayName = fullName || username || 'Onbekende gebruiker';
-        const subName = fullName && username ? username : '';
+        const parsed = parseUserDisplay(user.full_name, user.username);
         return {
-            title: displayName,
-            sub: subName,
+            title: parsed.title || 'Onbekende gebruiker',
+            sub: parsed.sub,
             icon: 'person_outline'
         };
     }
-    const isUser = action.toLowerCase().includes('gebruiker') || affected.includes('@');
+    const isUser = action.toLowerCase().includes('gebruiker') || action.toLowerCase().includes('dienst') || action.toLowerCase().includes('taak') || String(affected).includes('@');
+    const parsed = parseUserDisplay(affected, '');
     return {
-        title: affected,
-        sub: '',
+        title: parsed.title || affected,
+        sub: parsed.sub,
         icon: isUser ? 'person_outline' : 'inventory_2'
     };
 }
@@ -528,13 +764,13 @@ function renderTable() {
     } else {
         tbody.innerHTML = currentLogs.map((log, idx) => {
             const user = usersMap.get(log.user_id);
-            const fullName = user?.full_name?.trim();
-            const username = user?.username ? `@${user.username}` : '';
-            const displayName = fullName || username || (log.user_id ? 'Onbekende gebruiker' : 'Systeem');
-            const subName = fullName && username ? username : '';
+            const parsedUser = parseUserDisplay(user?.full_name, user?.username);
+            const displayName = parsedUser.title || (log.user_id ? 'Onbekende gebruiker' : 'Systeem');
+            const subName = parsedUser.sub;
 
+            const action = getLogAction(log);
             let affectedHtml = '-';
-            const aff = getAffectedDisplay(log.affected ?? log.affected_user, log.action);
+            const aff = getAffectedDisplay(log.affected ?? log.affected_user, action, log);
             if (aff) {
                 affectedHtml = `
                     <div class="user-cell">
@@ -549,7 +785,6 @@ function renderTable() {
                 `;
             }
 
-            const action = log.action || 'Onbekende actie';
             const isDanger = action.toLowerCase().includes('verwijderd');
             const timeStr = formatDateTime(log.happened_at || log.created_at);
 
@@ -588,13 +823,12 @@ function renderTable() {
         } else {
             cardsContainer.innerHTML = currentLogs.map((log, idx) => {
                 const user = usersMap.get(log.user_id);
-                const fullName = user?.full_name?.trim();
-                const username = user?.username ? `@${user.username}` : '';
-                const displayName = fullName || username || (log.user_id ? 'Onbekende gebruiker' : 'Systeem');
-                const action = log.action || 'Onbekende actie';
+                const parsedUser = parseUserDisplay(user?.full_name, user?.username);
+                const displayName = parsedUser.title || (log.user_id ? 'Onbekende gebruiker' : 'Systeem');
+                const action = getLogAction(log);
                 const isDanger = action.toLowerCase().includes('verwijderd');
                 const timeStr = formatDateTime(log.happened_at || log.created_at);
-                const aff = getAffectedDisplay(log.affected ?? log.affected_user, log.action);
+                const aff = getAffectedDisplay(log.affected ?? log.affected_user, action, log);
 
                 return `
                     <div class="log-list-item" data-index="${idx}">
@@ -636,11 +870,10 @@ function renderTable() {
 
 function openDetailsModal(log) {
     const user = usersMap.get(log.user_id);
-    const fullName = user?.full_name?.trim();
-    const username = user?.username ? `@${user.username}` : '';
-    const displayName = fullName || username || (log.user_id ? 'Onbekende gebruiker' : 'Systeem');
+    const parsedUser = parseUserDisplay(user?.full_name, user?.username);
+    const displayName = parsedUser.title || (log.user_id ? 'Onbekende gebruiker' : 'Systeem');
     const timeStr = formatDateTime(log.happened_at || log.created_at);
-    const action = log.action || 'Onbekende actie';
+    const action = getLogAction(log);
 
     let detailsHtml = '';
     const oldVal = log.old_value;
@@ -655,11 +888,30 @@ function openDetailsModal(log) {
             isProductivityLog = true;
             prodItems = newVal.items;
             prodBatchDate = newVal.date || '';
-        } else if (Array.isArray(newVal.items) && (String(log.action).toLowerCase().includes('productiviteit') || String(log.affected).toLowerCase() === 'productiviteit')) {
+        } else if (newVal.type === 'update_shift' || newVal.type === 'delete_shift') {
+            isProductivityLog = true;
+            const shiftObj = newVal.shift || (newVal.type === 'delete_shift' ? oldVal : null);
+            const targetUser = (newVal.user_id && usersMap.get(newVal.user_id)) || null;
+            const targetUName = targetUser?.username || newVal.username || '';
+            const targetFName = targetUser?.full_name || newVal.full_name || '';
+            if (shiftObj) {
+                prodItems = [{
+                    username: targetUName,
+                    full_name: targetFName,
+                    productivity: shiftObj.productivity,
+                    prev_productivity: oldVal?.productivity !== undefined ? oldVal.productivity : null,
+                    date: shiftObj.date || oldVal?.date || '',
+                    shift: shiftObj.shift || null,
+                    total_colli: shiftObj.total_colli !== undefined ? shiftObj.total_colli : null,
+                    task_count: Array.isArray(shiftObj.tasks) ? shiftObj.tasks.length : 0
+                }];
+                prodBatchDate = prodItems[0].date;
+            }
+        } else if (Array.isArray(newVal.items) && (String(action).toLowerCase().includes('productiviteit') || String(log.affected).toLowerCase() === 'productiviteit')) {
             isProductivityLog = true;
             prodItems = newVal.items;
             prodBatchDate = newVal.date || '';
-        } else if (newVal.productivity && (String(log.action).toLowerCase().includes('productiviteit') || String(log.affected).toLowerCase() === 'productiviteit')) {
+        } else if (newVal.productivity && (String(action).toLowerCase().includes('productiviteit') || String(log.affected).toLowerCase() === 'productiviteit')) {
             isProductivityLog = true;
             const p = newVal.productivity;
             prodItems = [{
@@ -677,22 +929,33 @@ function openDetailsModal(log) {
     }
 
     if (isProductivityLog && prodItems.length > 0) {
-
-
-        const bannerText = prodBatchDate 
-            ? `${prodItems.length} ${prodItems.length === 1 ? 'medewerker' : 'medewerkers'} gefinaliseerd voor ${formatDutchDate(prodBatchDate)}`
-            : `${prodItems.length} ${prodItems.length === 1 ? 'medewerker' : 'medewerkers'} gefinaliseerd`;
+        let bannerText = '';
+        let diffHtml = '';
+        if (newVal?.type === 'update_shift') {
+            bannerText = `Dienst aangepast voor ${prodBatchDate ? formatDutchDate(prodBatchDate) : 'medewerker'}`;
+            const diffResult = renderShiftDiff(oldVal, newVal.shift);
+            if (diffResult.count > 0) {
+                diffHtml = diffResult.html;
+            }
+        } else if (newVal?.type === 'delete_shift') {
+            bannerText = `Dienst verwijderd voor ${prodBatchDate ? formatDutchDate(prodBatchDate) : 'medewerker'}`;
+        } else {
+            bannerText = prodBatchDate 
+                ? `${prodItems.length} ${prodItems.length === 1 ? 'medewerker' : 'medewerkers'} gefinaliseerd voor ${formatDutchDate(prodBatchDate)}`
+                : `${prodItems.length} ${prodItems.length === 1 ? 'medewerker' : 'medewerkers'} gefinaliseerd`;
+        }
 
         detailsHtml = `
             <div class="log-prod-wrapper">
                 <div class="log-prod-banner">
-                    <span class="material-icons">fact_check</span>
+                    <span class="material-icons">${newVal?.type === 'delete_shift' ? 'delete_outline' : (newVal?.type === 'update_shift' ? 'edit' : 'fact_check')}</span>
                     <span>${escapeHtml(bannerText)}</span>
                 </div>
                 <div class="log-prod-list">
                     ${prodItems.map(item => {
-                        const name = escapeHtml(item.full_name || item.username || 'Medewerker');
-                        const uname = item.username ? `@${escapeHtml(item.username)}` : '';
+                        const parsedItem = parseUserDisplay(item.full_name, item.username);
+                        const name = escapeHtml(parsedItem.title || 'Medewerker');
+                        const uname = parsedItem.sub ? escapeHtml(parsedItem.sub) : '';
                         const pct = Number(item.productivity || 0);
                         const statusClass = getProductivityStatusClass(pct);
                         const dateStr = item.date ? formatDutchDate(item.date) : '';
@@ -740,6 +1003,7 @@ function openDetailsModal(log) {
                         `;
                     }).join('')}
                 </div>
+                ${diffHtml}
             </div>
         `;
     } else {
@@ -921,7 +1185,7 @@ function openDetailsModal(log) {
             </div>
             ${affectedUserHtml}
             <div class="form-group">
-                <label>${isProductivityLog ? 'Gefinaliseerde Productiviteiten' : 'Wijzigingen / Gegevens'}</label>
+                <label>${newVal?.type === 'update_shift' || newVal?.type === 'delete_shift' ? 'Gewijzigde Dienst & Taken' : (isProductivityLog ? 'Gefinaliseerde Productiviteiten' : 'Wijzigingen / Gegevens')}</label>
                 <div class="log-details-list">
                     ${detailsHtml}
                 </div>

@@ -1,7 +1,8 @@
-import { supabase, showToast, escapeHtml } from './main.js';
+import { supabase, showToast, escapeHtml, invokeFn } from './main.js';
 import { formatDuration, timeToMinutes, getProductivityStatusClass, getProductivityStatusIcon } from './vulplanning/time-utils.js';
 import { createCustomSelect } from './select.js';
 import { createDatePicker, MONTH_NAMES, SHORT_MONTH_NAMES, parseDate } from './datepicker.js';
+import { showModal, closeModal, showConfirmModal } from './modal.js';
 
 let cachedProductivityEntries = [];
 let currentChartMode = 'individual';
@@ -17,6 +18,7 @@ let currentUserId = null;
 let currentUserRole = 1;
 let ownUserData = null;
 let selectedFillerUserId = null;
+let selectedFillerUserData = null;
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initProductivityPage);
@@ -256,6 +258,7 @@ async function handleFillerClick(filler) {
 
     if (selectedFillerUserId === filler.user_id || filler.user_id === currentUserId) {
         selectedFillerUserId = null;
+        selectedFillerUserData = null;
         applyUserProductivity(ownUserData, true);
         updateTopFillerCardSelection();
         return;
@@ -272,6 +275,7 @@ async function handleFillerClick(filler) {
         }
 
         selectedFillerUserId = filler.user_id;
+        selectedFillerUserData = data.user;
         applyUserProductivity(data.user, false);
         updateTopFillerCardSelection();
     } catch (err) {
@@ -876,6 +880,8 @@ function renderSummaryStats(entries) {
 function renderProductivityList(entries, container) {
     container.innerHTML = '';
 
+    const canManageShifts = currentUserRole === 3 && (Boolean(selectedFillerUserId) || selectedFillerUserId === null);
+
     if (!entries || entries.length === 0) {
         container.innerHTML = `
             <div style="padding: 40px 20px; text-align: center; color: var(--text-color-muted); background-color: var(--card-background); border: 1px solid var(--card-border); border-radius: 14px; width: 100%;">
@@ -949,7 +955,7 @@ function renderProductivityList(entries, container) {
 
         let tasksHtml = '';
         if (tasks.length > 0) {
-            const taskCards = tasks.map(task => {
+            const taskCards = tasks.map((task, tIndex) => {
                 const title = escapeHtml(task.title || task.pathName || task.name || 'Taak');
                 const type = task.type || 'overige';
                 const colli = Number(task.colli) || 0;
@@ -1001,7 +1007,7 @@ function renderProductivityList(entries, container) {
                 let metaBottom = `${timeHtml}${colliHtml}`;
 
                 return `
-                    <div class="day-task-card">
+                    <div class="day-task-card" data-task-index="${tIndex}">
                         <div class="day-task-top">
                             <div class="day-task-name-group">
                                 <div class="day-task-icon-box">
@@ -1009,7 +1015,9 @@ function renderProductivityList(entries, container) {
                                 </div>
                                 <span class="day-task-name" data-tooltip="${title}">${title}</span>
                             </div>
-                            ${getTypeBadge(type)}
+                            <div class="day-task-top-right">
+                                ${getTypeBadge(type)}
+                            </div>
                         </div>
                         ${metaBottom ? `<div class="day-task-bottom">${metaBottom}</div>` : ''}
                     </div>
@@ -1045,6 +1053,16 @@ function renderProductivityList(entries, container) {
                             <span>${percent}%</span>
                         </span>
                     ` : ''}
+                    ${canManageShifts ? `
+                        <div class="day-card-actions">
+                            <button type="button" class="action-btn edit-shift-btn" title="Dienst aanpassen">
+                                <span class="material-icons">edit</span>
+                            </button>
+                            <button type="button" class="action-btn delete-shift-btn" title="Dienst verwijderen">
+                                <span class="material-icons">delete</span>
+                            </button>
+                        </div>
+                    ` : ''}
                     <span class="material-icons day-card-chevron">expand_more</span>
                 </div>
             </div>
@@ -1059,6 +1077,23 @@ function renderProductivityList(entries, container) {
                 ${tasksHtml}
             </div>
         `;
+
+        if (canManageShifts) {
+            const editBtn = card.querySelector('.edit-shift-btn');
+            if (editBtn) {
+                editBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openEditShiftModal(entry);
+                });
+            }
+            const deleteBtn = card.querySelector('.delete-shift-btn');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    handleDeleteShift(entry);
+                });
+            }
+        }
 
         const headerEl = card.querySelector('.day-card-header');
         if (headerEl) {
@@ -1208,6 +1243,401 @@ function initPaginationControls() {
                 currentShiftPage++;
                 renderPaginatedProductivityList();
                 document.getElementById('myShiftsSection')?.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    }
+}
+
+async function handleDeleteShift(entry) {
+    if (currentUserRole !== 3) return;
+    const targetUserId = selectedFillerUserId || currentUserId;
+
+    const dateLabel = formatDate(entry.date || entry.finalized_at);
+    const confirmed = await showConfirmModal({
+        title: 'Dienst verwijderen',
+        message: `Weet je zeker dat je de dienst van ${escapeHtml(dateLabel)} wilt verwijderen? Dit kan niet ongedaan worden gemaakt.`,
+        confirmText: 'Verwijderen',
+        cancelText: 'Annuleren',
+        isDanger: true
+    });
+
+    if (!confirmed) return;
+
+    try {
+        const data = await invokeFn('manage-productivity', {
+            body: {
+                action: 'delete_shift',
+                target_user_id: targetUserId,
+                shift_date: entry.date,
+                original_finalized_at: entry.finalized_at
+            }
+        });
+
+        showToast('notification', 'Dienst succesvol verwijderd');
+
+        if (data?.user) {
+            selectedFillerUserData = data.user;
+            applyUserProductivity(data.user, false);
+        }
+
+        await loadTopFillers(currentUserId, selectedScoreboardDate);
+    } catch (err) {
+        showToast('error', err.message || 'Kon dienst niet verwijderen');
+    }
+}
+
+async function openEditShiftModal(entry) {
+    if (currentUserRole !== 3) return;
+    const targetUserId = selectedFillerUserId || currentUserId;
+
+    const shift = entry.shift || {};
+    const startTime = shift.start || '';
+    const endTime = shift.actual_end || shift.planned_end || '';
+    const pauseMinutes = Number(shift.pause_minutes) || 0;
+    const totalColli = Number(entry.total_colli) || 0;
+    const percent = entry.productivity !== undefined ? Math.round(Number(entry.productivity)) : 100;
+    const targetName = selectedFillerUserData?.full_name || selectedFillerUserData?.username || 'Medewerker';
+
+    const modalTasks = Array.isArray(entry.tasks) ? JSON.parse(JSON.stringify(entry.tasks)) : [];
+
+    const overlay = await showModal(`
+        <div class="modal-header">
+            <h2 class="modal-title">Dienst bewerken</h2>
+            <p class="modal-subtitle">Dienst van ${escapeHtml(targetName)} aanpassen</p>
+        </div>
+        <form class="modal-form" id="editShiftForm">
+            <div class="modal-form-row">
+                <div class="form-group">
+                    <label>Datum</label>
+                    <div id="editShiftDatePickerContainer"></div>
+                </div>
+                <div class="form-group">
+                    <label for="editShiftProd">Productiviteit (%)</label>
+                    <input type="number" id="editShiftProd" class="modal-input" value="${percent}" min="0" max="500" required>
+                </div>
+            </div>
+            <div class="modal-form-row">
+                <div class="form-group">
+                    <label for="editShiftStart">Starttijd</label>
+                    <input type="time" id="editShiftStart" class="modal-input" value="${escapeHtml(startTime)}">
+                </div>
+                <div class="form-group">
+                    <label for="editShiftEnd">Eindtijd</label>
+                    <input type="time" id="editShiftEnd" class="modal-input" value="${escapeHtml(endTime)}">
+                </div>
+            </div>
+            <div class="modal-form-row">
+                <div class="form-group">
+                    <label for="editShiftPause">Pauze (minuten)</label>
+                    <input type="number" id="editShiftPause" class="modal-input" value="${pauseMinutes}" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="editShiftColli">Totaal colli</label>
+                    <input type="number" id="editShiftColli" class="modal-input" value="${totalColli}" min="0">
+                </div>
+            </div>
+
+            <div class="modal-tasks-section">
+                <div class="modal-tasks-header">
+                    <label>Uitgevoerde paden & taken (<span id="modalTasksCount">${modalTasks.length}</span>)</label>
+                    <button type="button" class="btn btn-secondary" id="modalAddTaskBtn" style="padding: 4px 10px; font-size: 12px;">
+                        <span class="material-icons" style="font-size: 16px;">add</span>
+                        <span>Taak toevoegen</span>
+                    </button>
+                </div>
+                <div class="modal-tasks-list" id="modalTasksList"></div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="modal-btn-danger" id="deleteShiftModalBtn">
+                    <span class="material-icons">delete</span>
+                    <span>Verwijderen</span>
+                </button>
+                <button type="button" class="modal-btn-secondary" id="cancelEditShiftBtn">Annuleren</button>
+                <button type="submit" class="btn" id="saveEditShiftBtn">Opslaan</button>
+            </div>
+        </form>
+    `, 'modal-wide');
+
+    const dateContainer = overlay.querySelector('#editShiftDatePickerContainer');
+    let shiftDatePicker = null;
+    if (dateContainer) {
+        shiftDatePicker = createDatePicker(dateContainer, entry.date || '');
+    }
+
+    const tasksListEl = overlay.querySelector('#modalTasksList');
+    const tasksCountEl = overlay.querySelector('#modalTasksCount');
+    const addTaskBtn = overlay.querySelector('#modalAddTaskBtn');
+    const totalColliInput = overlay.querySelector('#editShiftColli');
+
+    function syncInputsToModalTasks() {
+        if (!tasksListEl) return;
+        const items = tasksListEl.querySelectorAll('.modal-task-item');
+        items.forEach((itemEl, idx) => {
+            if (!modalTasks[idx]) return;
+            const titleInput = itemEl.querySelector('.task-title-input');
+            const typeSelect = itemEl.querySelector('.task-type-select-native');
+            const startInput = itemEl.querySelector('.task-start-input');
+            const endInput = itemEl.querySelector('.task-end-input');
+            const colliInput = itemEl.querySelector('.task-colli-input');
+            const durInput = itemEl.querySelector('.task-dur-input');
+
+            const isPauze = (modalTasks[idx].type === 'pauze');
+            if (titleInput) modalTasks[idx].title = isPauze ? 'Pauze' : titleInput.value.trim();
+            if (typeSelect) modalTasks[idx].type = typeSelect.value;
+            if (startInput) modalTasks[idx].start_time = startInput.value;
+            if (endInput) modalTasks[idx].end_time = endInput.value;
+            if (colliInput) {
+                const isVullen = (modalTasks[idx].type === 'vullen');
+                modalTasks[idx].colli = isVullen ? (Number(colliInput.value) || 0) : 0;
+            }
+            if (durInput) modalTasks[idx].duration_minutes = Number(durInput.value) || 0;
+        });
+    }
+
+    function updateTotalColliFromTasks() {
+        if (!totalColliInput) return;
+        const sum = modalTasks.reduce((acc, t) => acc + (t.type === 'vullen' ? (Number(t.colli) || 0) : 0), 0);
+        if (sum > 0) {
+            totalColliInput.value = sum;
+        }
+    }
+
+    function renderModalTasks() {
+        if (!tasksListEl) return;
+        if (tasksCountEl) tasksCountEl.textContent = modalTasks.length;
+
+        if (modalTasks.length === 0) {
+            tasksListEl.innerHTML = `
+                <div class="modal-tasks-empty">
+                    <span class="material-icons" style="font-size: 20px; display: block; margin-bottom: 4px;">info</span>
+                    Geen paden of taken geregistreerd
+                </div>
+            `;
+            return;
+        }
+
+        tasksListEl.innerHTML = modalTasks.map((t, idx) => {
+            const type = t.type || 'overige';
+            const isPauze = (type === 'pauze');
+            const title = escapeHtml(isPauze ? 'Pauze' : (t.title || t.pathName || t.name || ''));
+            const sTime = escapeHtml(t.start_time || t.start || '');
+            const eTime = escapeHtml(t.end_time || t.end || '');
+            const isVullen = (type === 'vullen');
+            const colli = isVullen ? (Number(t.colli) || 0) : 0;
+            const dur = Number(t.duration_minutes) || Number(t.duration) || 0;
+
+            return `
+                <div class="modal-task-item" data-idx="${idx}">
+                    <div class="modal-task-item-top">
+                        <input type="text" class="modal-input task-title-input" placeholder="Pad / taaknaam" value="${title}"${isPauze ? ' value="Pauze" disabled title="Pauze taak heet altijd Pauze"' : ''}>
+                        <select class="modal-input task-type-select task-type-select-native" data-idx="${idx}">
+                            <option value="vullen"${type === 'vullen' ? ' selected' : ''}>Vullen</option>
+                            <option value="spiegelen"${type === 'spiegelen' ? ' selected' : ''}>Spiegelen</option>
+                            <option value="restanten"${type === 'restanten' ? ' selected' : ''}>Restanten</option>
+                            <option value="pauze"${type === 'pauze' ? ' selected' : ''}>Pauze</option>
+                            <option value="overige"${type === 'overige' ? ' selected' : ''}>Overige</option>
+                        </select>
+                        <button type="button" class="action-btn delete-task-row-btn" data-idx="${idx}" title="Taak verwijderen">
+                            <span class="material-icons">delete</span>
+                        </button>
+                    </div>
+                    <div class="modal-task-item-bottom">
+                        <input type="time" class="modal-input task-start-input" placeholder="Start" value="${sTime}" title="Starttijd">
+                        <input type="time" class="modal-input task-end-input" placeholder="Eind" value="${eTime}" title="Eindtijd">
+                        <input type="number" class="modal-input task-colli-input" placeholder="Colli" value="${isVullen ? colli : ''}" min="0" title="${isVullen ? 'Colli' : 'Alleen van toepassing bij vullen'}"${!isVullen ? ' disabled' : ''}>
+                        <input type="number" class="modal-input task-dur-input" placeholder="Duur (m)" value="${dur}" min="0" title="Duur in minuten">
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        tasksListEl.querySelectorAll('.task-type-select-native').forEach(select => {
+            select.addEventListener('change', (e) => {
+                const idx = parseInt(e.target.dataset.idx, 10);
+                const itemEl = e.target.closest('.modal-task-item');
+                const titleInput = itemEl?.querySelector('.task-title-input');
+                const colliInput = itemEl?.querySelector('.task-colli-input');
+                const isVullen = (e.target.value === 'vullen');
+                const isPauze = (e.target.value === 'pauze');
+
+                if (titleInput) {
+                    if (isPauze) {
+                        titleInput.value = 'Pauze';
+                        titleInput.disabled = true;
+                        titleInput.title = 'Pauze taak heet altijd Pauze';
+                    } else {
+                        if (titleInput.value === 'Pauze') {
+                            titleInput.value = '';
+                        }
+                        titleInput.disabled = false;
+                        titleInput.title = '';
+                    }
+                }
+
+                if (colliInput) {
+                    colliInput.disabled = !isVullen;
+                    colliInput.title = isVullen ? 'Colli' : 'Alleen van toepassing bij vullen';
+                    if (!isVullen) {
+                        colliInput.value = '';
+                    }
+                }
+
+                if (modalTasks[idx]) {
+                    modalTasks[idx].type = e.target.value;
+                    if (isPauze) {
+                        modalTasks[idx].title = 'Pauze';
+                    }
+                    if (!isVullen) {
+                        modalTasks[idx].colli = 0;
+                    }
+                }
+                syncInputsToModalTasks();
+                updateTotalColliFromTasks();
+            });
+        });
+
+        tasksListEl.querySelectorAll('.delete-task-row-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                syncInputsToModalTasks();
+                const idx = parseInt(btn.dataset.idx, 10);
+                modalTasks.splice(idx, 1);
+                renderModalTasks();
+                updateTotalColliFromTasks();
+            });
+        });
+
+        tasksListEl.querySelectorAll('.task-colli-input').forEach(input => {
+            input.addEventListener('input', () => {
+                syncInputsToModalTasks();
+                updateTotalColliFromTasks();
+            });
+        });
+
+        tasksListEl.querySelectorAll('.task-start-input, .task-end-input').forEach(input => {
+            input.addEventListener('change', (e) => {
+                const itemEl = e.target.closest('.modal-task-item');
+                if (!itemEl) return;
+                const sInput = itemEl.querySelector('.task-start-input');
+                const eInput = itemEl.querySelector('.task-end-input');
+                const dInput = itemEl.querySelector('.task-dur-input');
+                if (sInput?.value && eInput?.value && dInput) {
+                    const sm = timeToMinutes(sInput.value);
+                    let em = timeToMinutes(eInput.value);
+                    if (em < sm) em += 24 * 60;
+                    dInput.value = Math.max(0, em - sm);
+                }
+                syncInputsToModalTasks();
+            });
+        });
+    }
+
+    renderModalTasks();
+
+    if (addTaskBtn) {
+        addTaskBtn.addEventListener('click', () => {
+            syncInputsToModalTasks();
+            modalTasks.push({
+                title: 'Nieuw pad / taak',
+                type: 'vullen',
+                start_time: '',
+                end_time: '',
+                colli: 0,
+                duration_minutes: 0
+            });
+            renderModalTasks();
+            updateTotalColliFromTasks();
+        });
+    }
+
+    const cancelBtn = overlay.querySelector('#cancelEditShiftBtn');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => closeModal(overlay));
+    }
+
+    const deleteModalBtn = overlay.querySelector('#deleteShiftModalBtn');
+    if (deleteModalBtn) {
+        deleteModalBtn.addEventListener('click', async () => {
+            closeModal(overlay);
+            await handleDeleteShift(entry);
+        });
+    }
+
+    const form = overlay.querySelector('#editShiftForm');
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            syncInputsToModalTasks();
+
+            const saveBtn = overlay.querySelector('#saveEditShiftBtn');
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Opslaan...';
+            }
+
+            const chosenDate = shiftDatePicker ? shiftDatePicker.getValue() : (entry.date || '');
+            const newProd = Number(overlay.querySelector('#editShiftProd')?.value) || 0;
+            const newStart = overlay.querySelector('#editShiftStart')?.value || '';
+            const newEnd = overlay.querySelector('#editShiftEnd')?.value || '';
+            const newPause = Number(overlay.querySelector('#editShiftPause')?.value) || 0;
+            const newColli = Number(overlay.querySelector('#editShiftColli')?.value) || 0;
+
+            let newWorkMinutes = Number(entry.total_work_minutes) || 0;
+            if (newStart && newEnd) {
+                const sM = timeToMinutes(newStart);
+                let eM = timeToMinutes(newEnd);
+                if (eM < sM) eM += 24 * 60;
+                newWorkMinutes = Math.max(0, eM - sM - newPause);
+            }
+
+            const cleanTasks = modalTasks.map(t => ({
+                title: t.type === 'pauze' ? 'Pauze' : (t.title || t.pathName || t.name || 'Taak'),
+                type: t.type || 'overige',
+                start_time: t.start_time || t.start || '',
+                end_time: t.end_time || t.end || '',
+                colli: t.type === 'vullen' ? (Number(t.colli) || 0) : 0,
+                duration_minutes: Number(t.duration_minutes) || Number(t.duration) || 0
+            }));
+
+            try {
+                const data = await invokeFn('manage-productivity', {
+                    body: {
+                        action: 'update_shift',
+                        target_user_id: targetUserId,
+                        original_date: entry.date,
+                        original_finalized_at: entry.finalized_at,
+                        shift_data: {
+                            date: chosenDate || entry.date,
+                            productivity: newProd,
+                            total_colli: newColli,
+                            total_work_minutes: newWorkMinutes,
+                            shift: {
+                                ...(entry.shift || {}),
+                                start: newStart,
+                                planned_end: newEnd,
+                                actual_end: newEnd,
+                                pause_minutes: newPause
+                            },
+                            tasks: cleanTasks
+                        }
+                    }
+                });
+
+                closeModal(overlay);
+                showToast('notification', 'Dienst en taken succesvol bijgewerkt');
+
+                if (data?.user) {
+                    selectedFillerUserData = data.user;
+                    applyUserProductivity(data.user, false);
+                }
+
+                await loadTopFillers(currentUserId, selectedScoreboardDate);
+            } catch (err) { 
+                showToast('error', err.message || 'Kon dienst niet opslaan');
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Opslaan';
+                }
             }
         });
     }

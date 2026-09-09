@@ -474,6 +474,56 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
-export { supabase, initModal, showModal, closeModal, showConfirmModal, showPromptModal, initToast, showToast, openChangePasswordModal, isPermissionError, escapeHtml, initGlobalTooltips };
+function parseUserDisplay(nameStr, unameStr = '') {
+    let title = String(nameStr || '').trim();
+    let sub = String(unameStr || '').trim();
+
+    if (sub && !sub.startsWith('@')) {
+        sub = `@${sub}`;
+    }
+
+    const match = title.match(/^(.*?)\s*\(?@([a-zA-Z0-9._-]+)\)?$/);
+    if (match) {
+        title = match[1].trim();
+        if (!sub) {
+            sub = `@${match[2].trim()}`;
+        }
+    }
+
+    if (!title && sub) {
+        title = sub;
+        sub = '';
+    }
+
+    return { title, sub };
+}
+async function invokeFn(fnName, options) {
+    const { data, error } = await supabase.functions.invoke(fnName, options);
+    if (error) {
+        let msg = '';
+        if (error.context && typeof error.context.json === 'function') {
+            try {
+                const body = await error.context.json();
+                msg = body?.error || '';
+            } catch (_) {}
+        }
+        if (!msg && data && typeof data === 'object' && data.error) {
+            msg = data.error;
+        }
+        if (!msg) {
+            msg = error.message || '';
+        }
+        if (!msg || msg.includes('non-2xx')) {
+            msg = 'Er is een fout opgetreden';
+        }
+        throw new Error(msg);
+    }
+    if (data && typeof data === 'object' && data.error) {
+        throw new Error(data.error);
+    }
+    return data;
+}
+
+export { supabase, initModal, showModal, closeModal, showConfirmModal, showPromptModal, initToast, showToast, openChangePasswordModal, isPermissionError, escapeHtml, initGlobalTooltips, parseUserDisplay, invokeFn };
 
 

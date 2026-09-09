@@ -1,4 +1,4 @@
-import { supabase, showModal, closeModal, showConfirmModal, showPromptModal, showToast } from './main.js';
+import { supabase, showModal, closeModal, showConfirmModal, showPromptModal, showToast, parseUserDisplay } from './main.js';
 import { createDatePicker } from './datepicker.js';
 import { createCustomSelect } from './select.js';
 
@@ -581,8 +581,9 @@ function renderTable() {
         }
     } else {
         tbody.innerHTML = currentUsers.map(user => {
-            const displayName = escapeHtml(user.full_name?.trim() || user.username?.trim() || 'Gebruiker');
-            const username = escapeHtml(user.username ? `@${user.username}` : '-');
+            const parsed = parseUserDisplay(user.full_name, user.username);
+            const displayName = escapeHtml(parsed.title || 'Gebruiker');
+            const username = escapeHtml(parsed.sub || '-');
             const role = escapeHtml(getRoleLabel(user.role));
             const departmentsHtml = renderDepartmentBadges(user.departments, 2, '-');
             const birthday = escapeHtml(formatDutchDate(user.birthday));
@@ -617,8 +618,9 @@ function renderTable() {
 
         if (cardsContainer) {
             cardsContainer.innerHTML = currentUsers.map(user => {
-                const displayName = escapeHtml(user.full_name?.trim() || user.username?.trim() || 'Gebruiker');
-                const username = escapeHtml(user.username ? `@${user.username}` : '');
+                const parsed = parseUserDisplay(user.full_name, user.username);
+                const displayName = escapeHtml(parsed.title || 'Gebruiker');
+                const username = escapeHtml(parsed.sub || '');
                 const role = escapeHtml(getRoleLabel(user.role));
                 const departmentsHtml = renderDepartmentBadges(user.departments, 3, '');
                 const birthday = escapeHtml(formatDutchDate(user.birthday));

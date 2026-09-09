@@ -1,4 +1,4 @@
-import { supabase, showToast, showModal, closeModal } from '../main.js';
+import { supabase, showToast, showModal, closeModal, parseUserDisplay } from '../main.js';
 import { openImportModal, stripDiacritics } from './import-rooster.js';
 import { formatTimeInput, normalizeTimeOnBlur } from './time-utils.js';
 import { keepInViewport, resetDropdownPosition, bindViewportCheck } from '../dropdown-utils.js';
@@ -210,12 +210,13 @@ function setupAutocomplete(nameInput, dropdown, userBadge) {
         }
 
         dropdown.innerHTML = matches.map((u, idx) => {
-            const displayName = u.full_name?.trim() || u.username?.trim() || '';
-            const sub = u.username ? `@${u.username}` : '';
+            const parsed = parseUserDisplay(u.full_name, u.username);
+            const displayName = parsed.title;
+            const sub = parsed.sub;
             return `
                 <div class="autocomplete-item ${idx === 0 ? 'selected' : ''}" data-name="${displayName}" data-user="${u.username || ''}" data-id="${u.user_id || ''}">
                     <span class="autocomplete-item-name">${displayName}</span>
-                    <span class="autocomplete-item-user">${sub}</span>
+                    ${sub ? `<span class="autocomplete-item-user">${sub}</span>` : ''}
                 </div>
             `;
         }).join('');
