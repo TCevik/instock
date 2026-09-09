@@ -476,6 +476,7 @@ function updateSortIcons() {
 
 function getDbSortColumn(sortKey) {
     if (sortKey === 'name') return 'full_name';
+    if (sortKey === 'productivity') return 'average_productivity';
     return sortKey;
 }
 
@@ -485,7 +486,7 @@ async function loadUsers() {
 
     let query = supabase
         .from('user_data')
-        .select('user_id, full_name, username, role, departments, birthday, productivity, last_sign_in_at', { count: 'exact' });
+        .select('user_id, full_name, username, role, departments, birthday, productivity, average_productivity, last_sign_in_at', { count: 'exact' });
 
     if (currentRoleFilter && currentRoleFilter !== 'all') {
         query = query.eq('role', Number(currentRoleFilter));
@@ -504,13 +505,6 @@ async function loadUsers() {
     const { data: users, count, error } = await query;
 
     if (!error && users) {
-        if (currentSortKey === 'productivity') {
-            users.sort((a, b) => {
-                const valA = getUserAverageProductivity(a) ?? -1;
-                const valB = getUserAverageProductivity(b) ?? -1;
-                return currentSortDirection === 'asc' ? valA - valB : valB - valA;
-            });
-        }
         currentUsers = users;
         totalUsers = count ?? 0;
     } else {
@@ -523,7 +517,9 @@ async function loadUsers() {
 }
 
 function getUserAverageProductivity(user) {
-    if (!user || user.productivity === null || user.productivity === undefined) return null;
+    if (!user) return null;
+    if (user.average_productivity !== null && user.average_productivity !== undefined) return Math.round(user.average_productivity);
+    if (user.productivity === null || user.productivity === undefined) return null;
     if (typeof user.productivity === 'number') return Math.round(user.productivity);
 
     let entries = [];
