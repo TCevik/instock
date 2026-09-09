@@ -391,14 +391,18 @@ function handleChartResize() {
     }, 100);
 }
 
+function isIndividualModeAllowed(timeframe) {
+    return timeframe === '1w' || timeframe === '2w' || timeframe === '1m';
+}
+
 function updateChartModeControls() {
     const btnIndividual = document.getElementById('chartModeIndividual');
     const btnAverage = document.getElementById('chartModeAverage');
-    const isAllowed = currentTimeframe === '1w' || currentTimeframe === '2w';
+    const isAllowed = isIndividualModeAllowed(currentTimeframe);
 
     if (btnIndividual) {
         btnIndividual.disabled = !isAllowed;
-        btnIndividual.title = isAllowed ? '' : 'Alleen beschikbaar bij 1 of 2 weken';
+        btnIndividual.title = isAllowed ? '' : 'Alleen beschikbaar bij 1 week, 2 weken of 1 maand';
         if (!isAllowed && currentChartMode === 'individual') {
             currentChartMode = 'average';
             if (btnAverage) btnAverage.classList.add('active');
@@ -418,7 +422,7 @@ function initChartControls() {
     if (btnIndividual && btnAverage && !btnIndividual.dataset.bound) {
         btnIndividual.dataset.bound = 'true';
         btnIndividual.addEventListener('click', () => {
-            if (currentTimeframe !== '1w' && currentTimeframe !== '2w') return;
+            if (!isIndividualModeAllowed(currentTimeframe)) return;
             if (currentChartMode === 'individual') return;
             currentChartMode = 'individual';
             btnIndividual.classList.add('active');
@@ -643,6 +647,7 @@ function renderProductivityChart(entries) {
                 const percent = currentChartMode === 'average' ? e.avgPercent : e.rawPercent;
                 return {
                     ...e,
+                    windowSize: currentChartMode === 'individual' ? 1 : e.windowSize,
                     percent,
                     statusClass: getProductivityStatusClass(percent)
                 };
