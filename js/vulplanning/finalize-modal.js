@@ -245,8 +245,8 @@ export async function openFinalizeModal() {
         }).join('');
     }
 
-    const overlay = await showModal(modalContent);
-    if (overlay) {
+    const overlay = await showModal(modalContent, 'finalize-modal-overlay');
+    if (overlay && !overlay.classList.contains('finalize-modal-overlay')) {
         overlay.classList.add('finalize-modal-overlay');
     }
 

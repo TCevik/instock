@@ -14,12 +14,12 @@ export async function initModal() {
     ensureStyles();
 }
 
-export async function showModal(contentHtml) {
+export async function showModal(contentHtml, extraClass = '') {
     ensureStyles();
 
     const zIndex = BASE_Z_INDEX + modalStack.length * 10;
     const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
+    overlay.className = `modal-overlay ${extraClass || ''}`.trim();
     overlay.style.zIndex = String(zIndex);
     overlay.setAttribute('aria-hidden', 'true');
 
@@ -35,6 +35,12 @@ export async function showModal(contentHtml) {
     document.body.appendChild(overlay);
     modalStack.push(overlay);
     document.body.style.overflow = 'hidden';
+
+    const container = overlay.querySelector('.modal-container');
+    if (container) {
+        void container.offsetHeight;
+    }
+    void overlay.offsetHeight;
 
     requestAnimationFrame(() => {
         overlay.classList.add('active');
