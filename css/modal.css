@@ -446,14 +446,19 @@
     transition: background-color 0.2s, color 0.2s;
 }
 
-.dp-cell:hover:not(:disabled) {
+.dp-cell:hover:not(:disabled):not(.active) {
     background-color: var(--card-border);
 }
 
-.dp-cell.active {
+.dp-cell.active,
+.dp-cell.active:hover {
     background-color: var(--accent-color);
     color: var(--text-color);
     font-weight: 600;
+}
+
+.dp-cell.today:not(.active) {
+    border: 1px solid var(--accent-color);
 }
 
 .dp-other-month {
@@ -465,7 +470,7 @@
 .dp-footer {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
     padding-top: 4px;
     border-top: 1px solid var(--card-border);
 }
@@ -484,6 +489,14 @@
 
 .dp-action-btn:hover {
     color: var(--text-color);
+}
+
+.dp-confirm-btn {
+    color: var(--accent-color);
+}
+
+.dp-confirm-btn:hover {
+    color: var(--accent-hover);
 }
 
 .modal-footer {

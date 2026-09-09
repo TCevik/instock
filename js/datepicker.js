@@ -1,5 +1,12 @@
 import { keepInViewport, resetDropdownPosition, bindViewportCheck } from './dropdown-utils.js';
 
+if (!document.querySelector('link[href*="modal.css"]')) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'css/modal.css';
+    document.head.appendChild(link);
+}
+
 export const MONTH_NAMES = [
     'Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni',
     'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'
@@ -32,7 +39,8 @@ export function parseDate(str) {
 
 export function createDatePicker(containerElement, initialDateStr = '', onSelect = null) {
     let selectedDate = parseDate(initialDateStr);
-    let viewDate = selectedDate ? new Date(selectedDate) : new Date(2000, 0, 1);
+    let tempDate = selectedDate ? new Date(selectedDate) : null;
+    let viewDate = selectedDate ? new Date(selectedDate) : new Date();
     let viewMode = 'days';
 
     function formatDate(d) {
@@ -72,6 +80,7 @@ export function createDatePicker(containerElement, initialDateStr = '', onSelect
 
     function applyDate(newDate, updateInput = true) {
         selectedDate = newDate;
+        tempDate = newDate ? new Date(newDate) : null;
         hiddenVal.value = formatDate(selectedDate);
         if (updateInput) {
             input.value = selectedDate ? formatDisplayDate(selectedDate) : '';
@@ -99,16 +108,42 @@ export function createDatePicker(containerElement, initialDateStr = '', onSelect
             const parsed = parseDate(formatted);
             if (parsed) {
                 selectedDate = parsed;
+                tempDate = new Date(parsed);
                 viewDate = new Date(parsed);
                 hiddenVal.value = formatDate(parsed);
                 if (onSelect) onSelect(hiddenVal.value);
             }
         } else if (formatted.length === 0) {
             selectedDate = null;
+            tempDate = null;
             hiddenVal.value = '';
             if (onSelect) onSelect('');
         }
     });
+
+    function getFooterHtml() {
+        return `
+            <div class="dp-footer">
+                <button type="button" class="dp-action-btn dp-clear-btn">Wissen</button>
+                <button type="button" class="dp-action-btn dp-confirm-btn">Bevestigen</button>
+            </div>
+        `;
+    }
+
+    function bindFooterEvents() {
+        dropdown.querySelector('.dp-clear-btn')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            tempDate = null;
+            applyDate(null, true);
+            closeDropdown();
+        });
+
+        dropdown.querySelector('.dp-confirm-btn')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            applyDate(tempDate, true);
+            closeDropdown();
+        });
+    }
 
     function renderDays() {
         const year = viewDate.getFullYear();
@@ -126,13 +161,17 @@ export function createDatePicker(containerElement, initialDateStr = '', onSelect
             daysHtml += `<button type="button" class="dp-cell dp-other-month" disabled>${prevMonthDays - i}</button>`;
         }
 
+        const today = new Date();
         for (let day = 1; day <= daysInMonth; day++) {
-            const isSelected = selectedDate &&
-                selectedDate.getFullYear() === year &&
-                selectedDate.getMonth() === month &&
-                selectedDate.getDate() === day;
+            const isSelected = tempDate &&
+                tempDate.getFullYear() === year &&
+                tempDate.getMonth() === month &&
+                tempDate.getDate() === day;
+            const isToday = today.getFullYear() === year &&
+                today.getMonth() === month &&
+                today.getDate() === day;
 
-            daysHtml += `<button type="button" class="dp-cell dp-day${isSelected ? ' active' : ''}" data-day="${day}">${day}</button>`;
+            daysHtml += `<button type="button" class="dp-cell dp-day${isSelected ? ' active' : ''}${isToday ? ' today' : ''}" data-day="${day}">${day}</button>`;
         }
 
         dropdown.innerHTML = `
@@ -145,9 +184,7 @@ export function createDatePicker(containerElement, initialDateStr = '', onSelect
                 <span>Ma</span><span>Di</span><span>Wo</span><span>Do</span><span>Vr</span><span>Za</span><span>Zo</span>
             </div>
             <div class="dp-grid dp-days-grid">${daysHtml}</div>
-            <div class="dp-footer">
-                <button type="button" class="dp-action-btn dp-clear-btn">Wissen</button>
-            </div>
+            ${getFooterHtml()}
         `;
 
         dropdown.querySelector('.dp-prev-month').addEventListener('click', (e) => {
@@ -172,16 +209,12 @@ export function createDatePicker(containerElement, initialDateStr = '', onSelect
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const day = parseInt(btn.getAttribute('data-day'), 10);
-                applyDate(new Date(year, month, day), true);
-                closeDropdown();
+                tempDate = new Date(year, month, day);
+                renderCalendar();
             });
         });
 
-        dropdown.querySelector('.dp-clear-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            applyDate(null, true);
-            closeDropdown();
-        });
+        bindFooterEvents();
     }
 
     function renderYears() {
@@ -191,7 +224,7 @@ export function createDatePicker(containerElement, initialDateStr = '', onSelect
 
         let yearsHtml = '';
         for (let y = startYear; y <= endYear; y++) {
-            const isSelected = selectedDate && selectedDate.getFullYear() === y;
+            const isSelected = tempDate && tempDate.getFullYear() === y;
             yearsHtml += `<button type="button" class="dp-cell dp-year${isSelected ? ' active' : ''}" data-year="${y}">${y}</button>`;
         }
 
@@ -202,9 +235,7 @@ export function createDatePicker(containerElement, initialDateStr = '', onSelect
                 <button type="button" class="dp-nav-btn dp-next-decade"><span class="material-icons">chevron_right</span></button>
             </div>
             <div class="dp-grid dp-years-grid">${yearsHtml}</div>
-            <div class="dp-footer">
-                <button type="button" class="dp-action-btn dp-clear-btn">Wissen</button>
-            </div>
+            ${getFooterHtml()}
         `;
 
         dropdown.querySelector('.dp-prev-decade').addEventListener('click', (e) => {
@@ -235,18 +266,14 @@ export function createDatePicker(containerElement, initialDateStr = '', onSelect
             });
         });
 
-        dropdown.querySelector('.dp-clear-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            applyDate(null, true);
-            closeDropdown();
-        });
+        bindFooterEvents();
     }
 
     function renderMonths() {
         const year = viewDate.getFullYear();
         let monthsHtml = '';
         MONTH_NAMES.forEach((name, index) => {
-            const isSelected = selectedDate && selectedDate.getFullYear() === year && selectedDate.getMonth() === index;
+            const isSelected = tempDate && tempDate.getFullYear() === year && tempDate.getMonth() === index;
             monthsHtml += `<button type="button" class="dp-cell dp-month${isSelected ? ' active' : ''}" data-month="${index}">${name.substring(0, 3)}</button>`;
         });
 
@@ -257,9 +284,7 @@ export function createDatePicker(containerElement, initialDateStr = '', onSelect
                 <button type="button" class="dp-nav-btn dp-next-year"><span class="material-icons">chevron_right</span></button>
             </div>
             <div class="dp-grid dp-months-grid">${monthsHtml}</div>
-            <div class="dp-footer">
-                <button type="button" class="dp-action-btn dp-clear-btn">Wissen</button>
-            </div>
+            ${getFooterHtml()}
         `;
 
         dropdown.querySelector('.dp-prev-year').addEventListener('click', (e) => {
@@ -290,11 +315,7 @@ export function createDatePicker(containerElement, initialDateStr = '', onSelect
             });
         });
 
-        dropdown.querySelector('.dp-clear-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            applyDate(null, true);
-            closeDropdown();
-        });
+        bindFooterEvents();
     }
 
     bindViewportCheck(dropdown, root);
@@ -314,7 +335,8 @@ export function createDatePicker(containerElement, initialDateStr = '', onSelect
 
     function openDropdown() {
         viewMode = 'days';
-        viewDate = selectedDate ? new Date(selectedDate) : new Date(2000, 0, 1);
+        tempDate = selectedDate ? new Date(selectedDate) : null;
+        viewDate = selectedDate ? new Date(selectedDate) : new Date();
         renderCalendar();
         dropdown.classList.add('active');
         keepInViewport(dropdown, root);
