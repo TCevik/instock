@@ -4,13 +4,15 @@ import { createCustomSelect } from './select.js';
 import { createDatePicker, MONTH_NAMES, SHORT_MONTH_NAMES, parseDate } from './datepicker.js';
 
 let cachedProductivityEntries = [];
-let currentChartMode = 'average';
-let currentTimeframe = 'all';
+let currentChartMode = 'individual';
+let currentTimeframe = '1m';
 let currentShiftPage = 1;
 const SHIFTS_PER_PAGE = 50;
 let paginationControlsInitialized = false;
 let selectedDateFilter = '';
 let shiftsDatePicker = null;
+let selectedScoreboardDate = '';
+let topFillersDatePicker = null;
 let currentUserId = null;
 let currentUserRole = 1;
 let ownUserData = null;
@@ -76,18 +78,56 @@ async function initProductivityPage() {
     }
 }
 
-async function loadTopFillers(userId) {
+async function loadTopFillers(userId, date = selectedScoreboardDate) {
     const overviewRow = document.getElementById('productivityOverviewRow');
     const sectionEl = document.getElementById('topFillersSection');
     const listEl = document.getElementById('topFillersList');
     const userRankEl = document.getElementById('topFillerUserRank');
     const myShiftsSection = document.getElementById('myShiftsSection');
     const sectionDivider = document.getElementById('productivitySectionDivider');
+    const filterWrapper = document.getElementById('topFillersDateFilterWrapper');
+    const headingEl = document.getElementById('topFillersHeading');
+    const subtextEl = document.getElementById('topFillersSubtext');
     if (!sectionEl || !listEl) return;
 
+    if (date && listEl) {
+        listEl.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="skeleton" style="height: 52px; border-radius: 12px;"></div>
+                <div class="skeleton" style="height: 52px; border-radius: 12px;"></div>
+                <div class="skeleton" style="height: 52px; border-radius: 12px;"></div>
+            </div>
+        `;
+    }
+
     try {
-        const { data, error } = await supabase.functions.invoke('get-top-fillers');
-        if (error || !data || !Array.isArray(data.topFillers) || data.topFillers.length === 0) {
+        const { data, error } = await supabase.functions.invoke('get-top-fillers', {
+            body: date ? { date } : {}
+        });
+
+        const isManager = Boolean(data?.isManager) || currentUserRole === 2 || currentUserRole === 3;
+        currentUserRole = isManager ? (currentUserRole > 1 ? currentUserRole : 2) : 1;
+
+        if (filterWrapper) {
+            filterWrapper.style.display = isManager ? 'flex' : 'none';
+            if (isManager && !topFillersDatePicker) {
+                initTopFillersDatePicker();
+            }
+        }
+
+        if (error || !data || !Array.isArray(data.topFillers)) {
+            if (!date) {
+                sectionEl.style.display = 'none';
+                if (userRankEl) userRankEl.style.display = 'none';
+                if (sectionDivider) sectionDivider.style.display = 'none';
+                if (overviewRow) overviewRow.classList.add('no-top-fillers');
+                return;
+            }
+        }
+
+        const topFillers = data?.topFillers || [];
+
+        if (topFillers.length === 0 && !date) {
             sectionEl.style.display = 'none';
             if (userRankEl) userRankEl.style.display = 'none';
             if (sectionDivider) sectionDivider.style.display = 'none';
@@ -97,25 +137,46 @@ async function loadTopFillers(userId) {
 
         if (overviewRow) overviewRow.classList.remove('no-top-fillers');
 
-        const isManager = Boolean(data.isManager) || currentUserRole === 2 || currentUserRole === 3;
-        currentUserRole = isManager ? (currentUserRole > 1 ? currentUserRole : 2) : 1;
-
-        const headingEl = document.getElementById('topFillersHeading');
         if (headingEl) {
-            headingEl.textContent = data.topFillers.length > 5 ? 'Ranglijst Vullers' : 'Top 5 Vullers';
+            if (date) {
+                headingEl.textContent = 'Ranglijst';
+            } else {
+                headingEl.textContent = topFillers.length > 5 ? 'Ranglijst Vullers' : 'Top 5 Vullers';
+            }
         }
 
-        renderTopFillers(data.topFillers, listEl, userId, isManager);
-
-        const isInList = data.topFillers.some(f => f.user_id === userId);
-        if (userRankEl) {
-            if (!isInList && data.currentUserRanking && data.currentUserRanking.rank) {
-                userRankEl.innerHTML = '';
-                userRankEl.appendChild(createTopFillerCard(data.currentUserRanking, data.currentUserRanking.rank, true, isManager));
-                userRankEl.style.display = 'flex';
+        if (subtextEl) {
+            if (date) {
+                subtextEl.textContent = formatDate(date);
             } else {
+                subtextEl.textContent = 'Laatste 10 shifts';
+            }
+        }
+
+        if (topFillers.length === 0) {
+            listEl.innerHTML = `
+                <div class="top-fillers-empty">
+                    <span class="material-icons">event_busy</span>
+                    <span>Geen diensten gevonden op deze datum</span>
+                </div>
+            `;
+            if (userRankEl) {
                 userRankEl.innerHTML = '';
                 userRankEl.style.display = 'none';
+            }
+        } else {
+            renderTopFillers(topFillers, listEl, userId, isManager);
+
+            const isInList = topFillers.some(f => f.user_id === userId);
+            if (userRankEl) {
+                if (!isInList && data.currentUserRanking && data.currentUserRanking.rank) {
+                    userRankEl.innerHTML = '';
+                    userRankEl.appendChild(createTopFillerCard(data.currentUserRanking, data.currentUserRanking.rank, true, isManager));
+                    userRankEl.style.display = 'flex';
+                } else {
+                    userRankEl.innerHTML = '';
+                    userRankEl.style.display = 'none';
+                }
             }
         }
 
@@ -124,10 +185,12 @@ async function loadTopFillers(userId) {
             sectionDivider.style.display = (myShiftsSection && myShiftsSection.style.display !== 'none') ? 'block' : 'none';
         }
     } catch (_) {
-        sectionEl.style.display = 'none';
-        if (userRankEl) userRankEl.style.display = 'none';
-        if (sectionDivider) sectionDivider.style.display = 'none';
-        if (overviewRow) overviewRow.classList.add('no-top-fillers');
+        if (!date) {
+            sectionEl.style.display = 'none';
+            if (userRankEl) userRankEl.style.display = 'none';
+            if (sectionDivider) sectionDivider.style.display = 'none';
+            if (overviewRow) overviewRow.classList.add('no-top-fillers');
+        }
     }
 }
 
@@ -405,9 +468,11 @@ function updateChartModeControls() {
         btnIndividual.title = isAllowed ? '' : 'Alleen beschikbaar bij 1 week, 2 weken of 1 maand';
         if (!isAllowed && currentChartMode === 'individual') {
             currentChartMode = 'average';
-            if (btnAverage) btnAverage.classList.add('active');
-            btnIndividual.classList.remove('active');
         }
+        btnIndividual.classList.toggle('active', currentChartMode === 'individual');
+    }
+    if (btnAverage) {
+        btnAverage.classList.toggle('active', currentChartMode === 'average');
     }
 }
 
@@ -1061,30 +1126,61 @@ function renderPaginatedProductivityList() {
     if (nextBtn) nextBtn.disabled = currentShiftPage >= totalPages;
 }
 
-function initShiftsDatePicker() {
-    const container = document.getElementById('shiftsDatePickerContainer');
-    const clearBtn = document.getElementById('shiftsDateFilterClearBtn');
-    if (!container || container.hasChildNodes()) return;
+function bindDateFilter(containerId, clearBtnId, onSelect, onClear) {
+    const container = document.getElementById(containerId);
+    const clearBtn = document.getElementById(clearBtnId);
+    if (!container || container.hasChildNodes()) return null;
 
-    shiftsDatePicker = createDatePicker(container, '', (val) => {
-        selectedDateFilter = val || '';
+    const picker = createDatePicker(container, '', (val) => {
+        const dateVal = val || '';
         if (clearBtn) {
-            clearBtn.style.display = selectedDateFilter ? 'inline-flex' : 'none';
+            clearBtn.style.display = dateVal ? 'inline-flex' : 'none';
         }
-        currentShiftPage = 1;
-        renderPaginatedProductivityList();
+        onSelect(dateVal);
     });
 
     if (clearBtn && !clearBtn.dataset.bound) {
         clearBtn.dataset.bound = 'true';
         clearBtn.addEventListener('click', () => {
-            selectedDateFilter = '';
-            if (shiftsDatePicker) shiftsDatePicker.setValue('');
+            if (picker) picker.setValue('');
             clearBtn.style.display = 'none';
-            currentShiftPage = 1;
-            renderPaginatedProductivityList();
+            onClear();
         });
     }
+
+    return picker;
+}
+
+function initShiftsDatePicker() {
+    shiftsDatePicker = bindDateFilter(
+        'shiftsDatePickerContainer',
+        'shiftsDateFilterClearBtn',
+        (val) => {
+            selectedDateFilter = val;
+            currentShiftPage = 1;
+            renderPaginatedProductivityList();
+        },
+        () => {
+            selectedDateFilter = '';
+            currentShiftPage = 1;
+            renderPaginatedProductivityList();
+        }
+    );
+}
+
+function initTopFillersDatePicker() {
+    topFillersDatePicker = bindDateFilter(
+        'topFillersDatePickerContainer',
+        'topFillersDateFilterClearBtn',
+        async (val) => {
+            selectedScoreboardDate = val;
+            await loadTopFillers(currentUserId, selectedScoreboardDate);
+        },
+        async () => {
+            selectedScoreboardDate = '';
+            await loadTopFillers(currentUserId, '');
+        }
+    );
 }
 
 function initPaginationControls() {

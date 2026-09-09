@@ -209,7 +209,15 @@
                         <span class="material-icons section-title-icon">leaderboard</span>
                         <div>
                             <h2 class="section-heading" id="topFillersHeading">Top 5 Vullers</h2>
-                            <p class="section-subtext">Laatste 10 shifts</p>
+                            <p class="section-subtext" id="topFillersSubtext">Laatste 10 shifts</p>
+                        </div>
+                    </div>
+                    <div class="section-title-right" id="topFillersDateFilterWrapper" style="display: none;">
+                        <div class="shifts-date-filter-wrapper">
+                            <div id="topFillersDatePickerContainer" class="shifts-datepicker-container"></div>
+                            <button type="button" id="topFillersDateFilterClearBtn" class="shifts-date-clear-btn" style="display: none;" data-tooltip="Datumfilter wissen">
+                                <span class="material-icons">close</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -229,8 +237,8 @@
                     <div class="chart-header-right">
                         <div class="chart-timeframe-select-wrapper" id="chartTimeframeSelectContainer"></div>
                         <div class="chart-toggle-group">
-                            <button type="button" class="chart-toggle-btn" id="chartModeIndividual" disabled title="Alleen beschikbaar bij 1 week, 2 weken of 1 maand">Individueel</button>
-                            <button type="button" class="chart-toggle-btn active" id="chartModeAverage">Gemiddeld</button>
+                            <button type="button" class="chart-toggle-btn active" id="chartModeIndividual">Individueel</button>
+                            <button type="button" class="chart-toggle-btn" id="chartModeAverage">Gemiddeld</button>
                         </div>
                         <div class="chart-target-badge">
                             <span class="chart-target-line-sample"></span>
