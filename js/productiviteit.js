@@ -1601,7 +1601,10 @@ async function openEditShiftModal(entry) {
                         original_finalized_at: entry.finalized_at,
                         shift_data: {
                             date: chosenDate || entry.date,
+                            start_time: newStart,
+                            end_time: newEnd,
                             productivity: newProd,
+                            pauze: newPause,
                             shift: {
                                 ...(entry.shift || {}),
                                 start: newStart,
