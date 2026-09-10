@@ -1542,12 +1542,11 @@ async function openEditShiftModal(entry) {
         addTaskBtn.addEventListener('click', () => {
             syncInputsToModalTasks();
             modalTasks.push({
-                title: 'Nieuw pad / taak',
+                title: '',
                 type: 'vullen',
                 start_time: '',
                 end_time: '',
-                colli: 0,
-                duration_minutes: 0
+                colli: 0
             });
             renderModalTasks();
             updateTotalColliFromTasks();
@@ -1584,19 +1583,12 @@ async function openEditShiftModal(entry) {
             const newStart = shiftStartPicker ? shiftStartPicker.getValue() : '';
             const newEnd = shiftEndPicker ? shiftEndPicker.getValue() : '';
             const newPause = Number(overlay.querySelector('#editShiftPause')?.value) || 0;
-            let newWorkMinutes = Number(entry.total_work_minutes) || 0;
-            if (newStart && newEnd) {
-                const sM = timeToMinutes(newStart);
-                let eM = timeToMinutes(newEnd);
-                if (eM < sM) eM += 24 * 60;
-                newWorkMinutes = eM - sM - newPause;
-            }
 
             const cleanTasks = modalTasks.map(t => ({
-                title: t.title || t.pathName || t.name || 'Taak',
-                type: t.type || 'overige',
-                start_time: t.start_time || t.start || '',
-                end_time: t.end_time || t.end || '',
+                title: t.title !== undefined ? t.title : '',
+                type: t.type !== undefined ? t.type : '',
+                start_time: t.start_time || '',
+                end_time: t.end_time || '',
                 colli: Number(t.colli) || 0
             }));
 
