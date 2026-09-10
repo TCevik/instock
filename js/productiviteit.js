@@ -1597,11 +1597,8 @@ async function openEditShiftModal(entry) {
                 type: t.type || 'overige',
                 start_time: t.start_time || t.start || '',
                 end_time: t.end_time || t.end || '',
-                colli: Number(t.colli) || 0,
-                duration_minutes: Number(t.duration_minutes) || Number(t.duration) || 0
+                colli: Number(t.colli) || 0
             }));
-
-            const newColli = cleanTasks.reduce((sum, task) => sum + task.colli, 0);
 
             try {
                 const data = await invokeFn('manage-productivity', {
@@ -1613,8 +1610,6 @@ async function openEditShiftModal(entry) {
                         shift_data: {
                             date: chosenDate || entry.date,
                             productivity: newProd,
-                            total_colli: newColli,
-                            total_work_minutes: newWorkMinutes,
                             shift: {
                                 ...(entry.shift || {}),
                                 start: newStart,
