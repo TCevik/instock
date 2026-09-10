@@ -491,6 +491,42 @@
     color: var(--text-color);
 }
 
+.custom-timepicker {
+    position: relative;
+    width: 100%;
+}
+
+.timepicker-trigger {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.timepicker-input {
+    width: 100%;
+    background-color: var(--input-background);
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    padding: 12px 38px 12px 14px;
+    font-size: 14px;
+    color: var(--text-color);
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.timepicker-input:focus {
+    border-color: var(--input-focus);
+}
+
+.timepicker-icon {
+    position: absolute;
+    right: 12px;
+    color: var(--text-color-muted);
+    font-size: 20px;
+    pointer-events: none;
+}
+
 .dp-confirm-btn {
     color: var(--accent-color);
 }

@@ -2,6 +2,7 @@ import { supabase, showToast, escapeHtml, invokeFn } from './main.js';
 import { formatDuration, timeToMinutes, getProductivityStatusClass, getProductivityStatusIcon } from './vulplanning/time-utils.js';
 import { createCustomSelect } from './select.js';
 import { createDatePicker, MONTH_NAMES, SHORT_MONTH_NAMES, parseDate } from './datepicker.js';
+import { createTimePicker } from './timepicker.js';
 import { showModal, closeModal, showConfirmModal } from './modal.js';
 
 let cachedProductivityEntries = [];
@@ -557,8 +558,6 @@ function renderProductivityChart(entries) {
         container._chartObserver = ro;
     }
 
-
-
     if (!entries || entries.length === 0) {
         container.innerHTML = `
             <div class="chart-empty-msg">
@@ -975,7 +974,7 @@ function renderProductivityList(entries, container) {
                     timeHtml = `
                         <span class="day-task-time">
                             <span class="material-icons">schedule</span>
-                            <span>${escapeHtml(sTime)} - ${escapeHtml(eTime)}${dur > 0 ? ` (${formatDuration(dur)})` : ''}</span>
+                            <span>${escapeHtml(sTime)} - ${escapeHtml(endTime)}${dur > 0 ? ` (${formatDuration(dur)})` : ''}</span>
                         </span>
                     `;
                 } else if (sTime) {
@@ -1313,27 +1312,29 @@ async function openEditShiftModal(entry) {
                 </div>
                 <div class="form-group">
                     <label for="editShiftProd">Productiviteit (%)</label>
-                    <input type="number" id="editShiftProd" class="modal-input" value="${percent}" min="0" max="500" required>
+                    <input type="number" id="editShiftProd" class="modal-input" value="${percent}">
                 </div>
             </div>
             <div class="modal-form-row">
                 <div class="form-group">
-                    <label for="editShiftStart">Starttijd</label>
-                    <input type="time" id="editShiftStart" class="modal-input" value="${escapeHtml(startTime)}">
+                    <label>Starttijd</label>
+                    <div id="editShiftStartContainer"></div>
                 </div>
                 <div class="form-group">
-                    <label for="editShiftEnd">Eindtijd</label>
-                    <input type="time" id="editShiftEnd" class="modal-input" value="${escapeHtml(endTime)}">
+                    <label>Eindtijd</label>
+                    <div id="editShiftEndContainer"></div>
                 </div>
             </div>
             <div class="modal-form-row">
                 <div class="form-group">
                     <label for="editShiftPause">Pauze (minuten)</label>
-                    <input type="number" id="editShiftPause" class="modal-input" value="${pauseMinutes}" min="0">
+                    <input type="number" id="editShiftPause" class="modal-input" value="${pauseMinutes}">
                 </div>
                 <div class="form-group">
-                    <label for="editShiftColli">Totaal colli</label>
-                    <input type="number" id="editShiftColli" class="modal-input" value="${totalColli}" min="0">
+                    <label>Totaal colli</label>
+                    <div class="modal-input" style="display: flex; align-items: center; background-color: var(--card-background-hover); cursor: default;">
+                        <span id="editShiftColliDisplay" style="font-weight: 600;">${totalColli}</span>
+                    </div>
                 </div>
             </div>
 
@@ -1365,47 +1366,64 @@ async function openEditShiftModal(entry) {
         shiftDatePicker = createDatePicker(dateContainer, entry.date || '');
     }
 
+    const startContainer = overlay.querySelector('#editShiftStartContainer');
+    let shiftStartPicker = null;
+    if (startContainer) {
+        shiftStartPicker = createTimePicker(startContainer, startTime, () => {});
+    }
+
+    const endContainer = overlay.querySelector('#editShiftEndContainer');
+    let shiftEndPicker = null;
+    if (endContainer) {
+        shiftEndPicker = createTimePicker(endContainer, endTime, () => {});
+    }
+
     const tasksListEl = overlay.querySelector('#modalTasksList');
     const tasksCountEl = overlay.querySelector('#modalTasksCount');
     const addTaskBtn = overlay.querySelector('#modalAddTaskBtn');
-    const totalColliInput = overlay.querySelector('#editShiftColli');
+    const totalColliDisplay = overlay.querySelector('#editShiftColliDisplay');
+
+    const taskTypeOptions = [
+        { value: 'vullen', label: 'Vullen' },
+        { value: 'spiegelen', label: 'Spiegelen' },
+        { value: 'restanten', label: 'Restanten' },
+        { value: 'pauze', label: 'Pauze' },
+        { value: 'overige', label: 'Overige' }
+    ];
+
+    let taskPickerInstances = [];
 
     function syncInputsToModalTasks() {
         if (!tasksListEl) return;
         const items = tasksListEl.querySelectorAll('.modal-task-item');
         items.forEach((itemEl, idx) => {
             if (!modalTasks[idx]) return;
+            const inst = taskPickerInstances[idx];
             const titleInput = itemEl.querySelector('.task-title-input');
-            const typeSelect = itemEl.querySelector('.task-type-select-native');
-            const startInput = itemEl.querySelector('.task-start-input');
-            const endInput = itemEl.querySelector('.task-end-input');
             const colliInput = itemEl.querySelector('.task-colli-input');
             const durInput = itemEl.querySelector('.task-dur-input');
 
-            const isPauze = (modalTasks[idx].type === 'pauze');
-            if (titleInput) modalTasks[idx].title = isPauze ? 'Pauze' : titleInput.value.trim();
-            if (typeSelect) modalTasks[idx].type = typeSelect.value;
-            if (startInput) modalTasks[idx].start_time = startInput.value;
-            if (endInput) modalTasks[idx].end_time = endInput.value;
-            if (colliInput) {
-                const isVullen = (modalTasks[idx].type === 'vullen');
-                modalTasks[idx].colli = isVullen ? (Number(colliInput.value) || 0) : 0;
+            if (titleInput) modalTasks[idx].title = titleInput.value.trim();
+            if (inst) {
+                if (inst.typeSelect) modalTasks[idx].type = inst.typeSelect.getValue();
+                if (inst.startPicker) modalTasks[idx].start_time = inst.startPicker.getValue();
+                if (inst.endPicker) modalTasks[idx].end_time = inst.endPicker.getValue();
             }
+            if (colliInput) modalTasks[idx].colli = Number(colliInput.value) || 0;
             if (durInput) modalTasks[idx].duration_minutes = Number(durInput.value) || 0;
         });
     }
 
     function updateTotalColliFromTasks() {
-        if (!totalColliInput) return;
-        const sum = modalTasks.reduce((acc, t) => acc + (t.type === 'vullen' ? (Number(t.colli) || 0) : 0), 0);
-        if (sum > 0) {
-            totalColliInput.value = sum;
-        }
+        if (!totalColliDisplay) return;
+        const sum = modalTasks.reduce((acc, t) => acc + (Number(t.colli) || 0), 0);
+        totalColliDisplay.textContent = sum;
     }
 
     function renderModalTasks() {
         if (!tasksListEl) return;
         if (tasksCountEl) tasksCountEl.textContent = modalTasks.length;
+        taskPickerInstances = [];
 
         if (modalTasks.length === 0) {
             tasksListEl.innerHTML = `
@@ -1418,83 +1436,63 @@ async function openEditShiftModal(entry) {
         }
 
         tasksListEl.innerHTML = modalTasks.map((t, idx) => {
-            const type = t.type || 'overige';
-            const isPauze = (type === 'pauze');
-            const title = escapeHtml(isPauze ? 'Pauze' : (t.title || t.pathName || t.name || ''));
-            const sTime = escapeHtml(t.start_time || t.start || '');
-            const eTime = escapeHtml(t.end_time || t.end || '');
-            const isVullen = (type === 'vullen');
-            const colli = isVullen ? (Number(t.colli) || 0) : 0;
+            const title = escapeHtml(t.title || t.pathName || t.name || '');
+            const colli = Number(t.colli) || 0;
             const dur = Number(t.duration_minutes) || Number(t.duration) || 0;
 
             return `
                 <div class="modal-task-item" data-idx="${idx}">
                     <div class="modal-task-item-top">
-                        <input type="text" class="modal-input task-title-input" placeholder="Pad / taaknaam" value="${title}"${isPauze ? ' value="Pauze" disabled title="Pauze taak heet altijd Pauze"' : ''}>
-                        <select class="modal-input task-type-select task-type-select-native" data-idx="${idx}">
-                            <option value="vullen"${type === 'vullen' ? ' selected' : ''}>Vullen</option>
-                            <option value="spiegelen"${type === 'spiegelen' ? ' selected' : ''}>Spiegelen</option>
-                            <option value="restanten"${type === 'restanten' ? ' selected' : ''}>Restanten</option>
-                            <option value="pauze"${type === 'pauze' ? ' selected' : ''}>Pauze</option>
-                            <option value="overige"${type === 'overige' ? ' selected' : ''}>Overige</option>
-                        </select>
+                        <input type="text" class="modal-input task-title-input" placeholder="Pad / taaknaam" value="${title}">
+                        <div class="task-type-select-wrap" style="flex: 1; min-width: 110px;"></div>
                         <button type="button" class="action-btn delete-task-row-btn" data-idx="${idx}" title="Taak verwijderen">
                             <span class="material-icons">delete</span>
                         </button>
                     </div>
                     <div class="modal-task-item-bottom">
-                        <input type="time" class="modal-input task-start-input" placeholder="Start" value="${sTime}" title="Starttijd">
-                        <input type="time" class="modal-input task-end-input" placeholder="Eind" value="${eTime}" title="Eindtijd">
-                        <input type="number" class="modal-input task-colli-input" placeholder="Colli" value="${isVullen ? colli : ''}" min="0" title="${isVullen ? 'Colli' : 'Alleen van toepassing bij vullen'}"${!isVullen ? ' disabled' : ''}>
-                        <input type="number" class="modal-input task-dur-input" placeholder="Duur (m)" value="${dur}" min="0" title="Duur in minuten">
+                        <div class="task-start-wrap" style="flex: 1;"></div>
+                        <div class="task-end-wrap" style="flex: 1;"></div>
+                        <input type="number" class="modal-input task-colli-input" placeholder="Colli" value="${colli}" title="Colli">
+                        <input type="number" class="modal-input task-dur-input" placeholder="Duur (m)" value="${dur}" title="Duur in minuten">
                     </div>
                 </div>
             `;
         }).join('');
 
-        tasksListEl.querySelectorAll('.task-type-select-native').forEach(select => {
-            select.addEventListener('change', (e) => {
-                const idx = parseInt(e.target.dataset.idx, 10);
-                const itemEl = e.target.closest('.modal-task-item');
-                const titleInput = itemEl?.querySelector('.task-title-input');
-                const colliInput = itemEl?.querySelector('.task-colli-input');
-                const isVullen = (e.target.value === 'vullen');
-                const isPauze = (e.target.value === 'pauze');
+        modalTasks.forEach((t, idx) => {
+            const itemEl = tasksListEl.querySelector(`.modal-task-item[data-idx="${idx}"]`);
+            if (!itemEl) return;
 
-                if (titleInput) {
-                    if (isPauze) {
-                        titleInput.value = 'Pauze';
-                        titleInput.disabled = true;
-                        titleInput.title = 'Pauze taak heet altijd Pauze';
-                    } else {
-                        if (titleInput.value === 'Pauze') {
-                            titleInput.value = '';
-                        }
-                        titleInput.disabled = false;
-                        titleInput.title = '';
-                    }
-                }
+            const typeWrap = itemEl.querySelector('.task-type-select-wrap');
+            const startWrap = itemEl.querySelector('.task-start-wrap');
+            const endWrap = itemEl.querySelector('.task-end-wrap');
 
-                if (colliInput) {
-                    colliInput.disabled = !isVullen;
-                    colliInput.title = isVullen ? 'Colli' : 'Alleen van toepassing bij vullen';
-                    if (!isVullen) {
-                        colliInput.value = '';
-                    }
-                }
+            const type = t.type || 'overige';
+            const sTime = t.start_time || t.start || '';
+            const eTime = t.end_time || t.end || '';
 
-                if (modalTasks[idx]) {
-                    modalTasks[idx].type = e.target.value;
-                    if (isPauze) {
-                        modalTasks[idx].title = 'Pauze';
-                    }
-                    if (!isVullen) {
-                        modalTasks[idx].colli = 0;
-                    }
+            const typeSelect = createCustomSelect(typeWrap, taskTypeOptions, type, (val) => {
+                modalTasks[idx].type = val;
+            });
+
+            const onTimeChange = () => {
+                syncInputsToModalTasks();
+                const sVal = startPicker.getValue();
+                const eVal = endPicker.getValue();
+                const dInput = itemEl.querySelector('.task-dur-input');
+                if (sVal && eVal && dInput) {
+                    const sm = timeToMinutes(sVal);
+                    let em = timeToMinutes(eVal);
+                    if (em < sm) em += 24 * 60;
+                    dInput.value = em - sm;
                 }
                 syncInputsToModalTasks();
-                updateTotalColliFromTasks();
-            });
+            };
+
+            const startPicker = createTimePicker(startWrap, sTime, onTimeChange, 'Start');
+            const endPicker = createTimePicker(endWrap, eTime, onTimeChange, 'Eind');
+
+            taskPickerInstances[idx] = { typeSelect, startPicker, endPicker };
         });
 
         tasksListEl.querySelectorAll('.delete-task-row-btn').forEach(btn => {
@@ -1511,23 +1509,6 @@ async function openEditShiftModal(entry) {
             input.addEventListener('input', () => {
                 syncInputsToModalTasks();
                 updateTotalColliFromTasks();
-            });
-        });
-
-        tasksListEl.querySelectorAll('.task-start-input, .task-end-input').forEach(input => {
-            input.addEventListener('change', (e) => {
-                const itemEl = e.target.closest('.modal-task-item');
-                if (!itemEl) return;
-                const sInput = itemEl.querySelector('.task-start-input');
-                const eInput = itemEl.querySelector('.task-end-input');
-                const dInput = itemEl.querySelector('.task-dur-input');
-                if (sInput?.value && eInput?.value && dInput) {
-                    const sm = timeToMinutes(sInput.value);
-                    let em = timeToMinutes(eInput.value);
-                    if (em < sm) em += 24 * 60;
-                    dInput.value = Math.max(0, em - sm);
-                }
-                syncInputsToModalTasks();
             });
         });
     }
@@ -1577,27 +1558,27 @@ async function openEditShiftModal(entry) {
 
             const chosenDate = shiftDatePicker ? shiftDatePicker.getValue() : (entry.date || '');
             const newProd = Number(overlay.querySelector('#editShiftProd')?.value) || 0;
-            const newStart = overlay.querySelector('#editShiftStart')?.value || '';
-            const newEnd = overlay.querySelector('#editShiftEnd')?.value || '';
+            const newStart = shiftStartPicker ? shiftStartPicker.getValue() : '';
+            const newEnd = shiftEndPicker ? shiftEndPicker.getValue() : '';
             const newPause = Number(overlay.querySelector('#editShiftPause')?.value) || 0;
-            const newColli = Number(overlay.querySelector('#editShiftColli')?.value) || 0;
-
             let newWorkMinutes = Number(entry.total_work_minutes) || 0;
             if (newStart && newEnd) {
                 const sM = timeToMinutes(newStart);
                 let eM = timeToMinutes(newEnd);
                 if (eM < sM) eM += 24 * 60;
-                newWorkMinutes = Math.max(0, eM - sM - newPause);
+                newWorkMinutes = eM - sM - newPause;
             }
 
             const cleanTasks = modalTasks.map(t => ({
-                title: t.type === 'pauze' ? 'Pauze' : (t.title || t.pathName || t.name || 'Taak'),
+                title: t.title || t.pathName || t.name || 'Taak',
                 type: t.type || 'overige',
                 start_time: t.start_time || t.start || '',
                 end_time: t.end_time || t.end || '',
-                colli: t.type === 'vullen' ? (Number(t.colli) || 0) : 0,
+                colli: Number(t.colli) || 0,
                 duration_minutes: Number(t.duration_minutes) || Number(t.duration) || 0
             }));
+
+            const newColli = cleanTasks.reduce((sum, task) => sum + task.colli, 0);
 
             try {
                 const data = await invokeFn('manage-productivity', {

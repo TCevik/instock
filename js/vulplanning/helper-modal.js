@@ -1,4 +1,5 @@
 import { showModal, closeModal, showToast } from '../main.js';
+import { createCustomSelect } from '../select.js';
 import { planningState } from './state.js';
 import { getFillerShiftDuration, formatDuration } from './time-utils.js';
 import { applyMultiHelpers } from './task-actions.js';
@@ -164,17 +165,16 @@ export async function openHelperModal(options) {
 
             const selectedIds = new Set(helpers.map((h, i) => i !== idx ? h.fillerId : null).filter(Boolean));
 
-            let optionsHtml = '';
-            availableFillers.forEach(f => {
-                const disabled = selectedIds.has(f.id);
-                optionsHtml += `<option value="${f.id}" ${f.id === helper.fillerId ? 'selected' : ''} ${disabled ? 'disabled' : ''}>${f.name || 'Medewerker'}</option>`;
-            });
+            const selectOptions = availableFillers
+                .filter(f => !selectedIds.has(f.id) || f.id === helper.fillerId)
+                .map(f => ({
+                    value: f.id,
+                    label: f.name || 'Medewerker'
+                }));
 
             card.innerHTML = `
                 <div class="helper-item-top">
-                    <select class="modal-input helper-select" data-index="${idx}">
-                        ${optionsHtml}
-                    </select>
+                    <div class="helper-select-wrap" style="flex: 1;" data-index="${idx}"></div>
                     ${helpers.length > 1 ? `
                         <button type="button" class="btn-remove-helper" data-index="${idx}" title="Helper verwijderen">
                             <span class="material-icons">delete_outline</span>
@@ -193,6 +193,17 @@ export async function openHelperModal(options) {
             `;
 
             helpersContainer.appendChild(card);
+
+            const wrap = card.querySelector('.helper-select-wrap');
+            if (wrap) {
+                createCustomSelect(wrap, selectOptions, helper.fillerId, (newId) => {
+                    const parsedId = parseInt(newId, 10);
+                    if (helpers[idx]) {
+                        helpers[idx].fillerId = parsedId;
+                        renderHelpersList();
+                    }
+                });
+            }
         });
 
         attachCardEvents();
@@ -235,17 +246,6 @@ export async function openHelperModal(options) {
     }
 
     function attachCardEvents() {
-        overlay.querySelectorAll('.helper-select').forEach(sel => {
-            sel.addEventListener('change', (e) => {
-                const idx = parseInt(e.target.getAttribute('data-index'), 10);
-                const newId = parseInt(e.target.value, 10);
-                if (helpers[idx]) {
-                    helpers[idx].fillerId = newId;
-                    renderHelpersList();
-                }
-            });
-        });
-
         overlay.querySelectorAll('.btn-remove-helper').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const idx = parseInt(btn.getAttribute('data-index'), 10);
