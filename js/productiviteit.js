@@ -1401,16 +1401,23 @@ async function openEditShiftModal(entry) {
             const inst = taskPickerInstances[idx];
             const titleInput = itemEl.querySelector('.task-title-input');
             const colliInput = itemEl.querySelector('.task-colli-input');
-            const durInput = itemEl.querySelector('.task-dur-input');
 
             if (titleInput) modalTasks[idx].title = titleInput.value.trim();
             if (inst) {
                 if (inst.typeSelect) modalTasks[idx].type = inst.typeSelect.getValue();
                 if (inst.startPicker) modalTasks[idx].start_time = inst.startPicker.getValue();
                 if (inst.endPicker) modalTasks[idx].end_time = inst.endPicker.getValue();
+
+                const sVal = modalTasks[idx].start_time;
+                const eVal = modalTasks[idx].end_time;
+                if (sVal && eVal) {
+                    const sm = timeToMinutes(sVal);
+                    let em = timeToMinutes(eVal);
+                    if (em < sm) em += 24 * 60;
+                    modalTasks[idx].duration_minutes = em - sm;
+                }
             }
             if (colliInput) modalTasks[idx].colli = Number(colliInput.value) || 0;
-            if (durInput) modalTasks[idx].duration_minutes = Number(durInput.value) || 0;
         });
     }
 
@@ -1438,7 +1445,15 @@ async function openEditShiftModal(entry) {
         tasksListEl.innerHTML = modalTasks.map((t, idx) => {
             const title = escapeHtml(t.title || t.pathName || t.name || '');
             const colli = Number(t.colli) || 0;
-            const dur = Number(t.duration_minutes) || Number(t.duration) || 0;
+            let dur = Number(t.duration_minutes) || Number(t.duration) || 0;
+            const sTime = t.start_time || t.start || '';
+            const eTime = t.end_time || t.end || '';
+            if (sTime && eTime) {
+                const sm = timeToMinutes(sTime);
+                let em = timeToMinutes(eTime);
+                if (em < sm) em += 24 * 60;
+                dur = em - sm;
+            }
 
             return `
                 <div class="modal-task-item" data-idx="${idx}">
@@ -1453,7 +1468,9 @@ async function openEditShiftModal(entry) {
                         <div class="task-start-wrap" style="flex: 1;"></div>
                         <div class="task-end-wrap" style="flex: 1;"></div>
                         <input type="number" class="modal-input task-colli-input" placeholder="Colli" value="${colli}" title="Colli">
-                        <input type="number" class="modal-input task-dur-input" placeholder="Duur (m)" value="${dur}" title="Duur in minuten">
+                        <div class="modal-input task-dur-display" style="display: flex; align-items: center; justify-content: center; background-color: var(--card-background-hover); cursor: default; flex: 1;" title="Duur">
+                            <span style="font-weight: 600;">${dur}m</span>
+                        </div>
                     </div>
                 </div>
             `;
@@ -1479,14 +1496,20 @@ async function openEditShiftModal(entry) {
                 syncInputsToModalTasks();
                 const sVal = startPicker.getValue();
                 const eVal = endPicker.getValue();
-                const dInput = itemEl.querySelector('.task-dur-input');
-                if (sVal && eVal && dInput) {
+                let dur = 0;
+                if (sVal && eVal) {
                     const sm = timeToMinutes(sVal);
                     let em = timeToMinutes(eVal);
                     if (em < sm) em += 24 * 60;
-                    dInput.value = em - sm;
+                    dur = em - sm;
+                } else {
+                    dur = Number(modalTasks[idx].duration_minutes) || Number(modalTasks[idx].duration) || 0;
                 }
-                syncInputsToModalTasks();
+                modalTasks[idx].duration_minutes = dur;
+                const durSpan = itemEl.querySelector('.task-dur-display span');
+                if (durSpan) {
+                    durSpan.textContent = `${dur}m`;
+                }
             };
 
             const startPicker = createTimePicker(startWrap, sTime, onTimeChange, 'Start');
