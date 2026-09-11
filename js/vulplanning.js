@@ -37,6 +37,7 @@ const btnFinalizeProductivity = document.getElementById('btn-finalize-productivi
 const btnAddCustomTask = document.getElementById('btn-add-custom-task');
 const clearPlanningBtn = document.getElementById('clear-planning-btn');
 const btnComboSettings = document.getElementById('btn-combo-settings');
+const btnSettingsPlanning = document.getElementById('btn-settings-planning');
 const timelineWorkersList = document.getElementById('timeline-workers-list');
 const timelineTracksContainer = document.getElementById('timeline-tracks-container');
 const timelineSchedulePane = document.getElementById('timeline-schedule-pane');
@@ -621,6 +622,23 @@ if (btnComboSettings) {
     btnComboSettings.addEventListener('click', () => openComboSettingsModal({
         onRenderUnassigned: doRenderUnassigned
     }));
+}
+
+if (btnSettingsPlanning) {
+    btnSettingsPlanning.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const targetHref = btnSettingsPlanning.getAttribute('href');
+        const confirmed = await showConfirmModal({
+            title: 'Naar instellingen?',
+            message: 'Weet je zeker dat je naar de instellingen pagina wilt gaan?',
+            confirmText: 'Naar instellingen',
+            cancelText: 'Annuleren',
+            isDanger: false
+        });
+        if (confirmed) {
+            window.location.href = targetHref;
+        }
+    });
 }
 
 setupHistoryShortcuts({
