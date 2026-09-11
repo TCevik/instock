@@ -576,6 +576,11 @@ export function renderTimelineRows(options) {
                 if (mainTaskIdx !== -1) {
                     bestSlot = mainTaskIdx + 1;
                 }
+            } else if (dragData && dragData.source === 'assigned' && !dragged.isHelper) {
+                const helperTaskIdx = otherItems.findIndex(t => t.isHelper && t.parentTaskId === dragged.id);
+                if (helperTaskIdx !== -1) {
+                    bestSlot = helperTaskIdx + 1;
+                }
             }
 
             let currentGhostLeftPx = (rowBaseStartMins - startMins) * pxPerMin;

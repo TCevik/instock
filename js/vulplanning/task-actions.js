@@ -442,16 +442,16 @@ export function moveAssignedTask(fromFillerId, fromIndex, toFillerId, insertInde
     } else {
         const rootTaskId = task.id;
         if (fromFillerId !== toFillerId) {
-            const helperTaskOnTarget = (planningState.assignedTasks[toFillerId] || []).find(
+            const targetTasks = planningState.assignedTasks[toFillerId] || [];
+            const helperTaskIdx = targetTasks.findIndex(
                 t => t.isHelper && t.parentTaskId === rootTaskId
             );
-            if (helperTaskOnTarget) {
-                returnHelperDurationToMain(helperTaskOnTarget);
+            if (helperTaskIdx !== -1) {
+                const helperTaskOnTarget = targetTasks[helperTaskIdx];
+                task.duration += helperTaskOnTarget.duration;
+                insertIndex = helperTaskIdx;
+                planningState.assignedTasks[toFillerId].splice(helperTaskIdx, 1);
             }
-
-            planningState.assignedTasks[toFillerId] = (planningState.assignedTasks[toFillerId] || []).filter(
-                t => !(t.isHelper && t.parentTaskId === rootTaskId)
-            );
 
             planningState.fillers.forEach(f => {
                 const flist = planningState.assignedTasks[f.id] || [];
