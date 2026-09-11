@@ -685,6 +685,7 @@ let searchDebounceTimer = null;
 function getLogAction(log) {
     if (log.action) return log.action;
     const t = log.new_value?.type;
+    if (t === 'add_shift') return 'Dienst toegevoegd';
     if (t === 'update_shift') return 'Dienst aangepast';
     if (t === 'delete_shift') return 'Dienst verwijderd';
     if (t === 'update_task') return 'Taak aangepast';
@@ -937,6 +938,8 @@ function openDetailsModal(log) {
             if (diffResult.count > 0) {
                 diffHtml = diffResult.html;
             }
+        } else if (newVal?.type === 'add_shift') {
+            bannerText = `Dienst toegevoegd voor ${prodBatchDate ? formatDutchDate(prodBatchDate) : 'medewerker'}`;
         } else if (newVal?.type === 'delete_shift') {
             bannerText = `Dienst verwijderd voor ${prodBatchDate ? formatDutchDate(prodBatchDate) : 'medewerker'}`;
         } else {
@@ -1185,7 +1188,7 @@ function openDetailsModal(log) {
             </div>
             ${affectedUserHtml}
             <div class="form-group">
-                <label>${newVal?.type === 'update_shift' || newVal?.type === 'delete_shift' ? 'Gewijzigde Dienst & Taken' : (isProductivityLog ? 'Gefinaliseerde Productiviteiten' : 'Wijzigingen / Gegevens')}</label>
+                <label>${newVal?.type === 'add_shift' || newVal?.type === 'update_shift' || newVal?.type === 'delete_shift' ? 'Gewijzigde Dienst & Taken' : (isProductivityLog ? 'Gefinaliseerde Productiviteiten' : 'Wijzigingen / Gegevens')}</label>
                 <div class="log-details-list">
                     ${detailsHtml}
                 </div>

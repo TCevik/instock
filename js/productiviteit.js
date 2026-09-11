@@ -331,11 +331,39 @@ function applyUserProductivity(user, isSelf) {
                 ? 'Er zijn nog geen gefinaliseerde vulplanningen gekoppeld aan jouw account.'
                 : `Er zijn nog geen gefinaliseerde vulplanningen gekoppeld aan ${name}.`;
         }
+        const canManage = currentUserRole === 2 || currentUserRole === 3;
+        const addShiftBtn = document.getElementById('addShiftBtn');
+        if (addShiftBtn) {
+            if (canManage) {
+                addShiftBtn.style.display = 'inline-flex';
+                if (!addShiftBtn.dataset.initialized) {
+                    addShiftBtn.dataset.initialized = 'true';
+                    addShiftBtn.addEventListener('click', () => openAddShiftModal());
+                }
+            } else {
+                addShiftBtn.style.display = 'none';
+            }
+        }
+
         if (emptyEl) emptyEl.style.display = 'flex';
         if (chartCard) chartCard.style.display = 'none';
-        if (myShiftsSection) myShiftsSection.style.display = 'none';
+        if (myShiftsSection) myShiftsSection.style.display = canManage ? 'flex' : 'none';
         if (sectionDivider) sectionDivider.style.display = 'none';
     } else {
+        const canManage = currentUserRole === 2 || currentUserRole === 3;
+        const addShiftBtn = document.getElementById('addShiftBtn');
+        if (addShiftBtn) {
+            if (canManage) {
+                addShiftBtn.style.display = 'inline-flex';
+                if (!addShiftBtn.dataset.initialized) {
+                    addShiftBtn.dataset.initialized = 'true';
+                    addShiftBtn.addEventListener('click', () => openAddShiftModal());
+                }
+            } else {
+                addShiftBtn.style.display = 'none';
+            }
+        }
+
         if (emptyEl) emptyEl.style.display = 'none';
         if (chartCard) chartCard.style.display = 'flex';
         if (myShiftsSection) myShiftsSection.style.display = 'flex';
@@ -1280,23 +1308,27 @@ async function handleDeleteShift(entry) {
     }
 }
 
-async function openEditShiftModal(entry) {
+async function openShiftModal(entry = {}, isEdit = true) {
     const targetUserId = selectedFillerUserId || currentUserId;
 
     const shift = entry.shift || {};
-    const startTime = shift.start || '';
-    const endTime = shift.actual_end || shift.planned_end || '';
-    const pauseMinutes = Number(shift.pause_minutes) || 0;
+    const startTime = shift.start || shift.start_time || (isEdit ? '' : '08:00');
+    const endTime = shift.actual_end || shift.planned_end || shift.end_time || (isEdit ? '' : '16:00');
+    const pauseMinutes = Number(shift.pause_minutes || shift.pauze || shift.break_minutes) || 0;
     const totalColli = Number(entry.total_colli) || 0;
     const percent = entry.productivity !== undefined ? Math.round(Number(entry.productivity)) : 100;
-    const targetName = selectedFillerUserData?.full_name || selectedFillerUserData?.username || 'Medewerker';
+    const targetName = selectedFillerUserData?.full_name || selectedFillerUserData?.username || ownUserData?.full_name || ownUserData?.username || 'Medewerker';
 
     const modalTasks = Array.isArray(entry.tasks) ? JSON.parse(JSON.stringify(entry.tasks)) : [];
 
+    const titleText = isEdit ? 'Dienst bewerken' : 'Dienst toevoegen';
+    const subtitleText = isEdit ? `Dienst van ${escapeHtml(targetName)} aanpassen` : `Nieuwe dienst toevoegen voor ${escapeHtml(targetName)}`;
+    const defaultDate = entry.date || (selectedDateFilter ? selectedDateFilter : new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Amsterdam' }).format(new Date()));
+
     const overlay = await showModal(`
         <div class="modal-header">
-            <h2 class="modal-title">Dienst bewerken</h2>
-            <p class="modal-subtitle">Dienst van ${escapeHtml(targetName)} aanpassen</p>
+            <h2 class="modal-title">${titleText}</h2>
+            <p class="modal-subtitle">${subtitleText}</p>
         </div>
         <form class="modal-form" id="editShiftForm">
             <div class="modal-form-row">
@@ -1344,12 +1376,14 @@ async function openEditShiftModal(entry) {
             </div>
 
             <div class="modal-footer">
-                <button type="button" class="modal-btn-danger" id="deleteShiftModalBtn">
-                    <span class="material-icons">delete</span>
-                    <span>Verwijderen</span>
-                </button>
+                ${isEdit ? `
+                    <button type="button" class="modal-btn-danger" id="deleteShiftModalBtn">
+                        <span class="material-icons">delete</span>
+                        <span>Verwijderen</span>
+                    </button>
+                ` : ''}
                 <button type="button" class="modal-btn-secondary" id="cancelEditShiftBtn">Annuleren</button>
-                <button type="submit" class="btn" id="saveEditShiftBtn">Opslaan</button>
+                <button type="submit" class="btn" id="saveEditShiftBtn">${isEdit ? 'Opslaan' : 'Toevoegen'}</button>
             </div>
         </form>
     `, 'modal-wide');
@@ -1357,7 +1391,7 @@ async function openEditShiftModal(entry) {
     const dateContainer = overlay.querySelector('#editShiftDatePickerContainer');
     let shiftDatePicker = null;
     if (dateContainer) {
-        shiftDatePicker = createDatePicker(dateContainer, entry.date || '');
+        shiftDatePicker = createDatePicker(dateContainer, defaultDate);
     }
 
     const startContainer = overlay.querySelector('#editShiftStartContainer');
@@ -1569,7 +1603,7 @@ async function openEditShiftModal(entry) {
             const saveBtn = overlay.querySelector('#saveEditShiftBtn');
             if (saveBtn) {
                 saveBtn.disabled = true;
-                saveBtn.textContent = 'Opslaan...';
+                saveBtn.textContent = isEdit ? 'Opslaan...' : 'Toevoegen...';
             }
 
             const chosenDate = shiftDatePicker ? shiftDatePicker.getValue() : (entry.date || '');
@@ -1587,46 +1621,62 @@ async function openEditShiftModal(entry) {
             }));
 
             try {
-                const data = await invokeFn('manage-productivity', {
-                    body: {
-                        action: 'update_shift',
-                        target_user_id: targetUserId,
-                        original_date: entry.date,
-                        original_finalized_at: entry.finalized_at,
-                        shift_data: {
-                            date: chosenDate || entry.date,
-                            start_time: newStart,
-                            end_time: newEnd,
-                            productivity: newProd,
-                            pauze: newPause,
-                            shift: {
-                                ...(entry.shift || {}),
-                                start: newStart,
-                                planned_end: newEnd,
-                                actual_end: newEnd,
-                                pause_minutes: newPause
-                            },
-                            tasks: cleanTasks
-                        }
+                const payloadAction = isEdit ? 'update_shift' : 'add_shift';
+                const payloadBody = {
+                    action: payloadAction,
+                    target_user_id: targetUserId,
+                    shift_date: chosenDate,
+                    shift_data: {
+                        date: chosenDate,
+                        start_time: newStart,
+                        end_time: newEnd,
+                        productivity: newProd,
+                        pauze: newPause,
+                        shift: {
+                            ...(entry.shift || {}),
+                            start: newStart,
+                            planned_end: newEnd,
+                            actual_end: newEnd,
+                            pause_minutes: newPause
+                        },
+                        tasks: cleanTasks
                     }
-                });
+                };
+
+                if (isEdit) {
+                    payloadBody.original_date = entry.date;
+                    payloadBody.original_finalized_at = entry.finalized_at;
+                }
+
+                const data = await invokeFn('manage-productivity', { body: payloadBody });
 
                 closeModal(overlay);
-                showToast('notification', 'Dienst en taken succesvol bijgewerkt');
+                showToast('notification', isEdit ? 'Dienst en taken succesvol bijgewerkt' : 'Dienst succesvol toegevoegd');
 
                 if (data?.user) {
+                    if (targetUserId === currentUserId) {
+                        ownUserData = data.user;
+                    }
                     selectedFillerUserData = data.user;
-                    applyUserProductivity(data.user, false);
+                    applyUserProductivity(data.user, targetUserId === currentUserId);
                 }
 
                 await loadTopFillers(currentUserId, selectedScoreboardDate);
-            } catch (err) { 
-                showToast('error', err.message || 'Kon dienst niet opslaan');
+            } catch (err) {
+                showToast('error', err.message || (isEdit ? 'Kon dienst niet opslaan' : 'Kon dienst niet toevoegen'));
                 if (saveBtn) {
                     saveBtn.disabled = false;
-                    saveBtn.textContent = 'Opslaan';
+                    saveBtn.textContent = isEdit ? 'Opslaan' : 'Toevoegen';
                 }
             }
         });
     }
+}
+
+async function openEditShiftModal(entry) {
+    return openShiftModal(entry, true);
+}
+
+async function openAddShiftModal() {
+    return openShiftModal({}, false);
 }
