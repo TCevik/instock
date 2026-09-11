@@ -108,11 +108,10 @@ async function loadTopFillers(userId, date = selectedScoreboardDate) {
             body: date ? { date } : {}
         });
 
-        const isManager = Boolean(data?.isManager) || currentUserRole === 2 || currentUserRole === 3;
-        currentUserRole = isManager ? (currentUserRole > 1 ? currentUserRole : 2) : 1;
+        const isManager = true;
 
         if (filterWrapper) {
-            filterWrapper.style.display = isManager ? 'flex' : 'none';
+            filterWrapper.style.display = 'flex';
             if (isManager && !topFillersDatePicker) {
                 initTopFillersDatePicker();
             }
@@ -255,8 +254,6 @@ function renderTopFillers(topFillers, container, userId, canClick) {
 }
 
 async function handleFillerClick(filler) {
-    if (currentUserRole !== 2 && currentUserRole !== 3) return;
-
     if (selectedFillerUserId === filler.user_id || filler.user_id === currentUserId) {
         selectedFillerUserId = null;
         selectedFillerUserData = null;
@@ -879,7 +876,7 @@ function renderSummaryStats(entries) {
 function renderProductivityList(entries, container) {
     container.innerHTML = '';
 
-    const canManageShifts = currentUserRole === 3 && (Boolean(selectedFillerUserId) || selectedFillerUserId === null);
+    const canManageShifts = true;
 
     if (!entries || entries.length === 0) {
         container.innerHTML = `
@@ -1248,7 +1245,6 @@ function initPaginationControls() {
 }
 
 async function handleDeleteShift(entry) {
-    if (currentUserRole !== 3) return;
     const targetUserId = selectedFillerUserId || currentUserId;
 
     const dateLabel = formatDate(entry.date || entry.finalized_at);
@@ -1286,7 +1282,6 @@ async function handleDeleteShift(entry) {
 }
 
 async function openEditShiftModal(entry) {
-    if (currentUserRole !== 3) return;
     const targetUserId = selectedFillerUserId || currentUserId;
 
     const shift = entry.shift || {};
