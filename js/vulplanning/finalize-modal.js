@@ -359,8 +359,11 @@ export async function openFinalizeModal() {
                     };
                 });
 
-                const { data, error } = await supabase.functions.invoke('finalize-productivity', {
-                    body: { records }
+                const { data, error } = await supabase.functions.invoke('manage-productivity', {
+                    body: {
+                        action: 'finalize_productivity',
+                        records
+                    }
                 });
 
                 if (error) {

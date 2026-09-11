@@ -970,7 +970,7 @@ function renderProductivityList(entries, container) {
                     timeHtml = `
                         <span class="day-task-time">
                             <span class="material-icons">schedule</span>
-                            <span>${escapeHtml(sTime)} - ${escapeHtml(endTime)}${dur > 0 ? ` (${formatDuration(dur)})` : ''}</span>
+                            <span>${escapeHtml(sTime)} - ${escapeHtml(eTime)}${dur > 0 ? ` (${formatDuration(dur)})` : ''}</span>
                         </span>
                     `;
                 } else if (sTime) {
