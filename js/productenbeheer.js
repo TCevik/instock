@@ -1,4 +1,4 @@
-import { supabase, showModal, closeModal, showConfirmModal, showToast } from './main.js';
+import { supabase, showModal, closeModal, showConfirmModal, showToast, renderTableSkeletons } from './main.js';
 import { createDatePicker } from './datepicker.js';
 import { createCustomSelect } from './select.js';
 

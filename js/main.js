@@ -541,6 +541,36 @@ async function invokeFn(fnName, options) {
     return data;
 }
 
-export { supabase, initModal, showModal, closeModal, showConfirmModal, showPromptModal, initToast, showToast, openChangePasswordModal, isPermissionError, escapeHtml, initGlobalTooltips, parseUserDisplay, invokeFn };
+function renderTableSkeletons(tbody, cardsContainer, columnsCount = 7, rowsCount = 5) {
+    const elTbody = typeof tbody === 'string' ? document.getElementById(tbody) : tbody;
+    const elCards = typeof cardsContainer === 'string' ? document.getElementById(cardsContainer) : cardsContainer;
+    if (elTbody) {
+        let html = '';
+        const widths = [65, 80, 45, 70, 50, 60, 40, 75];
+        for (let r = 0; r < rowsCount; r++) {
+            html += '<tr>';
+            for (let c = 0; c < columnsCount; c++) {
+                const w = widths[(r + c) % widths.length];
+                html += `<td><div class="skeleton" style="height: 16px; width: ${w}%;"></div></td>`;
+            }
+            html += '</tr>';
+        }
+        elTbody.innerHTML = html;
+    }
+    if (elCards) {
+        let html = '';
+        for (let r = 0; r < 3; r++) {
+            html += `
+                <div style="padding: 16px; border-bottom: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 8px;">
+                    <div class="skeleton" style="height: 16px; width: 65%;"></div>
+                    <div class="skeleton" style="height: 14px; width: 40%;"></div>
+                </div>
+            `;
+        }
+        elCards.innerHTML = html;
+    }
+}
+
+export { supabase, initModal, showModal, closeModal, showConfirmModal, showPromptModal, initToast, showToast, openChangePasswordModal, isPermissionError, escapeHtml, initGlobalTooltips, parseUserDisplay, invokeFn, renderTableSkeletons };
 
 

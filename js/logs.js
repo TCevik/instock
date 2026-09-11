@@ -1,4 +1,4 @@
-import { supabase, showModal, closeModal, parseUserDisplay } from './main.js';
+import { supabase, showModal, closeModal, parseUserDisplay, renderTableSkeletons } from './main.js';
 import { createCustomSelect } from './select.js';
 import { getProductivityStatusClass, calculateTaskDuration, calculateShiftTotalColli } from './vulplanning/time-utils.js';
 
@@ -1207,6 +1207,7 @@ function openDetailsModal(log) {
 }
 
 async function fetchLogsPage() {
+    renderTableSkeletons('logsTableBody', 'logsCardsContainer', 5, 5);
     const from = (currentPage - 1) * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
 

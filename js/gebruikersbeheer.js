@@ -1,4 +1,4 @@
-import { supabase, showModal, closeModal, showConfirmModal, showPromptModal, showToast, parseUserDisplay } from './main.js';
+import { supabase, showModal, closeModal, showConfirmModal, showPromptModal, showToast, parseUserDisplay, renderTableSkeletons } from './main.js';
 import { createDatePicker } from './datepicker.js';
 import { createCustomSelect } from './select.js';
 
@@ -480,6 +480,7 @@ function getDbSortColumn(sortKey) {
 }
 
 async function loadUsers() {
+    renderTableSkeletons('usersTableBody', 'usersCardsContainer', 7, 5);
     const from = (currentPage - 1) * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
 
