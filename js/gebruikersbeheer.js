@@ -176,7 +176,7 @@ async function openCreateModal() {
         <form class="modal-form" id="createUserForm">
             <div class="form-group">
                 <label for="createFullName">Volledige naam</label>
-                <input type="text" id="createFullName" class="modal-input" placeholder="Bijv. Jan de Vries" required>
+                <input type="text" id="createFullName" class="modal-input" placeholder="Bijv. Jan de Vries">
             </div>
             <div class="form-group">
                 <label for="createUsername">Gebruikersnaam</label>
@@ -313,7 +313,7 @@ async function openEditModal(userId) {
         <form class="modal-form" id="editUserForm">
             <div class="form-group">
                 <label for="editFullName">Volledige naam</label>
-                <input type="text" id="editFullName" class="modal-input" value="${fullName}" required>
+                <input type="text" id="editFullName" class="modal-input" value="${fullName}">
             </div>
             <div class="form-group">
                 <label for="editUsername">Gebruikersnaam</label>
@@ -546,7 +546,7 @@ function renderTable() {
     } else {
         tbody.innerHTML = currentUsers.map(user => {
             const parsed = parseUserDisplay(user.full_name, user.username);
-            const displayName = escapeHtml(parsed.title || 'Gebruiker');
+            const displayName = escapeHtml(parsed.title || '-');
             const username = escapeHtml(parsed.sub || '-');
             const role = escapeHtml(getRoleLabel(user.role));
             const departmentsHtml = renderDepartmentBadges(user.departments, 2, '-');
@@ -580,8 +580,8 @@ function renderTable() {
         if (cardsContainer) {
             cardsContainer.innerHTML = currentUsers.map(user => {
                 const parsed = parseUserDisplay(user.full_name, user.username);
-                const displayName = escapeHtml(parsed.title || 'Gebruiker');
-                const username = escapeHtml(parsed.sub || '');
+                const displayName = escapeHtml(parsed.title || parsed.sub || 'Gebruiker');
+                const username = escapeHtml(parsed.title && parsed.sub ? parsed.sub : '');
                 const role = escapeHtml(getRoleLabel(user.role));
                 const departmentsHtml = renderDepartmentBadges(user.departments, 3, '');
                 const birthday = escapeHtml(formatDutchDate(user.birthday));

@@ -490,11 +490,6 @@ function parseUserDisplay(nameStr, unameStr = '') {
         }
     }
 
-    if (!title && sub) {
-        title = sub;
-        sub = '';
-    }
-
     return { title, sub };
 }
 async function invokeFn(fnName, options) {
