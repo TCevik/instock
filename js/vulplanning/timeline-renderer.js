@@ -5,7 +5,7 @@ import { showContextMenu, showWorkerContextMenu } from './context-menu.js';
 import { findExactUser, fillRoosterShifts } from './rooster.js';
 import { calculateTimelineBounds, renderTimelineAxis, getPixelsPerMinute, getTimelineTotalMinutes } from './timeline-axis.js';
 import { openPauseModal } from './custom-task-modal.js';
-import { addHelperToTask, getComboTasksForTask } from './task-actions.js';
+import { addHelperToTask, getComboTasksForTask, findMainTaskForHelper, findHelpersForMainTask } from './task-actions.js';
 import { triggerAutoSave } from './storage.js';
 import { recordSnapshot } from './history.js';
 import { clearFillerSortState } from './filler-sort.js';
@@ -385,10 +385,20 @@ export function renderTimelineRows(options) {
             }
 
             block.addEventListener('mouseenter', (e) => {
+                let mainTask = task;
+                if (task.isHelper) {
+                    const mainInfo = findMainTaskForHelper(task);
+                    if (mainInfo) mainTask = mainInfo.task;
+                }
+                const helpers = findHelpersForMainTask(mainTask);
+                const totalDuration = mainTask.duration + helpers.reduce((sum, h) => sum + h.task.duration, 0);
+
                 showCustomTooltip(e, {
                     type: task.type,
                     title: task.title,
                     duration: task.duration,
+                    totalDuration: totalDuration,
+                    origDuration: mainTask.origDuration,
                     colli: task.colli,
                     startStr: startStr,
                     endStr: endStr,
@@ -475,7 +485,7 @@ export function renderTimelineRows(options) {
             if (dragData && dragData.source === 'unassigned' && dragged.type === 'vullen') {
                 const { prependedTasks, appendedTasks } = getComboTasksForTask(dragged);
                 previewTasks = [...prependedTasks, dragged, ...appendedTasks];
-            } else if (dragData && dragData.source === 'sidebar_assigned' && dragData.fillerId !== filler.id) {
+            } else if (dragData && dragData.source === 'sidebar_assigned') {
                 const origTask = dragged;
                 const rootTaskId = origTask.id;
                 const totalOrig = origTask.origDuration || origTask.duration;
@@ -554,6 +564,13 @@ export function renderTimelineRows(options) {
 
                 if (hoverX > nextItemMid) {
                     bestSlot = currentSlot + 1;
+                }
+            }
+
+            if (previewTasks.length === 1 && previewTasks[0].isHelper && previewTasks[0].parentTaskId) {
+                const mainTaskIdx = otherItems.findIndex(t => t.id === previewTasks[0].parentTaskId && !t.isHelper);
+                if (mainTaskIdx !== -1) {
+                    bestSlot = mainTaskIdx + 1;
                 }
             }
 
@@ -674,12 +691,10 @@ export function renderTimelineRows(options) {
                         onAssignTask(data.taskId, filler.id, targetIndex);
                     }
                 } else if (data.source === 'sidebar_assigned') {
-                    if (data.fillerId !== filler.id) {
-                        addHelperToTask(data.fillerId, data.taskIndex, filler.id, targetIndex, {
-                            onRenderRows,
-                            onRenderUnassigned
-                        });
-                    }
+                    addHelperToTask(data.fillerId, data.taskIndex, filler.id, targetIndex, {
+                        onRenderRows,
+                        onRenderUnassigned
+                    });
                 } else if (data.source === 'assigned') {
                     if (onMoveTask) onMoveTask(data.fillerId, data.taskIndex, filler.id, targetIndex);
                 }

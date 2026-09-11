@@ -276,6 +276,18 @@ body {
     border: 1px solid rgba(236, 72, 153, 0.35);
 }
 
+.tooltip-content-col {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.tooltip-details-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .tooltip-detail-item {
     font-size: 10px;
     color: var(--text-color-muted);
@@ -291,6 +303,24 @@ body {
 .tooltip-colli-val {
     color: var(--accent-color);
     font-weight: 700;
+}
+
+.tooltip-duration-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+}
+
+.tooltip-dur-orig {
+    color: var(--text-color-muted);
+    text-decoration: line-through;
+    opacity: 0.75;
+}
+
+.tooltip-dur-current {
+    color: var(--text-color);
+    font-weight: 600;
 }
 
 .page-header-row {

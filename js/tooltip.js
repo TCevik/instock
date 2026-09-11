@@ -116,18 +116,30 @@ export function showCustomTooltip(e, data) {
 
     let durationHtml = '';
     if (data.duration && !data.isFlexible) {
-        const durText = data.origDuration && data.origDuration !== data.duration
-            ? `${formatDuration(data.origDuration)} &bull; ${formatDuration(data.duration)}`
-            : formatDuration(data.duration);
-        durationHtml = `<span class="tooltip-detail-item">${durText}</span>`;
+        const compareDuration = data.totalDuration !== undefined ? data.totalDuration : data.duration;
+        const isModified = data.origDuration && data.origDuration !== compareDuration;
+        if (isModified) {
+            durationHtml = `
+                <div class="tooltip-duration-group">
+                    <span class="tooltip-dur-orig" title="Originele tijd">${formatDuration(data.origDuration)}</span>
+                    <span class="tooltip-dur-current">${formatDuration(data.duration)}</span>
+                </div>
+            `;
+        } else {
+            durationHtml = `<span class="tooltip-detail-item">${formatDuration(data.duration)}</span>`;
+        }
     }
 
     tip.innerHTML = `
         <span class="tooltip-badge-pill ${typeBadgeClass}">${typeLabel}</span>
-        <span class="tooltip-title">${escapeHtml(data.title || '')}</span>
-        ${colliHtml}
-        ${durationHtml}
-        ${timeHtml}
+        <div class="tooltip-content-col">
+            <span class="tooltip-title">${escapeHtml(data.title || '')}</span>
+            <div class="tooltip-details-row">
+                ${colliHtml}
+                ${durationHtml}
+                ${timeHtml}
+            </div>
+        </div>
     `;
 
     positionCustomTooltip(e);

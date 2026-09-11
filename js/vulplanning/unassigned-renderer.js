@@ -2,6 +2,7 @@ import { planningState, setDraggedTaskData } from './state.js';
 import { formatDuration } from './time-utils.js';
 import { showCustomTooltip, positionCustomTooltip, hideCustomTooltip } from './tooltip.js';
 import { showContextMenu } from './context-menu.js';
+import { findHelpersForMainTask } from './task-actions.js';
 
 export function renderUnassignedTasks(options) {
     const {
@@ -254,11 +255,14 @@ export function renderUnassignedTasks(options) {
 
         card.addEventListener('mouseenter', (e) => {
             if (e.target.closest('.assigned-helper-row')) return;
+            const allHelpers = findHelpersForMainTask(task);
+            const totalDur = task.duration + allHelpers.reduce((sum, h) => sum + h.task.duration, 0);
             showCustomTooltip(e, {
                 type: task.type,
                 title: task.title,
                 duration: task.duration,
-                origDuration: hasHelpers ? task.origDuration : null,
+                totalDuration: totalDur,
+                origDuration: task.origDuration,
                 colli: task.colli,
                 isHelper: false
             });
@@ -268,11 +272,14 @@ export function renderUnassignedTasks(options) {
             if (e.target.closest('.assigned-helper-row')) return;
             const tip = document.querySelector('.custom-planning-tooltip');
             if (!tip || !tip.classList.contains('visible') || tip.querySelector('.tooltip-badge-pill.type-helper')) {
+                const allHelpers = findHelpersForMainTask(task);
+                const totalDur = task.duration + allHelpers.reduce((sum, h) => sum + h.task.duration, 0);
                 showCustomTooltip(e, {
                     type: task.type,
                     title: task.title,
                     duration: task.duration,
-                    origDuration: hasHelpers ? task.origDuration : null,
+                    totalDuration: totalDur,
+                    origDuration: task.origDuration,
                     colli: task.colli,
                     isHelper: false
                 });
@@ -346,11 +353,14 @@ export function renderUnassignedTasks(options) {
             row.addEventListener('mouseleave', (e) => {
                 e.stopPropagation();
                 if (e.relatedTarget && card.contains(e.relatedTarget) && !e.relatedTarget.closest('.assigned-helper-row')) {
+                    const allHelpers = findHelpersForMainTask(task);
+                    const totalDur = task.duration + allHelpers.reduce((sum, h) => sum + h.task.duration, 0);
                     showCustomTooltip(e, {
                         type: task.type,
                         title: task.title,
                         duration: task.duration,
-                        origDuration: hasHelpers ? task.origDuration : null,
+                        totalDuration: totalDur,
+                        origDuration: task.origDuration,
                         colli: task.colli,
                         isHelper: false
                     });

@@ -289,20 +289,22 @@ export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIn
                 <input type="text" id="editCustomTaskTitle" class="modal-input" value="${escapeHtml(mainTask.title || '')}" required>
             </div>
             
+            ${helpers.length > 0 ? `
             <div class="form-group">
                 <div style="display: flex; align-items: center; justify-content: space-between;">
                     <label style="margin: 0;">Totale Werktijd (minuten) *</label>
-                    ${helpers.length > 0 ? `<small style="font-size: 11px; color: var(--accent-color); font-weight: 500;">Som ingesteld: <span id="currentPersonSumDisplay">${totalWorkMinutes}</span> / <span id="totalWorkTargetDisplay">${totalWorkMinutes}</span> min</small>` : ''}
+                    <small style="font-size: 11px; color: var(--accent-color); font-weight: 500;">Som ingesteld: <span id="currentPersonSumDisplay">${totalWorkMinutes}</span> / <span id="totalWorkTargetDisplay">${totalWorkMinutes}</span> min</small>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
                     <input type="number" min="1" id="editCustomTaskTotalWork" class="modal-input" value="${totalWorkMinutes}" required style="flex: 1;">
                     <span style="font-size: 12px; color: var(--text-color-muted);">min</span>
                 </div>
             </div>
+            ` : ''}
 
             <div class="form-group">
                 <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <label style="margin: 0;">Tijdsduur Hoofdtaak (${escapeHtml(mainFillerName || 'Hoofdtaak')}) *</label>
+                    <label style="margin: 0;">${helpers.length > 0 ? `Tijdsduur Hoofdtaak (${escapeHtml(mainFillerName || 'Hoofdtaak')}) *` : 'Tijdsduur (minuten) *'}</label>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
                     <input type="number" min="1" id="editCustomTaskDuration" class="modal-input" value="${mainTask.duration || 30}" required style="flex: 1;">
@@ -342,14 +344,17 @@ export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIn
     };
 
     const validateAllInputs = () => {
-        const totalWorkVal = parseInt(totalWorkInput.value, 10);
-        if (isNaN(totalWorkVal) || totalWorkVal < 1) {
-            totalWorkInput.style.borderColor = 'var(--danger-color)';
-            durError.textContent = 'Voer een geldige totale werktijd in (minimaal 1 minuut).';
-            durError.style.visibility = 'visible';
-            return false;
+        let totalWorkVal = 0;
+        if (totalWorkInput) {
+            totalWorkVal = parseInt(totalWorkInput.value, 10);
+            if (isNaN(totalWorkVal) || totalWorkVal < 1) {
+                totalWorkInput.style.borderColor = 'var(--danger-color)';
+                durError.textContent = 'Voer een geldige totale werktijd in (minimaal 1 minuut).';
+                durError.style.visibility = 'visible';
+                return false;
+            }
+            totalWorkInput.style.borderColor = '';
         }
-        totalWorkInput.style.borderColor = '';
 
         for (const inp of getAllDurInputs()) {
             const val = parseInt(inp.value, 10);
@@ -383,7 +388,9 @@ export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIn
         return true;
     };
 
-    totalWorkInput.addEventListener('input', validateAllInputs);
+    if (totalWorkInput) {
+        totalWorkInput.addEventListener('input', validateAllInputs);
+    }
     durInput.addEventListener('input', validateAllInputs);
     helperInputs.forEach(hInp => hInp.addEventListener('input', validateAllInputs));
 

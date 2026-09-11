@@ -186,10 +186,7 @@ export function unassignTask(fillerId, taskIndex, callbacks = {}) {
     const [task] = assignedList.splice(taskIndex, 1);
 
     if (task.isHelper && task.parentTaskId) {
-        const mainInfo = findMainTaskForHelper(task);
-        if (mainInfo && mainInfo.task) {
-            mainInfo.task.duration += task.duration;
-        }
+        returnHelperDurationToMain(task);
     } else {
         const rootTaskId = task.id;
         planningState.fillers.forEach(f => {
@@ -201,9 +198,11 @@ export function unassignTask(fillerId, taskIndex, callbacks = {}) {
         if (task.type !== 'pauze' && task.type !== 'overige') {
             if (task.origTitle) {
                 task.title = task.origTitle;
+                delete task.origTitle;
             }
             if (task.origDuration) {
                 task.duration = task.origDuration;
+                delete task.origDuration;
             }
 
             if (typeof task.origOrder === 'number') {
@@ -300,6 +299,11 @@ export function addHelperToTask(sourceFillerId, sourceTaskIndex, targetFillerId,
             }
         });
     });
+
+    if (sourceFillerId === targetFillerId) {
+        showToast('error', 'Een medewerker kan niet als helper aan de eigen taak worden toegevoegd.');
+        return;
+    }
 
     if (existingHelpers.some(h => h.fillerId === targetFillerId)) {
         showToast('error', 'Deze medewerker helpt al bij deze taak.');
@@ -425,9 +429,25 @@ export function moveAssignedTask(fromFillerId, fromIndex, toFillerId, insertInde
         planningState.assignedTasks[toFillerId] = [];
     }
 
-    if (!task.isHelper) {
+    if (task.isHelper) {
+        const mainInfo = findMainTaskForHelper(task);
+        if (mainInfo && mainInfo.fillerId === toFillerId) {
+            returnHelperDurationToMain(task);
+            if (callbacks.onRenderRows) callbacks.onRenderRows();
+            if (callbacks.onRenderUnassigned) callbacks.onRenderUnassigned();
+            triggerAutoSave(true);
+            return;
+        }
+    } else {
         const rootTaskId = task.id;
         if (fromFillerId !== toFillerId) {
+            const helperTaskOnTarget = (planningState.assignedTasks[toFillerId] || []).find(
+                t => t.isHelper && t.parentTaskId === rootTaskId
+            );
+            if (helperTaskOnTarget) {
+                returnHelperDurationToMain(helperTaskOnTarget);
+            }
+
             planningState.assignedTasks[toFillerId] = (planningState.assignedTasks[toFillerId] || []).filter(
                 t => !(t.isHelper && t.parentTaskId === rootTaskId)
             );
@@ -454,6 +474,13 @@ export function moveAssignedTask(fromFillerId, fromIndex, toFillerId, insertInde
     if (callbacks.onRenderRows) callbacks.onRenderRows();
     if (callbacks.onRenderUnassigned) callbacks.onRenderUnassigned();
     triggerAutoSave(true);
+}
+
+export function returnHelperDurationToMain(helperTask) {
+    if (!helperTask || !helperTask.isHelper || !helperTask.parentTaskId) return;
+    const mainInfo = findMainTaskForHelper(helperTask);
+    if (!mainInfo || !mainInfo.task) return;
+    mainInfo.task.duration += helperTask.duration;
 }
 
 export function findMainTaskForHelper(helperTask) {
