@@ -148,7 +148,7 @@ export async function loadSavedPlanning(options = {}) {
                         hydratedAssignedTasks[fillerId].push({
                             id: refId,
                             type: (ref && ref.type) || (parent && parent.type) || 'vullen',
-                            title: (ref && ref.title) || `${(parent && parent.title) || 'Taak'} (Helper)`,
+                            title: (ref && ref.title) || (parent && parent.title) || 'Taak',
                             duration: (ref && ref.duration) || 30,
                             origDuration: (ref && ref.origDuration) || (parent && parent.duration) || 30,
                             colli: (ref && ref.colli) || (parent && parent.colli) || 0,

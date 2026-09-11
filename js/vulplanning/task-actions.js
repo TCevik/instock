@@ -287,9 +287,6 @@ export function addHelperToTask(sourceFillerId, sourceTaskIndex, targetFillerId,
     if (origTask.isHelper) return;
 
     const rootTaskId = origTask.id;
-    const totalOrig = origTask.origDuration || origTask.duration;
-    const baseTitle = origTask.origTitle || origTask.title;
-
     const existingHelpers = [];
     planningState.fillers.forEach(f => {
         const flist = planningState.assignedTasks[f.id] || [];
@@ -299,6 +296,10 @@ export function addHelperToTask(sourceFillerId, sourceTaskIndex, targetFillerId,
             }
         });
     });
+
+    const activeTotalDuration = origTask.duration + existingHelpers.reduce((sum, h) => sum + h.task.duration, 0);
+    const totalOrig = origTask.origDuration || activeTotalDuration;
+    const baseTitle = origTask.origTitle || origTask.title;
 
     if (sourceFillerId === targetFillerId) {
         showToast('error', 'Een medewerker kan niet als helper aan de eigen taak worden toegevoegd.');
@@ -317,8 +318,8 @@ export function addHelperToTask(sourceFillerId, sourceTaskIndex, targetFillerId,
 
     const helperList = [...existingHelpers.map(h => ({ fillerId: h.fillerId, targetIndex: null })), { fillerId: targetFillerId, targetIndex }];
     const totalPeople = 1 + helperList.length;
-    const baseMinutes = Math.floor(totalOrig / totalPeople);
-    let remainder = totalOrig % totalPeople;
+    const baseMinutes = Math.floor(activeTotalDuration / totalPeople);
+    let remainder = activeTotalDuration % totalPeople;
 
     const giverMinutes = baseMinutes + (remainder > 0 ? 1 : 0);
     if (remainder > 0) remainder--;
@@ -397,7 +398,7 @@ export function applyMultiHelpers(params) {
         const helperTask = {
             id: `${rootTaskId}_helper_${h.fillerId}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
             type: origTask.type,
-            title: `${baseTitle} (Helper)`,
+            title: baseTitle,
             duration: h.duration,
             colli: origTask.colli || 0,
             origTitle: baseTitle,

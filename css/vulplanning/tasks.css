@@ -246,10 +246,6 @@
     padding: 2px 4px;
 }
 
-.timeline-task-block.is-tiny .timeline-task-meta-time {
-    display: none;
-}
-
 .timeline-task-block.is-micro {
     padding: 2px 3px;
     align-items: center;

@@ -54,10 +54,16 @@
     .print-header-row {
         display: flex;
         justify-content: space-between;
-        align-items: flex-end;
+        align-items: center;
         border-bottom: 2px solid var(--accent-color);
-        padding-bottom: 2px;
-        margin-bottom: 3px;
+        padding-bottom: 3px;
+        margin-bottom: 4px;
+    }
+
+    .print-header-left {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
     }
 
     .print-main-title {
@@ -72,6 +78,53 @@
         font-size: 9.5px;
         font-weight: 600;
         color: var(--print-text-muted);
+    }
+
+    .print-legend {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .print-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 8px;
+        font-weight: 600;
+        color: var(--print-text);
+    }
+
+    .print-legend-color {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        display: inline-block;
+        border: 1px solid var(--print-border);
+    }
+
+    .print-legend-color.type-vullen {
+        background-color: var(--accent-color);
+    }
+
+    .print-legend-color.type-spiegelen {
+        background-color: var(--warning-color);
+    }
+
+    .print-legend-color.type-restanten {
+        background-color: var(--purple-color);
+    }
+
+    .print-legend-color.type-overige {
+        background-color: var(--info-color);
+    }
+
+    .print-legend-color.is-helper {
+        background-color: var(--helper-color);
+    }
+
+    .print-legend-color.type-pauze {
+        background-color: var(--pauze-color);
     }
 
     .print-planning-table {
@@ -233,9 +286,17 @@
         font-size: 7.5px;
         color: var(--print-text-muted);
         display: flex;
+        align-items: center;
+        justify-content: space-between;
         gap: 4px;
         white-space: nowrap;
         line-height: 1.1;
+    }
+
+    .print-task-colli {
+        font-weight: 700;
+        color: var(--accent-color);
+        margin-left: auto;
     }
 
     .print-no-tasks {

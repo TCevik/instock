@@ -357,10 +357,14 @@ if (unassignedTasksSidebar) {
         unassignedTasksSidebar.classList.remove('drag-active');
 
         const dataStr = e.dataTransfer.getData('text/plain');
-        if (!dataStr) return;
+        let data = null;
+        if (dataStr) {
+            try { data = JSON.parse(dataStr); } catch (_) {}
+        }
+        if (!data) data = getDraggedTaskData();
+        if (!data) return;
 
         try {
-            const data = JSON.parse(dataStr);
             if (data.source === 'assigned' && data.fillerId && data.taskIndex !== undefined) {
                 unassignTask(data.fillerId, data.taskIndex, {
                     onRenderRows: doRenderRows,

@@ -100,8 +100,8 @@ export function generatePrintDocument(options = printOptions) {
                     currentMins += totalDuration;
 
                     const baseName = (t2.pathName || t2.title || 'Taak').replace(/\s*\(\d+\s*c\)/gi, '').trim();
-                    const colliStr = t2.colli ? ` (${t2.colli} c)` : '';
-                    const comboTitle = `${baseName}${colliStr}`;
+                    const comboTitle = baseName;
+                    const colliSpan = t2.colli ? `<span class="print-task-colli">${t2.colli} c</span>` : '';
 
                     const p1 = Math.max(1, Math.round((t1.duration / totalDuration) * 100));
                     const p2 = Math.min(99, Math.max(p1 + 1, Math.round(((t1.duration + t2.duration) / totalDuration) * 100)));
@@ -111,8 +111,8 @@ export function generatePrintDocument(options = printOptions) {
                         <div class="print-task-pill is-combo-trio" style="background-image: ${grad};">
                             <div class="print-task-top" title="${escapeHtml(comboTitle)}">${escapeHtml(comboTitle)}</div>
                             <div class="print-task-sub">
-                                <span>${formatDuration(totalDuration)}</span>
-                                <span>${startStr} - ${endStr}</span>
+                                <span>${formatDuration(totalDuration)} ${startStr} - ${endStr}</span>
+                                ${colliSpan}
                             </div>
                         </div>
                     `);
@@ -124,19 +124,15 @@ export function generatePrintDocument(options = printOptions) {
                     const endStr = minutesToTime(currentMins + t1.duration);
                     currentMins += t1.duration;
 
-                    let titleText = (t1.title || 'Taak').replace(/\s*\(\d+\s*c\)/gi, '').trim();
-                    if (isHelper) {
-                        titleText += ' (Hulp)';
-                    } else if (t1.colli) {
-                        titleText += ` (${t1.colli} c)`;
-                    }
+                    const titleText = (t1.title || 'Taak').replace(/\s*\(\d+\s*c\)/gi, '').replace(/\s*\([Hh]ulp\)/gi, '').trim();
+                    const colliSpan = t1.colli ? `<span class="print-task-colli">${t1.colli} c</span>` : '';
 
                     pills.push(`
                         <div class="print-task-pill ${typeClass}">
                             <div class="print-task-top" title="${escapeHtml(titleText)}">${escapeHtml(titleText)}</div>
                             <div class="print-task-sub">
-                                <span>${formatDuration(t1.duration)}</span>
-                                <span>${startStr} - ${endStr}</span>
+                                <span>${formatDuration(t1.duration)} ${startStr} - ${endStr}</span>
+                                ${colliSpan}
                             </div>
                         </div>
                     `);
@@ -188,8 +184,36 @@ export function generatePrintDocument(options = printOptions) {
 
     container.innerHTML = `
         <div class="print-header-row">
-            <div class="print-main-title">Vulplanning</div>
-            <div class="print-timestamp">${dateFormatted}</div>
+            <div class="print-header-left">
+                <div class="print-main-title">Vulplanning</div>
+                <div class="print-timestamp">${dateFormatted}</div>
+            </div>
+            <div class="print-legend">
+                <div class="print-legend-item">
+                    <span class="print-legend-color type-vullen"></span>
+                    <span>Vullen</span>
+                </div>
+                <div class="print-legend-item">
+                    <span class="print-legend-color type-spiegelen"></span>
+                    <span>Spiegelen</span>
+                </div>
+                <div class="print-legend-item">
+                    <span class="print-legend-color type-restanten"></span>
+                    <span>Restanten</span>
+                </div>
+                <div class="print-legend-item">
+                    <span class="print-legend-color type-overige"></span>
+                    <span>Overige</span>
+                </div>
+                <div class="print-legend-item">
+                    <span class="print-legend-color is-helper"></span>
+                    <span>Hulptaak</span>
+                </div>
+                <div class="print-legend-item">
+                    <span class="print-legend-color type-pauze"></span>
+                    <span>Pauze</span>
+                </div>
+            </div>
         </div>
         <table class="print-planning-table">
             <thead>

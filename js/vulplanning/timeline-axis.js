@@ -26,7 +26,7 @@ export function calculateTimelineBounds(fillers) {
 }
 
 export function getPixelsPerMinute() {
-    return 2.5 * planningState.zoom;
+    return 1.5 * planningState.zoom;
 }
 
 export function getTimelineTotalMinutes() {

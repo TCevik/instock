@@ -488,16 +488,20 @@ export function renderTimelineRows(options) {
             } else if (dragData && dragData.source === 'sidebar_assigned') {
                 const origTask = dragged;
                 const rootTaskId = origTask.id;
-                const totalOrig = origTask.origDuration || origTask.duration;
+                let existingHelpersDuration = 0;
                 let existingHelpersCount = 0;
                 planningState.fillers.forEach(f => {
                     const flist = planningState.assignedTasks[f.id] || [];
                     flist.forEach(t => {
-                        if (t.isHelper && t.parentTaskId === rootTaskId) existingHelpersCount++;
+                        if (t.isHelper && t.parentTaskId === rootTaskId) {
+                            existingHelpersCount++;
+                            existingHelpersDuration += t.duration || 0;
+                        }
                     });
                 });
+                const activeTotalDuration = origTask.duration + existingHelpersDuration;
                 const totalPeople = 1 + existingHelpersCount + 1;
-                const predictedDuration = Math.max(1, Math.floor(totalOrig / totalPeople));
+                const predictedDuration = Math.max(1, Math.floor(activeTotalDuration / totalPeople));
                 previewTasks = [{ ...origTask, duration: predictedDuration, isHelper: true }];
             }
 
@@ -678,10 +682,14 @@ export function renderTimelineRows(options) {
             trackRow.removeAttribute('data-target-index');
 
             const dataStr = e.dataTransfer.getData('text/plain');
-            if (!dataStr) return;
+            let data = null;
+            if (dataStr) {
+                try { data = JSON.parse(dataStr); } catch (_) {}
+            }
+            if (!data) data = getDraggedTaskData();
+            if (!data) return;
 
             try {
-                const data = JSON.parse(dataStr);
                 if (data.source === 'unassigned') {
                     if (data.taskId === 'pauze_template') {
                         openPauseModal(30, (chosenDuration) => {

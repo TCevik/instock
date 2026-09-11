@@ -442,8 +442,8 @@ export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIn
                         h.task.origDuration = h.task.duration;
                     }
                     h.task.duration = newHelperDur;
-                    h.task.title = `${newTitle} (Helper)`;
-                    h.task.origTitle = `${newTitle} (Helper)`;
+                    h.task.title = newTitle;
+                    h.task.origTitle = newTitle;
                 });
             } else {
                 mainTask.title = newTitle;
