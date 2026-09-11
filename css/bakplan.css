@@ -193,7 +193,7 @@
 }
 
 .category-header-row td:first-child {
-    border-left: 3px solid var(--accent-color);
+    padding-left: 18px;
 }
 
 .category-header-row td.td-actions {
