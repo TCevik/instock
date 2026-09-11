@@ -263,11 +263,10 @@ async function handleFillerClick(filler) {
     }
 
     try {
-        const { data, error } = await supabase.functions.invoke('get-top-fillers', {
+        const data = await invokeFn('get-top-fillers', {
             body: { target_user_id: filler.user_id }
         });
 
-        if (error) throw error;
         if (!data || !data.user) {
             throw new Error('Gegevens van medewerker niet ontvangen');
         }

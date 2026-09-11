@@ -504,17 +504,39 @@ async function invokeFn(fnName, options) {
         if (error.context && typeof error.context.json === 'function') {
             try {
                 const body = await error.context.json();
-                msg = body?.error || '';
+                msg = body?.error || body?.message || '';
+            } catch (_) {}
+        }
+        if (!msg && error.context && typeof error.context.text === 'function') {
+            try {
+                const text = await error.context.text();
+                if (text) {
+                    try {
+                        const parsed = JSON.parse(text);
+                        msg = parsed?.error || parsed?.message || text;
+                    } catch (_) {
+                        msg = text;
+                    }
+                }
             } catch (_) {}
         }
         if (!msg && data && typeof data === 'object' && data.error) {
             msg = data.error;
         }
-        if (!msg) {
-            msg = error.message || '';
+        if (!msg && error.message) {
+            msg = error.message;
         }
         if (!msg || msg.includes('non-2xx')) {
-            msg = 'Er is een fout opgetreden';
+            const status = error.context?.status;
+            if (status === 403) {
+                msg = 'Geen toegang voor deze actie';
+            } else if (status === 401) {
+                msg = 'Niet ingelogd of sessie verlopen';
+            } else if (status === 404) {
+                msg = 'Functie of gegevens niet gevonden';
+            } else {
+                msg = 'Er is een fout opgetreden bij het uitvoeren';
+            }
         }
         throw new Error(msg);
     }
