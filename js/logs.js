@@ -1,6 +1,6 @@
 import { supabase, showModal, closeModal, parseUserDisplay } from './main.js';
 import { createCustomSelect } from './select.js';
-import { getProductivityStatusClass } from './vulplanning/time-utils.js';
+import { getProductivityStatusClass, calculateTaskDuration, calculateShiftTotalColli } from './vulplanning/time-utils.js';
 
 function escapeHtml(str) {
     if (!str) return '';
@@ -525,8 +525,8 @@ function renderShiftDiff(oldShift, newShift) {
         });
     }
 
-    const oldColli = Number(oldObj.total_colli) || 0;
-    const newColli = Number(newObj.total_colli) || 0;
+    const oldColli = calculateShiftTotalColli(oldObj);
+    const newColli = calculateShiftTotalColli(newObj);
     if (oldColli !== newColli) {
         diffs.push({
             label: 'Totaal colli',
@@ -551,7 +551,8 @@ function renderShiftDiff(oldShift, newShift) {
             if (nT.type) details.push(`Type: ${nT.type}`);
             if (nT.colli > 0) details.push(`${nT.colli} colli`);
             if (nT.start_time || nT.end_time) details.push(`${nT.start_time || ''} - ${nT.end_time || ''}`);
-            if (nT.duration_minutes > 0) details.push(`${nT.duration_minutes}m`);
+            const nDur = calculateTaskDuration(nT);
+            if (nDur > 0) details.push(`${nDur}m`);
 
             taskCards.push(`
                 <div class="log-detail-card">
@@ -598,8 +599,8 @@ function renderShiftDiff(oldShift, newShift) {
             const nStart = nT.start_time || nT.start || '';
             const oEnd = oT.end_time || oT.end || '';
             const nEnd = nT.end_time || nT.end || '';
-            const oDur = Number(oT.duration_minutes) || Number(oT.duration) || 0;
-            const nDur = Number(nT.duration_minutes) || Number(nT.duration) || 0;
+            const oDur = calculateTaskDuration(oT);
+            const nDur = calculateTaskDuration(nT);
 
             const tFieldDiffs = [];
             if (oTitle !== nTitle) tFieldDiffs.push({ label: 'Naam', oldVal: oTitle, newVal: nTitle });
@@ -903,7 +904,7 @@ function openDetailsModal(log) {
                     prev_productivity: oldVal?.productivity !== undefined ? oldVal.productivity : null,
                     date: shiftObj.date || oldVal?.date || '',
                     shift: shiftObj.shift || null,
-                    total_colli: shiftObj.total_colli !== undefined ? shiftObj.total_colli : null,
+                    total_colli: calculateShiftTotalColli(shiftObj),
                     task_count: Array.isArray(shiftObj.tasks) ? shiftObj.tasks.length : 0
                 }];
                 prodBatchDate = prodItems[0].date;
@@ -922,7 +923,7 @@ function openDetailsModal(log) {
                 prev_productivity: oldVal?.productivity ? (typeof oldVal.productivity === 'object' ? oldVal.productivity.productivity : oldVal.productivity) : null,
                 date: typeof p === 'object' ? p.date : '',
                 shift: typeof p === 'object' ? p.shift : null,
-                total_colli: typeof p === 'object' ? p.total_colli : null,
+                total_colli: typeof p === 'object' ? calculateShiftTotalColli(p) : null,
                 task_count: typeof p === 'object' && Array.isArray(p.tasks) ? p.tasks.length : 0
             }];
             prodBatchDate = prodItems[0].date;

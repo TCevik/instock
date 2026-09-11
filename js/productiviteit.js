@@ -1,5 +1,5 @@
 import { supabase, showToast, escapeHtml, invokeFn } from './main.js';
-import { formatDuration, timeToMinutes, getProductivityStatusClass, getProductivityStatusIcon } from './vulplanning/time-utils.js';
+import { formatDuration, timeToMinutes, getProductivityStatusClass, getProductivityStatusIcon, calculateTaskDuration, calculateShiftWorkMinutes, calculateShiftTotalColli } from './vulplanning/time-utils.js';
 import { createCustomSelect } from './select.js';
 import { createDatePicker, MONTH_NAMES, SHORT_MONTH_NAMES, parseDate } from './datepicker.js';
 import { createTimePicker } from './timepicker.js';
@@ -623,7 +623,7 @@ function renderProductivityChart(entries) {
             avgPercent: windowAvg,
             windowSize: windowProdList.length,
             dateLabel,
-            colli: Number(e.total_colli) || 0
+            colli: calculateShiftTotalColli(e)
         };
     });
 
@@ -875,15 +875,7 @@ function renderSummaryStats(entries) {
             totalProd += Number(e.productivity);
             prodCount++;
         }
-        if (e.total_colli && Number(e.total_colli) > 0) {
-            totalColli += Number(e.total_colli);
-        } else if (Array.isArray(e.tasks)) {
-            e.tasks.forEach(t => {
-                if (t.colli && Number(t.colli) > 0) {
-                    totalColli += Number(t.colli);
-                }
-            });
-        }
+        totalColli += calculateShiftTotalColli(e);
     });
 
     if (avgEl) {
@@ -927,18 +919,9 @@ function renderProductivityList(entries, container) {
         const startTime = shift.start || '';
         const endTime = shift.actual_end || shift.planned_end || '';
         const pauseMinutes = Number(shift.pause_minutes) || 0;
-        const workMinutes = Number(entry.total_work_minutes) || 0;
-
-        let totalColli = Number(entry.total_colli) || 0;
+        const workMinutes = calculateShiftWorkMinutes(entry);
+        let totalColli = calculateShiftTotalColli(entry);
         const tasks = Array.isArray(entry.tasks) ? entry.tasks : [];
-
-        if (totalColli === 0 && tasks.length > 0) {
-            tasks.forEach(t => {
-                if (t.colli && Number(t.colli) > 0) {
-                    totalColli += Number(t.colli);
-                }
-            });
-        }
 
         const dateStr = formatDate(entry.date || entry.finalized_at);
 
@@ -982,16 +965,9 @@ function renderProductivityList(entries, container) {
                 const title = escapeHtml(task.title || task.pathName || task.name || 'Taak');
                 const type = task.type || 'overige';
                 const colli = Number(task.colli) || 0;
-                let dur = Number(task.duration_minutes) || Number(task.duration) || 0;
+                let dur = calculateTaskDuration(task);
                 const sTime = task.start_time || task.start || '';
                 const eTime = task.end_time || task.end || '';
-
-                if (dur <= 0 && sTime && eTime) {
-                    const startM = timeToMinutes(sTime);
-                    let endM = timeToMinutes(eTime);
-                    if (endM < startM) endM += 24 * 60;
-                    dur = Math.max(0, endM - startM);
-                }
 
                 let timeHtml = '';
                 if (sTime && eTime) {
@@ -1315,7 +1291,7 @@ async function openShiftModal(entry = {}, isEdit = true) {
     const startTime = shift.start || shift.start_time || (isEdit ? '' : '08:00');
     const endTime = shift.actual_end || shift.planned_end || shift.end_time || (isEdit ? '' : '16:00');
     const pauseMinutes = Number(shift.pause_minutes || shift.pauze || shift.break_minutes) || 0;
-    const totalColli = Number(entry.total_colli) || 0;
+    const totalColli = calculateShiftTotalColli(entry);
     const percent = entry.productivity !== undefined ? Math.round(Number(entry.productivity)) : 100;
     const targetName = selectedFillerUserData?.full_name || selectedFillerUserData?.username || ownUserData?.full_name || ownUserData?.username || 'Medewerker';
 
@@ -1473,15 +1449,7 @@ async function openShiftModal(entry = {}, isEdit = true) {
         tasksListEl.innerHTML = modalTasks.map((t, idx) => {
             const title = escapeHtml(t.title || t.pathName || t.name || '');
             const colli = Number(t.colli) || 0;
-            let dur = Number(t.duration_minutes) || Number(t.duration) || 0;
-            const sTime = t.start_time || t.start || '';
-            const eTime = t.end_time || t.end || '';
-            if (sTime && eTime) {
-                const sm = timeToMinutes(sTime);
-                let em = timeToMinutes(eTime);
-                if (em < sm) em += 24 * 60;
-                dur = em - sm;
-            }
+            let dur = calculateTaskDuration(t);
 
             return `
                 <div class="modal-task-item" data-idx="${idx}">

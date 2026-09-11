@@ -227,6 +227,63 @@ export function getFillerStats(filler, assignedTasks = []) {
     };
 }
 
+export function calculateTaskDuration(task) {
+    if (!task) return 0;
+    const sTime = task.start_time || task.start || '';
+    const eTime = task.end_time || task.end || '';
+    if (sTime && eTime) {
+        const sm = timeToMinutes(sTime);
+        let em = timeToMinutes(eTime);
+        if (em < sm) em += 24 * 60;
+        return Math.max(0, em - sm);
+    }
+    return Number(task.duration_minutes) || Number(task.duration) || Number(task.duur) || Number(task.minutes) || Number(task.work_minutes) || 0;
+}
+
+export function calculateShiftWorkMinutes(entry) {
+    if (!entry) return 0;
+    const tasks = Array.isArray(entry.tasks) ? entry.tasks : [];
+    if (tasks.length > 0) {
+        let workSum = 0;
+        let hasValidTasks = false;
+        tasks.forEach(t => {
+            if (t && t.type !== 'pauze') {
+                const dur = calculateTaskDuration(t);
+                if (dur > 0) {
+                    workSum += dur;
+                    hasValidTasks = true;
+                }
+            }
+        });
+        if (hasValidTasks) return workSum;
+    }
+    const shift = entry.shift || entry;
+    const startTime = shift.start || shift.start_time || '';
+    const endTime = shift.actual_end || shift.planned_end || shift.end_time || '';
+    if (startTime && endTime) {
+        const sm = timeToMinutes(startTime);
+        let em = timeToMinutes(endTime);
+        if (em < sm) em += 24 * 60;
+        const gross = Math.max(0, em - sm);
+        const pause = Number(shift.pause_minutes || shift.pauze || shift.break_minutes) || 0;
+        return Math.max(0, gross - pause);
+    }
+    return Number(entry.total_work_minutes) || Number(entry.work_minutes) || 0;
+}
+
+export function calculateShiftTotalColli(entry) {
+    if (!entry) return 0;
+    const tasks = Array.isArray(entry.tasks) ? entry.tasks : [];
+    let sum = 0;
+    tasks.forEach(t => {
+        if (t && t.colli && Number(t.colli) > 0) {
+            sum += Number(t.colli);
+        }
+    });
+    if (sum > 0) return sum;
+    return Number(entry.total_colli) || 0;
+}
+
 export function getFormattedTasksWithTimes(filler, assignedTasks = []) {
     const shiftStart = timeToMinutes(filler.from);
     let currentMins = shiftStart >= 0 ? shiftStart : 0;
@@ -238,7 +295,6 @@ export function getFormattedTasksWithTimes(filler, assignedTasks = []) {
         const taskData = {
             title: t.title || t.pathName || 'Taak',
             type: t.type || 'overige',
-            duration_minutes: dur,
             start_time: minutesToTime(tStart),
             end_time: minutesToTime(tEnd)
         };
@@ -248,4 +304,5 @@ export function getFormattedTasksWithTimes(filler, assignedTasks = []) {
         return taskData;
     });
 }
+
 

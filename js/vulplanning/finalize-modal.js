@@ -1,6 +1,6 @@
 import { showModal, closeModal, showToast, escapeHtml, supabase } from '../main.js';
 import { planningState } from './state.js';
-import { getFillerStats, getFormattedTasksWithTimes, formatDuration } from './time-utils.js';
+import { getFillerStats, getFormattedTasksWithTimes, formatDuration, calculateShiftTotalColli } from './time-utils.js';
 import { findExactUser, findUserByUsername } from './rooster.js';
 
 export async function openFinalizeModal() {
@@ -64,7 +64,7 @@ export async function openFinalizeModal() {
             prevProdPercent = existingTodayRecord.productivity;
             const oldEnd = String(existingTodayRecord.actual_end_time || existingTodayRecord.shift?.actual_end || '').trim();
             const newEnd = String(filler.actualEndTime || '').trim();
-            const oldColli = Number(existingTodayRecord.total_colli) || 0;
+            const oldColli = calculateShiftTotalColli(existingTodayRecord);
             const newColli = Number(stats.totalColli) || 0;
             const oldTasksLen = Array.isArray(existingTodayRecord.tasks) ? existingTodayRecord.tasks.length : null;
             const newTasksLen = assigned.length;
@@ -352,8 +352,6 @@ export async function openFinalizeModal() {
                                 actual_end: item.filler.actualEndTime,
                                 pause_minutes: item.stats.effectivePause
                             },
-                            total_work_minutes: item.stats.workAssignedMins,
-                            total_colli: item.stats.totalColli > 0 ? item.stats.totalColli : undefined,
                             tasks: formattedTasks
                         }
                     };
