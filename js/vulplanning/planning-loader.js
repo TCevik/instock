@@ -5,6 +5,7 @@ import { fillColliValues, loadStorePathsForColli } from './colli-invoer.js';
 import { generateTasksFromPathsAndColli } from './task-generator.js';
 import { calculateTimelineBounds } from './timeline-axis.js';
 import { applyStoredFillerSort } from './filler-sort.js';
+import { consumeLocalSaveFlag } from './storage.js';
 
 export async function loadSavedPlanning(options = {}) {
     const {
@@ -171,6 +172,9 @@ export async function loadSavedPlanning(options = {}) {
                     } else if (taskPool.has(refId)) {
                         const originalTask = taskPool.get(refId);
                         const taskCopy = { ...originalTask };
+                        if (ref && ref.title) {
+                            taskCopy.title = ref.title;
+                        }
                         if (ref && ref.duration !== undefined) {
                             taskCopy.duration = ref.duration;
                         }
@@ -198,11 +202,6 @@ export async function loadSavedPlanning(options = {}) {
         applyStoredFillerSort();
         calculateTimelineBounds(planningState.fillers);
 
-        const savedTab = localStorage.getItem('instock_planner_tab');
-        if (savedTab) {
-            planningState.activeTab = savedTab;
-        }
-
         const savedZoom = localStorage.getItem('instock_planner_zoom');
         if (savedZoom !== null) {
             const parsedZoom = parseFloat(savedZoom);
@@ -223,3 +222,37 @@ export async function loadSavedPlanning(options = {}) {
         }
     } catch (_) {}
 }
+
+let realtimeChannel = null;
+
+export async function setupRealtimeSubscription(options = {}) {
+    try {
+        const user = await getCurrentUser();
+        if (!user || !user.store_id) return;
+
+        if (realtimeChannel) {
+            supabase.removeChannel(realtimeChannel);
+            realtimeChannel = null;
+        }
+
+        realtimeChannel = supabase
+            .channel(`planner_realtime_${user.store_id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'planner',
+                    filter: `store_id=eq.${user.store_id}`
+                },
+                (payload) => {
+                    if (consumeLocalSaveFlag()) {
+                        return;
+                    }
+                    loadSavedPlanning(options);
+                }
+            )
+            .subscribe();
+    } catch (_) {}
+}
+

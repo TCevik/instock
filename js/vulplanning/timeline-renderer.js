@@ -414,6 +414,7 @@ export function renderTimelineRows(options) {
                 };
                 setDraggedTaskData(dragData);
                 e.dataTransfer.setData('text/plain', JSON.stringify(dragData));
+
                 setTimeout(() => {
                     block.classList.add('dragging');
                 }, 0);
@@ -474,6 +475,20 @@ export function renderTimelineRows(options) {
             if (dragData && dragData.source === 'unassigned' && dragged.type === 'vullen') {
                 const { prependedTasks, appendedTasks } = getComboTasksForTask(dragged);
                 previewTasks = [...prependedTasks, dragged, ...appendedTasks];
+            } else if (dragData && dragData.source === 'sidebar_assigned' && dragData.fillerId !== filler.id) {
+                const origTask = dragged;
+                const rootTaskId = origTask.id;
+                const totalOrig = origTask.origDuration || origTask.duration;
+                let existingHelpersCount = 0;
+                planningState.fillers.forEach(f => {
+                    const flist = planningState.assignedTasks[f.id] || [];
+                    flist.forEach(t => {
+                        if (t.isHelper && t.parentTaskId === rootTaskId) existingHelpersCount++;
+                    });
+                });
+                const totalPeople = 1 + existingHelpersCount + 1;
+                const predictedDuration = Math.max(1, Math.floor(totalOrig / totalPeople));
+                previewTasks = [{ ...origTask, duration: predictedDuration, isHelper: true }];
             }
 
             const rect = trackRow.getBoundingClientRect();
@@ -555,7 +570,7 @@ export function renderTimelineRows(options) {
                 const isTiny = itemWidthPx < 68;
                 const isNano = itemWidthPx < 20;
 
-                g.className = `timeline-task-ghost type-${item.type || 'vullen'} ${isMicro ? 'is-micro' : ''} ${isTiny ? 'is-tiny' : ''} ${isNano ? 'is-nano' : ''}`;
+                g.className = `timeline-task-ghost type-${item.type || 'vullen'} ${item.isHelper ? 'is-helper' : ''} ${isMicro ? 'is-micro' : ''} ${isTiny ? 'is-tiny' : ''} ${isNano ? 'is-nano' : ''}`;
                 g.style.left = `${Math.max(0, currentGhostLeftPx)}px`;
                 g.style.width = `${itemWidthPx}px`;
                 currentGhostLeftPx += itemDurationMins * pxPerMin;

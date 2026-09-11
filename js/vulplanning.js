@@ -11,7 +11,7 @@ import { assignTaskToFiller, unassignTask, moveAssignedTask, unassignAllTasks } 
 import { renderTimelineRows } from './vulplanning/timeline-renderer.js';
 import { renderUnassignedTasks } from './vulplanning/unassigned-renderer.js';
 import { setupCustomTaskModal } from './vulplanning/custom-task-modal.js';
-import { loadSavedPlanning } from './vulplanning/planning-loader.js';
+import { loadSavedPlanning, setupRealtimeSubscription } from './vulplanning/planning-loader.js';
 import { openComboSettingsModal, loadComboSettings } from './vulplanning/combo-settings-modal.js';
 import { initHistory, setupHistoryShortcuts } from './vulplanning/history.js';
 import { renderMobilePlanningView } from './vulplanning/mobile-view.js';
@@ -332,7 +332,6 @@ tabButtons.forEach(btn => {
         tabButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         planningState.activeTab = btn.getAttribute('data-tab');
-        localStorage.setItem('instock_planner_tab', planningState.activeTab);
         doRenderUnassigned();
     });
 });
@@ -650,6 +649,14 @@ loadSavedPlanning({
     });
     initFillerSort({
         onRenderRows: doRenderRows
+    });
+    setupRealtimeSubscription({
+        stepInputView,
+        stepTimelineView,
+        onRenderAxis: doRenderAxis,
+        onRenderRows: doRenderRows,
+        onRenderUnassigned: doRenderUnassigned,
+        onRestoreScroll: restoreTimelineScroll
     });
 }).finally(() => {
     hideLoadingScreen();

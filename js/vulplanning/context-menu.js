@@ -1,4 +1,4 @@
-import { showModal, closeModal, showConfirmModal, showToast } from '../main.js';
+import { showModal, closeModal, showConfirmModal, showToast, escapeHtml } from '../main.js';
 import { planningState } from './state.js';
 import { timeToMinutes, formatDuration, parsePauseMinutes } from './time-utils.js';
 import { hideCustomTooltip } from './tooltip.js';
@@ -235,7 +235,10 @@ export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIn
         }
     }
 
+    const origTitle = task.origTitle;
     const hasModifiedDuration = isAssigned && origDuration !== undefined && origDuration !== null && origDuration !== task.duration;
+    const hasModifiedTitle = isAssigned && origTitle !== undefined && origTitle !== null && origTitle !== task.title;
+    const canRestore = hasModifiedDuration || hasModifiedTitle;
 
     let subtitle = '';
     if (isHelper) {
@@ -243,7 +246,7 @@ export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIn
             ? `Helpertaak van "${mainInfo.task.title}". Tijd die je hier aanpast, wordt verrekend met de hoofdtaak.`
             : 'Helpertaak in de planning.';
     } else if (isAssigned) {
-        subtitle = 'Pas de tijdsduur of titel aan voor deze planning. De originele tijd blijft behouden.';
+        subtitle = 'Pas de tijdsduur of titel aan voor deze planning. De originele gegevens blijven behouden.';
     } else {
         subtitle = 'Pas de taakomschrijving of standaardtijd aan in het overzicht.';
     }
@@ -256,16 +259,16 @@ export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIn
         <form id="editCustomTaskForm" class="modal-form" novalidate>
             <div class="form-group">
                 <label>Taakomschrijving *</label>
-                <input type="text" id="editCustomTaskTitle" class="modal-input" value="${task.title || ''}" ${isHelper ? 'readonly style="opacity:0.75;cursor:not-allowed;"' : ''} required>
+                <input type="text" id="editCustomTaskTitle" class="modal-input" value="${escapeHtml(task.title || '')}" ${isHelper ? 'readonly style="opacity:0.75;cursor:not-allowed;"' : ''} required>
             </div>
             <div class="form-group">
                 <label>Tijdsduur (minuten) *</label>
                 <input type="number" min="1" id="editCustomTaskDuration" class="modal-input" value="${task.duration || 30}" required>
                 <div id="editCustomTaskDurationError" style="display:none;font-size:12px;color:var(--danger-color);margin-top:2px;"></div>
                 ${isHelper && mainInfo && mainInfo.task ? `<small style="font-size:11px;color:var(--text-color-muted);margin-top:4px;display:block;">Hoofdtaak heeft nu ${mainInfo.task.duration} min (max. ${maxHelperDuration} min voor deze helper)</small>` : ''}
-                ${hasModifiedDuration ? `
+                ${canRestore ? `
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">
-                    <small style="font-size:12px;color:var(--text-color-muted);">Originele tijd: <strong style="color:var(--text-color);">${origDuration} min</strong> (${formatDuration(origDuration)})</small>
+                    <small style="font-size:12px;color:var(--text-color-muted);">${hasModifiedDuration ? `Originele tijd: <strong style="color:var(--text-color);">${origDuration} min</strong>` : ''}${hasModifiedTitle ? ` Originele titel: <strong style="color:var(--text-color);">${escapeHtml(origTitle)}</strong>` : ''}</small>
                     <button type="button" id="btnRestoreOrigDuration" style="background:none;border:none;color:var(--accent-color);font-size:12px;font-weight:500;cursor:pointer;padding:0;">Herstellen en opslaan</button>
                 </div>` : ''}
             </div>
@@ -306,14 +309,18 @@ export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIn
 
     if (restoreBtn) {
         restoreBtn.addEventListener('click', () => {
+            const titleInput = overlay.querySelector('#editCustomTaskTitle');
+            if (titleInput && task.origTitle) {
+                titleInput.value = task.origTitle;
+            }
             if (durInput && origDuration) {
                 durInput.value = origDuration;
-                validateDuration();
-                if (typeof form.requestSubmit === 'function') {
-                    form.requestSubmit();
-                } else {
-                    form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-                }
+            }
+            validateDuration();
+            if (typeof form.requestSubmit === 'function') {
+                form.requestSubmit();
+            } else {
+                form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
             }
         });
     }

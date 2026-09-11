@@ -4,6 +4,20 @@ import { getColliData } from './colli-invoer.js';
 import { recordSnapshot } from './history.js';
 
 let autoSaveTimeout = null;
+let isLocalSave = false;
+
+export function setLocalSaveFlag() {
+    isLocalSave = true;
+    setTimeout(() => { isLocalSave = false; }, 2000);
+}
+
+export function consumeLocalSaveFlag() {
+    if (isLocalSave) {
+        isLocalSave = false;
+        return true;
+    }
+    return false;
+}
 
 function handleSaveError(err) {
     if (isPermissionError(err)) {
@@ -24,6 +38,8 @@ export function triggerAutoSave(immediate = false) {
         try {
             const user = await getCurrentUser();
             if (!user || !user.store_id) return;
+
+            setLocalSaveFlag();
 
             const compactSchedule = {};
             const processedFillerIds = new Set();

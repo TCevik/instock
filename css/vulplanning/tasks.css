@@ -92,6 +92,15 @@
     color: var(--info-color);
 }
 
+.timeline-task-ghost.is-helper {
+    border-color: var(--helper-color);
+    background-color: var(--helper-bg);
+}
+
+.timeline-task-ghost.is-helper .timeline-task-ghost-text {
+    color: var(--helper-color);
+}
+
 .timeline-task-block.type-vullen {
     border-left: 3px solid var(--accent-color);
     background-color: rgba(101, 141, 36, 0.12);
