@@ -1,20 +1,444 @@
-.page-header-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 24px;
-    gap: 16px;
-    flex-wrap: wrap;
+.bakplan-subtitle {
+    font-size: 13px;
+    color: var(--text-color-muted);
+    margin-top: 4px;
 }
 
-.page-title {
-    font-size: 28px;
+.bakplan-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    background-color: var(--card-background);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.stat-card:hover {
+    border-color: var(--card-border-hover);
+    transform: translateY(-1px);
+}
+
+.stat-card-icon-wrapper {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background-color: var(--input-background);
+    border: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-color-muted);
+    flex-shrink: 0;
+}
+
+.stat-card-icon-wrapper.accent {
+    background-color: var(--stat-icon-accent-bg);
+    border-color: var(--stat-icon-accent-border);
+    color: var(--accent-color);
+}
+
+.stat-card-icon-wrapper .material-icons {
+    font-size: 20px;
+}
+
+.stat-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.stat-label {
+    font-size: 10px;
+    color: var(--text-color-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-value {
+    font-size: 18px;
     font-weight: 700;
     color: var(--text-color);
 }
 
+.stat-value.accent {
+    color: var(--accent-color);
+}
+
+.table-card {
+    background-color: var(--card-background);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.bakplan-table-toolbar {
+    padding: 12px 16px;
+    background-color: var(--card-background);
+    border-bottom: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 300px;
+}
+
+.search-input-wrapper .search-icon {
+    position: absolute;
+    left: 12px;
+    font-size: 18px;
+    color: var(--text-color-placeholder);
+    pointer-events: none;
+}
+
+.bakplan-search-input {
+    background-color: var(--input-background);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 8px 12px 8px 38px;
+    color: var(--text-color);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s ease;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.bakplan-search-input::placeholder {
+    color: var(--text-color-placeholder);
+}
+
+.bakplan-search-input:focus {
+    border-color: var(--accent-color);
+}
+
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    box-sizing: border-box;
+}
+
+.bakplan-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    text-align: left;
+    font-size: 12px;
+}
+
+.bakplan-table thead {
+    background-color: var(--input-background);
+}
+
+.bakplan-table th {
+    padding: 10px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--text-color-muted);
+    text-transform: uppercase;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--card-border);
+    border-right: 1px solid var(--card-border);
+    background-color: var(--input-background);
+}
+
+.bakplan-table th:last-child {
+    border-right: none;
+}
+
+.th-desc {
+    width: 28%;
+}
+
+.th-num {
+    width: 11%;
+    text-align: right;
+}
+
+.th-promo {
+    width: 9%;
+    text-align: right;
+}
+
+.th-actions {
+    width: 36px;
+    text-align: center;
+}
+
+.category-header-row td {
+    background-color: var(--card-background);
+    padding: 8px 14px;
+    border-top: 1px solid var(--card-border);
+    border-bottom: 1px solid var(--card-border);
+    border-right: none !important;
+}
+
+.category-header-row td:first-child {
+    border-left: 3px solid var(--accent-color);
+}
+
+.category-header-row td.td-actions {
+    padding: 0 4px;
+    text-align: center;
+}
+
+.category-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.category-badge-icon {
+    font-size: 18px;
+    color: var(--accent-color);
+}
+
+.category-title-input {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent-color);
+    background: transparent;
+    border: 1px solid transparent;
+    outline: none;
+    width: 260px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.category-title-input:hover {
+    background-color: var(--input-background);
+}
+
+.category-title-input:focus {
+    background-color: var(--input-background);
+    border-color: var(--accent-color);
+}
+
+.bakplan-table td {
+    padding: 0;
+    color: var(--text-color);
+    border-right: 1px solid var(--card-border);
+    border-bottom: 1px solid var(--card-border);
+    white-space: nowrap;
+    font-size: 12px;
+    vertical-align: middle;
+    height: 38px;
+}
+
+.bakplan-table td:last-child {
+    border-right: none;
+}
+
+.bakplan-table td.td-num {
+    text-align: right;
+}
+
+.bakplan-table tbody tr:hover td {
+    background-color: rgba(255, 255, 255, 0.015);
+}
+
+.bakplan-input {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 6px 10px;
+    color: var(--text-color);
+    font-size: 12px;
+    outline: none;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    font-family: inherit;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.bakplan-input::placeholder {
+    color: var(--text-color-placeholder);
+}
+
+.bakplan-input.input-num {
+    text-align: right;
+}
+
+.bakplan-input:hover {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.bakplan-input:focus {
+    background-color: var(--input-background);
+    border-color: var(--accent-color);
+}
+
+.bakplan-table td.cell-read-only {
+    padding: 6px 12px;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--text-color);
+    background-color: transparent;
+    user-select: none;
+    box-sizing: border-box;
+    text-align: right;
+}
+
+.bakplan-table td.td-actions {
+    text-align: center;
+    padding: 0 4px;
+}
+
+.btn-row-action {
+    background: transparent;
+    border: none;
+    color: var(--text-color-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.btn-row-action:hover {
+    color: var(--danger-color);
+    background-color: rgba(239, 68, 68, 0.12);
+}
+
+.btn-row-action .material-icons {
+    font-size: 16px;
+}
+
+.skeleton-add-row td {
+    background-color: transparent;
+    padding: 0;
+    border-bottom: 1px dashed var(--card-border);
+    border-right: none !important;
+}
+
+.btn-skeleton-row {
+    width: 100%;
+    height: 36px;
+    background: transparent;
+    border: none;
+    color: var(--text-color-muted);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding-left: 14px;
+    gap: 8px;
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.btn-skeleton-row:hover {
+    color: var(--accent-color);
+    background-color: rgba(101, 141, 36, 0.06);
+}
+
+.btn-skeleton-row .material-icons {
+    font-size: 16px;
+}
+
+.bakplan-bottom-actions {
+    background-color: var(--card-background);
+    border-top: 1px solid var(--card-border);
+    padding: 12px 16px;
+}
+
+.btn-add-category-bar {
+    background: transparent;
+    border: 1px dashed var(--card-border);
+    border-radius: 8px;
+    color: var(--text-color-muted);
+    width: 100%;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.btn-add-category-bar:hover {
+    background-color: var(--input-background);
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
+.btn-add-category-bar .material-icons {
+    font-size: 18px;
+}
+
+.btn-sm {
+    padding: 8px 14px;
+    font-size: 13px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    font-weight: 500;
+    transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.btn-primary {
+    background-color: var(--accent-color);
+    color: #ffffff;
+}
+
+.btn-primary:hover {
+    background-color: var(--accent-hover);
+}
+
+.btn-secondary {
+    background-color: var(--input-background);
+    border-color: var(--card-border);
+    color: var(--text-color);
+}
+
+.btn-secondary:hover {
+    background-color: var(--card-border);
+}
+
+.btn-icon {
+    font-size: 18px;
+}
+
 @media (max-width: 768px) {
     .page-title {
-        font-size: 22px;
+        font-size: 20px;
+    }
+
+    .search-input-wrapper {
+        width: 100%;
+    }
+
+    .header-actions {
+        width: 100%;
     }
 }
+
