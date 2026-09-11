@@ -138,10 +138,7 @@ export function triggerAutoSave(immediate = false) {
                     tasks: tasksToSave,
                     schedule: compactSchedule,
                     other_tasks: Array.from(otherTasksMap.values()),
-                    settings: {
-                        ...(planningState.settings || {}),
-                        combo: planningState.comboSettings
-                    }
+                    settings: planningState.settings || {}
                 }, {
                     onConflict: 'store_id'
                 });

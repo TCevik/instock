@@ -80,7 +80,7 @@ export function showContextMenu(e, task, isAssigned = false, fillerId = null, ta
                     }
                 }
 
-                if (remainingMins > 0) {
+                if (remainingMins > 0 && !task.isHelper && task.type === 'overige') {
                     expandButtonHtml = `
                         <button type="button" class="context-menu-item expand" id="ctx-expand-task">
                             <span class="material-icons">straighten</span>
@@ -205,21 +205,28 @@ export function showContextMenu(e, task, isAssigned = false, fillerId = null, ta
 }
 
 export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIndex, callbacks = {}) {
-    const isHelper = Boolean(isAssigned && task.isHelper);
-    let mainInfo = null;
-    let maxHelperDuration = null;
+    let mainTask = task;
+    let mainFillerId = fillerId;
+    let mainTaskIndex = taskIndex;
+    let helpers = [];
 
-    if (isHelper) {
-        mainInfo = findMainTaskForHelper(task);
+    if (isAssigned && task.isHelper) {
+        const mainInfo = findMainTaskForHelper(task);
         if (mainInfo && mainInfo.task) {
-            maxHelperDuration = task.duration + mainInfo.task.duration - 1;
+            mainTask = mainInfo.task;
+            mainFillerId = mainInfo.fillerId;
+            mainTaskIndex = mainInfo.taskIndex;
         }
     }
 
-    let origDuration = task.origDuration;
-    if (task.type === 'vullen' && Array.isArray(task.categoryDetails) && task.categoryDetails.length > 0) {
+    if (isAssigned) {
+        helpers = findHelpersForMainTask(mainTask);
+    }
+
+    let origDuration = mainTask.origDuration;
+    if (mainTask.type === 'vullen' && Array.isArray(mainTask.categoryDetails) && mainTask.categoryDetails.length > 0) {
         let totalMins = 0;
-        task.categoryDetails.forEach(it => {
+        mainTask.categoryDetails.forEach(it => {
             const c = Number(it.colli) || 0;
             const norm = Number(it.norm) || 50;
             if (c > 0 && norm > 0) {
@@ -228,50 +235,88 @@ export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIn
         });
         if (totalMins > 0) {
             const calculated = Math.max(1, Math.round(totalMins));
-            if (origDuration === undefined || origDuration === null || (origDuration === task.duration && calculated !== task.duration)) {
+            if (origDuration === undefined || origDuration === null || (origDuration === mainTask.duration && calculated !== mainTask.duration)) {
                 origDuration = calculated;
-                task.origDuration = calculated;
+                mainTask.origDuration = calculated;
             }
         }
     }
 
-    const origTitle = task.origTitle;
-    const hasModifiedDuration = isAssigned && origDuration !== undefined && origDuration !== null && origDuration !== task.duration;
-    const hasModifiedTitle = isAssigned && origTitle !== undefined && origTitle !== null && origTitle !== task.title;
+    const origTitle = mainTask.origTitle;
+    const hasModifiedDuration = isAssigned && origDuration !== undefined && origDuration !== null && origDuration !== mainTask.duration;
+    const hasModifiedTitle = isAssigned && origTitle !== undefined && origTitle !== null && origTitle !== mainTask.title;
     const canRestore = hasModifiedDuration || hasModifiedTitle;
 
+    const mainFillerObj = isAssigned ? planningState.fillers.find(f => f.id === mainFillerId) : null;
+    const mainFillerName = mainFillerObj ? (mainFillerObj.name || 'Medewerker') : '';
+
+    let totalWorkMinutes = mainTask.duration + helpers.reduce((sum, h) => sum + (h.task.duration || 0), 0);
+
     let subtitle = '';
-    if (isHelper) {
-        subtitle = mainInfo && mainInfo.task
-            ? `Helpertaak van "${mainInfo.task.title}". Tijd die je hier aanpast, wordt verrekend met de hoofdtaak.`
-            : 'Helpertaak in de planning.';
+    if (helpers.length > 0) {
+        subtitle = `Pas de tijden aan voor de hoofdtaak en ${helpers.length} gekoppelde helper(s). De totale werktijd blijft gelijk (${totalWorkMinutes} min).`;
     } else if (isAssigned) {
         subtitle = 'Pas de tijdsduur of titel aan voor deze planning. De originele gegevens blijven behouden.';
     } else {
         subtitle = 'Pas de taakomschrijving of standaardtijd aan in het overzicht.';
     }
 
+    const helpersRowsHtml = helpers.map((h, idx) => {
+        const helperFillerObj = planningState.fillers.find(f => f.id === h.fillerId);
+        const helperName = helperFillerObj ? (helperFillerObj.name || 'Helper') : 'Helper';
+        return `
+            <div class="form-group helper-edit-row" data-helper-idx="${idx}" style="margin-top: 10px; padding: 8px 10px; background-color: var(--input-background); border: 1px solid var(--card-border); border-radius: 6px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <span style="font-size: 12px; font-weight: 600; color: var(--text-color);">${escapeHtml(helperName)} (Helper)</span>
+                    <span style="font-size: 11px; color: var(--text-color-muted);">Inzet op taak</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <input type="number" min="1" class="modal-input helper-dur-input" data-helper-idx="${idx}" value="${h.task.duration || 1}" required style="flex: 1;">
+                    <span style="font-size: 12px; color: var(--text-color-muted);">min</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+
     const modalContent = `
         <div class="modal-header">
-            <h2 class="modal-title">${isHelper ? 'Helpertaak Bewerken' : (isAssigned ? 'Taak in Planning Bewerken' : 'Taak Bewerken')}</h2>
+            <h2 class="modal-title">${helpers.length > 0 ? 'Taak & Helpers Tijden Aanpassen' : (isAssigned ? 'Taak in Planning Bewerken' : 'Taak Bewerken')}</h2>
             <p class="modal-subtitle">${subtitle}</p>
         </div>
         <form id="editCustomTaskForm" class="modal-form" novalidate>
             <div class="form-group">
                 <label>Taakomschrijving *</label>
-                <input type="text" id="editCustomTaskTitle" class="modal-input" value="${escapeHtml(task.title || '')}" ${isHelper ? 'readonly style="opacity:0.75;cursor:not-allowed;"' : ''} required>
+                <input type="text" id="editCustomTaskTitle" class="modal-input" value="${escapeHtml(mainTask.title || '')}" required>
             </div>
+            
             <div class="form-group">
-                <label>Tijdsduur (minuten) *</label>
-                <input type="number" min="1" id="editCustomTaskDuration" class="modal-input" value="${task.duration || 30}" required>
-                <div id="editCustomTaskDurationError" style="display:none;font-size:12px;color:var(--danger-color);margin-top:2px;"></div>
-                ${isHelper && mainInfo && mainInfo.task ? `<small style="font-size:11px;color:var(--text-color-muted);margin-top:4px;display:block;">Hoofdtaak heeft nu ${mainInfo.task.duration} min (max. ${maxHelperDuration} min voor deze helper)</small>` : ''}
-                ${canRestore ? `
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">
-                    <small style="font-size:12px;color:var(--text-color-muted);">${hasModifiedDuration ? `Originele tijd: <strong style="color:var(--text-color);">${origDuration} min</strong>` : ''}${hasModifiedTitle ? ` Originele titel: <strong style="color:var(--text-color);">${escapeHtml(origTitle)}</strong>` : ''}</small>
-                    <button type="button" id="btnRestoreOrigDuration" style="background:none;border:none;color:var(--accent-color);font-size:12px;font-weight:500;cursor:pointer;padding:0;">Herstellen en opslaan</button>
-                </div>` : ''}
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <label style="margin: 0;">Totale Werktijd (minuten) *</label>
+                    ${helpers.length > 0 ? `<small style="font-size: 11px; color: var(--accent-color); font-weight: 500;">Som ingesteld: <span id="currentPersonSumDisplay">${totalWorkMinutes}</span> / <span id="totalWorkTargetDisplay">${totalWorkMinutes}</span> min</small>` : ''}
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                    <input type="number" min="1" id="editCustomTaskTotalWork" class="modal-input" value="${totalWorkMinutes}" required style="flex: 1;">
+                    <span style="font-size: 12px; color: var(--text-color-muted);">min</span>
+                </div>
             </div>
+
+            <div class="form-group">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <label style="margin: 0;">Tijdsduur Hoofdtaak (${escapeHtml(mainFillerName || 'Hoofdtaak')}) *</label>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                    <input type="number" min="1" id="editCustomTaskDuration" class="modal-input" value="${mainTask.duration || 30}" required style="flex: 1;">
+                    <span style="font-size: 12px; color: var(--text-color-muted);">min</span>
+                </div>
+            ${helpers.length > 0 ? `
+                <div class="form-group" style="margin-top: 14px; border-top: 1px solid var(--card-border); padding-top: 12px;">
+                    <label style="font-weight: 600; color: var(--text-color);">Helper Taken (${helpers.length})</label>
+                    ${helpersRowsHtml}
+                </div>
+            ` : ''}
+
+            <div id="editCustomTaskDurationError" style="min-height: 36px; height: 36px; font-size: 12px; color: var(--danger-color); margin-top: 8px; line-height: 1.3; overflow: hidden; visibility: hidden;">&nbsp;</div>
+
             <div class="modal-footer">
                 <button type="button" class="modal-btn-secondary" id="btnCancelEditCustomTask">Annuleren</button>
                 <button type="submit" class="btn">Opslaan</button>
@@ -284,39 +329,74 @@ export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIn
     const cancelBtn = overlay.querySelector('#btnCancelEditCustomTask');
     const restoreBtn = overlay.querySelector('#btnRestoreOrigDuration');
     const durInput = overlay.querySelector('#editCustomTaskDuration');
+    const totalWorkInput = overlay.querySelector('#editCustomTaskTotalWork');
     const durError = overlay.querySelector('#editCustomTaskDurationError');
+    const helperInputs = Array.from(overlay.querySelectorAll('.helper-dur-input'));
+    const currentPersonSumDisplay = overlay.querySelector('#currentPersonSumDisplay');
+    const totalWorkTargetDisplay = overlay.querySelector('#totalWorkTargetDisplay');
 
-    const validateDuration = () => {
-        const val = parseInt(durInput.value, 10);
-        if (isNaN(val) || val < 1) {
-            durInput.style.borderColor = 'var(--danger-color)';
-            durError.textContent = 'Voer een geldige tijdsduur in (minimaal 1 minuut).';
-            durError.style.display = 'block';
+    const getAllDurInputs = () => [durInput, ...helperInputs];
+
+    const calculateCurrentSum = () => {
+        return getAllDurInputs().reduce((sum, inp) => sum + (parseInt(inp.value, 10) || 0), 0);
+    };
+
+    const validateAllInputs = () => {
+        const totalWorkVal = parseInt(totalWorkInput.value, 10);
+        if (isNaN(totalWorkVal) || totalWorkVal < 1) {
+            totalWorkInput.style.borderColor = 'var(--danger-color)';
+            durError.textContent = 'Voer een geldige totale werktijd in (minimaal 1 minuut).';
+            durError.style.visibility = 'visible';
             return false;
         }
-        if (val > 5760) {
-            durInput.style.borderColor = 'var(--danger-color)';
-            durError.textContent = 'De maximale tijdsduur is 96 uur (5760 minuten).';
-            durError.style.display = 'block';
+        totalWorkInput.style.borderColor = '';
+
+        for (const inp of getAllDurInputs()) {
+            const val = parseInt(inp.value, 10);
+            if (isNaN(val) || val < 1) {
+                inp.style.borderColor = 'var(--danger-color)';
+                durError.textContent = 'Voer een geldige tijdsduur in (minimaal 1 minuut).';
+                durError.style.visibility = 'visible';
+                return false;
+            }
+            if (val > 5760) {
+                inp.style.borderColor = 'var(--danger-color)';
+                durError.textContent = 'De maximale tijdsduur is 96 uur (5760 minuten).';
+                durError.style.visibility = 'visible';
+                return false;
+            }
+            inp.style.borderColor = '';
+        }
+
+        const currentSum = calculateCurrentSum();
+        if (totalWorkTargetDisplay) totalWorkTargetDisplay.textContent = totalWorkVal;
+        if (currentPersonSumDisplay) currentPersonSumDisplay.textContent = currentSum;
+
+        if (helpers.length > 0 && currentSum !== totalWorkVal) {
+            durError.textContent = `De som van de tijden (${currentSum} min) is niet gelijk aan de totale werktijd (${totalWorkVal} min). Verdeel alle minuten voor het opslaan.`;
+            durError.style.visibility = 'visible';
             return false;
         }
-        durInput.style.borderColor = '';
-        durError.style.display = 'none';
+
+        durError.innerHTML = '&nbsp;';
+        durError.style.visibility = 'hidden';
         return true;
     };
 
-    durInput.addEventListener('input', validateDuration);
+    totalWorkInput.addEventListener('input', validateAllInputs);
+    durInput.addEventListener('input', validateAllInputs);
+    helperInputs.forEach(hInp => hInp.addEventListener('input', validateAllInputs));
 
     if (restoreBtn) {
         restoreBtn.addEventListener('click', () => {
             const titleInput = overlay.querySelector('#editCustomTaskTitle');
-            if (titleInput && task.origTitle) {
-                titleInput.value = task.origTitle;
+            if (titleInput && mainTask.origTitle) {
+                titleInput.value = mainTask.origTitle;
             }
             if (durInput && origDuration) {
                 durInput.value = origDuration;
             }
-            validateDuration();
+            validateAllInputs();
             if (typeof form.requestSubmit === 'function') {
                 form.requestSubmit();
             } else {
@@ -330,62 +410,47 @@ export async function openEditCustomTaskModal(task, isAssigned, fillerId, taskIn
     form.addEventListener('submit', async (ev) => {
         ev.preventDefault();
         const newTitle = overlay.querySelector('#editCustomTaskTitle').value.trim();
-        const newDuration = parseInt(durInput.value, 10) || 0;
+        const newMainDuration = parseInt(durInput.value, 10) || 0;
 
-        if (!validateDuration()) {
+        if (!validateAllInputs()) {
             showToast('error', durError.textContent);
-            durInput.focus();
             return;
         }
 
-        if (newTitle && newDuration > 0) {
-            if (isHelper) {
-                const currentMain = findMainTaskForHelper(task);
-                if (!currentMain || !currentMain.task) {
-                    showToast('error', 'Hoofdtaak niet gevonden');
-                    return;
+        if (newTitle && newMainDuration > 0) {
+            if (isAssigned) {
+                if (mainTask.origDuration === undefined || mainTask.origDuration === null) {
+                    mainTask.origDuration = origDuration || mainTask.duration;
                 }
-                const oldDuration = task.duration;
-                const diff = newDuration - oldDuration;
-                if (currentMain.task.duration - diff < 1) {
-                    showToast('error', `Te veel tijd! Hoofdtaak moet minimaal 1 minuut overhouden.`);
-                    return;
+                if (mainTask.origTitle === undefined) {
+                    mainTask.origTitle = mainTask.title;
                 }
+                mainTask.title = newTitle;
+                mainTask.duration = newMainDuration;
 
-                if (task.origDuration === undefined) {
-                    task.origDuration = oldDuration;
-                }
-                task.duration = newDuration;
-                currentMain.task.duration -= diff;
-            } else if (isAssigned) {
-                if (task.origDuration === undefined || task.origDuration === null) {
-                    task.origDuration = origDuration || task.duration;
-                }
-                if (task.origTitle === undefined) {
-                    task.origTitle = task.title;
-                }
-                task.title = newTitle;
-                task.duration = newDuration;
-
-                const helpers = findHelpersForMainTask(task);
-                helpers.forEach(h => {
+                helpers.forEach((h, idx) => {
+                    const hInput = helperInputs[idx];
+                    const newHelperDur = parseInt(hInput?.value, 10) || h.task.duration;
+                    if (h.task.origDuration === undefined || h.task.origDuration === null) {
+                        h.task.origDuration = h.task.duration;
+                    }
+                    h.task.duration = newHelperDur;
                     h.task.title = `${newTitle} (Helper)`;
                     h.task.origTitle = `${newTitle} (Helper)`;
                 });
             } else {
-                task.title = newTitle;
-                task.duration = newDuration;
-                task.origDuration = newDuration;
-                task.origTitle = newTitle;
-                const templateId = task.id;
-                task.templateId = templateId;
+                mainTask.title = newTitle;
+                mainTask.duration = newMainDuration;
+                mainTask.origDuration = newMainDuration;
+                mainTask.origTitle = newTitle;
+                mainTask.templateId = mainTask.id;
             }
 
             closeModal(overlay);
             if (callbacks.onRenderRows) callbacks.onRenderRows();
             if (callbacks.onRenderUnassigned) callbacks.onRenderUnassigned();
             triggerAutoSave(true);
-            showToast('notification', isAssigned ? 'Taak in planning bijgewerkt' : 'Taak succesvol bijgewerkt');
+            showToast('notification', isAssigned ? 'Taak en helper tijden bijgewerkt' : 'Taak succesvol bijgewerkt');
         }
     });
 }

@@ -65,19 +65,6 @@ export async function loadSavedPlanning(options = {}) {
 
         if (data.settings && typeof data.settings === 'object') {
             planningState.settings = data.settings;
-            const combo = data.settings.combo || data.settings.comboSettings || (data.settings.autoRestanten !== undefined ? data.settings : null);
-            if (combo) {
-                planningState.comboSettings = {
-                    autoRestanten: combo.autoRestanten !== false,
-                    autoSpiegelen: combo.autoSpiegelen !== false,
-                    autoOverige: !!combo.autoOverige,
-                    selectedOverigeTaskId: combo.selectedOverigeTaskId || null,
-                    selectedOverigeTitle: combo.selectedOverigeTitle || null
-                };
-                try {
-                    localStorage.setItem('instock_planner_combo_settings', JSON.stringify(planningState.comboSettings));
-                } catch (_) {}
-            }
         }
 
         fillRoosterShifts(savedFillers);

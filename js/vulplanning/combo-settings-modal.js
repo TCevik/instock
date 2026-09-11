@@ -4,19 +4,6 @@ import { planningState } from './state.js';
 import { triggerAutoSave } from './storage.js';
 
 export function loadComboSettings() {
-    if (planningState.settings && typeof planningState.settings === 'object') {
-        const combo = planningState.settings.combo || planningState.settings.comboSettings || (planningState.settings.autoRestanten !== undefined ? planningState.settings : null);
-        if (combo) {
-            planningState.comboSettings = {
-                autoRestanten: combo.autoRestanten !== false,
-                autoSpiegelen: combo.autoSpiegelen !== false,
-                autoOverige: !!combo.autoOverige,
-                selectedOverigeTaskId: combo.selectedOverigeTaskId || null,
-                selectedOverigeTitle: combo.selectedOverigeTitle || null
-            };
-            return;
-        }
-    }
     try {
         const saved = localStorage.getItem('instock_planner_combo_settings');
         if (saved) {
@@ -28,20 +15,23 @@ export function loadComboSettings() {
                 selectedOverigeTaskId: parsed.selectedOverigeTaskId || null,
                 selectedOverigeTitle: parsed.selectedOverigeTitle || null
             };
+            return;
         }
     } catch (_) {}
+    planningState.comboSettings = {
+        autoRestanten: true,
+        autoSpiegelen: true,
+        autoOverige: false,
+        selectedOverigeTaskId: null,
+        selectedOverigeTitle: null
+    };
 }
 
 export function saveComboSettings(settings) {
     planningState.comboSettings = { ...settings };
-    if (!planningState.settings || typeof planningState.settings !== 'object') {
-        planningState.settings = {};
-    }
-    planningState.settings.combo = { ...planningState.comboSettings };
     try {
         localStorage.setItem('instock_planner_combo_settings', JSON.stringify(planningState.comboSettings));
     } catch (_) {}
-    triggerAutoSave();
 }
 
 export async function openComboSettingsModal(callbacks = {}) {
