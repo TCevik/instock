@@ -176,7 +176,7 @@ async function openCreateModal() {
         <form class="modal-form" id="createUserForm">
             <div class="form-group">
                 <label for="createFullName">Volledige naam</label>
-                <input type="text" id="createFullName" class="modal-input" placeholder="Bijv. Jan de Vries">
+                <input type="text" id="createFullName" class="modal-input" placeholder="Bijv. Jan de Vries" required>
             </div>
             <div class="form-group">
                 <label for="createUsername">Gebruikersnaam</label>
