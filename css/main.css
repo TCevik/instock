@@ -89,6 +89,10 @@
     --chart-area-stop: rgba(101, 141, 36, 0.02);
     --skeleton-bg: #202024;
     --skeleton-shimmer: #2c2c33;
+    --beta-badge-bg: rgba(255, 255, 255, 0.15);
+    --beta-badge-text: #ffffff;
+    --beta-badge-login-bg: rgba(101, 141, 36, 0.2);
+    --beta-badge-login-text: var(--accent-color);
 }
 
 html,
