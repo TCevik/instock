@@ -104,20 +104,20 @@ async function loadTopFillers(userId, date = selectedScoreboardDate) {
     }
 
     try {
-        const { data, error } = await supabase.functions.invoke('get-top-fillers', {
+        const data = await invokeFn('get-top-fillers', {
             body: date ? { date } : {}
         });
 
-        const isManager = true;
+        const isManager = data?.isManager ?? [2, 3].includes(currentUserRole);
 
         if (filterWrapper) {
             filterWrapper.style.display = 'flex';
-            if (isManager && !topFillersDatePicker) {
+            if (!topFillersDatePicker) {
                 initTopFillersDatePicker();
             }
         }
 
-        if (error || !data || !Array.isArray(data.topFillers)) {
+        if (!data || !Array.isArray(data.topFillers)) {
             if (!date) {
                 sectionEl.style.display = 'none';
                 if (userRankEl) userRankEl.style.display = 'none';

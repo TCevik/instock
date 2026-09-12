@@ -859,6 +859,7 @@
     align-items: center;
     gap: 4px;
     white-space: nowrap;
+    margin-left: auto;
 }
 
 .day-task-colli .material-icons {
