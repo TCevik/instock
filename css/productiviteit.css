@@ -595,9 +595,9 @@
     padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 0;
     width: 100%;
-    transition: border-color 0.2s ease, transform 0.2s ease;
+    transition: border-color 0.2s ease, transform 0.2s ease, padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     animation: fadeIn 0.25s ease;
 }
 
@@ -617,6 +617,7 @@
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
+    transition: border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding-bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .day-card-header-left {
@@ -720,23 +721,36 @@
 }
 
 .productivity-day-card.collapsed .day-card-header {
-    border-bottom: none;
+    border-bottom-color: transparent;
     padding-bottom: 0;
 }
 
 .productivity-day-card.collapsed .day-card-body {
-    display: none;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    pointer-events: none;
 }
 
 .productivity-day-card.collapsed {
-    padding-bottom: 20px;
+    padding: 16px 20px;
 }
 
 .day-card-body {
+    display: grid;
+    grid-template-rows: 1fr;
+    opacity: 1;
+    transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+    width: 100%;
+}
+
+.day-card-body-inner {
+    min-height: 0;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     gap: 12px;
     width: 100%;
+    padding-top: 14px;
 }
 
 .day-tasks-title-row {
@@ -1285,8 +1299,12 @@
 
     .productivity-day-card {
         padding: 14px;
-        gap: 12px;
+        gap: 0;
         border-radius: 14px;
+    }
+
+    .productivity-day-card.collapsed {
+        padding: 12px 14px;
     }
 
     .day-card-header {

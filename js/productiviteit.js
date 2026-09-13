@@ -953,14 +953,16 @@ function renderDayCardBody(card, entry) {
     }
 
     bodyEl.innerHTML = `
-        <div class="day-tasks-title-row">
-            <span class="day-tasks-heading">
-                <span class="material-icons">route</span>
-                <span>Uitgevoerde paden & taken</span>
-            </span>
-            <span class="day-tasks-count">${tasks.length} ${tasks.length === 1 ? 'pad / taak' : 'paden / taken'}</span>
+        <div class="day-card-body-inner">
+            <div class="day-tasks-title-row">
+                <span class="day-tasks-heading">
+                    <span class="material-icons">route</span>
+                    <span>Uitgevoerde paden & taken</span>
+                </span>
+                <span class="day-tasks-count">${tasks.length} ${tasks.length === 1 ? 'pad / taak' : 'paden / taken'}</span>
+            </div>
+            ${tasksHtml}
         </div>
-        ${tasksHtml}
     `;
 }
 
@@ -1078,8 +1080,10 @@ function renderProductivityList(entries, container) {
                 const bodyEl = card.querySelector('.day-card-body');
                 if (bodyEl) {
                     bodyEl.innerHTML = `
-                        <div style="padding: 24px; text-align: center; color: var(--text-color-muted);">
-                            <span class="material-icons" style="animation: spin 1s linear infinite;">sync</span>
+                        <div class="day-card-body-inner">
+                            <div style="padding: 24px; text-align: center; color: var(--text-color-muted);">
+                                <span class="material-icons" style="animation: spin 1s linear infinite;">sync</span>
+                            </div>
                         </div>
                     `;
                 }
@@ -1100,6 +1104,10 @@ function renderProductivityList(entries, container) {
                 renderDayCardBody(card, entry);
             }
         };
+
+        if (isMostRecent) {
+            ensureTasksLoaded();
+        }
 
         if (canManageShifts) {
             const editBtn = card.querySelector('.edit-shift-btn');
