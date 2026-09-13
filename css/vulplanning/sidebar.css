@@ -116,7 +116,7 @@
     transition: background-color 0.15s, color 0.15s, border-color 0.15s;
 }
 
-.unassigned-tab:hover {
+.unassigned-tab:hover:not(.active) {
     color: var(--text-color);
     background-color: var(--card-border);
 }

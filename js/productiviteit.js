@@ -267,6 +267,10 @@ async function handleFillerClick(filler) {
         return;
     }
 
+    selectedFillerUserId = filler.user_id;
+    updateTopFillerCardSelection();
+    showProductivityUserSkeleton(filler);
+
     try {
         const data = await invokeFn('get-top-fillers', {
             body: { target_user_id: filler.user_id }
@@ -276,12 +280,55 @@ async function handleFillerClick(filler) {
             throw new Error('Gegevens van medewerker niet ontvangen');
         }
 
-        selectedFillerUserId = filler.user_id;
-        selectedFillerUserData = data.user;
-        applyUserProductivity(data.user, false);
-        updateTopFillerCardSelection();
+        if (selectedFillerUserId === filler.user_id) {
+            selectedFillerUserData = data.user;
+            applyUserProductivity(data.user, false);
+        }
     } catch (err) {
         showToast('error', err.message || 'Kon productiviteit niet ophalen');
+    }
+}
+
+function showProductivityUserSkeleton(user) {
+    const rawName = user?.full_name || user?.username || 'Medewerker';
+    const name = escapeHtml(rawName);
+
+    const chartTitleEl = document.getElementById('productivityChartTitle');
+    const chartSubEl = document.getElementById('chartCardSubtitle');
+    const shiftsHeadingEl = document.getElementById('myShiftsSectionHeading');
+    const shiftsSubEl = document.getElementById('myShiftsSectionSubtext');
+    const emptyEl = document.getElementById('productivityEmpty');
+    const chartCard = document.getElementById('productivityChartCard');
+    const myShiftsSection = document.getElementById('myShiftsSection');
+    const chartContainer = document.getElementById('productivityChart');
+    const listEl = document.getElementById('productivityList');
+    const colliEl = document.getElementById('statTotalColli');
+    const daysEl = document.getElementById('statTotalDays');
+
+    if (chartTitleEl) chartTitleEl.textContent = `Voortgang van ${name}`;
+    if (chartSubEl) chartSubEl.textContent = `Productiviteit per gewerkte shift van ${name}`;
+    if (shiftsHeadingEl) shiftsHeadingEl.textContent = `Gewerkte Diensten van ${name}`;
+    if (shiftsSubEl) shiftsSubEl.textContent = `Overzicht van opgeslagen shifts en behaalde productiviteit van ${name}`;
+
+    if (emptyEl) emptyEl.style.display = 'none';
+    if (chartCard) chartCard.style.display = 'flex';
+    if (myShiftsSection) myShiftsSection.style.display = 'flex';
+
+    if (colliEl) colliEl.innerHTML = '<span class="skeleton" style="display:inline-block; width:36px; height:18px; border-radius:4px;"></span>';
+    if (daysEl) daysEl.innerHTML = '<span class="skeleton" style="display:inline-block; width:24px; height:18px; border-radius:4px;"></span>';
+
+    if (chartContainer) {
+        chartContainer.innerHTML = '<div class="skeleton" style="width:100%; height:240px; border-radius:10px;"></div>';
+    }
+
+    if (listEl) {
+        listEl.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div class="skeleton" style="height: 72px; border-radius: 12px;"></div>
+                <div class="skeleton" style="height: 72px; border-radius: 12px;"></div>
+                <div class="skeleton" style="height: 72px; border-radius: 12px;"></div>
+            </div>
+        `;
     }
 }
 

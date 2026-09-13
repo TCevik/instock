@@ -164,7 +164,7 @@
         width: 220px;
     }
 
-    .sidebar-link:hover {
+    .sidebar-link:hover:not(.active) {
         color: var(--text-color);
         background-color: var(--card-border);
     }
