@@ -40,18 +40,25 @@ export async function openFinalizeModal() {
         const stats = getFillerStats(filler, assigned);
         const hasEndTime = !!(filler.actualEndTime && String(filler.actualEndTime).trim().length >= 4 && stats.prodResult);
 
+        const todayDDMMYYYY = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
+        const isSameDate = (dStr) => {
+            if (!dStr) return false;
+            const s = String(dStr).trim();
+            return s === todayStr || s === todayDDMMYYYY;
+        };
+
         let existingTodayRecord = null;
         if (dbUser?.productivity) {
             const prodObj = dbUser.productivity;
             if (typeof prodObj === 'object' && !Array.isArray(prodObj)) {
                 if (Array.isArray(prodObj.history)) {
-                    existingTodayRecord = prodObj.history.find(h => h && String(h.date) === todayStr) || null;
+                    existingTodayRecord = prodObj.history.find(h => h && isSameDate(h.date)) || null;
                 }
-                if (!existingTodayRecord && String(prodObj.date) === todayStr) {
+                if (!existingTodayRecord && isSameDate(prodObj.date)) {
                     existingTodayRecord = prodObj;
                 }
             } else if (Array.isArray(prodObj)) {
-                existingTodayRecord = prodObj.find(h => h && String(h.date) === todayStr) || null;
+                existingTodayRecord = prodObj.find(h => h && isSameDate(h.date)) || null;
             }
         }
 

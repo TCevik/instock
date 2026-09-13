@@ -9,7 +9,7 @@ let cachedProductivityEntries = [];
 let currentChartMode = 'individual';
 let currentTimeframe = '1m';
 let currentShiftPage = 1;
-const SHIFTS_PER_PAGE = 50;
+const SHIFTS_PER_PAGE = 20;
 let paginationControlsInitialized = false;
 let selectedDateFilter = '';
 let shiftsDatePicker = null;
@@ -228,7 +228,7 @@ function createTopFillerCard(filler, rank, isCurrentUser, canClick) {
                     <span class="top-filler-name" data-tooltip="${name}">${name}</span>
                     ${isCurrentUser ? '<span class="you-pill">Jij</span>' : ''}
                 </div>
-                <span class="top-filler-shifts">${shiftCount} ${shiftCount === 1 ? 'shift' : 'shifts'} afgerond</span>
+                <span class="top-filler-shifts">${shiftCount} ${shiftCount === 1 ? 'shift' : 'shifts'} opgeslagen</span>
             </div>
         </div>
         <span class="prod-badge ${statusClass}">
@@ -309,8 +309,8 @@ function applyUserProductivity(user, isSelf) {
     }
     if (shiftsSubEl) {
         shiftsSubEl.textContent = isSelf
-            ? 'Overzicht van al jouw afgeronde shifts en behaalde productiviteit'
-            : `Overzicht van afgeronde shifts en behaalde productiviteit van ${name}`;
+            ? 'Overzicht van al jouw opgeslagen shifts en behaalde productiviteit'
+            : `Overzicht van opgeslagen shifts en behaalde productiviteit van ${name}`;
     }
 
     const entries = extractProductivities(user?.productivity);
