@@ -332,7 +332,7 @@ body {
     padding: 24px 32px;
     height: calc(100vh - 60px);
     height: calc(100dvh - 60px);
-    overflow-y: auto;
+    overflow-y: scroll;
     box-sizing: border-box;
 }
 

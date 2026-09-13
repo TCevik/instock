@@ -55,7 +55,7 @@ function renderCategories(filterText = '') {
     if (!container) return;
 
     if (bakplanData.length === 0) {
-        container.innerHTML = `<div class="empty-state-card">Geen categorieën aanwezig. Klik op "+ Categorie toevoegen" om te beginnen.</div>`;
+        container.innerHTML = `<p class="bakplan-empty-state">Geen categorieën aanwezig. Klik op "+ Categorie toevoegen" om te beginnen.</p>`;
         updateSummaryStats();
         return;
     }
@@ -78,14 +78,15 @@ function renderCategories(filterText = '') {
         });
 
         const isCollapsed = cat.collapsed ? 'collapsed' : '';
-        const chevronIcon = cat.collapsed ? 'expand_more' : 'expand_less';
+        const enterClass = cat.isNew ? ' category-card-enter' : '';
+        delete cat.isNew;
 
         html += `
-            <div class="category-card ${isCollapsed}" data-cat-id="${cat.id}">
+            <div class="category-card ${isCollapsed}${enterClass}" data-cat-id="${cat.id}">
                 <div class="category-card-header" data-cat-id="${cat.id}">
                     <div class="cat-header-left">
                         <button type="button" class="btn-toggle-cat" data-cat-id="${cat.id}" title="Inklappen / Uitklappen">
-                            <span class="material-icons chevron-icon">${chevronIcon}</span>
+                            <span class="material-icons chevron-icon">expand_less</span>
                         </button>
                         <span class="material-icons cat-icon">folder</span>
                         <input type="text" class="category-title-input" value="${cat.name}" data-cat-id="${cat.id}" placeholder="Categorie naam...">
@@ -99,21 +100,22 @@ function renderCategories(filterText = '') {
                 </div>
                 
                 <div class="category-card-body">
-                    <div class="table-responsive">
-                        <table class="bakplan-table">
-                            <thead>
-                                <tr>
-                                    <th class="th-desc">Productomschrijving</th>
-                                    <th class="th-num">Aantal per plaat</th>
-                                    <th class="th-num">Prijs</th>
-                                    <th class="th-num">Promo</th>
-                                    <th class="th-num">Opleggen</th>
-                                    <th class="th-num">Platen</th>
-                                    <th class="th-num">Derving</th>
-                                    <th class="th-actions"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                    <div class="category-card-body-inner">
+                        <div class="table-responsive">
+                            <table class="bakplan-table">
+                                <thead>
+                                    <tr>
+                                        <th class="th-desc">Productomschrijving</th>
+                                        <th class="th-num">Aantal per plaat</th>
+                                        <th class="th-num">Prijs</th>
+                                        <th class="th-num">Promo</th>
+                                        <th class="th-num">Opleggen</th>
+                                        <th class="th-num">Platen</th>
+                                        <th class="th-num">Derving</th>
+                                        <th class="th-actions"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
         `;
 
         matchingItems.forEach(item => {
@@ -123,6 +125,11 @@ function renderCategories(filterText = '') {
             const promoVal = (item.promo !== null && item.promo !== undefined && item.promo !== '') ? parseFloat(item.promo).toFixed(2) : '';
             const opleggenVal = (item.opleggen !== null && item.opleggen !== undefined && item.opleggen !== '') ? item.opleggen : '';
             const dervingVal = (item.derving !== null && item.derving !== undefined && item.derving !== '') ? item.derving : '';
+            delete item.isNew;
+
+            const isOnlyRow = cat.items.length <= 1;
+            const deleteAttr = isOnlyRow ? ' disabled style="opacity:0.25; cursor:not-allowed;"' : '';
+            const deleteTitle = isOnlyRow ? 'Minimaal 1 artikel verplicht per categorie' : 'Rij verwijderen';
 
             html += `
                 <tr data-id="${item.id}" data-cat-id="${cat.id}">
@@ -148,7 +155,7 @@ function renderCategories(filterText = '') {
                         <input type="number" min="0" step="1" class="bakplan-input input-num" value="${dervingVal}" placeholder="0" data-field="derving">
                     </td>
                     <td class="td-actions">
-                        <button type="button" class="btn-delete-row" data-id="${item.id}" title="Rij verwijderen">
+                        <button type="button" class="btn-delete-row" data-id="${item.id}" title="${deleteTitle}"${deleteAttr}>
                             <span class="material-icons">close</span>
                         </button>
                     </td>
@@ -157,13 +164,14 @@ function renderCategories(filterText = '') {
         });
 
         html += `
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="category-card-footer">
-                        <button type="button" class="btn-add-row-in-cat" data-cat-id="${cat.id}">
-                            <span class="material-icons">add</span> Artikel toevoegen
-                        </button>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="category-card-footer">
+                            <button type="button" class="btn-add-row-in-cat" data-cat-id="${cat.id}">
+                                <span class="material-icons">add</span> Artikel toevoegen
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -182,7 +190,31 @@ function findItem(itemId) {
     return null;
 }
 
+function deleteCategory(catId) {
+    const cardEl = document.querySelector(`.category-card[data-cat-id="${catId}"]`);
+    if (cardEl) {
+        cardEl.classList.add('category-card-exit');
+        setTimeout(() => {
+            bakplanData = bakplanData.filter(c => c.id !== catId);
+            const searchInput = document.getElementById('bakplan-search');
+            renderCategories(searchInput ? searchInput.value : '');
+        }, 240);
+    } else {
+        bakplanData = bakplanData.filter(c => c.id !== catId);
+        const searchInput = document.getElementById('bakplan-search');
+        renderCategories(searchInput ? searchInput.value : '');
+    }
+}
+
 function deleteRow(itemId) {
+    const res = findItem(itemId);
+    if (!res || res.cat.items.length <= 1) {
+        if (typeof showToast === 'function') {
+            showToast('Een categorie moet minimaal 1 artikel bevatten', 'error');
+        }
+        return;
+    }
+
     const searchInput = document.getElementById('bakplan-search');
     for (const cat of bakplanData) {
         const idx = cat.items.findIndex(i => i.id === itemId);
@@ -196,16 +228,29 @@ function deleteRow(itemId) {
 
 function addCategory() {
     const searchInput = document.getElementById('bakplan-search');
+    const newId = 'cat-' + Date.now();
     const newCat = {
-        id: 'cat-' + Date.now(),
+        id: newId,
         name: 'Nieuwe categorie',
         collapsed: false,
+        isNew: true,
         items: [
             { id: 'item-' + Date.now(), omschrijving: '', perPlaat: null, prijs: null, promo: null, opleggen: null, derving: null }
         ]
     };
     bakplanData.push(newCat);
     renderCategories(searchInput ? searchInput.value : '');
+    const newCard = document.querySelector(`.category-card[data-cat-id="${newId}"]`);
+    if (newCard) {
+        const pageContainer = document.querySelector('.page-container');
+        if (pageContainer) {
+            pageContainer.scrollTo({ top: pageContainer.scrollHeight, behavior: 'smooth' });
+        } else {
+            newCard.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+        const input = newCard.querySelector('.category-title-input');
+        if (input) input.select();
+    }
 }
 
 function addRowToCategory(catId) {
@@ -213,8 +258,9 @@ function addRowToCategory(catId) {
     let targetCat = bakplanData.find(c => c.id === catId);
     if (!targetCat) return;
 
+    const newId = 'item-' + Date.now();
     targetCat.items.push({
-        id: 'item-' + Date.now(),
+        id: newId,
         omschrijving: '',
         perPlaat: null,
         prijs: null,
@@ -223,27 +269,41 @@ function addRowToCategory(catId) {
         derving: null
     });
     renderCategories(searchInput ? searchInput.value : '');
+    const newTr = document.querySelector(`tr[data-id="${newId}"]`);
+    if (newTr) {
+        const pageContainer = document.querySelector('.page-container');
+        if (pageContainer) {
+            pageContainer.scrollTop += Math.max(0, newTr.offsetHeight - -1);
+        }
+        const input = newTr.querySelector('.bakplan-input');
+        if (input) input.focus();
+    }
 }
 
 function toggleCategoryCollapse(catId) {
     const cat = bakplanData.find(c => c.id === catId);
     if (!cat) return;
     cat.collapsed = !cat.collapsed;
-    const searchInput = document.getElementById('bakplan-search');
-    renderCategories(searchInput ? searchInput.value : '');
+    const cardEl = document.querySelector(`.category-card[data-cat-id="${catId}"]`);
+    if (cardEl) {
+        cardEl.classList.toggle('collapsed', cat.collapsed);
+    }
 }
 
 function toggleAllCategories() {
     const anyExpanded = bakplanData.some(c => !c.collapsed);
-    bakplanData.forEach(c => c.collapsed = anyExpanded);
-    
+    bakplanData.forEach(c => {
+        c.collapsed = anyExpanded;
+        const cardEl = document.querySelector(`.category-card[data-cat-id="${c.id}"]`);
+        if (cardEl) {
+            cardEl.classList.toggle('collapsed', anyExpanded);
+        }
+    });
+
     const iconToggle = document.getElementById('icon-toggle-all');
     const textToggle = document.getElementById('text-toggle-all');
     if (iconToggle) iconToggle.textContent = anyExpanded ? 'unfold_more' : 'unfold_less';
     if (textToggle) textToggle.textContent = anyExpanded ? 'Alles uitklappen' : 'Alles inklappen';
-
-    const searchInput = document.getElementById('bakplan-search');
-    renderCategories(searchInput ? searchInput.value : '');
 }
 
 function initEvents() {
@@ -318,8 +378,7 @@ function initEvents() {
             if (btnDelCat) {
                 e.stopPropagation();
                 const catId = btnDelCat.dataset.catId;
-                bakplanData = bakplanData.filter(c => c.id !== catId);
-                renderCategories(searchInput ? searchInput.value : '');
+                deleteCategory(catId);
                 return;
             }
 
