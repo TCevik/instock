@@ -314,9 +314,16 @@ async function loadOverlay() {
             }
 
             const headerUserName = document.getElementById('headerUserName');
+            const headerUserHandle = document.getElementById('headerUserHandle');
             const user = await getCurrentUser();
-            if (user && headerUserName) {
-                headerUserName.textContent = user.full_name?.trim() || user.username?.trim() || '';
+            if (user) {
+                if (headerUserName) {
+                    headerUserName.textContent = user.full_name?.trim() || user.username?.trim() || '';
+                }
+                if (headerUserHandle && user.username) {
+                    const handle = user.username.trim();
+                    headerUserHandle.textContent = handle.startsWith('@') ? handle : `@${handle}`;
+                }
             }
         }
     } catch (error) {
