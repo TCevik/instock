@@ -867,26 +867,14 @@ function renderProductivityChart(entries) {
 }
 
 function renderSummaryStats(entries) {
-    const avgEl = document.getElementById('statAvgProd');
     const colliEl = document.getElementById('statTotalColli');
     const daysEl = document.getElementById('statTotalDays');
 
-    let totalProd = 0;
-    let prodCount = 0;
     let totalColli = 0;
 
     entries.forEach(e => {
-        if (e.productivity !== undefined && e.productivity !== null && !isNaN(Number(e.productivity))) {
-            totalProd += Number(e.productivity);
-            prodCount++;
-        }
         totalColli += calculateShiftTotalColli(e);
     });
-
-    if (avgEl) {
-        const avg = prodCount > 0 ? Math.round(totalProd / prodCount) : null;
-        avgEl.textContent = avg !== null ? `${avg}%` : '-';
-    }
 
     if (colliEl) {
         colliEl.textContent = totalColli.toLocaleString('nl-NL');
