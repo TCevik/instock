@@ -129,8 +129,6 @@ function isPermissionError(err) {
 }
 
 export async function getCurrentUser() {
-    if (currentUserData) return currentUserData;
-
     const { data: { session } } = await supabase.auth.getSession();
     if (!session || !session.user) return null;
 
