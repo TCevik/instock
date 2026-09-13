@@ -49,7 +49,7 @@ async function initProductivityPage() {
 
         const { data: userData, error } = await supabase
             .from('user_data')
-            .select('user_id, username, full_name, productivity, role')
+            .select('user_id, username, full_name, role')
             .eq('user_id', session.user.id)
             .maybeSingle();
 
@@ -60,7 +60,10 @@ async function initProductivityPage() {
         currentUserRole = Number(userData?.role) || 1;
         ownUserData = userData;
 
-        await loadTopFillers(session.user.id);
+        const topData = await loadTopFillers(session.user.id);
+        if (topData?.currentUserProductivity) {
+            ownUserData = topData.currentUserProductivity;
+        }
 
         if (skeletonEl) skeletonEl.style.display = 'none';
         if (statsSkeletonEl) statsSkeletonEl.style.display = 'none';
@@ -70,7 +73,7 @@ async function initProductivityPage() {
         initPaginationControls();
         initShiftsDatePicker();
 
-        applyUserProductivity(userData, true);
+        applyUserProductivity(ownUserData, true);
 
     } catch (err) {
         if (skeletonEl) skeletonEl.style.display = 'none';
@@ -91,7 +94,7 @@ async function loadTopFillers(userId, date = selectedScoreboardDate) {
     const filterWrapper = document.getElementById('topFillersDateFilterWrapper');
     const headingEl = document.getElementById('topFillersHeading');
     const subtextEl = document.getElementById('topFillersSubtext');
-    if (!sectionEl || !listEl) return;
+    if (!sectionEl || !listEl) return null;
 
     if (date && listEl) {
         listEl.innerHTML = `
@@ -186,6 +189,7 @@ async function loadTopFillers(userId, date = selectedScoreboardDate) {
         if (sectionDivider) {
             sectionDivider.style.display = (myShiftsSection && myShiftsSection.style.display !== 'none') ? 'block' : 'none';
         }
+        return data;
     } catch (_) {
         if (!date) {
             sectionEl.style.display = 'none';
@@ -193,6 +197,7 @@ async function loadTopFillers(userId, date = selectedScoreboardDate) {
             if (sectionDivider) sectionDivider.style.display = 'none';
             if (overviewRow) overviewRow.classList.add('no-top-fillers');
         }
+        return null;
     }
 }
 
@@ -892,6 +897,73 @@ function renderSummaryStats(entries) {
     }
 }
 
+function renderDayCardBody(card, entry) {
+    const bodyEl = card.querySelector('.day-card-body');
+    if (!bodyEl) return;
+
+    const tasks = Array.isArray(entry.tasks) ? entry.tasks : [];
+
+    let tasksHtml = '';
+    if (tasks.length > 0) {
+        const taskCards = tasks.map((task, tIndex) => {
+            const title = escapeHtml(task.title || task.pathName || task.name || 'Taak');
+            const type = task.type || 'overige';
+            const colli = Number(task.colli) || 0;
+            let dur = calculateTaskDuration(task);
+            const sTime = task.start_time || task.start || '';
+            const eTime = task.end_time || task.end || '';
+
+            let timeHtml = '';
+            if (sTime && eTime) {
+                timeHtml = `<span class="day-task-time"><span class="material-icons">schedule</span><span>${escapeHtml(sTime)} - ${escapeHtml(eTime)}${dur > 0 ? ` (${formatDuration(dur)})` : ''}</span></span>`;
+            } else if (sTime) {
+                timeHtml = `<span class="day-task-time"><span class="material-icons">schedule</span><span>Vanaf ${escapeHtml(sTime)}</span></span>`;
+            } else if (dur > 0) {
+                timeHtml = `<span class="day-task-time"><span class="material-icons">schedule</span><span>${formatDuration(dur)}</span></span>`;
+            }
+
+            let colliHtml = '';
+            if (colli > 0) {
+                colliHtml = `<span class="day-task-colli"><span class="material-icons">inventory_2</span><span>${colli} colli</span></span>`;
+            }
+
+            let metaBottom = `${timeHtml}${colliHtml}`;
+
+            return `
+                <div class="day-task-card" data-task-index="${tIndex}">
+                    <div class="day-task-top">
+                        <div class="day-task-name-group">
+                            <div class="day-task-icon-box">
+                                <span class="material-icons day-task-icon">${getTaskIcon(type)}</span>
+                            </div>
+                            <span class="day-task-name" data-tooltip="${title}">${title}</span>
+                        </div>
+                        <div class="day-task-top-right">
+                            ${getTypeBadge(type)}
+                        </div>
+                    </div>
+                    ${metaBottom ? `<div class="day-task-bottom">${metaBottom}</div>` : ''}
+                </div>
+            `;
+        }).join('');
+
+        tasksHtml = `<div class="day-tasks-grid">${taskCards}</div>`;
+    } else {
+        tasksHtml = `<div class="day-tasks-empty"><span class="material-icons" style="font-size:18px;">info</span><span>Geen afzonderlijke paden geregistreerd voor deze shift.</span></div>`;
+    }
+
+    bodyEl.innerHTML = `
+        <div class="day-tasks-title-row">
+            <span class="day-tasks-heading">
+                <span class="material-icons">route</span>
+                <span>Uitgevoerde paden & taken</span>
+            </span>
+            <span class="day-tasks-count">${tasks.length} ${tasks.length === 1 ? 'pad / taak' : 'paden / taken'}</span>
+        </div>
+        ${tasksHtml}
+    `;
+}
+
 function renderProductivityList(entries, container) {
     container.innerHTML = '';
 
@@ -911,6 +983,11 @@ function renderProductivityList(entries, container) {
         const card = document.createElement('div');
         card.className = 'productivity-day-card';
 
+        const isMostRecent = index === 0 && currentShiftPage === 1 && !selectedDateFilter;
+        if (!isMostRecent) {
+            card.classList.add('collapsed');
+        }
+
         const percent = entry.productivity !== undefined ? Math.round(Number(entry.productivity)) : null;
         const statusClass = percent !== null ? getProductivityStatusClass(percent) : 'danger';
         const statusIcon = percent !== null ? getProductivityStatusIcon(percent) : 'trending_down';
@@ -921,7 +998,6 @@ function renderProductivityList(entries, container) {
         const pauseMinutes = Number(shift.pause_minutes) || 0;
         const workMinutes = calculateShiftWorkMinutes(entry);
         let totalColli = calculateShiftTotalColli(entry);
-        const tasks = Array.isArray(entry.tasks) ? entry.tasks : [];
 
         const dateStr = formatDate(entry.date || entry.finalized_at);
 
@@ -959,79 +1035,6 @@ function renderProductivityList(entries, container) {
             `;
         }
 
-        let tasksHtml = '';
-        if (tasks.length > 0) {
-            const taskCards = tasks.map((task, tIndex) => {
-                const title = escapeHtml(task.title || task.pathName || task.name || 'Taak');
-                const type = task.type || 'overige';
-                const colli = Number(task.colli) || 0;
-                let dur = calculateTaskDuration(task);
-                const sTime = task.start_time || task.start || '';
-                const eTime = task.end_time || task.end || '';
-
-                let timeHtml = '';
-                if (sTime && eTime) {
-                    timeHtml = `
-                        <span class="day-task-time">
-                            <span class="material-icons">schedule</span>
-                            <span>${escapeHtml(sTime)} - ${escapeHtml(eTime)}${dur > 0 ? ` (${formatDuration(dur)})` : ''}</span>
-                        </span>
-                    `;
-                } else if (sTime) {
-                    timeHtml = `
-                        <span class="day-task-time">
-                            <span class="material-icons">schedule</span>
-                            <span>Vanaf ${escapeHtml(sTime)}</span>
-                        </span>
-                    `;
-                } else if (dur > 0) {
-                    timeHtml = `
-                        <span class="day-task-time">
-                            <span class="material-icons">schedule</span>
-                            <span>${formatDuration(dur)}</span>
-                        </span>
-                    `;
-                }
-
-                let colliHtml = '';
-                if (colli > 0) {
-                    colliHtml = `
-                        <span class="day-task-colli">
-                            <span class="material-icons">inventory_2</span>
-                            <span>${colli} colli</span>
-                        </span>
-                    `;
-                }
-
-                let metaBottom = `${timeHtml}${colliHtml}`;
-
-                return `
-                    <div class="day-task-card" data-task-index="${tIndex}">
-                        <div class="day-task-top">
-                            <div class="day-task-name-group">
-                                <div class="day-task-icon-box">
-                                    <span class="material-icons day-task-icon">${getTaskIcon(type)}</span>
-                                </div>
-                                <span class="day-task-name" data-tooltip="${title}">${title}</span>
-                            </div>
-                            <div class="day-task-top-right">
-                                ${getTypeBadge(type)}
-                            </div>
-                        </div>
-                        ${metaBottom ? `<div class="day-task-bottom">${metaBottom}</div>` : ''}
-                    </div>
-                `;
-            }).join('');
-
-            tasksHtml = `
-                <div class="day-tasks-grid">
-                    ${taskCards}
-                </div>
-            `;
-        } else {
-            tasksHtml = `<div class="day-tasks-empty"><span class="material-icons" style="font-size:18px;">info</span><span>Geen afzonderlijke paden geregistreerd voor deze shift.</span></div>`;
-        }
-
         card.innerHTML = `
             <div class="day-card-header">
                 <div class="day-card-header-left">
@@ -1065,23 +1068,45 @@ function renderProductivityList(entries, container) {
                     <span class="material-icons day-card-chevron">expand_more</span>
                 </div>
             </div>
-            <div class="day-card-body">
-                <div class="day-tasks-title-row">
-                    <span class="day-tasks-heading">
-                        <span class="material-icons">route</span>
-                        <span>Uitgevoerde paden & taken</span>
-                    </span>
-                    <span class="day-tasks-count">${tasks.length} ${tasks.length === 1 ? 'pad / taak' : 'paden / taken'}</span>
-                </div>
-                ${tasksHtml}
-            </div>
+            <div class="day-card-body"></div>
         `;
+
+        renderDayCardBody(card, entry);
+
+        const ensureTasksLoaded = async () => {
+            if (!entry.tasksLoaded) {
+                const bodyEl = card.querySelector('.day-card-body');
+                if (bodyEl) {
+                    bodyEl.innerHTML = `
+                        <div style="padding: 24px; text-align: center; color: var(--text-color-muted);">
+                            <span class="material-icons" style="animation: spin 1s linear infinite;">sync</span>
+                        </div>
+                    `;
+                }
+                try {
+                    const activeUserId = selectedFillerUserId || currentUserId;
+                    const data = await invokeFn('get-top-fillers', {
+                        body: {
+                            target_user_id: activeUserId,
+                            shift_date: entry.date,
+                            finalized_at: entry.finalized_at
+                        }
+                    });
+                    if (data?.shift) {
+                        entry.tasks = data.shift.tasks || [];
+                        entry.tasksLoaded = true;
+                    }
+                } catch (_) {}
+                renderDayCardBody(card, entry);
+            }
+        };
 
         if (canManageShifts) {
             const editBtn = card.querySelector('.edit-shift-btn');
             if (editBtn) {
-                editBtn.addEventListener('click', (e) => {
+                editBtn.addEventListener('click', async (e) => {
                     e.stopPropagation();
+                    await ensureTasksLoaded();
                     openEditShiftModal(entry);
                 });
             }
@@ -1096,13 +1121,15 @@ function renderProductivityList(entries, container) {
 
         const headerEl = card.querySelector('.day-card-header');
         if (headerEl) {
-            headerEl.addEventListener('click', () => {
-                card.classList.toggle('collapsed');
+            headerEl.addEventListener('click', async () => {
+                const isCurrentlyCollapsed = card.classList.contains('collapsed');
+                if (isCurrentlyCollapsed) {
+                    card.classList.remove('collapsed');
+                    await ensureTasksLoaded();
+                } else {
+                    card.classList.add('collapsed');
+                }
             });
-        }
-
-        if (window.innerWidth <= 768) {
-            card.classList.add('collapsed');
         }
 
         container.appendChild(card);
