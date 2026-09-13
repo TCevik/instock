@@ -32,6 +32,7 @@
     --input-background: #161618;
     --input-border: #27272a;
     --input-focus: #658d24;
+    --bg-active: #202024;
     --text-color: #ffffff;
     --text-color-muted: #8e8e93;
     --text-color-placeholder: #52525b;
@@ -323,6 +324,30 @@ body {
 .tooltip-dur-current {
     color: var(--text-color);
     font-weight: 600;
+}
+
+.page-container {
+    margin-left: 60px !important;
+    width: calc(100% - 60px) !important;
+    padding: 24px 32px;
+    height: calc(100vh - 60px);
+    height: calc(100dvh - 60px);
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+.page-container-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .page-container {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 16px;
+    }
 }
 
 .page-header-row {

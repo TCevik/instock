@@ -16,89 +16,85 @@
 
 <body>
     <div class="page-container">
-        <div class="page-header-row">
-            <div>
-                <h1 class="page-title">Bakplan</h1>
-                <p class="bakplan-subtitle">Beheer productie aantallen, platen en verwachte derving per categorie</p>
-            </div>
-            <div class="header-actions">
-                <button type="button" id="btn-save-bakplan" class="btn-primary btn-sm">
-                    <span class="material-icons btn-icon">save</span> Bakplan Opslaan
-                </button>
-            </div>
-        </div>
-
-        <div class="bakplan-stats-grid">
-            <div class="stat-card">
-                <div class="stat-card-icon-wrapper accent">
-                    <span class="material-icons">inventory_2</span>
-                </div>
-                <div class="stat-card-content">
-                    <span class="stat-label">Totaal Artikelen</span>
-                    <span class="stat-value" id="stat-total-items">0</span>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-card-icon-wrapper">
-                    <span class="material-icons">cookie</span>
-                </div>
-                <div class="stat-card-content">
-                    <span class="stat-label">Totaal Opleggen</span>
-                    <span class="stat-value" id="stat-total-opleggen">0</span>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-card-icon-wrapper accent">
-                    <span class="material-icons">grid_view</span>
-                </div>
-                <div class="stat-card-content">
-                    <span class="stat-label">Benodigde Platen</span>
-                    <span class="stat-value accent" id="stat-total-platen">0</span>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-card-icon-wrapper">
-                    <span class="material-icons">delete_sweep</span>
-                </div>
-                <div class="stat-card-content">
-                    <span class="stat-label">Verwachte Derving</span>
-                    <span class="stat-value" id="stat-total-derving">0</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="table-card">
-            <div class="bakplan-table-toolbar">
-                <div class="search-input-wrapper">
-                    <span class="material-icons search-icon">search</span>
-                    <input type="text" id="bakplan-search" class="bakplan-search-input" placeholder="Zoek op omschrijving...">
+        <div class="page-container-inner">
+            <div class="mobile-warning-container">
+                <div class="mobile-warning-card">
+                    <span class="material-icons mobile-warning-icon">desktop_windows</span>
+                    <h2>Schermgrootte niet ondersteund</h2>
+                    <p>Het Bakplan is momenteel niet beschikbaar op kleinere schermen. Gebruik een tablet of desktop om het bakplan te beheren.</p>
                 </div>
             </div>
 
-            <div class="table-responsive">
-                <table class="bakplan-table">
-                    <thead>
-                        <tr>
-                            <th class="th-desc">Productomschrijving</th>
-                            <th class="th-num">Aantal op 1 plaat</th>
-                            <th class="th-num">Prijs</th>
-                            <th class="th-promo">Promo</th>
-                            <th class="th-num">Opleggen</th>
-                            <th class="th-num">Platen</th>
-                            <th class="th-num">Derving</th>
-                            <th class="th-actions"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="bakplan-tbody">
-                    </tbody>
-                </table>
+            <div class="page-header-row">
+                <div>
+                    <h1 class="page-title">Bakplan</h1>
+                    <p class="bakplan-subtitle">Beheer productie aantallen, platen en verwachte derving per categorie</p>
+                </div>
+                <div class="header-actions">
+                    <button type="button" id="btn-save-bakplan" class="btn-primary btn-sm">
+                        <span class="material-icons btn-icon">save</span> Bakplan Opslaan
+                    </button>
+                </div>
             </div>
 
-            <div class="bakplan-bottom-actions">
-                <button type="button" id="btn-add-category-bottom" class="btn-add-category-bar">
-                    <span class="material-icons">add</span> Categorie toevoegen
-                </button>
+            <div class="bakplan-stats-grid">
+                <div class="stat-card">
+                    <div class="stat-card-icon-wrapper accent">
+                        <span class="material-icons">inventory_2</span>
+                    </div>
+                    <div class="stat-card-content">
+                        <span class="stat-value" id="stat-total-items">0</span>
+                        <span class="stat-label">Totaal Artikelen</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-icon-wrapper">
+                        <span class="material-icons">cookie</span>
+                    </div>
+                    <div class="stat-card-content">
+                        <span class="stat-value" id="stat-total-opleggen">0</span>
+                        <span class="stat-label">Totaal Opleggen</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-icon-wrapper accent">
+                        <span class="material-icons">grid_view</span>
+                    </div>
+                    <div class="stat-card-content">
+                        <span class="stat-value accent" id="stat-total-platen">0</span>
+                        <span class="stat-label">Benodigde Platen</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-icon-wrapper">
+                        <span class="material-icons">delete_sweep</span>
+                    </div>
+                    <div class="stat-card-content">
+                        <span class="stat-value" id="stat-total-derving">0</span>
+                        <span class="stat-label">Verwachte Derving</span>
+                    </div>
+                </div>
             </div>
+
+            <div class="bakplan-toolbar-card">
+                <div class="bakplan-toolbar">
+                    <div class="search-input-wrapper">
+                        <span class="material-icons search-icon">search</span>
+                        <input type="text" id="bakplan-search" class="bakplan-search-input" placeholder="Zoek op omschrijving...">
+                    </div>
+                    <div class="toolbar-actions">
+                        <button type="button" id="btn-toggle-all" class="btn-secondary btn-sm">
+                            <span class="material-icons btn-icon" id="icon-toggle-all">unfold_less</span>
+                            <span id="text-toggle-all">Alles inklappen</span>
+                        </button>
+                        <button type="button" id="btn-add-category" class="btn-primary btn-sm">
+                            <span class="material-icons btn-icon">add</span> Categorie toevoegen
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="categories-container" class="categories-container"></div>
         </div>
     </div>
 </body>

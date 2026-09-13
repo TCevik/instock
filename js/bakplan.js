@@ -5,7 +5,7 @@ let bakplanData = [];
 function calculatePlaten(opleggen, perPlaat) {
     const numOpleggen = parseFloat(opleggen);
     const numPerPlaat = parseFloat(perPlaat);
-    if (isNaN(numOpleggen) || isNaN(numPerPlaat) || numPerPlaat <= 0) return '-';
+    if (isNaN(numOpleggen) || isNaN(numPerPlaat) || numPerPlaat <= 0) return 0;
     return Math.ceil(numOpleggen / numPerPlaat);
 }
 
@@ -16,9 +16,12 @@ function updateSummaryStats() {
     let totalDerving = 0;
 
     bakplanData.forEach(cat => {
+        let catItems = 0;
+        let catPlaten = 0;
         cat.items.forEach(item => {
             if (item.omschrijving && item.omschrijving.trim() !== '') {
                 totalItems++;
+                catItems++;
             }
             const opl = parseFloat(item.opleggen) || 0;
             const der = parseFloat(item.derving) || 0;
@@ -26,10 +29,14 @@ function updateSummaryStats() {
             
             totalOpleggen += opl;
             totalDerving += der;
-            if (typeof pl === 'number') {
-                totalPlaten += pl;
-            }
+            catPlaten += pl;
+            totalPlaten += pl;
         });
+
+        const badgeEl = document.getElementById(`cat-badge-${cat.id}`);
+        if (badgeEl) {
+            badgeEl.textContent = `${catItems} artikelen · ${catPlaten} platen`;
+        }
     });
 
     const elItems = document.getElementById('stat-total-items');
@@ -43,14 +50,13 @@ function updateSummaryStats() {
     if (elDerving) elDerving.textContent = totalDerving;
 }
 
-function renderTable(filterText = '') {
-    const tbody = document.getElementById('bakplan-tbody');
-    if (!tbody) return;
-
-    updateSummaryStats();
+function renderCategories(filterText = '') {
+    const container = document.getElementById('categories-container');
+    if (!container) return;
 
     if (bakplanData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-color-muted); padding: 24px; font-style: italic;">Geen categorieën of rijen aanwezig. Klik op "+ Categorie toevoegen" om te beginnen.</td></tr>`;
+        container.innerHTML = `<div class="empty-state-card">Geen categorieën aanwezig. Klik op "+ Categorie toevoegen" om te beginnen.</div>`;
+        updateSummaryStats();
         return;
     }
 
@@ -64,20 +70,50 @@ function renderTable(filterText = '') {
 
         if (query && matchingItems.length === 0) return;
 
+        let catItemsCount = 0;
+        let catPlatenCount = 0;
+        cat.items.forEach(item => {
+            if (item.omschrijving && item.omschrijving.trim() !== '') catItemsCount++;
+            catPlatenCount += calculatePlaten(item.opleggen, item.perPlaat);
+        });
+
+        const isCollapsed = cat.collapsed ? 'collapsed' : '';
+        const chevronIcon = cat.collapsed ? 'expand_more' : 'expand_less';
+
         html += `
-            <tr class="category-header-row" data-cat-id="${cat.id}">
-                <td colspan="7">
-                    <div class="category-header-left">
-                        <span class="material-icons category-badge-icon">folder</span>
+            <div class="category-card ${isCollapsed}" data-cat-id="${cat.id}">
+                <div class="category-card-header" data-cat-id="${cat.id}">
+                    <div class="cat-header-left">
+                        <button type="button" class="btn-toggle-cat" data-cat-id="${cat.id}" title="Inklappen / Uitklappen">
+                            <span class="material-icons chevron-icon">${chevronIcon}</span>
+                        </button>
+                        <span class="material-icons cat-icon">folder</span>
                         <input type="text" class="category-title-input" value="${cat.name}" data-cat-id="${cat.id}" placeholder="Categorie naam...">
+                        <span class="cat-subtotal-badge" id="cat-badge-${cat.id}">${catItemsCount} artikelen · ${catPlatenCount} platen</span>
                     </div>
-                </td>
-                <td class="td-actions">
-                    <button type="button" class="btn-row-action btn-delete-cat" data-cat-id="${cat.id}" title="Categorie verwijderen">
-                        <span class="material-icons">delete_outline</span>
-                    </button>
-                </td>
-            </tr>
+                    <div class="cat-header-right">
+                        <button type="button" class="btn-delete-cat" data-cat-id="${cat.id}" title="Categorie verwijderen">
+                            <span class="material-icons">delete_outline</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="category-card-body">
+                    <div class="table-responsive">
+                        <table class="bakplan-table">
+                            <thead>
+                                <tr>
+                                    <th class="th-desc">Productomschrijving</th>
+                                    <th class="th-num">Aantal per plaat</th>
+                                    <th class="th-num">Prijs</th>
+                                    <th class="th-num">Promo</th>
+                                    <th class="th-num">Opleggen</th>
+                                    <th class="th-num">Platen</th>
+                                    <th class="th-num">Derving</th>
+                                    <th class="th-actions"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
         `;
 
         matchingItems.forEach(item => {
@@ -90,7 +126,7 @@ function renderTable(filterText = '') {
 
             html += `
                 <tr data-id="${item.id}" data-cat-id="${cat.id}">
-                    <td>
+                    <td class="td-desc">
                         <input type="text" class="bakplan-input" value="${item.omschrijving}" placeholder="Productomschrijving..." data-field="omschrijving">
                     </td>
                     <td class="td-num">
@@ -105,12 +141,14 @@ function renderTable(filterText = '') {
                     <td class="td-num">
                         <input type="number" min="0" step="1" class="bakplan-input input-num" value="${opleggenVal}" placeholder="0" data-field="opleggen">
                     </td>
-                    <td class="td-num cell-read-only platen-val">${platen}</td>
+                    <td class="td-num">
+                        <span class="read-only-badge platen-val">${platen}</span>
+                    </td>
                     <td class="td-num">
                         <input type="number" min="0" step="1" class="bakplan-input input-num" value="${dervingVal}" placeholder="0" data-field="derving">
                     </td>
                     <td class="td-actions">
-                        <button type="button" class="btn-row-action btn-delete-row" data-id="${item.id}" title="Rij verwijderen">
+                        <button type="button" class="btn-delete-row" data-id="${item.id}" title="Rij verwijderen">
                             <span class="material-icons">close</span>
                         </button>
                     </td>
@@ -119,17 +157,21 @@ function renderTable(filterText = '') {
         });
 
         html += `
-            <tr class="skeleton-add-row" data-cat-id="${cat.id}">
-                <td colspan="8">
-                    <button type="button" class="btn-skeleton-row btn-add-row-in-cat" data-cat-id="${cat.id}">
-                        <span class="material-icons">add</span> Rij toevoegen aan ${cat.name || 'categorie'}
-                    </button>
-                </td>
-            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="category-card-footer">
+                        <button type="button" class="btn-add-row-in-cat" data-cat-id="${cat.id}">
+                            <span class="material-icons">add</span> Artikel toevoegen
+                        </button>
+                    </div>
+                </div>
+            </div>
         `;
     });
 
-    tbody.innerHTML = html;
+    container.innerHTML = html;
+    updateSummaryStats();
 }
 
 function findItem(itemId) {
@@ -149,33 +191,28 @@ function deleteRow(itemId) {
             break;
         }
     }
-    renderTable(searchInput ? searchInput.value : '');
+    renderCategories(searchInput ? searchInput.value : '');
 }
 
 function addCategory() {
     const searchInput = document.getElementById('bakplan-search');
     const newCat = {
         id: 'cat-' + Date.now(),
-        type: 'category',
         name: 'Nieuwe categorie',
+        collapsed: false,
         items: [
             { id: 'item-' + Date.now(), omschrijving: '', perPlaat: null, prijs: null, promo: null, opleggen: null, derving: null }
         ]
     };
     bakplanData.push(newCat);
-    renderTable(searchInput ? searchInput.value : '');
+    renderCategories(searchInput ? searchInput.value : '');
 }
 
 function addRowToCategory(catId) {
     const searchInput = document.getElementById('bakplan-search');
     let targetCat = bakplanData.find(c => c.id === catId);
-    if (!targetCat) {
-        if (bakplanData.length === 0) {
-            addCategory();
-            return;
-        }
-        targetCat = bakplanData[bakplanData.length - 1];
-    }
+    if (!targetCat) return;
+
     targetCat.items.push({
         id: 'item-' + Date.now(),
         omschrijving: '',
@@ -185,26 +222,61 @@ function addRowToCategory(catId) {
         opleggen: null,
         derving: null
     });
-    renderTable(searchInput ? searchInput.value : '');
+    renderCategories(searchInput ? searchInput.value : '');
+}
+
+function toggleCategoryCollapse(catId) {
+    const cat = bakplanData.find(c => c.id === catId);
+    if (!cat) return;
+    cat.collapsed = !cat.collapsed;
+    const searchInput = document.getElementById('bakplan-search');
+    renderCategories(searchInput ? searchInput.value : '');
+}
+
+function toggleAllCategories() {
+    const anyExpanded = bakplanData.some(c => !c.collapsed);
+    bakplanData.forEach(c => c.collapsed = anyExpanded);
+    
+    const iconToggle = document.getElementById('icon-toggle-all');
+    const textToggle = document.getElementById('text-toggle-all');
+    if (iconToggle) iconToggle.textContent = anyExpanded ? 'unfold_more' : 'unfold_less';
+    if (textToggle) textToggle.textContent = anyExpanded ? 'Alles uitklappen' : 'Alles inklappen';
+
+    const searchInput = document.getElementById('bakplan-search');
+    renderCategories(searchInput ? searchInput.value : '');
 }
 
 function initEvents() {
-    const tbody = document.getElementById('bakplan-tbody');
+    const container = document.getElementById('categories-container');
     const searchInput = document.getElementById('bakplan-search');
-    const btnAddCatBottom = document.getElementById('btn-add-category-bottom');
+    const btnAddCat = document.getElementById('btn-add-category');
+    const btnToggleAll = document.getElementById('btn-toggle-all');
+    const btnSave = document.getElementById('btn-save-bakplan');
 
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
-            renderTable(e.target.value);
+            renderCategories(e.target.value);
         });
     }
 
-    if (btnAddCatBottom) {
-        btnAddCatBottom.addEventListener('click', addCategory);
+    if (btnAddCat) {
+        btnAddCat.addEventListener('click', addCategory);
     }
 
-    if (tbody) {
-        tbody.addEventListener('input', (e) => {
+    if (btnToggleAll) {
+        btnToggleAll.addEventListener('click', toggleAllCategories);
+    }
+
+    if (btnSave) {
+        btnSave.addEventListener('click', () => {
+            if (typeof showToast === 'function') {
+                showToast('Bakplan succesvol opgeslagen!', 'success');
+            }
+        });
+    }
+
+    if (container) {
+        container.addEventListener('input', (e) => {
             const target = e.target;
             if (target.classList.contains('category-title-input')) {
                 const catId = target.dataset.catId;
@@ -232,16 +304,40 @@ function initEvents() {
             }
 
             if (field === 'perPlaat' || field === 'opleggen') {
-                const platenTd = tr.querySelector('.platen-val');
-                if (platenTd) {
-                    platenTd.textContent = calculatePlaten(item.opleggen, item.perPlaat);
+                const platenBadge = tr.querySelector('.platen-val');
+                if (platenBadge) {
+                    platenBadge.textContent = calculatePlaten(item.opleggen, item.perPlaat);
                 }
             }
 
             updateSummaryStats();
         });
 
-        tbody.addEventListener('click', (e) => {
+        container.addEventListener('click', (e) => {
+            const btnDelCat = e.target.closest('.btn-delete-cat');
+            if (btnDelCat) {
+                e.stopPropagation();
+                const catId = btnDelCat.dataset.catId;
+                bakplanData = bakplanData.filter(c => c.id !== catId);
+                renderCategories(searchInput ? searchInput.value : '');
+                return;
+            }
+
+            const btnToggleCat = e.target.closest('.btn-toggle-cat');
+            if (btnToggleCat) {
+                e.stopPropagation();
+                const catId = btnToggleCat.dataset.catId;
+                toggleCategoryCollapse(catId);
+                return;
+            }
+
+            const cardHeader = e.target.closest('.category-card-header');
+            if (cardHeader && !e.target.classList.contains('category-title-input')) {
+                const catId = cardHeader.dataset.catId;
+                toggleCategoryCollapse(catId);
+                return;
+            }
+
             const btnDeleteRow = e.target.closest('.btn-delete-row');
             if (btnDeleteRow) {
                 const itemId = btnDeleteRow.dataset.id;
@@ -255,18 +351,11 @@ function initEvents() {
                 addRowToCategory(catId);
                 return;
             }
-
-            const btnDelCat = e.target.closest('.btn-delete-cat');
-            if (btnDelCat) {
-                const catId = btnDelCat.dataset.catId;
-                bakplanData = bakplanData.filter(c => c.id !== catId);
-                renderTable(searchInput ? searchInput.value : '');
-            }
         });
     }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    renderTable();
+    renderCategories();
     initEvents();
 });
