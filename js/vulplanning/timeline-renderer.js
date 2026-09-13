@@ -3,7 +3,7 @@ import { timeToMinutes, minutesToTime, formatDuration, parsePauseMinutes, calcul
 import { showCustomTooltip, positionCustomTooltip, hideCustomTooltip } from './tooltip.js';
 import { showContextMenu, showWorkerContextMenu } from './context-menu.js';
 import { findExactUser, fillRoosterShifts } from './rooster.js';
-import { calculateTimelineBounds, renderTimelineAxis, getPixelsPerMinute, getTimelineTotalMinutes } from './timeline-axis.js';
+import { calculateTimelineBounds, renderTimelineAxis, renderGridLines, getPixelsPerMinute, getTimelineTotalMinutes } from './timeline-axis.js';
 import { openPauseModal } from './custom-task-modal.js';
 import { addHelperToTask, getComboTasksForTask, findMainTaskForHelper, findHelpersForMainTask } from './task-actions.js';
 import { triggerAutoSave } from './storage.js';
@@ -303,13 +303,7 @@ export function renderTimelineRows(options) {
         trackRow.style.width = `${totalMins * pxPerMin}px`;
         trackRow.setAttribute('data-filler-id', filler.id);
 
-        for (let h = planningState.timelineStartHour; h <= planningState.timelineEndHour; h++) {
-            const offsetMins = (h - planningState.timelineStartHour) * 60;
-            const line = document.createElement('div');
-            line.className = `timeline-grid-line ${h % 2 === 0 ? 'major' : ''}`;
-            line.style.left = `${offsetMins * pxPerMin}px`;
-            trackRow.appendChild(line);
-        }
+        renderGridLines(trackRow, planningState.timelineStartHour, planningState.timelineEndHour, pxPerMin);
 
         const effectiveNetEnd = shiftStart + targetShiftDuration;
 
@@ -762,13 +756,7 @@ export function renderTimelineRows(options) {
     const addTrackSpacer = document.createElement('div');
     addTrackSpacer.className = 'timeline-track-row timeline-track-add-spacer';
     addTrackSpacer.style.width = `${totalMins * pxPerMin}px`;
-    for (let h = planningState.timelineStartHour; h <= planningState.timelineEndHour; h++) {
-        const offsetMins = (h - planningState.timelineStartHour) * 60;
-        const line = document.createElement('div');
-        line.className = `timeline-grid-line ${h % 2 === 0 ? 'major' : ''}`;
-        line.style.left = `${offsetMins * pxPerMin}px`;
-        addTrackSpacer.appendChild(line);
-    }
+    renderGridLines(addTrackSpacer, planningState.timelineStartHour, planningState.timelineEndHour, pxPerMin);
 
     addTrackSpacer.addEventListener('dragover', (e) => {
         if (!draggedWorkerFillerId) return;

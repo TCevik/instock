@@ -679,10 +679,10 @@
     align-items: center;
     pointer-events: none;
     white-space: nowrap;
-    background-color: var(--card-background);
+    background-color: transparent;
     padding-left: 4px;
     box-sizing: border-box;
-    border-right: 1px solid var(--card-border);
+    z-index: 2;
 }
 
 .timeline-tracks-container {
@@ -712,8 +712,6 @@
     top: 0;
     bottom: 0;
     background-color: rgba(255, 255, 255, 0.03);
-    border-left: 1px dashed rgba(255, 255, 255, 0.1);
-    border-right: 1px dashed rgba(255, 255, 255, 0.1);
     pointer-events: none;
 }
 
@@ -722,12 +720,8 @@
     top: 0;
     bottom: 0;
     width: 1px;
-    background-color: rgba(255, 255, 255, 0.04);
+    background-color: var(--card-border);
     pointer-events: none;
-}
-
-.timeline-grid-line.major {
-    background-color: rgba(255, 255, 255, 0.08);
 }
 
 .timeline-add-worker-row {

@@ -33,6 +33,16 @@ export function getTimelineTotalMinutes() {
     return (planningState.timelineEndHour - planningState.timelineStartHour) * 60;
 }
 
+export function renderGridLines(container, startH, endH, pxPerMin) {
+    for (let h = startH; h <= endH; h++) {
+        const offsetMins = (h - startH) * 60;
+        const line = document.createElement('div');
+        line.className = 'timeline-grid-line';
+        line.style.left = `${offsetMins * pxPerMin}px`;
+        container.appendChild(line);
+    }
+}
+
 export function renderTimelineAxis(timelineHoursAxis) {
     if (!timelineHoursAxis) return;
     timelineHoursAxis.innerHTML = '';
@@ -43,6 +53,8 @@ export function renderTimelineAxis(timelineHoursAxis) {
     const totalMins = getTimelineTotalMinutes();
 
     timelineHoursAxis.style.width = `${totalMins * pxPerMin}px`;
+
+    renderGridLines(timelineHoursAxis, startH, endH, pxPerMin);
 
     for (let h = startH; h < endH; h++) {
         const offsetMins = (h - startH) * 60;
