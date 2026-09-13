@@ -1,4 +1,4 @@
-import { getCurrentUser, getAvailableModules } from './main.js';
+import { getCurrentUser, getAvailableModules, openChangePasswordModal } from './main.js';
 
 function escapeHtml(str) {
     if (!str) return '';
@@ -10,6 +10,11 @@ function escapeHtml(str) {
 async function initDashboard() {
     const welcomeElement = document.getElementById('welcomeText');
     const gridElement = document.getElementById('dashboardGrid');
+    const changePasswordBtn = document.getElementById('dashboardChangePasswordBtn');
+
+    if (changePasswordBtn) {
+        changePasswordBtn.addEventListener('click', openChangePasswordModal);
+    }
 
     const user = await getCurrentUser();
     if (!user) return;
@@ -19,16 +24,23 @@ async function initDashboard() {
         welcomeElement.textContent = `Welkom terug, ${displayName}`;
     }
 
-    if (!gridElement) return;
-
+    const countBadge = document.getElementById('moduleCountBadge');
     const modules = getAvailableModules(user.role);
-    gridElement.innerHTML = modules.map(m => `
+
+    if (countBadge) {
+        countBadge.textContent = `${modules.length} actief`;
+    }
+
+    gridElement.innerHTML = modules.map((m, index) => `
         <a href="${escapeHtml(m.href)}" class="dashboard-tile">
             <div class="tile-header">
                 <div class="tile-icon-box">
                     <span class="material-icons">${escapeHtml(m.icon)}</span>
                 </div>
-                <span class="material-icons tile-arrow">arrow_forward</span>
+                <div class="tile-action-pill">
+                    <span>Openen</span>
+                    <span class="material-icons tile-arrow">arrow_forward</span>
+                </div>
             </div>
             <div class="tile-body">
                 <h2 class="tile-title">${escapeHtml(m.title)}</h2>
