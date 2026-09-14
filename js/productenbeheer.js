@@ -260,6 +260,10 @@ function renderTable() {
 }
 
 async function openCreateModal() {
+    if (currentUserRole !== 3) {
+        showToast('error', 'Je hebt geen rechten om producten toe te voegen');
+        return;
+    }
     await showModal(`
         <div class="modal-header">
             <h2 class="modal-title">Nieuw product</h2>
@@ -406,6 +410,29 @@ async function openCreateModal() {
     }
 }
 
+let currentUserRole = 1;
+
+async function checkUserRole() {
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+            const { data } = await supabase
+                .from('user_data')
+                .select('role')
+                .eq('user_id', session.user.id)
+                .maybeSingle();
+            if (data?.role) {
+                currentUserRole = Number(data.role) || 1;
+            }
+        }
+    } catch (_) {}
+
+    const createProductBtn = document.getElementById('createProductBtn');
+    if (createProductBtn) {
+        createProductBtn.style.display = currentUserRole === 3 ? 'inline-flex' : 'none';
+    }
+}
+
 async function openEditModal(ean) {
     const { data: product, error } = await supabase
         .from('products')
@@ -418,12 +445,13 @@ async function openEditModal(ean) {
         return;
     }
 
-    await showModal(`
-        <div class="modal-header">
-            <h2 class="modal-title">Product bewerken</h2>
-            <p class="modal-subtitle">Pas de gegevens van dit product aan</p>
-        </div>
-        <form class="modal-form" id="editProductForm">
+    const canEditAll = currentUserRole === 3;
+    const canEditPromo = currentUserRole === 2 || currentUserRole === 3;
+
+    let formFieldsHtml = '';
+
+    if (canEditAll) {
+        formFieldsHtml = `
             <div class="modal-form-row">
                 <div class="form-group">
                     <label for="editEan">EAN *</label>
@@ -482,8 +510,66 @@ async function openEditModal(ean) {
                 <label for="editImageUrl">Afbeelding URL</label>
                 <input type="url" id="editImageUrl" class="modal-input" value="${escapeHtml(product.image_url || '')}">
             </div>
+        `;
+    } else {
+        const imageDisplayHtml = product.image_url
+            ? `<div class="product-image-sm" style="width: 48px; height: 48px; border-radius: 8px;"><img src="${escapeHtml(product.image_url)}" alt="" loading="lazy"></div>`
+            : `<div class="product-image-sm" style="width: 48px; height: 48px; border-radius: 8px;"><span class="material-icons">inventory_2</span></div>`;
+
+        const promoPriceFieldHtml = canEditPromo
+            ? `<input type="number" step="0.01" min="0" id="editPromoPrice" class="modal-input" value="${product.promo_price !== null && product.promo_price !== undefined ? product.promo_price : ''}" placeholder="Optioneel">`
+            : `<div style="font-size: 14px; font-weight: 500; color: var(--text-color); padding: 8px 0;">${escapeHtml(formatPrice(product.promo_price))}</div>`;
+
+        formFieldsHtml = `
+            <div style="display: flex; align-items: center; gap: 14px; padding: 12px; background-color: var(--card-background-hover); border: 1px solid var(--card-border); border-radius: 10px; margin-bottom: 16px;">
+                ${imageDisplayHtml}
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                    <span style="font-weight: 600; font-size: 15px; color: var(--text-color);">${escapeHtml(product.name || 'Product')}</span>
+                    <span style="font-size: 12px; color: var(--text-color-muted);">EAN: ${escapeHtml(product.ean || '-')} ${product.brand ? `• ${escapeHtml(product.brand)}` : ''} ${product.department ? `• ${escapeHtml(product.department)}` : ''}</span>
+                </div>
+            </div>
+            <div class="modal-form-row">
+                <div class="form-group">
+                    <label style="color: var(--text-color-muted); font-size: 12px;">Prijs (€)</label>
+                    <div style="font-size: 14px; font-weight: 500; color: var(--text-color); padding: 8px 0;">${escapeHtml(formatPrice(product.price))}</div>
+                </div>
+                <div class="form-group">
+                    <label for="editPromoPrice" style="${canEditPromo ? '' : 'color: var(--text-color-muted); font-size: 12px;'}">Promotieprijs (€)</label>
+                    ${promoPriceFieldHtml}
+                </div>
+            </div>
+            <div class="modal-form-row">
+                <div class="form-group">
+                    <label for="editStockQuantity">Voorraad *</label>
+                    <input type="number" min="0" id="editStockQuantity" class="modal-input" value="${product.stock_quantity ?? 0}" required>
+                </div>
+                <div class="form-group">
+                    <label>Houdbaarheidsdatum</label>
+                    <div id="editBestBeforePicker"></div>
+                </div>
+            </div>
+            <div class="modal-form-row">
+                <div class="form-group">
+                    <label style="color: var(--text-color-muted); font-size: 12px;">Inhoud</label>
+                    <div style="font-size: 14px; font-weight: 500; color: var(--text-color); padding: 8px 0;">${escapeHtml(product.content || '-')}</div>
+                </div>
+                <div class="form-group">
+                    <label style="color: var(--text-color-muted); font-size: 12px;">Schappositie</label>
+                    <div style="font-size: 14px; font-weight: 500; color: var(--text-color); padding: 8px 0;">${escapeHtml(product.shelf_position || '-')}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    await showModal(`
+        <div class="modal-header">
+            <h2 class="modal-title">Product bewerken</h2>
+            <p class="modal-subtitle">${canEditAll ? 'Pas de gegevens van dit product aan' : 'Pas voorraad, tht en/of promotieprijs aan'}</p>
+        </div>
+        <form class="modal-form" id="editProductForm">
+            ${formFieldsHtml}
             <div class="modal-footer">
-                <button type="button" class="modal-btn-danger" id="deleteProductBtn">Verwijderen</button>
+                ${canEditAll ? '<button type="button" class="modal-btn-danger" id="deleteProductBtn">Verwijderen</button>' : ''}
                 <button type="button" class="modal-btn-secondary" id="cancelEditModalBtn">Annuleren</button>
                 <button type="submit" class="btn" id="saveEditBtn">Opslaan</button>
             </div>
@@ -548,18 +634,19 @@ async function openEditModal(ean) {
                 saveBtn.textContent = 'Opslaan...';
             }
 
-            const newEan = document.getElementById('editEan')?.value.trim();
-            const barcodeType = barcodeTypeSelect ? barcodeTypeSelect.getValue() : null;
-            const name = document.getElementById('editName')?.value.trim();
-            const brand = document.getElementById('editBrand')?.value.trim() || null;
-            const department = document.getElementById('editDepartment')?.value.trim() || null;
-            const priceVal = document.getElementById('editPrice')?.value;
-            const promoPriceVal = document.getElementById('editPromoPrice')?.value;
+            const newEan = canEditAll ? (document.getElementById('editEan')?.value.trim() || product.ean) : product.ean;
+            const barcodeType = canEditAll ? (barcodeTypeSelect ? barcodeTypeSelect.getValue() : product.barcode_type) : product.barcode_type;
+            const name = canEditAll ? (document.getElementById('editName')?.value.trim() || product.name) : product.name;
+            const brand = canEditAll ? (document.getElementById('editBrand')?.value.trim() || null) : product.brand;
+            const department = canEditAll ? (document.getElementById('editDepartment')?.value.trim() || null) : product.department;
+            const priceVal = canEditAll ? document.getElementById('editPrice')?.value : product.price;
+            const promoPriceInput = document.getElementById('editPromoPrice');
+            const promoPriceVal = canEditPromo ? (promoPriceInput ? promoPriceInput.value : null) : product.promo_price;
             const stockVal = document.getElementById('editStockQuantity')?.value;
-            const content = document.getElementById('editContent')?.value.trim() || null;
-            const shelfPosition = document.getElementById('editShelfPosition')?.value.trim() || null;
-            const bestBefore = datePicker ? datePicker.getValue() : null;
-            const imageUrl = document.getElementById('editImageUrl')?.value.trim() || null;
+            const content = canEditAll ? (document.getElementById('editContent')?.value.trim() || null) : product.content;
+            const shelfPosition = canEditAll ? (document.getElementById('editShelfPosition')?.value.trim() || null) : product.shelf_position;
+            const bestBefore = datePicker ? datePicker.getValue() : product.best_before_date;
+            const imageUrl = canEditAll ? (document.getElementById('createImageUrl')?.value.trim() || null) : product.image_url;
 
             try {
                 await invokeProductManagement('update', {
@@ -569,9 +656,9 @@ async function openEditModal(ean) {
                     name,
                     brand,
                     department,
-                    price: parseFloat(priceVal),
-                    promo_price: promoPriceVal ? parseFloat(promoPriceVal) : null,
-                    stock_quantity: parseInt(stockVal, 10) || 0,
+                    price: priceVal !== null && priceVal !== undefined && priceVal !== '' ? parseFloat(priceVal) : product.price,
+                    promo_price: promoPriceVal !== null && promoPriceVal !== undefined && promoPriceVal !== '' ? parseFloat(promoPriceVal) : null,
+                    stock_quantity: stockVal !== undefined && stockVal !== '' ? (parseInt(stockVal, 10) || 0) : (product.stock_quantity ?? 0),
                     content,
                     shelf_position: shelfPosition,
                     best_before_date: bestBefore || null,
@@ -674,5 +761,8 @@ if (productsCardsContainer) {
     });
 }
 
-initDepartmentFilter();
-fetchProductsPage();
+(async () => {
+    await checkUserRole();
+    await initDepartmentFilter();
+    await fetchProductsPage();
+})();

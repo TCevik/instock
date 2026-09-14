@@ -383,7 +383,7 @@ function applyUserProductivity(user, isSelf) {
                 ? 'Er zijn nog geen gefinaliseerde vulplanningen gekoppeld aan jouw account.'
                 : `Er zijn nog geen gefinaliseerde vulplanningen gekoppeld aan ${name}.`;
         }
-        const canManage = currentUserRole === 2 || currentUserRole === 3;
+        const canManage = currentUserRole === 3;
         const addShiftBtn = document.getElementById('addShiftBtn');
         if (addShiftBtn) {
             if (canManage) {
@@ -402,7 +402,7 @@ function applyUserProductivity(user, isSelf) {
         if (myShiftsSection) myShiftsSection.style.display = canManage ? 'flex' : 'none';
         if (sectionDivider) sectionDivider.style.display = 'none';
     } else {
-        const canManage = currentUserRole === 2 || currentUserRole === 3;
+        const canManage = currentUserRole === 3;
         const addShiftBtn = document.getElementById('addShiftBtn');
         if (addShiftBtn) {
             if (canManage) {
@@ -1004,7 +1004,7 @@ function renderDayCardBody(card, entry) {
 function renderProductivityList(entries, container) {
     container.innerHTML = '';
 
-    const canManageShifts = true;
+    const canManageShifts = [3].includes(currentUserRole);
 
     if (!entries || entries.length === 0) {
         container.innerHTML = `

@@ -51,6 +51,8 @@ let currentSortKey = 'name';
 let currentSortDirection = 'asc';
 let knownDepartments = new Set();
 
+let currentUserRole = 1;
+
 function getRoleLabel(role) {
     return ROLE_MAP[role] || String(role ?? 'Onbekend');
 }
@@ -167,6 +169,10 @@ async function invokeUserManagement(action, payload) {
 }
 
 async function openCreateModal() {
+    if (currentUserRole !== 3) {
+        showToast('error', 'Je hebt geen rechten om gebruikers toe te voegen');
+        return;
+    }
     await loadDistinctDepartments();
     await showModal(`
         <div class="modal-header">
@@ -287,6 +293,10 @@ async function openCreateModal() {
 }
 
 async function openEditModal(userId) {
+    if (currentUserRole !== 3) {
+        showToast('error', 'Je hebt geen rechten om gebruikers te bewerken');
+        return;
+    }
     await loadDistinctDepartments();
     let user = currentUsers.find(u => String(u.user_id) === String(userId));
     if (!user) {
@@ -480,6 +490,25 @@ function getDbSortColumn(sortKey) {
 }
 
 async function loadUsers() {
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+            const { data: ownData } = await supabase
+                .from('user_data')
+                .select('role')
+                .eq('user_id', session.user.id)
+                .maybeSingle();
+            if (ownData?.role) {
+                currentUserRole = Number(ownData.role) || 1;
+            }
+        }
+    } catch (_) {}
+
+    const createUserBtn = document.getElementById('createUserBtn');
+    if (createUserBtn) {
+        createUserBtn.style.display = currentUserRole === 3 ? 'inline-flex' : 'none';
+    }
+
     renderTableSkeletons('usersTableBody', 'usersCardsContainer', 7, 5);
     const from = (currentPage - 1) * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
@@ -535,10 +564,17 @@ function renderTable() {
     const startIndex = (currentPage - 1) * PAGE_SIZE;
     const endIndex = Math.min(startIndex + currentUsers.length, totalUsers);
 
+    const canManageUsers = currentUserRole === 3;
+
+    const thActions = document.querySelector('.th-actions');
+    if (thActions) {
+        thActions.style.display = canManageUsers ? '' : 'none';
+    }
+
     if (currentUsers.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="empty-state">Geen gebruikers gevonden</td>
+                <td colspan="${canManageUsers ? '7' : '6'}" class="empty-state">Geen gebruikers gevonden</td>
             </tr>
         `;
         if (cardsContainer) {
@@ -569,11 +605,13 @@ function renderTable() {
                     <td>${departmentsHtml}</td>
                     <td>${birthday}</td>
                     <td class="time-cell">${lastSignIn}</td>
-                    <td class="td-actions">
-                        <button type="button" class="action-btn edit-btn" data-user-id="${escapeHtml(user.user_id)}" title="Gebruiker Bewerken - Gegevens en rechten aanpassen">
-                            <span class="material-icons">edit</span>
-                        </button>
-                    </td>
+                    ${canManageUsers ? `
+                        <td class="td-actions">
+                            <button type="button" class="action-btn edit-btn" data-user-id="${escapeHtml(user.user_id)}" title="Gebruiker Bewerken - Gegevens en rechten aanpassen">
+                                <span class="material-icons">edit</span>
+                            </button>
+                        </td>
+                    ` : ''}
                 </tr>
             `;
         }).join('');
@@ -589,7 +627,7 @@ function renderTable() {
                 const hasBirthday = user.birthday && birthday !== '-';
 
                 return `
-                    <div class="user-list-item edit-btn" data-user-id="${escapeHtml(user.user_id)}">
+                    <div class="user-list-item${canManageUsers ? ' edit-btn' : ''}" data-user-id="${escapeHtml(user.user_id)}">
                         <div class="user-avatar-sm">
                             <span class="material-icons">person</span>
                         </div>
@@ -604,7 +642,7 @@ function renderTable() {
                             </div>
                             ${departmentsHtml}
                         </div>
-                        <span class="material-icons user-list-chevron">chevron_right</span>
+                        ${canManageUsers ? '<span class="material-icons user-list-chevron">chevron_right</span>' : ''}
                     </div>
                 `;
             }).join('');

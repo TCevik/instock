@@ -165,7 +165,7 @@ const APP_MODULES = [
         description: 'Bekijk en beheer het actuele bakplan voor de winkel.',
         icon: 'bakery_dining',
         href: 'bakplan.html',
-        minRole: 1
+        minRole: 2
     },
     {
         id: 'vulplanning',
@@ -173,7 +173,7 @@ const APP_MODULES = [
         description: 'Maak en beheer vulplanningen, taken en shifts.',
         icon: 'assignment',
         href: 'vulplanning.html',
-        minRole: 1
+        minRole: 2
     },
     {
         id: 'productiviteit',
@@ -197,7 +197,7 @@ const APP_MODULES = [
         description: 'Beheer medewerkers, rollen en winkeltoegang.',
         icon: 'people',
         href: 'gebruikersbeheer.html',
-        minRole: 1
+        minRole: 2
     },
     {
         id: 'instellingen-winkel',
@@ -205,7 +205,7 @@ const APP_MODULES = [
         description: 'Configureer winkelpaden, vulnormen en categorieën.',
         icon: 'store',
         href: 'instellingen-winkel.html',
-        minRole: 1
+        minRole: 3
     },
     {
         id: 'logs',
@@ -213,12 +213,13 @@ const APP_MODULES = [
         description: 'Bekijk de geschiedenis van acties en wijzigingen.',
         icon: 'history',
         href: 'logs.html',
-        minRole: 1
+        minRole: 3
     }
 ];
 
-export function getAvailableModules() {
-    return APP_MODULES;
+export function getAvailableModules(role = 1) {
+    const numericRole = Number(role) || 1;
+    return APP_MODULES.filter(m => numericRole >= (m.minRole || 1));
 }
 
 let overlayLoadingOrLoaded = false;
@@ -322,6 +323,15 @@ async function loadOverlay() {
                     const handle = user.username.trim();
                     headerUserHandle.textContent = handle.startsWith('@') ? handle : `@${handle}`;
                 }
+                const roleNum = Number(user.role) || 1;
+                APP_MODULES.forEach(mod => {
+                    if (roleNum < (mod.minRole || 1)) {
+                        const linkEl = document.querySelector(`.sidebar-link[href="${mod.href}"]`);
+                        if (linkEl) {
+                            linkEl.remove();
+                        }
+                    }
+                });
             }
         }
     } catch (error) {
