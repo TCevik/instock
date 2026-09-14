@@ -59,7 +59,7 @@ function renderTextWithSubtitle(text) {
 }
 
 export function showCustomTooltip(e, data) {
-    if (!data) return;
+    if (!data || window.matchMedia('(pointer: coarse)').matches) return;
     if (delayTimer) {
         clearTimeout(delayTimer);
         delayTimer = null;
@@ -315,21 +315,6 @@ export function initGlobalTooltips() {
     window.addEventListener('blur', hideCustomTooltip);
 
     document.addEventListener('touchstart', (e) => {
-        const touch = e.touches[0];
-        if (!touch) return;
-        const target = e.target.closest('[title], [data-tooltip]');
-        if (!target || target.tagName === 'TITLE') {
-            hideCustomTooltip();
-            return;
-        }
-        if (target.hasAttribute('title')) {
-            const val = target.getAttribute('title');
-            if (val) target.setAttribute('data-tooltip', val);
-            target.removeAttribute('title');
-        }
-        const text = target.getAttribute('data-tooltip');
-        if (text && text.trim()) {
-            showCustomTooltip({ clientX: touch.clientX, clientY: touch.clientY }, text);
-        }
+        hideCustomTooltip();
     }, { passive: true });
 }

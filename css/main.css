@@ -210,6 +210,15 @@ body {
     transform: translateY(0);
 }
 
+@media (pointer: coarse), (max-width: 768px) {
+    .custom-planning-tooltip,
+    .custom-tooltip {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+    }
+}
+
 .tooltip-title {
     font-size: 11px;
     font-weight: 600;
