@@ -827,10 +827,11 @@ function renderProductivityChart(entries) {
 
     const width = Math.max(300, Math.floor(container.clientWidth || 600));
     const height = 240;
-    const padLeft = 46;
-    const padRight = 32;
-    const padTop = 32;
-    const padBottom = 42;
+    const isMobile = width < 480;
+    const padLeft = isMobile ? 36 : 46;
+    const padRight = isMobile ? 16 : 32;
+    const padTop = isMobile ? 26 : 32;
+    const padBottom = isMobile ? 36 : 42;
     const chartW = width - padLeft - padRight;
     const chartH = height - padTop - padBottom;
 
@@ -863,7 +864,11 @@ function renderProductivityChart(entries) {
         danger: 'var(--danger-color)'
     };
 
-    const circlesSvg = coords.map((c) => {
+    const dateStep = (isMobile && coords.length > 5) ? Math.ceil(coords.length / 5) : 1;
+    const valFontSize = isMobile ? (coords.length > 8 ? "9" : "10") : "11";
+    const valOffsetY = isMobile ? 8 : 10;
+
+    const circlesSvg = coords.map((c, i) => {
         const dotColor = statusColors[c.statusClass] || 'var(--accent-color)';
         const labelText = c.fullDateLabel || c.dateLabel;
         const titleText = isMonthView
@@ -874,15 +879,18 @@ function renderProductivityChart(entries) {
                     ? `${escapeHtml(c.dateLabel)}: ${c.percent}% (gemiddelde over ${c.windowSize} ${c.windowSize === 1 ? 'shift' : 'shifts'})`
                     : `${escapeHtml(c.dateLabel)}: ${c.percent}%${c.colli > 0 ? ` (${c.colli.toLocaleString('nl-NL')} colli)` : ''}`));
 
+        const showDate = (i % dateStep === 0) || (i === coords.length - 1);
+
         return `
             <g class="chart-point-group" data-tooltip="${titleText}">
-                <circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="5" fill="var(--card-background)" stroke="${dotColor}" stroke-width="3" data-tooltip="${titleText}"></circle>
-                <text x="${c.x.toFixed(1)}" y="${(c.y - 10).toFixed(1)}" text-anchor="middle" fill="var(--text-color)" font-size="11" font-weight="700">
+                <circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="${isMobile ? 4 : 5}" fill="var(--card-background)" stroke="${dotColor}" stroke-width="${isMobile ? 2.5 : 3}"></circle>
+                <text x="${c.x.toFixed(1)}" y="${(c.y - valOffsetY).toFixed(1)}" text-anchor="middle" fill="var(--text-color)" font-size="${valFontSize}" font-weight="700" stroke="var(--card-background)" stroke-width="3" paint-order="stroke fill">
                     ${c.percent}%
                 </text>
-                <text x="${c.x.toFixed(1)}" y="${(padTop + chartH + 20).toFixed(1)}" text-anchor="middle" fill="var(--text-color-muted)" font-size="10.5">
+                ${showDate ? `
+                <text x="${c.x.toFixed(1)}" y="${(padTop + chartH + (isMobile ? 16 : 20)).toFixed(1)}" text-anchor="middle" fill="var(--text-color-muted)" font-size="${isMobile ? 9.5 : 10.5}">
                     ${escapeHtml(c.dateLabel)}
-                </text>
+                </text>` : ''}
             </g>
         `;
     }).join('');
