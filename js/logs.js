@@ -463,6 +463,268 @@ function renderPathsDiff(oldPaths, newPaths) {
     };
 }
 
+function renderBakplanDiff(oldVal, newVal) {
+    function extractCategories(val) {
+        if (!val) return [];
+        if (Array.isArray(val)) return val;
+        if (Array.isArray(val.bakplan)) return val.bakplan;
+        if (Array.isArray(val.data)) return val.data;
+        return [];
+    }
+
+    function renderCategoryTable(oldC, newC) {
+        const oldItems = Array.isArray(oldC?.items || oldC?.artikelen) ? (oldC.items || oldC.artikelen) : [];
+        const newItems = Array.isArray(newC?.items || newC?.artikelen) ? (newC.items || newC.artikelen) : [];
+
+        function norm(s) { return String(s || '').trim().toLowerCase(); }
+
+        const matchedOldItemIdx = new Set();
+        const matchedNewItemIdx = new Set();
+        const rows = [];
+
+        newItems.forEach((nItem, nIdx) => {
+            if (!nItem) return;
+            const nOmsch = norm(nItem.omschrijving);
+            const oIdx = oldItems.findIndex((oItem, idx) => !matchedOldItemIdx.has(idx) && oItem && ( (nItem.id && oItem.id === nItem.id) || (nOmsch && norm(oItem.omschrijving) === nOmsch) ));
+            if (oIdx !== -1) {
+                matchedOldItemIdx.add(oIdx);
+                matchedNewItemIdx.add(nIdx);
+                rows.push({ type: 'existing', oItem: oldItems[oIdx], nItem });
+            }
+        });
+
+        newItems.forEach((nItem, nIdx) => {
+            if (!matchedNewItemIdx.has(nIdx) && nItem) {
+                rows.push({ type: 'added', nItem });
+            }
+        });
+
+        oldItems.forEach((oItem, oIdx) => {
+            if (!matchedOldItemIdx.has(oIdx) && oItem) {
+                rows.push({ type: 'removed', oItem });
+            }
+        });
+
+        if (rows.length === 0) return { html: '', hasChanges: false };
+
+        function fmtVal(val, isPrice) {
+            if (val === null || val === undefined || val === '') return '-';
+            if (isPrice) return `€\u00A0${parseFloat(val).toFixed(2).replace('.', ',')}`;
+            return String(val);
+        }
+
+        let hasChanges = false;
+
+        function renderCell(oVal, nVal, isPrice, rowType) {
+            const fmtO = fmtVal(oVal, isPrice);
+            const fmtN = fmtVal(nVal, isPrice);
+
+            if (rowType === 'added') {
+                hasChanges = true;
+                return `<span style="color: var(--accent-color); font-weight: 500; white-space: nowrap;">${escapeHtml(fmtN)}</span>`;
+            }
+            if (rowType === 'removed') {
+                hasChanges = true;
+                return `<span style="text-decoration: line-through; opacity: 0.6; color: #ef4444; white-space: nowrap;">${escapeHtml(fmtO)}</span>`;
+            }
+            if (fmtO !== fmtN) {
+                hasChanges = true;
+                return `<span style="display: inline-flex; align-items: center; justify-content: inherit; gap: 4px; white-space: nowrap;"><span style="text-decoration: line-through; opacity: 0.55; color: #ef4444;">${escapeHtml(fmtO)}</span><span style="opacity: 0.4;">→</span><span style="color: var(--accent-color); font-weight: 600;">${escapeHtml(fmtN)}</span></span>`;
+            }
+            return `<span style="color: var(--text-secondary); white-space: nowrap;">${escapeHtml(fmtN)}</span>`;
+        }
+
+        const tableRowsHtml = rows.map(r => {
+            const oItem = r.oItem || {};
+            const nItem = r.nItem || {};
+
+            let omschHtml = '';
+            if (r.type === 'added') {
+                omschHtml = `<span style="color: var(--accent-color); font-weight: 600; white-space: nowrap;">+ ${escapeHtml(nItem.omschrijving || 'Naamloos')}</span>`;
+            } else if (r.type === 'removed') {
+                omschHtml = `<span style="text-decoration: line-through; color: #ef4444; opacity: 0.7; white-space: nowrap;">- ${escapeHtml(oItem.omschrijving || 'Naamloos')}</span>`;
+            } else if (norm(oItem.omschrijving) !== norm(nItem.omschrijving)) {
+                hasChanges = true;
+                omschHtml = `<span style="display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;"><span style="text-decoration: line-through; opacity: 0.55; color: #ef4444;">${escapeHtml(oItem.omschrijving || '-')}</span><span style="opacity: 0.4;">→</span><span style="color: var(--accent-color); font-weight: 600;">${escapeHtml(nItem.omschrijving || '-')}</span></span>`;
+            } else {
+                omschHtml = `<span style="font-weight: 500; color: var(--text-primary); white-space: nowrap;">${escapeHtml(nItem.omschrijving || 'Naamloos')}</span>`;
+            }
+
+            const perPlaatCell = renderCell(oItem.perPlaat ?? oItem.per_plaat ?? null, nItem.perPlaat ?? nItem.per_plaat ?? null, false, r.type);
+            const prijsCell = renderCell(oItem.prijs ?? null, nItem.prijs ?? null, true, r.type);
+            const promoCell = renderCell(oItem.promo ?? null, nItem.promo ?? null, true, r.type);
+            const opleggenCell = renderCell(oItem.opleggen ?? null, nItem.opleggen ?? null, false, r.type);
+            const dervingCell = renderCell(oItem.derving ?? null, nItem.derving ?? null, false, r.type);
+
+            return `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                    <td style="padding: 7px 10px; white-space: nowrap;">${omschHtml}</td>
+                    <td style="padding: 7px 10px; text-align: center; white-space: nowrap;">${perPlaatCell}</td>
+                    <td style="padding: 7px 10px; text-align: right; white-space: nowrap;">${prijsCell}</td>
+                    <td style="padding: 7px 10px; text-align: right; white-space: nowrap;">${promoCell}</td>
+                    <td style="padding: 7px 10px; text-align: center; white-space: nowrap;">${opleggenCell}</td>
+                    <td style="padding: 7px 10px; text-align: center; white-space: nowrap;">${dervingCell}</td>
+                </tr>
+            `;
+        }).join('');
+
+        const html = `
+            <div style="overflow-x: auto; margin-top: 8px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px; border-radius: 6px; overflow: hidden; background: rgba(0,0,0,0.18);">
+                    <thead>
+                        <tr style="text-align: left; color: var(--text-muted, #888); font-size: 11px; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.08);">
+                            <th style="padding: 8px 10px; white-space: nowrap;">Artikel</th>
+                            <th style="padding: 8px 10px; text-align: center; white-space: nowrap;">Per plaat</th>
+                            <th style="padding: 8px 10px; text-align: right; white-space: nowrap;">Prijs</th>
+                            <th style="padding: 8px 10px; text-align: right; white-space: nowrap;">Promo</th>
+                            <th style="padding: 8px 10px; text-align: center; white-space: nowrap;">Opleggen</th>
+                            <th style="padding: 8px 10px; text-align: center; white-space: nowrap;">Derving</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRowsHtml}
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        return { html, hasChanges };
+    }
+
+    const oldList = extractCategories(oldVal);
+    const newList = extractCategories(newVal);
+
+    function norm(s) { return String(s || '').trim().toLowerCase(); }
+
+    const matchedOldIndices = new Set();
+    const matchedNewIndices = new Set();
+    const catChanges = [];
+
+    newList.forEach((newC, nIdx) => {
+        if (!newC) return;
+        const cId = newC.id;
+        if (cId) {
+            const oIdx = oldList.findIndex((oldC, idx) => !matchedOldIndices.has(idx) && oldC && oldC.id === cId);
+            if (oIdx !== -1) {
+                matchedOldIndices.add(oIdx);
+                matchedNewIndices.add(nIdx);
+                catChanges.push({ type: 'modified', oldC: oldList[oIdx], newC });
+            }
+        }
+    });
+
+    newList.forEach((newC, nIdx) => {
+        if (matchedNewIndices.has(nIdx) || !newC) return;
+        const cName = norm(newC.name || newC.categorie);
+        const oIdx = oldList.findIndex((oldC, idx) => !matchedOldIndices.has(idx) && oldC && norm(oldC.name || oldC.categorie) === cName);
+        if (oIdx !== -1) {
+            matchedOldIndices.add(oIdx);
+            matchedNewIndices.add(nIdx);
+            catChanges.push({ type: 'modified', oldC: oldList[oIdx], newC });
+        }
+    });
+
+    newList.forEach((newC, nIdx) => {
+        if (!matchedNewIndices.has(nIdx)) {
+            catChanges.push({ type: 'added', newC });
+        }
+    });
+
+    oldList.forEach((oldC, oIdx) => {
+        if (!matchedOldIndices.has(oIdx)) {
+            catChanges.push({ type: 'removed', oldC });
+        }
+    });
+
+    if (catChanges.length === 0) {
+        return {
+            count: 0,
+            html: '<div class="empty-state" style="padding: 16px 0;">Geen inhoudelijke wijzigingen in het bakplan gedetecteerd.</div>'
+        };
+    }
+
+    let cardsCount = 0;
+    const cardsHtml = catChanges.map(change => {
+        if (change.type === 'added') {
+            cardsCount++;
+            const catName = escapeHtml(change.newC.name || change.newC.categorie || 'Nieuwe categorie');
+            const tbl = renderCategoryTable(null, change.newC);
+            return `
+                <div class="log-detail-card">
+                    <div class="log-detail-header" style="justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div class="log-detail-icon-wrap" style="border-color: rgba(101,141,36,0.3); color: var(--accent-color);">
+                                <span class="material-icons">folder</span>
+                            </div>
+                            <span class="log-detail-title">${catName}</span>
+                        </div>
+                        <div class="log-val-badge new" style="margin: 0; font-size: 11px; padding: 2px 8px;">Nieuwe categorie</div>
+                    </div>
+                    ${tbl.html}
+                </div>
+            `;
+        }
+
+        if (change.type === 'removed') {
+            cardsCount++;
+            const catName = escapeHtml(change.oldC.name || change.oldC.categorie || 'Verwijderde categorie');
+            const tbl = renderCategoryTable(change.oldC, null);
+            return `
+                <div class="log-detail-card">
+                    <div class="log-detail-header" style="justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div class="log-detail-icon-wrap" style="border-color: rgba(239,68,68,0.3); color: #ef4444;">
+                                <span class="material-icons">folder_delete</span>
+                            </div>
+                            <span class="log-detail-title">${catName}</span>
+                        </div>
+                        <div class="log-val-badge old" style="margin: 0; font-size: 11px; padding: 2px 8px;">Verwijderde categorie</div>
+                    </div>
+                    ${tbl.html}
+                </div>
+            `;
+        }
+
+        const oldC = change.oldC;
+        const newC = change.newC;
+        const catNameOld = oldC.name || oldC.categorie || 'Categorie';
+        const catNameNew = newC.name || newC.categorie || 'Categorie';
+
+        const tbl = renderCategoryTable(oldC, newC);
+        const nameChanged = norm(catNameOld) !== norm(catNameNew);
+
+        if (!tbl.hasChanges && !nameChanged) {
+            return '';
+        }
+
+        cardsCount++;
+        let titleHtml = escapeHtml(catNameNew);
+        if (nameChanged) {
+            titleHtml = `<span style="text-decoration: line-through; opacity: 0.55; color: #ef4444; margin-right: 4px;">${escapeHtml(catNameOld)}</span> → <span style="color: var(--accent-color); font-weight: 600;">${escapeHtml(catNameNew)}</span>`;
+        }
+
+        return `
+            <div class="log-detail-card">
+                <div class="log-detail-header" style="justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div class="log-detail-icon-wrap">
+                            <span class="material-icons">folder</span>
+                        </div>
+                        <span class="log-detail-title">${titleHtml}</span>
+                    </div>
+                    <div class="log-val-badge neutral" style="margin: 0; font-size: 11px; padding: 2px 8px;">Gewijzigd</div>
+                </div>
+                ${tbl.html}
+            </div>
+        `;
+    }).filter(Boolean).join('');
+
+    return {
+        count: cardsCount,
+        html: cardsHtml || '<div class="empty-state" style="padding: 16px 0;">Geen inhoudelijke wijzigingen in het bakplan gedetecteerd.</div>'
+    };
+}
+
 function renderShiftDiff(oldShift, newShift) {
     const oldObj = oldShift || {};
     const newObj = newShift || {};
@@ -1010,6 +1272,13 @@ function openDetailsModal(log) {
                 ${diffHtml}
             </div>
         `;
+    } else if (String(log.affected || '').toLowerCase().includes('bakplan') || String(log.action || '').toLowerCase().includes('bakplan')) {
+        const diffResult = renderBakplanDiff(oldVal, newVal);
+        if (diffResult.html) {
+            detailsHtml = diffResult.html;
+        } else {
+            detailsHtml = `<div class="empty-state" style="padding: 16px 0;">Geen inhoudelijke wijzigingen in het bakplan gedetecteerd.</div>`;
+        }
     } else {
         const allKeys = new Set([
             ...(oldVal && typeof oldVal === 'object' ? Object.keys(oldVal) : []),
@@ -1064,6 +1333,17 @@ function openDetailsModal(log) {
 
                 if (key === 'default_paths') {
                     const diffResult = renderPathsDiff(oldField, newField);
+                    if (diffResult.count > 0) {
+                        cardsHtml += diffResult.html;
+                        cardsCount += diffResult.count;
+                    } else if (diffResult.html) {
+                        cardsHtml += diffResult.html;
+                    }
+                    return;
+                }
+
+                if (key === 'bakplan' || key === 'data') {
+                    const diffResult = renderBakplanDiff(oldField || oldVal, newField || newVal);
                     if (diffResult.count > 0) {
                         cardsHtml += diffResult.html;
                         cardsCount += diffResult.count;

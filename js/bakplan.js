@@ -1,6 +1,7 @@
-import { supabase, showToast } from './main.js';
+import { supabase, showToast, invokeFn, showConfirmModal } from './main.js';
 
 let bakplanData = [];
+let savedSnapshot = '[]';
 
 function calculatePlaten(opleggen, perPlaat) {
     const numOpleggen = parseFloat(opleggen);
@@ -328,11 +329,7 @@ function initEvents() {
     }
 
     if (btnSave) {
-        btnSave.addEventListener('click', () => {
-            if (typeof showToast === 'function') {
-                showToast('Bakplan succesvol opgeslagen!', 'success');
-            }
-        });
+        btnSave.addEventListener('click', saveBakplan);
     }
 
     if (container) {
@@ -414,7 +411,91 @@ function initEvents() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function getBakplanSnapshot() {
+    return JSON.stringify(bakplanData.map(cat => ({
+        id: cat.id,
+        name: cat.name,
+        items: cat.items.map(item => ({
+            id: item.id,
+            omschrijving: item.omschrijving,
+            perPlaat: item.perPlaat,
+            prijs: item.prijs,
+            promo: item.promo,
+            opleggen: item.opleggen,
+            derving: item.derving
+        }))
+    })));
+}
+
+function hasUnsavedChanges() {
+    return savedSnapshot !== getBakplanSnapshot();
+}
+
+async function saveBakplan() {
+    const btnSave = document.getElementById('btn-save-bakplan');
+    if (btnSave) btnSave.disabled = true;
+    try {
+        const { data, error } = await invokeFn('manage-bakplan', {
+            body: { data: bakplanData }
+        });
+        if (error) {
+            showToast('error', error);
+        } else {
+            savedSnapshot = getBakplanSnapshot();
+            showToast('notification', 'Het bakplan is succesvol opgeslagen!');
+        }
+    } catch (err) {
+        showToast('error', err.message || 'Er is een fout opgetreden');
+    } finally {
+        if (btnSave) btnSave.disabled = false;
+    }
+}
+
+async function loadBakplan() {
+    const { data, error } = await supabase
+        .from('bakplan')
+        .select('data')
+        .maybeSingle();
+
+    if (!error && data && Array.isArray(data.data)) {
+        bakplanData = data.data;
+    }
+    savedSnapshot = getBakplanSnapshot();
     renderCategories();
+}
+
+window.addEventListener('beforeunload', (e) => {
+    if (hasUnsavedChanges()) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
+
+document.addEventListener('click', async (e) => {
+    const link = e.target.closest('a');
+    if (!link) return;
+
+    const href = link.getAttribute('href');
+    if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+
+    if (hasUnsavedChanges()) {
+        e.preventDefault();
+        const confirmed = await showConfirmModal({
+            title: 'Niet opgeslagen wijzigingen',
+            message: 'Je hebt wijzigingen gemaakt die nog niet zijn opgeslagen. Weet je zeker dat je de pagina wilt verlaten?',
+            confirmText: 'Verlaten',
+            cancelText: 'Blijven',
+            isDanger: true
+        });
+
+        if (confirmed) {
+            savedSnapshot = getBakplanSnapshot();
+            window.location.href = href;
+        }
+    }
+}, true);
+
+document.addEventListener('DOMContentLoaded', () => {
     initEvents();
+    loadBakplan();
 });
