@@ -96,6 +96,14 @@ async function checkAuth() {
         }
         recordActivity();
     }
+
+    supabase.auth.onAuthStateChange((_event, newSession) => {
+        if (!newSession && !window.location.pathname.endsWith('login.html')) {
+            window.isLoggingOut = true;
+            window.onbeforeunload = null;
+            window.location.replace('login.html');
+        }
+    });
 }
 
 let currentUserData = null;
@@ -311,7 +319,16 @@ async function loadOverlay() {
 
             const logoutBtn = document.getElementById('logoutBtn');
             if (logoutBtn) {
-                logoutBtn.addEventListener('click', logout);
+                logoutBtn.addEventListener('click', async () => {
+                    const confirmed = await showConfirmModal({
+                        title: 'Uitloggen',
+                        message: 'Weet je zeker dat je wilt uitloggen?',
+                        confirmText: 'Uitloggen',
+                        cancelText: 'Annuleren',
+                        isDanger: true
+                    });
+                    if (confirmed) logout();
+                });
             }
 
             const headerUserName = document.getElementById('headerUserName');
@@ -443,8 +460,13 @@ async function openChangePasswordModal() {
 }
 
 export async function logout() {
+    window.isLoggingOut = true;
     currentUserData = null;
     localStorage.removeItem(LAST_ACTIVITY_KEY);
+    window.onbeforeunload = null;
+    window.addEventListener('beforeunload', (e) => {
+        delete e.returnValue;
+    }, { capture: true });
     await supabase.auth.signOut();
     window.location.replace('login.html');
 }

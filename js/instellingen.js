@@ -478,6 +478,7 @@ async function saveStorePaths() {
 }
 
 window.addEventListener('beforeunload', (e) => {
+    if (window.isLoggingOut) return;
     if (hasUnsavedChanges()) {
         e.preventDefault();
         e.returnValue = '';

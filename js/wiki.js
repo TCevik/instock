@@ -599,7 +599,7 @@ function setupEditorEvents() {
     let isEditingActive = true;
 
     const handleBeforeUnload = (e) => {
-        if (!isEditingActive) return;
+        if (window.isLoggingOut || !isEditingActive) return;
         const hasTitle = titleInput && titleInput.value.trim().length > 0;
         const hasContent = editorContent && editorContent.innerText.trim().length > 0;
         if (hasTitle || hasContent) {
