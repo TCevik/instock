@@ -1,7 +1,60 @@
 import { supabase, showToast, invokeFn, showConfirmModal } from './main.js';
 
 let bakplanData = [];
+let undoStack = [];
+let redoStack = [];
+let isUndoRedoAction = false;
+
+function saveState() {
+    if (isUndoRedoAction) return;
+    const currentState = JSON.stringify(bakplanData);
+    if (undoStack.length === 0 || undoStack[undoStack.length - 1] !== currentState) {
+        undoStack.push(currentState);
+        if (undoStack.length > 50) undoStack.shift();
+        redoStack = [];
+    }
+}
+
+function undo() {
+    if (undoStack.length <= 1) return;
+    isUndoRedoAction = true;
+    redoStack.push(undoStack.pop());
+    const previousState = undoStack[undoStack.length - 1];
+    bakplanData = JSON.parse(previousState);
+    const searchInput = document.getElementById('bakplan-search');
+    renderCategories(searchInput ? searchInput.value : '');
+    isUndoRedoAction = false;
+    showToast('notification', 'Actie ongedaan gemaakt (Undo)');
+}
+
+function redo() {
+    if (redoStack.length === 0) return;
+    isUndoRedoAction = true;
+    const nextState = redoStack.pop();
+    undoStack.push(nextState);
+    bakplanData = JSON.parse(nextState);
+    const searchInput = document.getElementById('bakplan-search');
+    renderCategories(searchInput ? searchInput.value : '');
+    isUndoRedoAction = false;
+    showToast('notification', 'Actie opnieuw uitgevoerd (Redo)');
+}
 let savedSnapshot = '[]';
+let currentDay = 'maandag';
+
+const DAYS = ['maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag', 'zondag'];
+
+function getDayValue(item, field, day = currentDay) {
+    if (item.days && item.days[day] && item.days[day][field] !== undefined) {
+        return item.days[day][field];
+    }
+    return item[field] !== undefined ? item[field] : null;
+}
+
+function setDayValue(item, field, val, day = currentDay) {
+    if (!item.days) item.days = {};
+    if (!item.days[day]) item.days[day] = {};
+    item.days[day][field] = val;
+}
 
 function calculatePlaten(opleggen, perPlaat) {
     const numOpleggen = parseFloat(opleggen);
@@ -24,9 +77,9 @@ function updateSummaryStats() {
                 totalItems++;
                 catItems++;
             }
-            const opl = parseFloat(item.opleggen) || 0;
-            const der = parseFloat(item.derving) || 0;
-            const pl = calculatePlaten(item.opleggen, item.perPlaat);
+            const opl = parseFloat(getDayValue(item, 'opleggen')) || 0;
+            const der = parseFloat(getDayValue(item, 'derving')) || 0;
+            const pl = calculatePlaten(getDayValue(item, 'opleggen'), item.perPlaat);
             
             totalOpleggen += opl;
             totalDerving += der;
@@ -91,7 +144,7 @@ function renderCategories(filterText = '') {
         let catPlatenCount = 0;
         cat.items.forEach(item => {
             if (item.omschrijving && item.omschrijving.trim() !== '') catItemsCount++;
-            catPlatenCount += calculatePlaten(item.opleggen, item.perPlaat);
+            catPlatenCount += calculatePlaten(getDayValue(item, 'opleggen'), item.perPlaat);
         });
 
         const isCollapsed = cat.collapsed ? 'collapsed' : '';
@@ -131,12 +184,12 @@ function renderCategories(filterText = '') {
                                 <thead>
                                     <tr>
                                         <th class="th-desc">Productomschrijving</th>
-                                        <th class="th-num">Aantal per plaat</th>
+                                        <th class="th-num">Aantal / plaat</th>
                                         <th class="th-num">Prijs</th>
-                                        <th class="th-num">Promo</th>
-                                        <th class="th-num">Opleggen</th>
-                                        <th class="th-num">Platen</th>
-                                        <th class="th-num">Derving</th>
+                                        <th class="th-num th-day">Promo <span class="header-day-tag">${currentDay.slice(0, 2)}</span></th>
+                                        <th class="th-num th-day">Opleggen <span class="header-day-tag">${currentDay.slice(0, 2)}</span></th>
+                                        <th class="th-num th-day">Platen <span class="header-day-tag">${currentDay.slice(0, 2)}</span></th>
+                                        <th class="th-num th-day">Derving <span class="header-day-tag">${currentDay.slice(0, 2)}</span></th>
                                         <th class="th-actions"></th>
                                     </tr>
                                 </thead>
@@ -144,12 +197,16 @@ function renderCategories(filterText = '') {
         `;
 
         matchingItems.forEach(item => {
-            const platen = calculatePlaten(item.opleggen, item.perPlaat);
+            const currentOpleggen = getDayValue(item, 'opleggen');
+            const currentPromo = getDayValue(item, 'promo');
+            const currentDerving = getDayValue(item, 'derving');
+
+            const platen = calculatePlaten(currentOpleggen, item.perPlaat);
             const perPlaatVal = (item.perPlaat !== null && item.perPlaat !== undefined && item.perPlaat !== '') ? item.perPlaat : '';
             const prijsVal = (item.prijs !== null && item.prijs !== undefined && item.prijs !== '') ? parseFloat(item.prijs).toFixed(2) : '';
-            const promoVal = (item.promo !== null && item.promo !== undefined && item.promo !== '') ? parseFloat(item.promo).toFixed(2) : '';
-            const opleggenVal = (item.opleggen !== null && item.opleggen !== undefined && item.opleggen !== '') ? item.opleggen : '';
-            const dervingVal = (item.derving !== null && item.derving !== undefined && item.derving !== '') ? item.derving : '';
+            const promoVal = (currentPromo !== null && currentPromo !== undefined && currentPromo !== '') ? parseFloat(currentPromo).toFixed(2) : '';
+            const opleggenVal = (currentOpleggen !== null && currentOpleggen !== undefined && currentOpleggen !== '') ? currentOpleggen : '';
+            const dervingVal = (currentDerving !== null && currentDerving !== undefined && currentDerving !== '') ? currentDerving : '';
             delete item.isNew;
 
             const isOnlyRow = cat.items.length <= 1;
@@ -162,22 +219,22 @@ function renderCategories(filterText = '') {
                         <input type="text" class="bakplan-input" value="${item.omschrijving}" placeholder="Productomschrijving..." data-field="omschrijving">
                     </td>
                     <td class="td-num">
-                        <input type="number" min="1" step="1" class="bakplan-input input-num" value="${perPlaatVal}" placeholder="0" data-field="perPlaat">
+                        <input type="number" min="0" max="999999" step="1" class="bakplan-input input-num" value="${perPlaatVal}" placeholder="0" data-field="perPlaat">
                     </td>
                     <td class="td-num">
-                        <input type="number" min="0" step="0.01" class="bakplan-input input-num" value="${prijsVal}" placeholder="0.00" data-field="prijs">
+                        <input type="number" min="0" max="999999" step="0.01" class="bakplan-input input-num" value="${prijsVal}" placeholder="0.00" data-field="prijs">
                     </td>
                     <td class="td-num">
-                        <input type="number" min="0" step="0.01" class="bakplan-input input-num" value="${promoVal}" placeholder="0.00" data-field="promo">
+                        <input type="number" min="0" max="999999" step="0.01" class="bakplan-input input-num input-day" value="${promoVal}" placeholder="-" data-field="promo" title="Rechtermuisknop om te synchroniseren naar andere dagen">
                     </td>
                     <td class="td-num">
-                        <input type="number" min="0" step="1" class="bakplan-input input-num" value="${opleggenVal}" placeholder="0" data-field="opleggen">
+                        <input type="number" min="0" max="999999" step="1" class="bakplan-input input-num input-day" value="${opleggenVal}" placeholder="0" data-field="opleggen" title="Rechtermuisknop om te synchroniseren naar andere dagen">
                     </td>
                     <td class="td-num">
                         <span class="read-only-badge platen-val">${platen}</span>
                     </td>
                     <td class="td-num">
-                        <input type="number" min="0" step="1" class="bakplan-input input-num" value="${dervingVal}" placeholder="0" data-field="derving">
+                        <input type="number" min="0" max="999999" step="1" class="bakplan-input input-num input-day" value="${dervingVal}" placeholder="0" data-field="derving" title="Rechtermuisknop om te synchroniseren naar andere dagen">
                     </td>
                     <td class="td-actions">
                         <button type="button" class="btn-delete-row" data-id="${item.id}" title="${deleteTitle}"${deleteAttr}>
@@ -217,6 +274,7 @@ function findItem(itemId) {
 }
 
 function deleteCategory(catId) {
+    saveState();
     const cardEl = document.querySelector(`.category-card[data-cat-id="${catId}"]`);
     if (cardEl) {
         cardEl.classList.add('category-card-exit');
@@ -241,6 +299,7 @@ function deleteRow(itemId) {
         return;
     }
 
+    saveState();
     const searchInput = document.getElementById('bakplan-search');
     for (const cat of bakplanData) {
         const idx = cat.items.findIndex(i => i.id === itemId);
@@ -252,7 +311,19 @@ function deleteRow(itemId) {
     renderCategories(searchInput ? searchInput.value : '');
 }
 
-function addCategory() {
+async function addCategory() {
+    if (bakplanData.length === 50) {
+        const confirmed = await showConfirmModal({
+            title: 'Veel categorieën waarschuwing',
+            message: 'Je staat op het punt om meer dan 50 categorieën toe te voegen. Dit kan mogelijke vertragingen of prestatieproblemen veroorzaken. Weet je zeker dat je door wilt gaan?',
+            confirmText: 'Toevoegen',
+            cancelText: 'Annuleren',
+            isDanger: true
+        });
+        if (!confirmed) return;
+    }
+
+    saveState();
     const searchInput = document.getElementById('bakplan-search');
     const newId = 'cat-' + Date.now();
     const newCat = {
@@ -262,7 +333,7 @@ function addCategory() {
         collapsed: false,
         isNew: true,
         items: [
-            { id: 'item-' + Date.now(), omschrijving: '', perPlaat: null, prijs: null, promo: null, opleggen: null, derving: null }
+            { id: 'item-' + Date.now(), omschrijving: '', perPlaat: null, prijs: null, promo: null, opleggen: null, derving: null, days: {} }
         ]
     };
     bakplanData.push(newCat);
@@ -281,10 +352,11 @@ function addCategory() {
 }
 
 function addRowToCategory(catId) {
-    const searchInput = document.getElementById('bakplan-search');
     let targetCat = bakplanData.find(c => c.id === catId);
     if (!targetCat) return;
 
+    saveState();
+    const searchInput = document.getElementById('bakplan-search');
     const newId = 'item-' + Date.now();
     targetCat.items.push({
         id: newId,
@@ -293,14 +365,15 @@ function addRowToCategory(catId) {
         prijs: null,
         promo: null,
         opleggen: null,
-        derving: null
+        derving: null,
+        days: {}
     });
     renderCategories(searchInput ? searchInput.value : '');
     const newTr = document.querySelector(`tr[data-id="${newId}"]`);
     if (newTr) {
         const pageContainer = document.querySelector('.page-container');
         if (pageContainer) {
-            pageContainer.scrollTop += Math.max(0, newTr.offsetHeight - -1);
+            pageContainer.scrollTop += Math.max(0, newTr.offsetHeight - 0);
         }
         const input = newTr.querySelector('.bakplan-input');
         if (input) input.focus();
@@ -321,6 +394,7 @@ function toggleCategoryCollapse(catId) {
 function toggleCartType(catId) {
     const cat = bakplanData.find(c => c.id === catId);
     if (!cat) return;
+    saveState();
     cat.cartType = cat.cartType === 'ontdooi' ? 'normaal' : 'ontdooi';
     const searchInput = document.getElementById('bakplan-search');
     renderCategories(searchInput ? searchInput.value : '');
@@ -339,12 +413,148 @@ function toggleAllCategories() {
     updateToggleAllButton();
 }
 
+let activeBakplanMenu = null;
+
+function removeBakplanSyncMenu() {
+    if (activeBakplanMenu) {
+        activeBakplanMenu.remove();
+        activeBakplanMenu = null;
+    }
+}
+
+function showBakplanSyncMenu(x, y, item, field, value) {
+    removeBakplanSyncMenu();
+
+    const menu = document.createElement('div');
+    menu.className = 'bakplan-sync-menu';
+    menu.style.left = `${x}px`;
+    menu.style.top = `${y}px`;
+
+    const fieldNames = {
+        promo: 'Promoprijs',
+        opleggen: 'Aantal opleggen',
+        derving: 'Aantal derving'
+    };
+    const fieldLabel = fieldNames[field] || field;
+    const dayLabel = currentDay.charAt(0).toUpperCase() + currentDay.slice(1);
+
+    menu.innerHTML = `
+        <div class="sync-menu-header">
+            <span class="material-icons">sync</span>
+            <span>Sync ${fieldLabel} (${dayLabel})</span>
+        </div>
+        <div class="sync-menu-item" data-action="sync-field-all">
+            <span class="material-icons">copy_all</span>
+            <span>Kopieer <strong>${fieldLabel}</strong> naar alle 7 dagen</span>
+        </div>
+        <div class="sync-menu-item" data-action="sync-item-all">
+            <span class="material-icons">table_rows</span>
+            <span>Kopieer <strong>alle dagwaardes</strong> van dit artikel naar alle dagen</span>
+        </div>
+        <div class="sync-menu-divider"></div>
+        <div class="sync-menu-item" data-action="sync-field-workdays">
+            <span class="material-icons">date_range</span>
+            <span>Kopieer naar werkdagen (Ma - Vr)</span>
+        </div>
+        <div class="sync-menu-item" data-action="sync-field-weekend">
+            <span class="material-icons">weekend</span>
+            <span>Kopieer naar weekend (Za - Zo)</span>
+        </div>
+    `;
+
+    menu.addEventListener('click', (e) => {
+        const itemEl = e.target.closest('.sync-menu-item');
+        if (!itemEl) return;
+        const action = itemEl.dataset.action;
+
+        saveState();
+
+        if (action === 'sync-field-all') {
+            DAYS.forEach(d => setDayValue(item, field, value, d));
+            showToast('notification', `${fieldLabel} gekopieerd naar alle dagen`);
+        } else if (action === 'sync-item-all') {
+            const currentPromo = getDayValue(item, 'promo');
+            const currentOpleggen = getDayValue(item, 'opleggen');
+            const currentDerving = getDayValue(item, 'derving');
+
+            DAYS.forEach(d => {
+                setDayValue(item, 'promo', currentPromo, d);
+                setDayValue(item, 'opleggen', currentOpleggen, d);
+                setDayValue(item, 'derving', currentDerving, d);
+            });
+            showToast('notification', `Alle dagwaardes gekopieerd naar alle dagen`);
+        } else if (action === 'sync-field-workdays') {
+            ['maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag'].forEach(d => setDayValue(item, field, value, d));
+            showToast('notification', `${fieldLabel} gekopieerd naar werkdagen`);
+        } else if (action === 'sync-field-weekend') {
+            ['zaterdag', 'zondag'].forEach(d => setDayValue(item, field, value, d));
+            showToast('notification', `${fieldLabel} gekopieerd naar het weekend`);
+        }
+
+        removeBakplanSyncMenu();
+        const searchInput = document.getElementById('bakplan-search');
+        renderCategories(searchInput ? searchInput.value : '');
+    });
+
+    document.body.appendChild(menu);
+    activeBakplanMenu = menu;
+
+    const rect = menu.getBoundingClientRect();
+    if (rect.right > window.innerWidth) {
+        menu.style.left = `${window.innerWidth - rect.width - 12}px`;
+    }
+    if (rect.bottom > window.innerHeight) {
+        menu.style.top = `${window.innerHeight - rect.height - 12}px`;
+    }
+}
+
+document.addEventListener('click', (e) => {
+    if (activeBakplanMenu && !e.target.closest('.bakplan-sync-menu')) {
+        removeBakplanSyncMenu();
+    }
+});
+
 function initEvents() {
     const container = document.getElementById('categories-container');
     const searchInput = document.getElementById('bakplan-search');
     const btnAddCat = document.getElementById('btn-add-category');
     const btnToggleAll = document.getElementById('btn-toggle-all');
     const btnSave = document.getElementById('btn-save-bakplan');
+    const daysTabs = document.getElementById('bakplan-days-tabs');
+
+    if (daysTabs) {
+        daysTabs.addEventListener('click', (e) => {
+            const tab = e.target.closest('.day-tab');
+            if (!tab) return;
+            const day = tab.dataset.day;
+            if (!day || day === currentDay) return;
+
+            daysTabs.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            currentDay = day;
+
+            renderCategories(searchInput ? searchInput.value : '');
+        });
+    }
+
+    document.addEventListener('keydown', (e) => {
+        const isCtrl = e.ctrlKey || e.metaKey;
+        const key = e.key.toLowerCase();
+
+        if (isCtrl && key === 'f') {
+            if (searchInput) {
+                e.preventDefault();
+                searchInput.focus();
+                searchInput.select();
+            }
+        } else if (isCtrl && key === 'z' && !e.shiftKey) {
+            e.preventDefault();
+            undo();
+        } else if (isCtrl && (key === 'y' || (key === 'z' && e.shiftKey))) {
+            e.preventDefault();
+            redo();
+        }
+    });
 
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
@@ -366,6 +576,7 @@ function initEvents() {
 
     if (container) {
         container.addEventListener('input', (e) => {
+            saveState();
             const target = e.target;
             if (target.classList.contains('category-title-input')) {
                 const catId = target.dataset.catId;
@@ -388,18 +599,91 @@ function initEvents() {
             if (field === 'omschrijving') {
                 item.omschrijving = target.value;
             } else {
-                const val = target.value.trim();
-                item[field] = val === '' ? null : parseFloat(val);
+                let val = target.value.trim();
+                let numVal = val === '' ? null : parseFloat(val);
+                if (numVal !== null) {
+                    if (numVal < 0) numVal = 0;
+                    if (numVal > 999999) numVal = 999999;
+                    target.value = numVal;
+                }
+                if (field === 'perPlaat' || field === 'prijs') {
+                    item[field] = numVal;
+                } else {
+                    setDayValue(item, field, numVal);
+                }
             }
 
             if (field === 'perPlaat' || field === 'opleggen') {
                 const platenBadge = tr.querySelector('.platen-val');
                 if (platenBadge) {
-                    platenBadge.textContent = calculatePlaten(item.opleggen, item.perPlaat);
+                    platenBadge.textContent = calculatePlaten(getDayValue(item, 'opleggen'), item.perPlaat);
                 }
             }
 
             updateSummaryStats();
+        });
+
+        container.addEventListener('keydown', (e) => {
+            const target = e.target;
+            if (!target.classList.contains('bakplan-input')) return;
+
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const tr = target.closest('tr');
+                if (!tr) return;
+
+                const field = target.dataset.field;
+                const nextTr = tr.nextElementSibling;
+
+                if (nextTr && nextTr.tagName === 'TR') {
+                    const nextInput = nextTr.querySelector(`input[data-field="${field}"]`);
+                    if (nextInput) {
+                        nextInput.focus();
+                        nextInput.select();
+                        return;
+                    }
+                }
+
+                const catId = tr.dataset.catId;
+                if (catId) {
+                    addRowToCategory(catId);
+                }
+            } else if (e.key === 'Tab') {
+                const tr = target.closest('tr');
+                if (!tr) return;
+                const rowInputs = Array.from(tr.querySelectorAll('.bakplan-input'));
+                const isLastInputInRow = (target === rowInputs[rowInputs.length - 1]);
+
+                if (!e.shiftKey && isLastInputInRow) {
+                    const nextTr = tr.nextElementSibling;
+                    if (!nextTr || nextTr.tagName !== 'TR') {
+                        e.preventDefault();
+                        const catId = tr.dataset.catId;
+                        if (catId) {
+                            addRowToCategory(catId);
+                        }
+                    }
+                }
+            }
+        });
+
+        container.addEventListener('contextmenu', (e) => {
+            const target = e.target;
+            if (!target.classList.contains('input-day')) return;
+
+            e.preventDefault();
+            const tr = target.closest('tr');
+            if (!tr) return;
+
+            const itemId = tr.dataset.id;
+            const res = findItem(itemId);
+            if (!res) return;
+
+            const { item } = res;
+            const field = target.dataset.field;
+            const currentVal = getDayValue(item, field);
+
+            showBakplanSyncMenu(e.clientX, e.clientY, item, field, currentVal);
         });
 
         container.addEventListener('click', (e) => {
@@ -463,7 +747,8 @@ function getBakplanSnapshot() {
             prijs: item.prijs,
             promo: item.promo,
             opleggen: item.opleggen,
-            derving: item.derving
+            derving: item.derving,
+            days: item.days || {}
         }))
     })));
 }
@@ -499,9 +784,14 @@ async function loadBakplan() {
         .maybeSingle();
 
     if (!error && data && Array.isArray(data.data)) {
-        bakplanData = data.data;
+        bakplanData = data.data.map(cat => ({
+            ...cat,
+            collapsed: false
+        }));
     }
     savedSnapshot = getBakplanSnapshot();
+    undoStack = [JSON.stringify(bakplanData)];
+    redoStack = [];
     renderCategories();
 }
 
