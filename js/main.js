@@ -160,6 +160,14 @@ export async function getStorePaths() {
 
 const APP_MODULES = [
     {
+        id: 'wiki',
+        title: 'Wiki',
+        description: 'Bekijk handleidingen, protocollen en winkeldocumentatie.',
+        icon: 'menu_book',
+        href: 'wiki.html',
+        minRole: 1
+    },
+    {
         id: 'bakplan',
         title: 'Bakplan',
         description: 'Bekijk en beheer het actuele bakplan voor de winkel.',

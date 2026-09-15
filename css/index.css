@@ -1,31 +1,3 @@
-.dashboard-shapes {
-    position: fixed;
-    top: 60px;
-    left: 60px;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    z-index: 0;
-    overflow: hidden;
-}
-
-.dash-shape {
-    position: absolute;
-    color: var(--bg-shape-stroke);
-    opacity: 0.75;
-}
-
-.dash-shape-1 { top: 8%; left: 6%; transform: rotate(15deg); width: 44px; height: 44px; }
-.dash-shape-2 { top: 12%; right: 12%; transform: rotate(-20deg); width: 40px; height: 40px; }
-.dash-shape-3 { top: 45%; left: 3%; transform: rotate(35deg); width: 34px; height: 34px; }
-.dash-shape-4 { top: 60%; right: 8%; transform: rotate(12deg); width: 48px; height: 48px; }
-.dash-shape-5 { bottom: 10%; left: 8%; transform: rotate(-30deg); width: 40px; height: 40px; }
-.dash-shape-6 { bottom: 8%; right: 15%; transform: rotate(45deg); width: 36px; height: 36px; }
-.dash-shape-7 { top: 15%; left: 45%; transform: rotate(25deg); width: 32px; height: 32px; }
-.dash-shape-8 { bottom: 15%; left: 48%; transform: rotate(-12deg); width: 38px; height: 38px; }
-.dash-shape-9 { top: 80%; left: 4%; transform: rotate(60deg); width: 42px; height: 42px; }
-.dash-shape-10 { top: 30%; right: 5%; transform: rotate(-40deg); width: 30px; height: 30px; }
-
 .dashboard-hero {
     background-color: var(--card-background);
     border: 1px solid var(--card-border);

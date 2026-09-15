@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="nl">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,17 +12,17 @@
 
     <title>Instellingen Winkel</title>
 </head>
-
 <body>
-    <div class="page-container instellingen-main-layout">
-        <div class="instellingen-top-bar">
-            <div class="instellingen-top-info">
-                <h1 class="instellingen-page-title">Instellingen Winkel</h1>
-                <p class="instellingen-page-subtitle">Beheer de vaste paden, categorieën en normen van de winkel</p>
-            </div>
-            <div class="instellingen-top-actions">
-                <button type="button" class="btn" id="saveAllPathsBtn">
-                    <span class="material-icons btn-icon">save</span>
+    <main class="page-container">
+        <div class="dashboard-hero">
+            <div class="hero-content">
+                <div class="hero-greeting">
+                    <span class="hero-badge">Instellingen</span>
+                    <h1 class="welcome-heading">Instellingen Winkel</h1>
+                    <p class="dashboard-subtitle">Beheer de vaste paden, categorieën en normen van de winkel</p>
+                </div>
+                <button type="button" class="hero-action-btn" id="saveAllPathsBtn">
+                    <span class="material-icons">save</span>
                     <span>Wijzigingen opslaan</span>
                 </button>
             </div>
@@ -44,10 +43,9 @@
             </div>
 
             <div class="paths-detail-panel" id="pathDetailPanel">
-                <div class="empty-state" style="padding: 60px 20px;">Selecteer een pad om de details en categorieën te bewerken</div>
+                <div class="empty-state">Selecteer een pad om de details en categorieën te bewerken</div>
             </div>
         </div>
-    </div>
+    </main>
 </body>
-
 </html>

@@ -105,15 +105,22 @@
 .paths-master-detail {
     display: flex;
     flex: 1 1 0%;
-    min-height: 0;
+    min-height: 500px;
+    height: calc(100vh - 240px);
+    height: calc(100dvh - 240px);
+    background-color: var(--card-background);
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
     overflow: hidden;
+    position: relative;
+    z-index: 1;
 }
 
 .paths-sidebar {
     width: 300px;
     min-width: 300px;
     max-width: 300px;
-    background-color: var(--card-background);
+    background-color: var(--input-background);
     border-right: 1px solid var(--card-border);
     display: flex;
     flex-direction: column;
@@ -126,7 +133,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 16px;
+    padding: 16px 20px;
     border-bottom: 1px solid var(--card-border);
     background-color: var(--card-background);
     flex-shrink: 0;
@@ -135,7 +142,7 @@
 .paths-sidebar-title {
     font-size: 12px;
     font-weight: 700;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.8px;
     text-transform: uppercase;
     color: var(--text-color-muted);
 }
@@ -144,8 +151,8 @@
     display: flex;
     flex-direction: column;
     overflow-y: auto;
-    gap: 4px;
-    padding: 10px 8px;
+    gap: 6px;
+    padding: 12px 10px;
     flex: 1 1 0%;
     min-height: 0;
 }
@@ -155,18 +162,19 @@
     align-items: center;
     justify-content: space-between;
     padding: 12px 14px;
-    border-radius: 8px;
+    border-radius: 12px;
     cursor: pointer;
     background-color: transparent;
     border: 1px solid transparent;
     color: var(--text-color);
-    transition: background-color 0.15s, border-color 0.15s;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
     user-select: none;
 }
 
 @media (hover: hover) and (pointer: fine) {
     .path-nav-item:hover {
         background-color: var(--card-background);
+        border-color: var(--card-border-hover);
     }
 }
 
@@ -180,6 +188,7 @@
 
 .path-nav-name {
     font-size: 14px;
+    font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -195,12 +204,13 @@
     color: var(--text-color-placeholder);
     font-size: 18px;
     flex-shrink: 0;
+    transition: transform 0.2s ease, color 0.2s ease;
 }
 
 @media (min-width: 769px) {
     .path-nav-item.active {
         background-color: var(--card-background);
-        border-color: var(--card-border);
+        border-color: var(--card-border-hover);
         border-left: 3px solid var(--accent-color);
         font-weight: 600;
     }
@@ -215,11 +225,11 @@
     min-width: 0;
     height: 100%;
     overflow-y: auto;
-    background-color: var(--background-color);
-    padding: 24px 32px;
+    background-color: var(--card-background);
+    padding: 28px 32px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 24px;
     box-sizing: border-box;
 }
 
@@ -251,15 +261,15 @@
 
 .detail-title-input {
     width: 100%;
-    background-color: var(--card-background);
+    background-color: var(--input-background);
     border: 1px solid var(--card-border);
-    border-radius: 10px;
+    border-radius: 12px;
     padding: 10px 14px;
     font-size: 16px;
     font-weight: 600;
     color: var(--text-color);
     outline: none;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .detail-title-input:focus {
@@ -267,32 +277,30 @@
 }
 
 .detail-delete-btn {
-    background-color: transparent;
+    background-color: var(--input-background);
     border: 1px solid var(--card-border);
     color: var(--danger-color);
-    border-radius: 10px;
-    padding: 10px 14px;
+    border-radius: 12px;
+    padding: 10px 16px;
     font-size: 13px;
     font-weight: 600;
     display: inline-flex;
     align-items: center;
     gap: 6px;
     cursor: pointer;
-    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
     .detail-delete-btn:hover {
-        background-color: var(--danger-color);
-        border-color: var(--danger-color);
-        color: var(--text-color);
+        background-color: var(--prod-danger-bg);
+        border-color: var(--prod-danger-border);
+        color: var(--danger-color);
     }
 }
 
 .detail-delete-btn:active {
-    background-color: var(--danger-color);
-    border-color: var(--danger-color);
-    color: var(--text-color);
+    transform: scale(0.98);
 }
 
 .detail-delete-btn .material-icons {
@@ -321,14 +329,14 @@
 
 .detail-norm-input {
     width: 100%;
-    background-color: var(--card-background);
+    background-color: var(--input-background);
     border: 1px solid var(--card-border);
-    border-radius: 10px;
+    border-radius: 12px;
     padding: 10px 14px;
     font-size: 14px;
     color: var(--text-color);
     outline: none;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .detail-norm-input:focus {
@@ -349,18 +357,18 @@
 }
 
 .detail-categories-title {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
     text-transform: uppercase;
     color: var(--text-color-muted);
 }
 
 .categories-table-container {
     border: 1px solid var(--card-border);
-    border-radius: 10px;
+    border-radius: 14px;
     overflow: hidden;
-    background-color: var(--card-background);
+    background-color: var(--input-background);
 }
 
 .categories-table {
@@ -373,10 +381,10 @@
     padding: 12px 14px;
     font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
     color: var(--text-color-muted);
     text-transform: uppercase;
-    background-color: rgba(255, 255, 255, 0.02);
+    background-color: var(--card-background);
     border-bottom: 1px solid var(--card-border);
     text-align: left;
 }
@@ -402,27 +410,27 @@
 
 .category-row-name-input {
     width: 100%;
-    background-color: var(--input-background);
+    background-color: var(--card-background);
     border: 1px solid var(--card-border);
-    border-radius: 8px;
+    border-radius: 10px;
     padding: 8px 12px;
     font-size: 13.5px;
     color: var(--text-color);
     outline: none;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s ease;
 }
 
 .category-row-norm-input {
     width: 100%;
-    background-color: var(--input-background);
+    background-color: var(--card-background);
     border: 1px solid var(--card-border);
-    border-radius: 8px;
+    border-radius: 10px;
     padding: 8px 12px;
     font-size: 13.5px;
     color: var(--text-color);
     outline: none;
     text-align: center;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s ease;
 }
 
 .category-row-name-input:focus,
@@ -440,19 +448,19 @@
     justify-content: center;
     width: 32px;
     height: 32px;
-    border-radius: 6px;
+    border-radius: 8px;
     margin-left: auto;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
     .category-row-delete-btn:hover {
-        background-color: rgba(239, 68, 68, 0.1);
+        background-color: var(--prod-danger-bg);
     }
 }
 
 .category-row-delete-btn:active {
-    background-color: rgba(239, 68, 68, 0.15);
+    transform: scale(0.96);
 }
 
 .category-row-delete-btn .material-icons {
@@ -460,11 +468,11 @@
 }
 
 .btn-add-category-large {
-    background-color: transparent;
-    border: 1px dashed var(--card-border);
+    background-color: var(--input-background);
+    border: 1px dashed var(--card-border-hover);
     color: var(--accent-color);
-    border-radius: 10px;
-    padding: 10px 14px;
+    border-radius: 12px;
+    padding: 12px 16px;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
@@ -477,13 +485,14 @@
 
 @media (hover: hover) and (pointer: fine) {
     .btn-add-category-large:hover {
-        background-color: rgba(101, 141, 36, 0.08);
+        background-color: var(--vullen-ghost-bg);
         border-color: var(--accent-color);
     }
 }
 
 .btn-add-category-large:active {
-    background-color: rgba(101, 141, 36, 0.12);
+    background-color: var(--vullen-ghost-bg);
+    transform: scale(0.99);
 }
 
 .btn-add-category-large .material-icons {
