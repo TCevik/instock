@@ -58,14 +58,32 @@ function showEditorPage() {
                 <button type="button" class="wiki-toolbar-btn" data-cmd="formatBlock" data-val="H1">H1</button>
                 <button type="button" class="wiki-toolbar-btn" data-cmd="formatBlock" data-val="H2">H2</button>
                 <button type="button" class="wiki-toolbar-btn" data-cmd="formatBlock" data-val="H3">H3</button>
-                <button type="button" class="wiki-toolbar-btn" data-cmd="bold" title="Vetgedrukt"><b>B</b></button>
                 <span class="wiki-toolbar-divider"></span>
-                <button type="button" class="wiki-toolbar-btn" data-cmd="insertUnorderedList" title="Puntjes lijst">
-                    <span class="material-icons" style="font-size: 18px;">format_list_bulleted</span>
-                </button>
+                <button type="button" class="wiki-toolbar-btn" data-cmd="bold" title="Vetgedrukt"><b>B</b></button>
                 <button type="button" class="wiki-toolbar-btn" data-cmd="insertOrderedList" title="Genummerde lijst">
                     <span class="material-icons" style="font-size: 18px;">format_list_numbered</span>
                 </button>
+                <button type="button" class="wiki-toolbar-btn" data-cmd="insertUnorderedList" title="Puntjes lijst">
+                    <span class="material-icons" style="font-size: 18px;">format_list_bulleted</span>
+                </button>
+                <span class="wiki-toolbar-divider"></span>
+                <div class="wiki-fontsize-wrapper" id="wikiFontsizeWrapper">
+                    <input type="text" id="wikiFontsizeInput" class="wiki-fontsize-input" value="14" autocomplete="off" />
+                    <button type="button" class="wiki-fontsize-btn" id="wikiFontsizeBtn" tabindex="-1">
+                        <span class="material-icons" style="font-size: 16px;">arrow_drop_down</span>
+                    </button>
+                    <div class="wiki-fontsize-dropdown" id="wikiFontsizeDropdown">
+                        <div class="wiki-fontsize-option" data-size="8">8</div>
+                        <div class="wiki-fontsize-option" data-size="10">10</div>
+                        <div class="wiki-fontsize-option" data-size="11">11</div>
+                        <div class="wiki-fontsize-option" data-size="12">12</div>
+                        <div class="wiki-fontsize-option" data-size="14">14</div>
+                        <div class="wiki-fontsize-option" data-size="16">16</div>
+                        <div class="wiki-fontsize-option" data-size="18">18</div>
+                        <div class="wiki-fontsize-option" data-size="24">24</div>
+                        <div class="wiki-fontsize-option" data-size="36">36</div>
+                    </div>
+                </div>
                 <span class="wiki-toolbar-divider"></span>
                 <div class="wiki-color-picker-wrapper" id="wikiColorPickerWrapper">
                     <button type="button" class="wiki-color-btn" id="wikiColorBtn" title="Tekstkleur">
@@ -93,6 +111,10 @@ function showEditorPage() {
                             </div>
                             <div class="wiki-hue-slider-wrapper" id="wikiHueSlider">
                                 <div class="wiki-hue-handle" id="wikiHueHandle"></div>
+                            </div>
+                            <div class="wiki-hex-input-container">
+                                <span class="wiki-hex-prefix">#</span>
+                                <input type="text" id="wikiHexInput" class="wiki-hex-input" placeholder="FFFFFF" maxlength="6" autocomplete="off" />
                             </div>
                         </div>
                     </div>
@@ -230,17 +252,90 @@ function setupEditorEvents() {
         }
     }
 
+    function clearEditorFormatting() {
+        if (!editorContent) return;
+        editorContent.innerHTML = '';
+        const sel = window.getSelection();
+        if (sel) {
+            sel.removeAllRanges();
+            const range = document.createRange();
+            range.selectNodeContents(editorContent);
+            range.collapse(true);
+            sel.addRange(range);
+            savedRange = range;
+        }
+        if (fsInput) fsInput.value = '14';
+        fsOptions.forEach(opt => opt.classList.toggle('active', opt.getAttribute('data-size') === '14'));
+    }
+
+    function isSelectionInList() {
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return false;
+        let node = sel.anchorNode;
+        while (node && node !== editorContent) {
+            if (node.nodeName === 'LI' || node.nodeName === 'UL' || node.nodeName === 'OL') {
+                return true;
+            }
+            node = node.parentNode;
+        }
+        return false;
+    }
+
+    let wasEmptyBeforeKey = false;
+
     if (editorContent) {
         editorContent.addEventListener('keydown', (e) => {
+            if (e.key === ' ') {
+                const sel = window.getSelection();
+                if (sel && sel.isCollapsed && sel.anchorNode && sel.anchorNode.nodeType === Node.TEXT_NODE) {
+                    const text = sel.anchorNode.textContent;
+                    const offset = sel.anchorOffset;
+                    const textBefore = text.slice(0, offset);
+                    if (/^(1\.|1\))$/.test(textBefore)) {
+                        e.preventDefault();
+                        sel.anchorNode.textContent = text.slice(offset);
+                        document.execCommand('insertOrderedList', false, null);
+                        saveSelection();
+                        updateToolbarState();
+                        wasEmptyBeforeKey = false;
+                        return;
+                    } else if (/^(\-|\*)$/.test(textBefore)) {
+                        e.preventDefault();
+                        sel.anchorNode.textContent = text.slice(offset);
+                        document.execCommand('insertUnorderedList', false, null);
+                        saveSelection();
+                        updateToolbarState();
+                        wasEmptyBeforeKey = false;
+                        return;
+                    }
+                }
+            }
             if (e.key === 'Tab') {
                 e.preventDefault();
                 if (e.shiftKey) {
                     document.execCommand('outdent', false, null);
-                } else {
+                } else if (isSelectionInList()) {
                     document.execCommand('indent', false, null);
+                } else {
+                    document.execCommand('insertText', false, '\t');
                 }
                 saveSelection();
                 updateToolbarState();
+                wasEmptyBeforeKey = false;
+            } else if (e.key === 'Backspace' || e.key === 'Delete') {
+                const text = editorContent.innerText.replace(/[\r\n\t\s\u200B]/g, '');
+                if (text.length === 0) {
+                    if (wasEmptyBeforeKey) {
+                        clearEditorFormatting();
+                        wasEmptyBeforeKey = false;
+                    } else {
+                        wasEmptyBeforeKey = true;
+                    }
+                } else {
+                    wasEmptyBeforeKey = false;
+                }
+            } else {
+                wasEmptyBeforeKey = false;
             }
         });
         editorContent.addEventListener('keyup', saveSelection);
@@ -249,17 +344,49 @@ function setupEditorEvents() {
         editorContent.addEventListener('blur', saveSelection);
     }
 
+    const hexInput = document.getElementById('wikiHexInput');
+
     let activeColor = '#ffffff';
 
     const applyColor = (color) => {
         activeColor = color;
         if (colorPreview) colorPreview.style.backgroundColor = color;
+        if (hexInput && document.activeElement !== hexInput) {
+            hexInput.value = color.replace('#', '').toUpperCase();
+        }
         if (editorContent) {
             restoreSelection();
             document.execCommand('foreColor', false, color);
             saveSelection();
         }
     };
+
+    if (hexInput) {
+        hexInput.addEventListener('input', () => {
+            let val = hexInput.value.replace(/[^0-9A-Fa-f]/g, '');
+            if (val.length === 3) {
+                val = val.split('').map(c => c + c).join('');
+            }
+            if (val.length === 6) {
+                applyColor('#' + val);
+            }
+        });
+
+        hexInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                let val = hexInput.value.replace(/[^0-9A-Fa-f]/g, '');
+                if (val.length === 3) {
+                    val = val.split('').map(c => c + c).join('');
+                }
+                if (val.length === 6) {
+                    applyColor('#' + val);
+                    if (colorPopover) colorPopover.classList.remove('active');
+                    if (editorContent) editorContent.focus();
+                }
+            }
+        });
+    }
 
     if (colorBtn && colorPopover) {
         colorBtn.addEventListener('click', (e) => {
@@ -274,7 +401,112 @@ function setupEditorEvents() {
         });
     }
 
+    const fsInput = document.getElementById('wikiFontsizeInput');
+    const fsBtn = document.getElementById('wikiFontsizeBtn');
+    const fsDropdown = document.getElementById('wikiFontsizeDropdown');
+    const fsOptions = document.querySelectorAll('.wiki-fontsize-option');
+
+    function applyFontSize(size) {
+        let numSize = parseInt(size, 10);
+        if (isNaN(numSize)) return;
+        numSize = Math.max(1, Math.min(96, numSize));
+        restoreSelection();
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return;
+        const range = sel.getRangeAt(0);
+
+        if (!range.collapsed) {
+            const contents = range.extractContents();
+            const span = document.createElement('span');
+            span.style.fontSize = `${numSize}px`;
+            span.querySelectorAll('[style*="font-size"]').forEach(el => {
+                el.style.fontSize = '';
+            });
+            span.appendChild(contents);
+            range.insertNode(span);
+
+            const newRange = document.createRange();
+            newRange.selectNodeContents(span);
+            sel.removeAllRanges();
+            sel.addRange(newRange);
+            savedRange = newRange;
+        } else {
+            const span = document.createElement('span');
+            span.style.fontSize = `${numSize}px`;
+            span.innerHTML = '&#8203;';
+            range.insertNode(span);
+
+            const newRange = document.createRange();
+            newRange.setStart(span, 1);
+            newRange.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(newRange);
+            savedRange = newRange;
+        }
+        saveSelection();
+        if (fsInput) fsInput.value = numSize;
+    }
+
+    if (fsBtn && fsDropdown) {
+        fsBtn.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            fsDropdown.classList.toggle('active');
+        });
+    }
+
+    if (fsInput && fsDropdown) {
+        fsInput.addEventListener('focus', () => {
+            fsDropdown.classList.add('active');
+        });
+
+        fsInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                applyFontSize(fsInput.value);
+                fsDropdown.classList.remove('active');
+                if (editorContent) editorContent.focus();
+            }
+        });
+
+        fsInput.addEventListener('change', () => {
+            applyFontSize(fsInput.value);
+            if (editorContent) editorContent.focus();
+        });
+
+        fsInput.addEventListener('blur', () => {
+            if (fsInput.value) {
+                applyFontSize(fsInput.value);
+            }
+            setTimeout(() => {
+                if (document.activeElement !== fsInput && !fsDropdown.contains(document.activeElement)) {
+                    fsDropdown.classList.remove('active');
+                }
+            }, 150);
+        });
+    }
+
+    fsOptions.forEach(opt => {
+        opt.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            const sz = opt.getAttribute('data-size');
+            applyFontSize(sz);
+            fsDropdown.classList.remove('active');
+            if (editorContent) editorContent.focus();
+        });
+    });
+
+    document.addEventListener('click', (e) => {
+        if (fsDropdown && fsInput && fsBtn) {
+            if (!fsDropdown.contains(e.target) && e.target !== fsInput && !fsBtn.contains(e.target)) {
+                fsDropdown.classList.remove('active');
+            }
+        }
+    });
+
     swatches.forEach(swatch => {
+        swatch.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+        });
         swatch.addEventListener('click', () => {
             const color = swatch.getAttribute('data-color');
             applyColor(color);
@@ -309,6 +541,24 @@ function setupEditorEvents() {
         if (color && colorPreview) {
             colorPreview.style.backgroundColor = color;
         }
+
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0 && editorContent.contains(sel.anchorNode)) {
+            let node = sel.anchorNode;
+            if (node.nodeType === Node.TEXT_NODE) {
+                node = node.parentElement;
+            }
+            if (node && node.nodeType === Node.ELEMENT_NODE) {
+                const computedSize = window.getComputedStyle(node).fontSize;
+                if (computedSize && fsInput && document.activeElement !== fsInput) {
+                    const parsedSize = Math.round(parseFloat(computedSize)).toString();
+                    fsInput.value = parsedSize;
+                    fsOptions.forEach(opt => {
+                        opt.classList.toggle('active', opt.getAttribute('data-size') === parsedSize);
+                    });
+                }
+            }
+        }
     }
 
     if (editorContent) {
@@ -318,6 +568,9 @@ function setupEditorEvents() {
     }
 
     toolbarBtns.forEach(btn => {
+        btn.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+        });
         btn.addEventListener('click', (e) => {
             e.preventDefault();
             restoreSelection();

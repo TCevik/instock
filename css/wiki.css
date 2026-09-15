@@ -78,6 +78,93 @@
     margin: 0 4px;
 }
 
+.wiki-fontsize-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    background-color: var(--card-background);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    height: 32px;
+    padding: 0 4px 0 8px;
+    transition: border-color 0.2s ease;
+}
+
+.wiki-fontsize-wrapper:focus-within {
+    border-color: var(--input-focus);
+}
+
+.wiki-fontsize-input {
+    width: 32px;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-color);
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.wiki-fontsize-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-color);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+}
+
+.wiki-fontsize-btn:hover {
+    background-color: var(--card-border);
+}
+
+.wiki-fontsize-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 20;
+    background-color: var(--card-background);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 4px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    flex-direction: column;
+    min-width: 64px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.wiki-fontsize-dropdown.active {
+    display: flex;
+}
+
+.wiki-fontsize-option {
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-color);
+    cursor: pointer;
+    border-radius: 4px;
+    text-align: center;
+    transition: background-color 0.15s ease;
+}
+
+.wiki-fontsize-option:hover {
+    background-color: var(--card-border);
+}
+
+.wiki-fontsize-option.active {
+    background-color: var(--vullen-ghost-bg);
+    color: var(--accent-color);
+    font-weight: 700;
+}
+
 .wiki-color-picker-wrapper {
     position: relative;
     display: inline-flex;
@@ -159,6 +246,38 @@
     padding-top: 4px;
 }
 
+.wiki-hex-input-container {
+    display: flex;
+    align-items: center;
+    background-color: var(--input-background);
+    border: 1px solid var(--card-border);
+    border-radius: 6px;
+    padding: 4px 8px;
+    gap: 4px;
+    transition: border-color 0.2s ease;
+}
+
+.wiki-hex-input-container:focus-within {
+    border-color: var(--input-focus);
+}
+
+.wiki-hex-prefix {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-color-muted);
+}
+
+.wiki-hex-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-color);
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
 .wiki-sat-val-box {
     position: relative;
     width: 100%;
@@ -221,10 +340,12 @@
     border-radius: 12px;
     padding: 18px;
     color: var(--text-color);
-    font-size: 15px;
+    font-size: 14px;
     font-family: 'Poppins', sans-serif;
     line-height: 1.6;
     outline: none;
+    white-space: pre-wrap;
+    tab-size: 4;
 }
 
 .wiki-editor-content * {
@@ -235,9 +356,9 @@
     border-color: var(--input-focus);
 }
 
-.wiki-editor-content h1 { font-size: 24px; margin-bottom: 12px; }
-.wiki-editor-content h2 { font-size: 20px; margin-bottom: 10px; }
-.wiki-editor-content h3 { font-size: 17px; margin-bottom: 8px; }
+.wiki-editor-content h1, .wiki-editor-content h1 * { font-size: 24px !important; margin-bottom: 12px; }
+.wiki-editor-content h2, .wiki-editor-content h2 * { font-size: 20px !important; margin-bottom: 10px; }
+.wiki-editor-content h3, .wiki-editor-content h3 * { font-size: 17px !important; margin-bottom: 8px; }
 .wiki-editor-content ul, .wiki-editor-content ol { padding-left: 24px; margin-bottom: 12px; }
 .wiki-editor-content ol ol { list-style-type: lower-alpha; }
 .wiki-editor-content ol ol ol { list-style-type: lower-roman; }

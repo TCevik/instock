@@ -96,12 +96,6 @@ async function checkAuth() {
         }
         recordActivity();
     }
-
-    supabase.auth.onAuthStateChange((_event, newSession) => {
-        if (!newSession && !window.location.pathname.endsWith('login.html')) {
-            window.location.replace('login.html');
-        }
-    });
 }
 
 let currentUserData = null;
