@@ -51,6 +51,21 @@ function updateSummaryStats() {
     if (elDerving) elDerving.textContent = totalDerving;
 }
 
+function updateToggleAllButton() {
+    const iconToggle = document.getElementById('icon-toggle-all');
+    const textToggle = document.getElementById('text-toggle-all');
+    if (!iconToggle || !textToggle) return;
+
+    const anyCollapsed = bakplanData.some(c => c.collapsed);
+    if (anyCollapsed) {
+        iconToggle.textContent = 'unfold_more';
+        textToggle.textContent = 'Alles uitklappen';
+    } else {
+        iconToggle.textContent = 'unfold_less';
+        textToggle.textContent = 'Alles inklappen';
+    }
+}
+
 function renderCategories(filterText = '') {
     const container = document.getElementById('categories-container');
     if (!container) return;
@@ -58,6 +73,7 @@ function renderCategories(filterText = '') {
     if (bakplanData.length === 0) {
         container.innerHTML = `<p class="bakplan-empty-state">Geen categorieën aanwezig. Klik op "+ Categorie toevoegen" om te beginnen.</p>`;
         updateSummaryStats();
+        updateToggleAllButton();
         return;
     }
 
@@ -82,6 +98,11 @@ function renderCategories(filterText = '') {
         const enterClass = cat.isNew ? ' category-card-enter' : '';
         delete cat.isNew;
 
+        const isOntdooi = cat.cartType === 'ontdooi';
+        const cartBtnClass = isOntdooi ? 'btn-cart-type-toggle is-ontdooi' : 'btn-cart-type-toggle';
+        const cartIcon = isOntdooi ? 'ac_unit' : 'shopping_cart';
+        const cartText = isOntdooi ? 'Ontdooikar' : 'Normale kar';
+
         html += `
             <div class="category-card ${isCollapsed}${enterClass}" data-cat-id="${cat.id}">
                 <div class="category-card-header" data-cat-id="${cat.id}">
@@ -94,6 +115,9 @@ function renderCategories(filterText = '') {
                         <span class="cat-subtotal-badge" id="cat-badge-${cat.id}">${catItemsCount} artikelen · ${catPlatenCount} platen</span>
                     </div>
                     <div class="cat-header-right">
+                        <button type="button" class="${cartBtnClass}" data-cat-id="${cat.id}" title="Wissel type kar">
+                            <span class="material-icons">${cartIcon}</span> ${cartText}
+                        </button>
                         <button type="button" class="btn-delete-cat" data-cat-id="${cat.id}" title="Categorie verwijderen">
                             <span class="material-icons">delete_outline</span>
                         </button>
@@ -181,6 +205,7 @@ function renderCategories(filterText = '') {
 
     container.innerHTML = html;
     updateSummaryStats();
+    updateToggleAllButton();
 }
 
 function findItem(itemId) {
@@ -233,6 +258,7 @@ function addCategory() {
     const newCat = {
         id: newId,
         name: 'Nieuwe categorie',
+        cartType: 'normaal',
         collapsed: false,
         isNew: true,
         items: [
@@ -289,22 +315,28 @@ function toggleCategoryCollapse(catId) {
     if (cardEl) {
         cardEl.classList.toggle('collapsed', cat.collapsed);
     }
+    updateToggleAllButton();
+}
+
+function toggleCartType(catId) {
+    const cat = bakplanData.find(c => c.id === catId);
+    if (!cat) return;
+    cat.cartType = cat.cartType === 'ontdooi' ? 'normaal' : 'ontdooi';
+    const searchInput = document.getElementById('bakplan-search');
+    renderCategories(searchInput ? searchInput.value : '');
 }
 
 function toggleAllCategories() {
-    const anyExpanded = bakplanData.some(c => !c.collapsed);
+    const anyCollapsed = bakplanData.some(c => c.collapsed);
     bakplanData.forEach(c => {
-        c.collapsed = anyExpanded;
+        c.collapsed = !anyCollapsed;
         const cardEl = document.querySelector(`.category-card[data-cat-id="${c.id}"]`);
         if (cardEl) {
-            cardEl.classList.toggle('collapsed', anyExpanded);
+            cardEl.classList.toggle('collapsed', !anyCollapsed);
         }
     });
 
-    const iconToggle = document.getElementById('icon-toggle-all');
-    const textToggle = document.getElementById('text-toggle-all');
-    if (iconToggle) iconToggle.textContent = anyExpanded ? 'unfold_more' : 'unfold_less';
-    if (textToggle) textToggle.textContent = anyExpanded ? 'Alles uitklappen' : 'Alles inklappen';
+    updateToggleAllButton();
 }
 
 function initEvents() {
@@ -371,6 +403,14 @@ function initEvents() {
         });
 
         container.addEventListener('click', (e) => {
+            const btnCartType = e.target.closest('.btn-cart-type-toggle');
+            if (btnCartType) {
+                e.stopPropagation();
+                const catId = btnCartType.dataset.catId;
+                toggleCartType(catId);
+                return;
+            }
+
             const btnDelCat = e.target.closest('.btn-delete-cat');
             if (btnDelCat) {
                 e.stopPropagation();
@@ -415,6 +455,7 @@ function getBakplanSnapshot() {
     return JSON.stringify(bakplanData.map(cat => ({
         id: cat.id,
         name: cat.name,
+        cartType: cat.cartType || 'normaal',
         items: cat.items.map(item => ({
             id: item.id,
             omschrijving: item.omschrijving,
