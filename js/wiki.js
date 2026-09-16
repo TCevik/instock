@@ -334,6 +334,12 @@ function setupEditorEvents() {
             }
         });
 
+        editorContent.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+            document.execCommand('insertText', false, text);
+        });
+
         editorContent.addEventListener('keyup', saveSelection);
         editorContent.addEventListener('mouseup', saveSelection);
         editorContent.addEventListener('click', saveSelection);
