@@ -546,7 +546,7 @@ function updateChartModeControls() {
 
     if (btnIndividual) {
         btnIndividual.disabled = !isAllowed;
-        btnIndividual.title = isAllowed ? '' : 'Alleen beschikbaar bij 1 week, 2 weken of 1 maand';
+        btnIndividual.title = isAllowed ? '' : 'Alleen beschikbaar bij 7 shifts, 14 shifts of 1 maand';
         if (!isAllowed && currentChartMode === 'individual') {
             currentChartMode = 'average';
         }
@@ -594,8 +594,8 @@ function initChartControls() {
             { value: '1y', label: 'Laatste jaar' },
             { value: '6m', label: 'Laatste 6 maanden' },
             { value: '1m', label: 'Laatste maand' },
-            { value: '2w', label: '2 weken' },
-            { value: '1w', label: 'Een week' }
+            { value: '2w', label: 'Laatste 14 shifts' },
+            { value: '1w', label: 'Laatste 7 shifts' }
         ];
 
         createCustomSelect(
@@ -681,14 +681,19 @@ function renderProductivityChart(entries) {
 
     const now = Date.now();
     const dayMs = 24 * 60 * 60 * 1000;
-    let cutoff = 0;
-    if (currentTimeframe === '1w') cutoff = now - 7 * dayMs;
-    else if (currentTimeframe === '2w') cutoff = now - 14 * dayMs;
-    else if (currentTimeframe === '1m') cutoff = now - 31 * dayMs;
-    else if (currentTimeframe === '6m') cutoff = now - 183 * dayMs;
-    else if (currentTimeframe === '1y') cutoff = now - 365 * dayMs;
+    let filtered = enriched;
 
-    const filtered = cutoff > 0 ? enriched.filter(e => e.timestamp >= cutoff) : enriched;
+    if (currentTimeframe === '1w') {
+        filtered = enriched.slice(-7);
+    } else if (currentTimeframe === '2w') {
+        filtered = enriched.slice(-14);
+    } else {
+        let cutoff = 0;
+        if (currentTimeframe === '1m') cutoff = now - 31 * dayMs;
+        else if (currentTimeframe === '6m') cutoff = now - 183 * dayMs;
+        else if (currentTimeframe === '1y') cutoff = now - 365 * dayMs;
+        if (cutoff > 0) filtered = enriched.filter(e => e.timestamp >= cutoff);
+    }
 
     const isMonthView = ['6m', '1y', 'all'].includes(currentTimeframe);
 
@@ -835,18 +840,22 @@ function renderProductivityChart(entries) {
     const chartW = width - padLeft - padRight;
     const chartH = height - padTop - padBottom;
 
-    const maxVal = Math.max(120, Math.ceil((Math.max(...dataPoints.map(d => d.percent)) + 10) / 10) * 10);
-    const minVal = 0;
+    const rawMin = Math.min(...dataPoints.map(d => d.percent), 100);
+    const rawMax = Math.max(...dataPoints.map(d => d.percent), 100);
+    const spread = Math.max(15, rawMax - rawMin);
+    const margin = Math.ceil(spread * 0.15);
 
-    const getY = (val) => padTop + chartH - ((val - minVal) / (maxVal - minVal)) * chartH;
+    const minVal = Math.max(0, Math.floor((rawMin - margin) / 5) * 5);
+    const maxVal = Math.ceil((rawMax + margin) / 5) * 5;
+
+    const getY = (val) => padTop + chartH - ((val - minVal) / (maxVal - minVal || 1)) * chartH;
     const getX = (index) => {
         if (dataPoints.length === 1) return padLeft + chartW / 2;
         return padLeft + (index / (dataPoints.length - 1)) * chartW;
     };
 
     const targetY = getY(100);
-    const midY = getY(50);
-    const zeroY = getY(0);
+    const bottomY = getY(minVal);
 
     const coords = dataPoints.map((d, i) => ({
         x: getX(i),
@@ -855,7 +864,7 @@ function renderProductivityChart(entries) {
     }));
 
     const pathD = coords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(' ');
-    const areaD = `${pathD} L ${coords[coords.length - 1].x.toFixed(1)} ${zeroY.toFixed(1)} L ${coords[0].x.toFixed(1)} ${zeroY.toFixed(1)} Z`;
+    const areaD = `${pathD} L ${coords[coords.length - 1].x.toFixed(1)} ${bottomY.toFixed(1)} L ${coords[0].x.toFixed(1)} ${bottomY.toFixed(1)} Z`;
 
     const statusColors = {
         success: 'var(--accent-color)',
@@ -904,14 +913,13 @@ function renderProductivityChart(entries) {
                 </linearGradient>
             </defs>
 
-            <line x1="${padLeft}" y1="${zeroY.toFixed(1)}" x2="${width - padRight}" y2="${zeroY.toFixed(1)}" stroke="var(--chart-grid-line)" stroke-width="1"/>
-            <text x="${padLeft - 8}" y="${(zeroY + 4).toFixed(1)}" text-anchor="end" fill="var(--text-color-muted)" font-size="10">0%</text>
+            <line x1="${padLeft}" y1="${bottomY.toFixed(1)}" x2="${width - padRight}" y2="${bottomY.toFixed(1)}" stroke="var(--chart-grid-line)" stroke-width="1"/>
+            <text x="${padLeft - 8}" y="${(bottomY + 4).toFixed(1)}" text-anchor="end" fill="var(--text-color-muted)" font-size="10">${minVal}%</text>
 
-            <line x1="${padLeft}" y1="${midY.toFixed(1)}" x2="${width - padRight}" y2="${midY.toFixed(1)}" stroke="var(--chart-grid-line)" stroke-width="1" stroke-dasharray="3,3"/>
-            <text x="${padLeft - 8}" y="${(midY + 4).toFixed(1)}" text-anchor="end" fill="var(--text-color-muted)" font-size="10">50%</text>
-
+            ${minVal < 100 && maxVal > 100 ? `
             <line x1="${padLeft}" y1="${targetY.toFixed(1)}" x2="${width - padRight}" y2="${targetY.toFixed(1)}" stroke="var(--chart-target-line)" stroke-width="1.5" stroke-dasharray="5,4"/>
             <text x="${padLeft - 8}" y="${(targetY + 4).toFixed(1)}" text-anchor="end" fill="var(--accent-color)" font-size="10.5" font-weight="700">100%</text>
+            ` : ''}
 
             <path d="${areaD}" fill="url(#prodChartAreaGrad)"/>
             <path d="${pathD}" fill="none" stroke="var(--accent-color)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>

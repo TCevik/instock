@@ -281,8 +281,6 @@ function setupEditorEvents() {
         return false;
     }
 
-    let wasEmptyBeforeKey = false;
-
     if (editorContent) {
         editorContent.addEventListener('keydown', (e) => {
             if (e.key === ' ') {
@@ -297,7 +295,6 @@ function setupEditorEvents() {
                         document.execCommand('insertOrderedList', false, null);
                         saveSelection();
                         updateToolbarState();
-                        wasEmptyBeforeKey = false;
                         return;
                     } else if (/^(\-|\*)$/.test(textBefore)) {
                         e.preventDefault();
@@ -305,7 +302,6 @@ function setupEditorEvents() {
                         document.execCommand('insertUnorderedList', false, null);
                         saveSelection();
                         updateToolbarState();
-                        wasEmptyBeforeKey = false;
                         return;
                     }
                 }
@@ -321,23 +317,23 @@ function setupEditorEvents() {
                 }
                 saveSelection();
                 updateToolbarState();
-                wasEmptyBeforeKey = false;
             } else if (e.key === 'Backspace' || e.key === 'Delete') {
-                const text = editorContent.innerText.replace(/[\r\n\t\s\u200B]/g, '');
-                if (text.length === 0) {
-                    if (wasEmptyBeforeKey) {
+                setTimeout(() => {
+                    const text = editorContent.innerText.replace(/[\r\n\t\s\u200B]/g, '');
+                    if (text.length === 0) {
                         clearEditorFormatting();
-                        wasEmptyBeforeKey = false;
-                    } else {
-                        wasEmptyBeforeKey = true;
                     }
-                } else {
-                    wasEmptyBeforeKey = false;
-                }
-            } else {
-                wasEmptyBeforeKey = false;
+                }, 0);
             }
         });
+
+        editorContent.addEventListener('input', () => {
+            const text = editorContent.innerText.replace(/[\r\n\t\s\u200B]/g, '');
+            if (text.length === 0) {
+                clearEditorFormatting();
+            }
+        });
+
         editorContent.addEventListener('keyup', saveSelection);
         editorContent.addEventListener('mouseup', saveSelection);
         editorContent.addEventListener('click', saveSelection);
