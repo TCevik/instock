@@ -460,6 +460,7 @@
 .bakplan-input.input-num {
     text-align: right;
     -moz-appearance: textfield;
+    appearance: textfield;
 }
 
 .bakplan-input.input-num::-webkit-outer-spin-button,
