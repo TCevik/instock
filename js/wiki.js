@@ -253,7 +253,7 @@ function setupEditorEvents() {
     }
 
     function clearEditorFormatting() {
-        if (!editorContent) return;
+        if (!editorContent || editorContent.querySelector('h1, h2, h3, ul, ol')) return;
         editorContent.innerHTML = '';
         const sel = window.getSelection();
         if (sel) {
