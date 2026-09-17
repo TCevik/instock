@@ -60,7 +60,7 @@ if (loginForm) {
 
             if (data.session) {
                 localStorage.setItem('instock_last_activity', Date.now().toString());
-                window.location.replace('index.html');
+                window.location.replace('index');
             }
         } catch (err) {
             showToast('error', err.message || 'Er is een fout opgetreden');

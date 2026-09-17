@@ -12,9 +12,13 @@ function recordActivity() {
     localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
 }
 
+function isLoginPage() {
+    const p = window.location.pathname.replace(/\/$/, '');
+    return p.endsWith('login') || p.endsWith('login.html');
+}
+
 function checkInactivity() {
-    const isLoginPage = window.location.pathname.endsWith('login.html');
-    if (isLoginPage) return;
+    if (isLoginPage()) return;
 
     const last = localStorage.getItem(LAST_ACTIVITY_KEY);
     if (last) {
@@ -44,7 +48,7 @@ function checkInactivity() {
 }
 
 function initInactivityTracker() {
-    if (window.location.pathname.endsWith('login.html')) return;
+    if (isLoginPage()) return;
 
     recordActivity();
 
@@ -77,18 +81,18 @@ function initInactivityTracker() {
 }
 
 async function checkAuth() {
-    const isLoginPage = window.location.pathname.endsWith('login.html');
+    const isLogin = isLoginPage();
     const { data: { session } } = await supabase.auth.getSession();
 
-    if (!session && !isLoginPage) {
-        window.location.replace('login.html');
+    if (!session && !isLogin) {
+        window.location.replace('login');
         return;
-    } else if (session && isLoginPage) {
-        window.location.replace('index.html');
+    } else if (session && isLogin) {
+        window.location.replace('index');
         return;
     }
 
-    if (!isLoginPage) {
+    if (!isLogin) {
         const last = localStorage.getItem(LAST_ACTIVITY_KEY);
         if (last && Date.now() - Number(last) > INACTIVITY_TIMEOUT_MS) {
             await logout();
@@ -98,10 +102,10 @@ async function checkAuth() {
     }
 
     supabase.auth.onAuthStateChange((_event, newSession) => {
-        if (!newSession && !window.location.pathname.endsWith('login.html')) {
+        if (!newSession && !isLoginPage()) {
             window.isLoggingOut = true;
             window.onbeforeunload = null;
-            window.location.replace('login.html');
+            window.location.replace('login');
         }
     });
 }
@@ -167,7 +171,7 @@ const APP_MODULES = [
         title: 'Bakplan',
         description: 'Bekijk en beheer het actuele bakplan voor de winkel.',
         icon: 'bakery_dining',
-        href: 'bakplan.html',
+        href: 'bakplan',
         minRole: 2
     },
     {
@@ -175,7 +179,7 @@ const APP_MODULES = [
         title: 'Vulplanning Maker',
         description: 'Maak en beheer vulplanningen, taken en shifts.',
         icon: 'assignment',
-        href: 'vulplanning.html',
+        href: 'vulplanning',
         minRole: 2
     },
     {
@@ -183,7 +187,7 @@ const APP_MODULES = [
         title: 'Productiviteit',
         description: 'Bekijk en analyseer vulprestaties en statistieken.',
         icon: 'trending_up',
-        href: 'productiviteit.html',
+        href: 'productiviteit',
         minRole: 1
     },
     {
@@ -191,7 +195,7 @@ const APP_MODULES = [
         title: 'Productenbeheer',
         description: 'Beheer het assortiment, barcodes, vakken en prijzen.',
         icon: 'inventory_2',
-        href: 'productenbeheer.html',
+        href: 'productenbeheer',
         minRole: 1
     },
     {
@@ -199,7 +203,7 @@ const APP_MODULES = [
         title: 'Gebruikersbeheer',
         description: 'Beheer medewerkers, rollen en winkeltoegang.',
         icon: 'people',
-        href: 'gebruikersbeheer.html',
+        href: 'gebruikersbeheer',
         minRole: 2
     },
     {
@@ -207,7 +211,7 @@ const APP_MODULES = [
         title: 'Instellingen Winkel',
         description: 'Configureer winkelpaden, vulnormen en categorieën.',
         icon: 'store',
-        href: 'instellingen-winkel.html',
+        href: 'instellingen-winkel',
         minRole: 3
     },
     {
@@ -215,7 +219,7 @@ const APP_MODULES = [
         title: 'Systeem Logs',
         description: 'Bekijk de geschiedenis van acties en wijzigingen.',
         icon: 'history',
-        href: 'logs.html',
+        href: 'logs',
         minRole: 3
     }
 ];
@@ -228,7 +232,7 @@ export function getAvailableModules(role = 1) {
 let overlayLoadingOrLoaded = false;
 
 async function loadOverlay() {
-    if (window.location.pathname.endsWith('login.html')) return;
+    if (isLoginPage()) return;
     if (overlayLoadingOrLoaded || document.querySelector('.app-header')) return;
     overlayLoadingOrLoaded = true;
 
@@ -239,10 +243,12 @@ async function loadOverlay() {
             const html = await response.text();
             document.body.insertAdjacentHTML('afterbegin', html);
 
-            const currentPath = window.location.pathname.split('/').pop() || 'index.html';
+            const rawPath = (window.location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
+            const currentPath = rawPath === '' ? 'index' : rawPath;
             const links = document.querySelectorAll('.sidebar-link');
             links.forEach(link => {
-                if (link.getAttribute('href') === currentPath) {
+                const href = (link.getAttribute('href') || '').replace(/\.html$/, '');
+                if (href === currentPath) {
                     link.classList.add('active');
                 }
             });
@@ -461,7 +467,7 @@ export async function logout() {
         delete e.returnValue;
     }, { capture: true });
     await supabase.auth.signOut();
-    window.location.replace('login.html');
+    window.location.replace('login');
 }
 
 function disableInputSuggestions(root = document) {
