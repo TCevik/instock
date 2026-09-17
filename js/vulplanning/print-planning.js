@@ -18,6 +18,58 @@ function getTaskBaseKey(t) {
         .toLowerCase();
 }
 
+function renderPrintLegend() {
+    return `
+        <div class="print-legend">
+            <div class="print-legend-item">
+                <span class="print-legend-color type-vullen"></span>
+                <span>Vullen</span>
+            </div>
+            <div class="print-legend-item">
+                <span class="print-legend-color type-spiegelen"></span>
+                <span>Spiegelen</span>
+            </div>
+            <div class="print-legend-item">
+                <span class="print-legend-color type-restanten"></span>
+                <span>Restanten</span>
+            </div>
+            <div class="print-legend-item">
+                <span class="print-legend-color type-overige"></span>
+                <span>Overige</span>
+            </div>
+            <div class="print-legend-item">
+                <span class="print-legend-color is-helper"></span>
+                <span>Hulptaak</span>
+            </div>
+            <div class="print-legend-item">
+                <span class="print-legend-color type-pauze"></span>
+                <span>Pauze</span>
+            </div>
+        </div>
+    `;
+}
+
+function renderPrintHeader(title, dateFormatted) {
+    return `
+        <div class="print-header-row">
+            <div class="print-header-left">
+                <div class="print-main-title">${title}</div>
+                <div class="print-timestamp">${dateFormatted}</div>
+            </div>
+            ${renderPrintLegend()}
+        </div>
+    `;
+}
+
+function getComboTrioGradient(t1Duration, t2Duration, totalDuration) {
+    const p1 = Math.max(1, Math.round((t1Duration / totalDuration) * 100));
+    const p2 = Math.min(99, Math.max(p1 + 1, Math.round(((t1Duration + t2Duration) / totalDuration) * 100)));
+    const innerGrad = `linear-gradient(to right, var(--restanten-ghost-bg) 0%, var(--restanten-ghost-bg) ${p1}%, var(--prod-success-bg) ${p1}%, var(--prod-success-bg) ${p2}%, var(--prod-orange-bg) ${p2}%, var(--prod-orange-bg) 100%)`;
+    const bgMask = `linear-gradient(var(--print-bg), var(--print-bg))`;
+    const borderGrad = `linear-gradient(to right, var(--purple-color) 0%, var(--purple-color) ${p1}%, var(--accent-color) ${p1}%, var(--accent-color) ${p2}%, var(--warning-color) ${p2}%, var(--warning-color) 100%)`;
+    return `${innerGrad}, ${bgMask}, ${borderGrad}`;
+}
+
 export function generatePrintDocument(options = printOptions) {
     const container = document.getElementById('print-planning-container');
     if (!container) return;
@@ -103,9 +155,7 @@ export function generatePrintDocument(options = printOptions) {
                     const comboTitle = baseName;
                     const colliSpan = t2.colli ? `<span class="print-task-colli">${t2.colli} c</span>` : '';
 
-                    const p1 = Math.max(1, Math.round((t1.duration / totalDuration) * 100));
-                    const p2 = Math.min(99, Math.max(p1 + 1, Math.round(((t1.duration + t2.duration) / totalDuration) * 100)));
-                    const grad = `linear-gradient(var(--print-bg), var(--print-bg)), linear-gradient(to right, var(--purple-color) 0%, var(--purple-color) ${p1}%, var(--accent-color) ${p1}%, var(--accent-color) ${p2}%, var(--warning-color) ${p2}%, var(--warning-color) 100%)`;
+                    const grad = getComboTrioGradient(t1.duration, t2.duration, totalDuration);
 
                     pills.push(`
                         <div class="print-task-pill is-combo-trio" style="background-image: ${grad};">
@@ -182,53 +232,185 @@ export function generatePrintDocument(options = printOptions) {
         `
         : '';
 
-    container.innerHTML = `
-        <div class="print-header-row">
-            <div class="print-header-left">
-                <div class="print-main-title">Vulplanning</div>
-                <div class="print-timestamp">${dateFormatted}</div>
+    const page1Html = `
+        <div class="print-page print-page-table">
+            ${renderPrintHeader('Vulplanning', dateFormatted)}
+            <table class="print-planning-table">
+                <thead>
+                    <tr>
+                        <th class="print-th-worker">MEDEWERKER</th>
+                        <th class="print-th-time">TIJD & PAUZE</th>
+                        <th class="print-th-endtime">EINDTIJD</th>
+                        <th class="print-th-tasks">TOEGEWEZEN TAKEN</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+            </table>
+            ${notesHtml}
+        </div>
+    `;
+
+    let minMinutes = Infinity;
+    let maxMinutes = -Infinity;
+
+    fillersToPrint.forEach(filler => {
+        const shiftStart = timeToMinutes(filler.from);
+        let shiftEnd = timeToMinutes(filler.to);
+        if (shiftEnd > 0 && shiftEnd <= shiftStart) {
+            shiftEnd += 24 * 60;
+        }
+        if (shiftStart >= 0 && shiftStart < minMinutes) minMinutes = shiftStart;
+        if (shiftEnd > maxMinutes) maxMinutes = shiftEnd;
+
+        const assigned = planningState.assignedTasks[filler.id] || [];
+        let cur = shiftStart >= 0 ? shiftStart : 0;
+        assigned.forEach(t => {
+            cur += t.duration || 0;
+        });
+        if (cur > maxMinutes) maxMinutes = cur;
+    });
+
+    if (!isFinite(minMinutes)) minMinutes = 6 * 60;
+    if (!isFinite(maxMinutes) || maxMinutes <= minMinutes) maxMinutes = minMinutes + 8 * 60;
+
+    const startHour = Math.max(0, Math.floor(minMinutes / 60));
+    const endHour = Math.min(30, Math.max(startHour + 4, Math.ceil(maxMinutes / 60)));
+    const totalHours = endHour - startHour;
+    const startMins = startHour * 60;
+    const totalSpanMins = totalHours * 60;
+
+    const hourMarkersHtml = [];
+    for (let h = startHour; h < endHour; h++) {
+        const dayH = h % 24;
+        const label = `${pad(dayH)}:00`;
+        const leftPercent = ((h - startHour) / totalHours) * 100;
+        const widthPercent = (1 / totalHours) * 100;
+        hourMarkersHtml.push(`
+            <div class="print-scale-hour-marker" style="left: ${leftPercent.toFixed(3)}%; width: ${widthPercent.toFixed(3)}%;">
+                <span>${label}</span>
             </div>
-            <div class="print-legend">
-                <div class="print-legend-item">
-                    <span class="print-legend-color type-vullen"></span>
-                    <span>Vullen</span>
+        `);
+    }
+
+    const gridLinesHtml = [];
+    for (let h = startHour; h <= endHour; h++) {
+        const leftPercent = ((h - startHour) / totalHours) * 100;
+        gridLinesHtml.push(`
+            <div class="print-scale-grid-line" style="left: ${leftPercent.toFixed(3)}%;"></div>
+        `);
+    }
+
+    const scaleRowsHtml = fillersToPrint.map(filler => {
+        const shiftStart = timeToMinutes(filler.from);
+        let shiftEnd = timeToMinutes(filler.to);
+        if (shiftEnd > 0 && shiftEnd <= shiftStart) {
+            shiftEnd += 24 * 60;
+        }
+        const assigned = planningState.assignedTasks[filler.id] || [];
+
+        let shiftBoxHtml = '';
+        if (shiftStart >= 0 && shiftEnd > shiftStart) {
+            const shiftLeft = Math.max(0, ((shiftStart - startMins) / totalSpanMins) * 100);
+            const shiftWidth = Math.min(100 - shiftLeft, ((shiftEnd - shiftStart) / totalSpanMins) * 100);
+            shiftBoxHtml = `<div class="print-scale-shift-bg" style="left: ${shiftLeft.toFixed(3)}%; width: ${shiftWidth.toFixed(3)}%;"></div>`;
+        }
+
+        let currentMins = shiftStart >= 0 ? shiftStart : startMins;
+        const taskBlocksHtml = [];
+
+        let i = 0;
+        while (i < assigned.length) {
+            const t1 = assigned[i];
+            const t2 = assigned[i + 1];
+            const t3 = assigned[i + 2];
+
+            const isTrio = options.mergeTrio &&
+                t2 && t3 &&
+                !t1.isHelper && !t2.isHelper && !t3.isHelper &&
+                t1.type === 'restanten' &&
+                t2.type === 'vullen' &&
+                t3.type === 'spiegelen' &&
+                getTaskBaseKey(t1) === getTaskBaseKey(t2) &&
+                getTaskBaseKey(t3) === getTaskBaseKey(t2);
+
+            if (isTrio) {
+                const totalDuration = t1.duration + t2.duration + t3.duration;
+                const leftPercent = ((currentMins - startMins) / totalSpanMins) * 100;
+                const widthPercent = (totalDuration / totalSpanMins) * 100;
+                currentMins += totalDuration;
+
+                const baseName = (t2.pathName || t2.title || 'Taak').replace(/\s*\(\d+\s*c\)/gi, '').trim();
+                const colliText = t2.colli ? ` ${t2.colli}c` : '';
+                const titleText = `${baseName}${colliText}`;
+
+                const grad = getComboTrioGradient(t1.duration, t2.duration, totalDuration);
+
+                taskBlocksHtml.push(`
+                    <div class="print-scale-task is-combo-trio" style="left: ${leftPercent.toFixed(3)}%; width: ${widthPercent.toFixed(3)}%; background-image: ${grad};" title="${escapeHtml(titleText)}">
+                        <span class="print-scale-task-title">${escapeHtml(titleText)}</span>
+                        <span class="print-scale-task-dur">${formatDuration(totalDuration)}</span>
+                    </div>
+                `);
+                i += 3;
+            } else {
+                const isHelper = !!t1.isHelper;
+                const typeClass = isHelper ? 'is-helper' : `type-${t1.type || 'overige'}`;
+                const leftPercent = ((currentMins - startMins) / totalSpanMins) * 100;
+                const widthPercent = (t1.duration / totalSpanMins) * 100;
+                currentMins += t1.duration;
+
+                const titleText = (t1.title || 'Taak').replace(/\s*\(\d+\s*c\)/gi, '').replace(/\s*\([Hh]ulp\)/gi, '').trim();
+                const colliText = t1.colli ? ` ${t1.colli}c` : '';
+                const displayTitle = `${titleText}${colliText}`;
+
+                taskBlocksHtml.push(`
+                    <div class="print-scale-task ${typeClass}" style="left: ${leftPercent.toFixed(3)}%; width: ${widthPercent.toFixed(3)}%;" title="${escapeHtml(displayTitle)}">
+                        <span class="print-scale-task-title">${escapeHtml(displayTitle)}</span>
+                        <span class="print-scale-task-dur">${formatDuration(t1.duration)}</span>
+                    </div>
+                `);
+                i += 1;
+            }
+        }
+
+        return `
+            <div class="print-scale-row">
+                <div class="print-scale-worker-col">
+                    <div class="print-worker-cell-name">${escapeHtml(filler.name || 'Medewerker')}</div>
+                    <div class="print-worker-cell-hours">${filler.from || '00:00'} - ${filler.to || '00:00'}</div>
                 </div>
-                <div class="print-legend-item">
-                    <span class="print-legend-color type-spiegelen"></span>
-                    <span>Spiegelen</span>
+                <div class="print-scale-track">
+                    ${gridLinesHtml.join('')}
+                    ${shiftBoxHtml}
+                    ${taskBlocksHtml.join('')}
                 </div>
-                <div class="print-legend-item">
-                    <span class="print-legend-color type-restanten"></span>
-                    <span>Restanten</span>
+            </div>
+        `;
+    }).join('');
+
+    const page2Html = `
+        <div class="print-page print-page-scale">
+            ${renderPrintHeader('Vulplanning - Tijdlijn (op schaal)', dateFormatted)}
+            <div class="print-scale-container">
+                <div class="print-scale-axis-row">
+                    <div class="print-scale-worker-header">MEDEWERKER</div>
+                    <div class="print-scale-axis-track">
+                        ${hourMarkersHtml.join('')}
+                        ${gridLinesHtml.join('')}
+                    </div>
                 </div>
-                <div class="print-legend-item">
-                    <span class="print-legend-color type-overige"></span>
-                    <span>Overige</span>
-                </div>
-                <div class="print-legend-item">
-                    <span class="print-legend-color is-helper"></span>
-                    <span>Hulptaak</span>
-                </div>
-                <div class="print-legend-item">
-                    <span class="print-legend-color type-pauze"></span>
-                    <span>Pauze</span>
+                <div class="print-scale-rows">
+                    ${scaleRowsHtml}
                 </div>
             </div>
         </div>
-        <table class="print-planning-table">
-            <thead>
-                <tr>
-                    <th class="print-th-worker">MEDEWERKER</th>
-                    <th class="print-th-time">TIJD & PAUZE</th>
-                    <th class="print-th-endtime">EINDTIJD</th>
-                    <th class="print-th-tasks">TOEGEWEZEN TAKEN</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${rowsHtml}
-            </tbody>
-        </table>
-        ${notesHtml}
+    `;
+
+    container.innerHTML = `
+        ${page1Html}
+        ${page2Html}
     `;
 }
 

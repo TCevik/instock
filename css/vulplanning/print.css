@@ -47,6 +47,21 @@
         width: 100% !important;
         background-color: var(--print-bg) !important;
         color: var(--print-text) !important;
+    }
+
+    .print-page {
+        width: 100% !important;
+        box-sizing: border-box;
+    }
+
+    .print-page-table {
+        page-break-inside: avoid !important;
+        break-inside: avoid-page !important;
+    }
+
+    .print-page-scale {
+        page-break-before: always !important;
+        break-before: page !important;
         page-break-inside: avoid !important;
         break-inside: avoid-page !important;
     }
@@ -130,6 +145,7 @@
     .print-planning-table {
         width: 100%;
         border-collapse: collapse;
+        table-layout: fixed;
     }
 
     .print-planning-table thead th {
@@ -145,6 +161,8 @@
 
     .print-th-worker {
         width: 120px;
+        max-width: 120px;
+        overflow: hidden;
     }
 
     .print-th-time {
@@ -175,6 +193,9 @@
         font-weight: 700;
         color: var(--print-text);
         line-height: 1.15;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .print-worker-cell-hours {
@@ -265,8 +286,8 @@
     .print-task-pill.is-combo-trio {
         border: 2px solid transparent;
         border-radius: 6px;
-        background-origin: padding-box, border-box;
-        background-clip: padding-box, border-box;
+        background-origin: padding-box, padding-box, border-box;
+        background-clip: padding-box, padding-box, border-box;
         padding: 1.5px 5px;
         max-width: 210px;
         -webkit-print-color-adjust: exact !important;
@@ -344,5 +365,199 @@
         color: var(--accent-color);
         font-weight: 700;
         line-height: 1.1;
+    }
+
+    .print-scale-container {
+        width: 100%;
+        border: 1px solid var(--print-border);
+        border-radius: 4px;
+        overflow: hidden;
+        background-color: var(--print-bg);
+        margin-top: 4px;
+    }
+
+    .print-scale-axis-row {
+        display: flex;
+        align-items: stretch;
+        background-color: var(--print-header-bg);
+        border-bottom: 1px solid var(--print-border);
+    }
+
+    .print-scale-worker-header {
+        width: 130px;
+        min-width: 130px;
+        max-width: 130px;
+        padding: 3px 6px;
+        font-size: 8.5px;
+        font-weight: 700;
+        letter-spacing: 0.4px;
+        color: var(--print-text-muted);
+        border-right: 1px solid var(--print-border);
+        display: flex;
+        align-items: center;
+        background-color: var(--print-header-bg);
+    }
+
+    .print-scale-axis-track {
+        flex: 1;
+        position: relative;
+        height: 18px;
+        overflow: hidden;
+        background-color: var(--print-header-bg);
+    }
+
+    .print-scale-hour-marker {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        font-size: 7.5px;
+        font-weight: 700;
+        color: var(--print-text-muted);
+        padding-left: 2px;
+        display: flex;
+        align-items: center;
+        border-left: 1px solid var(--print-border);
+        box-sizing: border-box;
+    }
+
+    .print-scale-grid-line {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background-color: rgba(0, 0, 0, 0.08);
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .print-scale-rows {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .print-scale-row {
+        display: flex;
+        align-items: stretch;
+        border-bottom: 1px solid var(--print-border);
+        min-height: 26px;
+        page-break-inside: avoid;
+        break-inside: avoid-page;
+    }
+
+    .print-scale-row:last-child {
+        border-bottom: none;
+    }
+
+    .print-scale-worker-col {
+        width: 130px;
+        min-width: 130px;
+        max-width: 130px;
+        padding: 3px 6px;
+        border-right: 1px solid var(--print-border);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        background-color: var(--print-row-alt);
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+
+    .print-scale-track {
+        flex: 1;
+        position: relative;
+        background-color: var(--print-bg);
+        overflow: hidden;
+        height: 26px;
+    }
+
+    .print-scale-shift-bg {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        background-color: rgba(101, 141, 36, 0.08);
+        border-left: 1px dashed rgba(101, 141, 36, 0.4);
+        border-right: 1px dashed rgba(101, 141, 36, 0.4);
+        pointer-events: none;
+        z-index: 2;
+    }
+
+    .print-scale-task {
+        position: absolute;
+        top: 2px;
+        bottom: 2px;
+        border-radius: 3px;
+        border: 1px solid var(--print-border);
+        background-color: var(--print-header-bg);
+        padding: 1px 3px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 3px;
+        font-size: 7.5px;
+        overflow: hidden;
+        white-space: nowrap;
+        box-sizing: border-box;
+        z-index: 3;
+        line-height: 1;
+    }
+
+    .print-scale-task.type-vullen {
+        background-color: var(--prod-success-bg);
+        border-color: var(--accent-color);
+        color: var(--print-text);
+    }
+
+    .print-scale-task.type-spiegelen {
+        background-color: var(--prod-orange-bg);
+        border-color: var(--warning-color);
+        color: var(--print-text);
+    }
+
+    .print-scale-task.type-restanten {
+        background-color: var(--restanten-ghost-bg);
+        border-color: var(--purple-color);
+        color: var(--print-text);
+    }
+
+    .print-scale-task.type-pauze {
+        background-color: var(--pauze-bg);
+        border-color: var(--pauze-color);
+        color: var(--print-text);
+    }
+
+    .print-scale-task.type-overige {
+        background-color: var(--overige-ghost-bg);
+        border-color: var(--info-color);
+        color: var(--print-text);
+    }
+
+    .print-scale-task.is-helper {
+        background-color: var(--helper-bg);
+        border-color: var(--helper-color);
+        color: var(--print-text);
+    }
+
+    .print-scale-task.is-combo-trio {
+        border: 1.5px solid transparent;
+        border-radius: 4px;
+        background-origin: padding-box, padding-box, border-box;
+        background-clip: padding-box, padding-box, border-box;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .print-scale-task-title {
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .print-scale-task-dur {
+        font-size: 6.5px;
+        font-weight: 600;
+        color: var(--print-text-muted);
+        white-space: nowrap;
+        flex-shrink: 0;
     }
 }
