@@ -4,6 +4,8 @@ import { getDayValue, setDayValue, calculatePlaten } from './utils.js';
 import { updateSummaryStats, updateToggleAllButton, renderCategories } from './render.js';
 import { findItem, deleteCategory, deleteRow, addCategory, addRowToCategory, toggleCategoryCollapse, toggleCartType, toggleAllCategories } from './actions.js';
 import { showBakplanSyncMenu, initContextMenuDismiss } from './syncMenu.js';
+import { parseBakplanPdf } from './pdf-handler.js';
+import { openPrintableBakplan } from './printable-overview.js';
 
 export async function saveBakplan() {
     const btnSave = document.getElementById('btn-save-bakplan');
@@ -55,7 +57,14 @@ export function initEvents() {
     const btnAddCat = document.getElementById('btn-add-category');
     const btnToggleAll = document.getElementById('btn-toggle-all');
     const btnSave = document.getElementById('btn-save-bakplan');
+    const btnUploadPdf = document.getElementById('btn-upload-pdf');
+    const pdfInput = document.getElementById('bakplan-pdf-input');
+    const btnGenerate = document.getElementById('btn-generate-bakplan');
     const daysTabs = document.getElementById('bakplan-days-tabs');
+
+    if (window.pdfjsLib && !window.pdfjsLib.GlobalWorkerOptions.workerSrc) {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
 
     initContextMenuDismiss();
 
@@ -71,6 +80,37 @@ export function initEvents() {
             setCurrentDay(day);
 
             renderCategories(searchInput ? searchInput.value : '');
+        });
+    }
+
+    if (btnUploadPdf && pdfInput) {
+        btnUploadPdf.addEventListener('click', () => {
+            pdfInput.click();
+        });
+
+        pdfInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                btnUploadPdf.disabled = true;
+                const updatedData = await parseBakplanPdf(file, getBakplanData());
+                setBakplanData(updatedData);
+                saveState();
+                renderCategories(searchInput ? searchInput.value : '');
+                showToast('notification', 'PDF succesvol geïmporteerd!');
+            } catch (err) {
+                showToast('error', err.message || 'Fout bij het lezen van PDF');
+            } finally {
+                btnUploadPdf.disabled = false;
+                pdfInput.value = '';
+            }
+        });
+    }
+
+    if (btnGenerate) {
+        btnGenerate.addEventListener('click', () => {
+            openPrintableBakplan(getBakplanData());
         });
     }
 
@@ -143,7 +183,8 @@ export function initEvents() {
                 let val = target.value.trim();
                 let numVal = val === '' ? null : parseFloat(val);
                 if (numVal !== null) {
-                    if (numVal < 0) numVal = 0;
+                    if (field === 'derving') numVal = Math.abs(numVal);
+                    else if (numVal < 0) numVal = 0;
                     if (numVal > 999999) numVal = 999999;
                     target.value = numVal;
                 }

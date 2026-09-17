@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
     <link rel="stylesheet" href="css/main.css">
     <script type="module" src="js/main.js"></script>
 
@@ -31,6 +33,13 @@
                     <p class="bakplan-subtitle">Beheer productie aantallen, platen en verwachte derving per categorie</p>
                 </div>
                 <div class="header-actions">
+                    <input type="file" id="bakplan-pdf-input" accept="application/pdf" style="display: none;">
+                    <button type="button" id="btn-upload-pdf" class="btn-secondary btn-sm">
+                        <span class="material-icons btn-icon">picture_as_pdf</span> PDF Uploaden
+                    </button>
+                    <button type="button" id="btn-generate-bakplan" class="btn-secondary btn-sm">
+                        <span class="material-icons btn-icon">print</span> Bakplan Genereren
+                    </button>
                     <button type="button" id="btn-save-bakplan" class="btn-primary btn-sm">
                         <span class="material-icons btn-icon">save</span> Bakplan Opslaan
                     </button>
