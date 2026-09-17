@@ -31,27 +31,36 @@
     width: 100%;
     text-align: left;
     transition: background-color 0.15s, color 0.15s;
+}@media (hover: hover) and (pointer: fine) {
+    .context-menu-item:hover {
+
+    background-color: var(--input-background);
+
+    }
 }
 
-.context-menu-item:hover {
-    background-color: var(--input-background);
-}
 
 .context-menu-item.danger {
     color: var(--danger-color);
+}@media (hover: hover) and (pointer: fine) {
+    .context-menu-item.danger:hover {
+
+    background-color: rgba(239, 68, 68, 0.12);
+
+    }
 }
 
-.context-menu-item.danger:hover {
-    background-color: rgba(239, 68, 68, 0.12);
-}
 
 .context-menu-item.expand {
     color: var(--accent-color);
+}@media (hover: hover) and (pointer: fine) {
+    .context-menu-item.expand:hover {
+
+    background-color: rgba(101, 141, 36, 0.12);
+
+    }
 }
 
-.context-menu-item.expand:hover {
-    background-color: rgba(101, 141, 36, 0.12);
-}
 
 .context-menu-item .material-icons {
     font-size: 14px;
@@ -70,13 +79,16 @@
     background-color: var(--input-background);
     cursor: pointer;
     transition: border-color 0.2s, background-color 0.2s;
-}
-
-.pdf-dropzone:hover,
+}@media (hover: hover) and (pointer: fine) {
+    .pdf-dropzone:hover,
 .pdf-dropzone.dragover {
+
     border-color: var(--accent-color);
     background-color: rgba(101, 141, 36, 0.05);
+
+    }
 }
+
 
 .pdf-dropzone-icon {
     font-size: 40px;
@@ -113,11 +125,14 @@
     cursor: pointer;
     text-align: left;
     transition: background-color 0.15s, border-color 0.15s;
+}@media (hover: hover) and (pointer: fine) {
+    .helper-preset-btn:hover {
+
+    background-color: var(--card-border);
+
+    }
 }
 
-.helper-preset-btn:hover {
-    background-color: var(--card-border);
-}
 
 .helper-preset-btn:disabled {
     opacity: 0.35;
@@ -210,12 +225,15 @@
     color: var(--text-color);
     cursor: pointer;
     transition: background-color 0.15s, border-color 0.15s;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .btn-add-helper:hover {
 
-.btn-add-helper:hover {
     background-color: var(--card-border);
     border-color: var(--accent-color);
+
+    }
 }
+
 
 .btn-add-helper .material-icons {
     font-size: 14px;
@@ -262,11 +280,14 @@
     padding: 4px;
     border-radius: 4px;
     transition: color 0.15s;
+}@media (hover: hover) and (pointer: fine) {
+    .btn-remove-helper:hover {
+
+    color: var(--danger-color);
+
+    }
 }
 
-.btn-remove-helper:hover {
-    color: var(--danger-color);
-}
 
 .btn-remove-helper .material-icons {
     font-size: 18px;
@@ -290,11 +311,14 @@
     cursor: pointer;
     white-space: nowrap;
     transition: background-color 0.15s;
+}@media (hover: hover) and (pointer: fine) {
+    .helper-quick-btn:hover:not(:disabled) {
+
+    background-color: rgba(255, 255, 255, 0.15);
+
+    }
 }
 
-.helper-quick-btn:hover:not(:disabled) {
-    background-color: rgba(255, 255, 255, 0.15);
-}
 
 .helper-quick-btn:disabled {
     opacity: 0.35;
@@ -372,11 +396,14 @@
     border: 1px solid var(--card-border);
     cursor: pointer;
     transition: background-color 0.15s, border-color 0.15s;
+}@media (hover: hover) and (pointer: fine) {
+    .combo-option-row:hover {
+
+    background-color: var(--card-border);
+
+    }
 }
 
-.combo-option-row:hover {
-    background-color: var(--card-border);
-}
 
 .combo-option-left {
     display: flex;
@@ -456,11 +483,14 @@
     border: none;
     border-radius: 10px;
     background-color: transparent;
+}@media (hover: hover) and (pointer: fine) {
+    .combo-option-card .combo-option-row:hover {
+
+    background-color: var(--card-border);
+
+    }
 }
 
-.combo-option-card .combo-option-row:hover {
-    background-color: var(--card-border);
-}
 
 .combo-sub-wrapper {
     display: flex;
@@ -546,11 +576,14 @@
     background: transparent;
     color: var(--text-color-muted);
     cursor: pointer;
+}@media (hover: hover) and (pointer: fine) {
+    .combo-inline-btn-cancel:hover {
+
+    color: var(--text-color);
+
+    }
 }
 
-.combo-inline-btn-cancel:hover {
-    color: var(--text-color);
-}
 
 .combo-inline-btn-add {
     padding: 6px 12px;
@@ -593,13 +626,16 @@
     cursor: pointer;
     flex-shrink: 0;
     transition: color 0.15s, background-color 0.15s, border-color 0.15s;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .print-note-delete-btn:hover {
 
-.print-note-delete-btn:hover {
     color: var(--danger-color);
     border-color: var(--danger-color);
     background-color: rgba(239, 68, 68, 0.12);
+
+    }
 }
+
 
 .print-note-delete-btn .material-icons {
     font-size: 20px;
@@ -619,12 +655,15 @@
     gap: 8px;
     align-self: flex-start;
     transition: background-color 0.15s, border-color 0.15s;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .print-add-note-btn:hover {
 
-.print-add-note-btn:hover {
     background-color: var(--card-border);
     border-color: var(--input-focus);
+
+    }
 }
+
 
 .print-modal-divider {
     height: 1px;
@@ -759,11 +798,14 @@
     cursor: pointer;
     user-select: none;
     transition: background-color 0.15s, border-color 0.15s;
+}@media (hover: hover) and (pointer: fine) {
+    .finalize-item:hover:not(.is-disabled) {
+
+    border-color: var(--input-focus);
+
+    }
 }
 
-.finalize-item:hover:not(.is-disabled) {
-    border-color: var(--input-focus);
-}
 
 .finalize-item.is-checked {
     border-color: var(--accent-color);

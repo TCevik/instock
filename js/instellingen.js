@@ -27,6 +27,14 @@ function setMobileView(view, pushHistory = true) {
     if (card) {
         card.setAttribute('data-mobile-view', view);
     }
+    const pageContainer = document.querySelector('.page-container');
+    if (pageContainer) {
+        pageContainer.setAttribute('data-mobile-view', view);
+    }
+    const hero = document.querySelector('.dashboard-hero');
+    if (hero) {
+        hero.setAttribute('data-mobile-view', view);
+    }
     if (pushHistory && view === 'detail' && window.innerWidth <= 768) {
         if (!window.history.state || window.history.state.instellingenView !== 'detail') {
             window.history.pushState({ instellingenView: 'detail' }, '');
@@ -121,6 +129,9 @@ function renderSidebar() {
 
         return `
             <div class="path-nav-item ${isActive ? 'active' : ''}" data-index="${idx}">
+                <div class="path-nav-icon-box">
+                    <span class="material-icons">alt_route</span>
+                </div>
                 <div class="path-nav-info">
                     <span class="path-nav-name">${name}</span>
                     <span class="path-nav-count">${count} ${count === 1 ? 'categorie' : 'categorieën'}</span>
@@ -237,6 +248,10 @@ function renderDetailPanel() {
                 <span class="mobile-detail-subtitle">Pad bewerken</span>
                 <span class="mobile-detail-heading" id="mobileDetailHeading">${pathName || 'Nieuw pad'}</span>
             </div>
+            <button type="button" class="btn-mobile-save" id="mobileDetailSaveBtn">
+                <span class="material-icons">save</span>
+                <span>Opslaan</span>
+            </button>
         </div>
 
         <div class="detail-header">
@@ -359,6 +374,11 @@ function renderDetailPanel() {
         });
     }
 
+    const mobileSaveBtn = pathDetailPanel.querySelector('#mobileDetailSaveBtn');
+    if (mobileSaveBtn) {
+        mobileSaveBtn.addEventListener('click', saveStorePaths);
+    }
+
     const handleDelete = async () => {
         const pName = currentPath.name || 'dit pad';
         const confirmed = await showConfirmModal({
@@ -423,10 +443,18 @@ async function loadStorePaths() {
 }
 
 async function saveStorePaths() {
+    const mobileSaveBtn = pathDetailPanel ? pathDetailPanel.querySelector('#mobileDetailSaveBtn') : null;
     if (saveAllPathsBtn) {
         saveAllPathsBtn.disabled = true;
         saveAllPathsBtn.innerHTML = `
             <span class="material-icons btn-icon">hourglass_empty</span>
+            <span>Opslaan...</span>
+        `;
+    }
+    if (mobileSaveBtn) {
+        mobileSaveBtn.disabled = true;
+        mobileSaveBtn.innerHTML = `
+            <span class="material-icons">hourglass_empty</span>
             <span>Opslaan...</span>
         `;
     }
@@ -472,6 +500,13 @@ async function saveStorePaths() {
             saveAllPathsBtn.innerHTML = `
                 <span class="material-icons btn-icon">save</span>
                 <span>Wijzigingen opslaan</span>
+            `;
+        }
+        if (mobileSaveBtn) {
+            mobileSaveBtn.disabled = false;
+            mobileSaveBtn.innerHTML = `
+                <span class="material-icons">save</span>
+                <span>Opslaan</span>
             `;
         }
     }

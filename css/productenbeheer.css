@@ -132,11 +132,14 @@
     cursor: pointer;
     user-select: none;
     transition: color 0.2s;
+}@media (hover: hover) and (pointer: fine) {
+    .th-sortable:hover {
+
+    color: var(--text-color);
+
+    }
 }
 
-.th-sortable:hover {
-    color: var(--text-color);
-}
 
 .th-content {
     display: inline-flex;
@@ -164,11 +167,14 @@
 
 .products-table tbody tr:last-child td {
     border-bottom: none;
+}@media (hover: hover) and (pointer: fine) {
+    .products-table tbody tr:hover {
+
+    background-color: var(--input-background);
+
+    }
 }
 
-.products-table tbody tr:hover {
-    background-color: var(--input-background);
-}
 
 .product-cell {
     display: flex;
@@ -246,13 +252,16 @@
     justify-content: center;
     cursor: pointer;
     transition: color 0.2s, background-color 0.2s, border-color 0.2s;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .action-btn:hover {
 
-.action-btn:hover {
     color: var(--text-color);
     background-color: var(--card-border);
     border-color: var(--input-focus);
+
+    }
 }
+
 
 .products-cards {
     display: none;

@@ -55,12 +55,15 @@
     justify-content: center;
     cursor: pointer;
     transition: color 0.2s, background-color 0.2s, border-color 0.2s;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .modal-close-btn:hover {
 
-.modal-close-btn:hover {
     color: var(--text-color);
     background-color: var(--card-border);
+
+    }
 }
+
 
 .modal-close-btn .material-icons {
     font-size: 20px;
@@ -235,11 +238,14 @@
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.2s, color 0.2s;
+}@media (hover: hover) and (pointer: fine) {
+    .custom-select-option:hover {
+
+    background-color: var(--input-background);
+
+    }
 }
 
-.custom-select-option:hover {
-    background-color: var(--input-background);
-}
 
 .custom-select-option.selected {
     background-color: var(--card-border);
@@ -276,11 +282,14 @@
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.2s;
+}@media (hover: hover) and (pointer: fine) {
+    .custom-select-action-option:hover {
+
+    background-color: var(--input-background);
+
+    }
 }
 
-.custom-select-action-option:hover {
-    background-color: var(--input-background);
-}
 
 .custom-select-action-option .material-icons {
     font-size: 18px;
@@ -332,12 +341,15 @@
     justify-content: center;
     cursor: pointer;
     transition: color 0.2s, background-color 0.2s;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .datepicker-icon-btn:hover {
 
-.datepicker-icon-btn:hover {
     color: var(--text-color);
     background-color: var(--card-border);
+
+    }
 }
+
 
 .datepicker-icon-btn .material-icons {
     font-size: 18px;
@@ -380,11 +392,14 @@
     padding: 4px 6px;
     border-radius: 6px;
     transition: background-color 0.2s;
+}@media (hover: hover) and (pointer: fine) {
+    .dp-title-btn:hover {
+
+    background-color: var(--card-border);
+
+    }
 }
 
-.dp-title-btn:hover {
-    background-color: var(--card-border);
-}
 
 .dp-nav-btn {
     background: transparent;
@@ -398,12 +413,15 @@
     justify-content: center;
     cursor: pointer;
     transition: color 0.2s, background-color 0.2s;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .dp-nav-btn:hover {
 
-.dp-nav-btn:hover {
     color: var(--text-color);
     background-color: var(--card-border);
+
+    }
 }
+
 
 .dp-nav-btn .material-icons {
     font-size: 18px;
@@ -465,18 +483,23 @@
     cursor: pointer;
     box-sizing: border-box;
     transition: background-color 0.2s, color 0.2s;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .dp-cell:hover:not(:disabled):not(.active) {
 
-.dp-cell:hover:not(:disabled):not(.active) {
     background-color: var(--card-border);
-}
 
-.dp-cell.active,
+    }
+}@media (hover: hover) and (pointer: fine) {
+    .dp-cell.active,
 .dp-cell.active:hover {
+
     background-color: var(--accent-color);
     color: var(--text-color);
     font-weight: 600;
+
+    }
 }
+
 
 .dp-cell.today:not(.active) {
     border: 1px solid var(--accent-color);
@@ -506,11 +529,14 @@
     padding: 2px 6px;
     border-radius: 6px;
     transition: color 0.2s;
+}@media (hover: hover) and (pointer: fine) {
+    .dp-action-btn:hover {
+
+    color: var(--text-color);
+
+    }
 }
 
-.dp-action-btn:hover {
-    color: var(--text-color);
-}
 
 .custom-timepicker {
     position: relative;
@@ -550,11 +576,14 @@
 
 .dp-confirm-btn {
     color: var(--accent-color);
+}@media (hover: hover) and (pointer: fine) {
+    .dp-confirm-btn:hover {
+
+    color: var(--accent-hover);
+
+    }
 }
 
-.dp-confirm-btn:hover {
-    color: var(--accent-hover);
-}
 
 .modal-footer {
     display: flex;
@@ -577,12 +606,15 @@
     align-items: center;
     justify-content: center;
     transition: background-color 0.2s, border-color 0.2s;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .modal-btn-secondary:hover {
 
-.modal-btn-secondary:hover {
     background-color: var(--card-border);
     border-color: var(--input-focus);
+
+    }
 }
+
 
 .modal-btn-danger {
     background-color: transparent;
@@ -599,13 +631,16 @@
     gap: 8px;
     transition: background-color 0.2s, border-color 0.2s, color 0.2s;
     margin-right: auto;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .modal-btn-danger:hover {
 
-.modal-btn-danger:hover {
     background-color: var(--danger-color);
     border-color: var(--danger-color);
     color: var(--text-color);
+
+    }
 }
+
 
 .btn-danger-confirm {
     background-color: var(--danger-color);
@@ -621,11 +656,14 @@
     justify-content: center;
     gap: 8px;
     transition: background-color 0.2s;
+}@media (hover: hover) and (pointer: fine) {
+    .btn-danger-confirm:hover {
+
+    background-color: var(--danger-hover);
+
+    }
 }
 
-.btn-danger-confirm:hover {
-    background-color: var(--danger-hover);
-}
 
 @media (max-width: 768px) {
     .modal-overlay {

@@ -227,11 +227,14 @@ body {
     margin-top: 4px;
     min-height: 54px;
     transition: background-color 0.2s;
+}@media (hover: hover) and (pointer: fine) {
+    #loginForm button[type="submit"]:hover {
+
+    background-color: var(--accent-hover);
+
+    }
 }
 
-#loginForm button[type="submit"]:hover {
-    background-color: var(--accent-hover);
-}
 
 .btn-icon {
     font-size: 20px;

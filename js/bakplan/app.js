@@ -1,6 +1,6 @@
 import { supabase, showToast, invokeFn, showConfirmModal } from '../main.js';
 import { getBakplanData, setBakplanData, getCurrentDay, setCurrentDay, undo, redo, saveState, getBakplanSnapshot, setSavedSnapshot, hasUnsavedChanges, initUndoStack } from './state.js';
-import { getDayValue, setDayValue, calculatePlaten } from './utils.js';
+import { getDayValue, setDayValue, calculatePlaten, saveRememberedPerPlaat, syncBakplanPerPlaatMemory } from './utils.js';
 import { updateSummaryStats, updateToggleAllButton, renderCategories } from './render.js';
 import { findItem, deleteCategory, deleteRow, addCategory, addRowToCategory, toggleCategoryCollapse, toggleCartType, toggleAllCategories } from './actions.js';
 import { showBakplanSyncMenu, initContextMenuDismiss } from './syncMenu.js';
@@ -13,6 +13,7 @@ export async function saveBakplan() {
     if (btnSave) btnSave.disabled = true;
     try {
         const bakplanData = getBakplanData();
+        syncBakplanPerPlaatMemory(bakplanData);
         const { data, error } = await invokeFn('manage-bakplan', {
             body: { data: bakplanData }
         });
@@ -41,6 +42,7 @@ export async function loadBakplan() {
             collapsed: false
         }));
         setBakplanData(loaded);
+        syncBakplanPerPlaatMemory(loaded);
     }
     setSavedSnapshot(getBakplanSnapshot());
     initUndoStack(getBakplanData());
@@ -193,6 +195,9 @@ export function initEvents() {
                 }
                 if (field === 'perPlaat' || field === 'prijs') {
                     item[field] = numVal;
+                    if (field === 'perPlaat') {
+                        saveRememberedPerPlaat(item.omschrijving, numVal);
+                    }
                 } else {
                     setDayValue(item, field, numVal);
                 }

@@ -98,13 +98,16 @@
     text-align: center;
     color: var(--text-color);
     transition: background-color 0.15s;
-}
-
-.time-option:hover,
+}@media (hover: hover) and (pointer: fine) {
+    .time-option:hover,
 .time-option.selected {
+
     background-color: var(--input-background);
     color: var(--text-color);
+
+    }
 }
+
 
 .autocomplete-dropdown {
     position: absolute;
@@ -134,12 +137,15 @@
     gap: 6px;
     font-size: 11px;
     transition: background-color 0.15s;
+}@media (hover: hover) and (pointer: fine) {
+    .autocomplete-item:hover,
+.autocomplete-item.selected {
+
+    background-color: var(--input-background);
+
+    }
 }
 
-.autocomplete-item:hover,
-.autocomplete-item.selected {
-    background-color: var(--input-background);
-}
 
 .autocomplete-item-name {
     font-weight: 500;
@@ -169,12 +175,15 @@
 
 .btn-delete-row .material-icons {
     font-size: 16px;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .btn-delete-row:hover {
 
-.btn-delete-row:hover {
     color: var(--danger-hover);
     background-color: rgba(239, 68, 68, 0.1);
+
+    }
 }
+
 
 @media (max-width: 768px) {
     .planning-section {

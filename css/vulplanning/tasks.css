@@ -18,11 +18,14 @@
     background-color: #1a1a1e;
     transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1), border-color 0.15s, background-color 0.15s;
     z-index: 10;
+}@media (hover: hover) and (pointer: fine) {
+    .timeline-task-block:hover {
+
+    z-index: 20;
+
+    }
 }
 
-.timeline-task-block:hover {
-    z-index: 20;
-}
 
 .timeline-task-block.dragging {
     opacity: 0 !important;
@@ -104,62 +107,80 @@
 .timeline-task-block.type-vullen {
     border-left: 3px solid var(--accent-color);
     background-color: rgba(101, 141, 36, 0.12);
-}
+}@media (hover: hover) and (pointer: fine) {
+    .timeline-task-block.type-vullen:hover {
 
-.timeline-task-block.type-vullen:hover {
     border-color: var(--accent-color);
     background-color: rgba(101, 141, 36, 0.22);
+
+    }
 }
+
 
 .timeline-task-block.type-spiegelen {
     border-left: 3px solid var(--warning-color);
     background-color: rgba(245, 158, 11, 0.12);
-}
+}@media (hover: hover) and (pointer: fine) {
+    .timeline-task-block.type-spiegelen:hover {
 
-.timeline-task-block.type-spiegelen:hover {
     border-color: var(--warning-color);
     background-color: rgba(245, 158, 11, 0.22);
+
+    }
 }
+
 
 .timeline-task-block.type-restanten {
     border-left: 3px solid var(--purple-color);
     background-color: rgba(168, 85, 247, 0.12);
-}
+}@media (hover: hover) and (pointer: fine) {
+    .timeline-task-block.type-restanten:hover {
 
-.timeline-task-block.type-restanten:hover {
     border-color: var(--purple-color);
     background-color: rgba(168, 85, 247, 0.22);
+
+    }
 }
+
 
 .timeline-task-block.type-overige {
     border-left: 3px solid var(--info-color);
     background-color: rgba(59, 130, 246, 0.12);
-}
+}@media (hover: hover) and (pointer: fine) {
+    .timeline-task-block.type-overige:hover {
 
-.timeline-task-block.type-overige:hover {
     border-color: var(--info-color);
     background-color: rgba(59, 130, 246, 0.22);
+
+    }
 }
+
 
 .timeline-task-block.type-pauze {
     border-left: 3px solid var(--pauze-color);
     background-color: rgba(249, 115, 22, 0.12);
-}
+}@media (hover: hover) and (pointer: fine) {
+    .timeline-task-block.type-pauze:hover {
 
-.timeline-task-block.type-pauze:hover {
     border-color: var(--pauze-color);
     background-color: rgba(249, 115, 22, 0.22);
+
+    }
 }
+
 
 .timeline-task-block.is-helper {
     border-left: 3px solid var(--helper-color);
     background-color: var(--helper-bg);
-}
+}@media (hover: hover) and (pointer: fine) {
+    .timeline-task-block.is-helper:hover {
 
-.timeline-task-block.is-helper:hover {
     border-color: var(--helper-color);
     background-color: var(--helper-bg-hover);
+
+    }
 }
+
 
 .task-block-header {
     display: flex;

@@ -87,11 +87,14 @@
     color: var(--text-color-muted);
     text-decoration: none;
     transition: color 0.15s;
+}@media (hover: hover) and (pointer: fine) {
+    .unassigned-settings-link:hover {
+
+    color: var(--accent-color);
+
+    }
 }
 
-.unassigned-settings-link:hover {
-    color: var(--accent-color);
-}
 
 .unassigned-settings-link .material-icons {
     font-size: 13px;
@@ -114,12 +117,15 @@
     cursor: pointer;
     text-align: center;
     transition: background-color 0.15s, color 0.15s, border-color 0.15s;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .unassigned-tab:hover:not(.active) {
 
-.unassigned-tab:hover:not(.active) {
     color: var(--text-color);
     background-color: var(--card-border);
+
+    }
 }
+
 
 .unassigned-tab.active {
     background-color: var(--accent-color);
@@ -190,48 +196,63 @@
 
 .unassigned-task-card.type-vullen {
     border-left: 3px solid var(--accent-color);
-}
+}@media (hover: hover) and (pointer: fine) {
+    .unassigned-task-card.type-vullen:hover {
 
-.unassigned-task-card.type-vullen:hover {
     border-color: var(--accent-color);
     background-color: rgba(101, 141, 36, 0.12);
+
+    }
 }
+
 
 .unassigned-task-card.type-spiegelen {
     border-left: 3px solid var(--warning-color);
-}
+}@media (hover: hover) and (pointer: fine) {
+    .unassigned-task-card.type-spiegelen:hover {
 
-.unassigned-task-card.type-spiegelen:hover {
     border-color: var(--warning-color);
     background-color: rgba(245, 158, 11, 0.12);
+
+    }
 }
+
 
 .unassigned-task-card.type-restanten {
     border-left: 3px solid var(--purple-color);
-}
+}@media (hover: hover) and (pointer: fine) {
+    .unassigned-task-card.type-restanten:hover {
 
-.unassigned-task-card.type-restanten:hover {
     border-color: var(--purple-color);
     background-color: rgba(168, 85, 247, 0.12);
+
+    }
 }
+
 
 .unassigned-task-card.type-overige {
     border-left: 3px solid var(--info-color);
-}
+}@media (hover: hover) and (pointer: fine) {
+    .unassigned-task-card.type-overige:hover {
 
-.unassigned-task-card.type-overige:hover {
     border-color: var(--info-color);
     background-color: rgba(59, 130, 246, 0.12);
+
+    }
 }
+
 
 .unassigned-task-card.type-pauze {
     border-left: 3px solid var(--pauze-color);
-}
+}@media (hover: hover) and (pointer: fine) {
+    .unassigned-task-card.type-pauze:hover {
 
-.unassigned-task-card.type-pauze:hover {
     border-color: var(--pauze-color);
     background-color: rgba(249, 115, 22, 0.12);
+
+    }
 }
+
 
 .unassigned-task-card.dragging {
     opacity: 0.5;
@@ -266,12 +287,15 @@
 
 .unassigned-task-card.is-helper {
     border-left: 3px solid var(--helper-color);
-}
+}@media (hover: hover) and (pointer: fine) {
+    .unassigned-task-card.is-helper:hover {
 
-.unassigned-task-card.is-helper:hover {
     border-color: var(--helper-color);
     background-color: var(--helper-bg);
+
+    }
 }
+
 
 .assigned-card-top-right {
     display: flex;
@@ -290,11 +314,14 @@
     justify-content: center;
     border-radius: 3px;
     transition: color 0.15s;
+}@media (hover: hover) and (pointer: fine) {
+    .btn-card-unassign:hover {
+
+    color: var(--danger-color);
+
+    }
 }
 
-.btn-card-unassign:hover {
-    color: var(--danger-color);
-}
 
 .btn-card-unassign .material-icons {
     font-size: 13px;

@@ -115,12 +115,15 @@
     gap: 2px;
     transition: color 0.15s;
     user-select: none;
+}@media (hover: hover) and (pointer: fine) {
+    .timeline-col-title-main.sortable-header:hover,
+.timeline-col-title-sub.sortable-header:hover {
+
+    color: var(--text-color);
+
+    }
 }
 
-.timeline-col-title-main.sortable-header:hover,
-.timeline-col-title-sub.sortable-header:hover {
-    color: var(--text-color);
-}
 
 .timeline-sort-dropdown-container {
     position: relative;
@@ -143,12 +146,15 @@
     font-weight: 600;
     transition: background-color 0.15s, border-color 0.15s, color 0.15s;
     user-select: none;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .timeline-sort-btn:hover {
 
-.timeline-sort-btn:hover {
     background-color: var(--card-border);
     color: var(--text-color);
+
+    }
 }
+
 
 .timeline-sort-btn.active {
     border-color: var(--accent-color);
@@ -214,11 +220,14 @@
     width: 100%;
     text-align: left;
     transition: background-color 0.15s, color 0.15s;
+}@media (hover: hover) and (pointer: fine) {
+    .sort-menu-item:hover {
+
+    background-color: var(--input-background);
+
+    }
 }
 
-.sort-menu-item:hover {
-    background-color: var(--input-background);
-}
 
 .sort-menu-item.selected {
     color: var(--accent-color);
@@ -287,20 +296,26 @@
     cursor: pointer;
     padding: 0;
     transition: background-color 0.15s;
+}@media (hover: hover) and (pointer: fine) {
+    .zoom-btn:hover {
+
+    background-color: var(--card-border);
+
+    }
 }
 
-.zoom-btn:hover {
-    background-color: var(--card-border);
-}
 
 .zoom-btn:disabled {
     opacity: 0.35;
     cursor: not-allowed;
+}@media (hover: hover) and (pointer: fine) {
+    .zoom-btn:disabled:hover {
+
+    background-color: var(--input-background);
+
+    }
 }
 
-.zoom-btn:disabled:hover {
-    background-color: var(--input-background);
-}
 
 .zoom-btn .material-icons {
     font-size: 13px;
@@ -408,20 +423,27 @@
     cursor: grab;
     flex-shrink: 0;
     line-height: 1;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .timeline-worker-info:hover .timeline-worker-drag-handle {
 
-.timeline-worker-info:hover .timeline-worker-drag-handle {
     opacity: 0.9;
     color: var(--accent-color);
-}
 
-.timeline-worker-info:hover {
+    }
+}@media (hover: hover) and (pointer: fine) {
+    .timeline-worker-info:hover {
+
     background-color: #222226;
+
+    }
+}@media (hover: hover) and (pointer: fine) {
+    .timeline-worker-info:hover .timeline-worker-name {
+
+    color: var(--accent-color);
+
+    }
 }
 
-.timeline-worker-info:hover .timeline-worker-name {
-    color: var(--accent-color);
-}
 
 .timeline-worker-edit-hint {
     font-size: 11px;
@@ -430,12 +452,15 @@
     transition: opacity 0.15s ease, color 0.15s ease;
     margin-left: auto;
     flex-shrink: 0;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .timeline-worker-info:hover .timeline-worker-edit-hint {
 
-.timeline-worker-info:hover .timeline-worker-edit-hint {
     opacity: 0.9;
     color: var(--accent-color);
+
+    }
 }
+
 
 .timeline-worker-right {
     cursor: default;
@@ -753,13 +778,16 @@
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.15s ease;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .btn-timeline-add-worker:hover {
 
-.btn-timeline-add-worker:hover {
     border-color: var(--accent-color);
     color: var(--text-color);
     background-color: rgba(101, 141, 36, 0.08);
+
+    }
 }
+
 
 .btn-timeline-add-worker .material-icons {
     font-size: 16px;

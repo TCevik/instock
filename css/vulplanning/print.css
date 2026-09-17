@@ -194,7 +194,8 @@
         gap: 1px;
         font-size: 8px;
         color: var(--print-text-muted);
-        width: fit-content;
+        width: 100%;
+        box-sizing: border-box;
         line-height: 1.1;
     }
 

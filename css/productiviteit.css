@@ -24,13 +24,16 @@
     flex: 1;
     box-sizing: border-box;
     transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .stat-card:hover {
 
-.stat-card:hover {
     border-color: var(--card-border-hover);
     background-color: var(--card-background-hover);
     transform: translateY(-2px);
+
+    }
 }
+
 
 .stat-card-icon-wrapper {
     width: 38px;
@@ -357,20 +360,26 @@
     border-radius: 6px;
     cursor: pointer;
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}@media (hover: hover) and (pointer: fine) {
+    .chart-toggle-btn:hover {
+
+    color: var(--text-color);
+
+    }
 }
 
-.chart-toggle-btn:hover {
-    color: var(--text-color);
-}
 
 .chart-toggle-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+}@media (hover: hover) and (pointer: fine) {
+    .chart-toggle-btn:disabled:hover {
+
+    color: var(--text-color-muted);
+
+    }
 }
 
-.chart-toggle-btn:disabled:hover {
-    color: var(--text-color-muted);
-}
 
 .chart-toggle-btn.active {
     background-color: var(--card-background);
@@ -415,11 +424,14 @@
 .chart-point-group circle {
     cursor: pointer;
     transition: r 0.15s ease;
+}@media (hover: hover) and (pointer: fine) {
+    .chart-point-group:hover circle {
+
+    r: 7;
+
+    }
 }
 
-.chart-point-group:hover circle {
-    r: 7;
-}
 
 .chart-empty-msg {
     display: flex;
@@ -446,12 +458,15 @@
     gap: 12px;
     flex-shrink: 0;
     transition: border-color 0.2s ease, background-color 0.2s ease;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .top-filler-card:hover {
 
-.top-filler-card:hover {
     border-color: var(--card-border-hover);
     background-color: var(--card-background-hover);
+
+    }
 }
+
 
 .top-filler-card.is-viewed {
     border-color: var(--accent-color);
@@ -463,11 +478,14 @@
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
+}@media (hover: hover) and (pointer: fine) {
+    .top-filler-card.is-clickable:hover {
+
+    border-color: var(--accent-color);
+
+    }
 }
 
-.top-filler-card.is-clickable:hover {
-    border-color: var(--accent-color);
-}
 
 .top-filler-left {
     display: flex;
@@ -600,11 +618,14 @@
     width: 100%;
     transition: border-color 0.2s ease, transform 0.2s ease, padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     animation: fadeIn 0.25s ease;
+}@media (hover: hover) and (pointer: fine) {
+    .productivity-day-card:hover {
+
+    border-color: var(--card-border-hover);
+
+    }
 }
 
-.productivity-day-card:hover {
-    border-color: var(--card-border-hover);
-}
 
 .day-card-header {
     display: flex;
@@ -699,23 +720,29 @@
     display: flex;
     align-items: center;
     gap: 4px;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .action-btn.delete-shift-btn:hover {
 
-.action-btn.delete-shift-btn:hover {
     color: var(--danger-color);
     border-color: var(--danger-color);
+
+    }
 }
+
 
 .day-card-chevron {
     font-size: 20px;
     color: var(--text-color-muted);
     transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease;
     flex-shrink: 0;
+}@media (hover: hover) and (pointer: fine) {
+    .day-card-header:hover .day-card-chevron {
+
+    color: var(--text-color);
+
+    }
 }
 
-.day-card-header:hover .day-card-chevron {
-    color: var(--text-color);
-}
 
 .productivity-day-card.collapsed .day-card-chevron {
     transform: rotate(-90deg);
@@ -805,12 +832,15 @@
     gap: 8px;
     width: 100%;
     transition: border-color 0.2s ease, background-color 0.2s ease;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .day-task-card:hover {
 
-.day-task-card:hover {
     border-color: var(--card-border-hover);
     background-color: var(--card-background-hover);
+
+    }
 }
+
 
 .day-task-top {
     display: flex;
@@ -977,11 +1007,14 @@
     cursor: pointer;
     transition: background-color 0.2s, transform 0.15s;
     white-space: nowrap;
+}@media (hover: hover) and (pointer: fine) {
+    #addShiftBtn:hover {
+
+    background-color: var(--accent-hover);
+
+    }
 }
 
-#addShiftBtn:hover {
-    background-color: var(--accent-hover);
-}
 
 #addShiftBtn:active {
     transform: scale(0.97);
@@ -1030,13 +1063,16 @@
     cursor: pointer;
     transition: color 0.2s, background-color 0.2s, border-color 0.2s;
     flex-shrink: 0;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .shifts-date-clear-btn:hover {
 
-.shifts-date-clear-btn:hover {
     color: var(--text-color);
     background-color: var(--card-border);
     border-color: var(--input-focus);
+
+    }
 }
+
 
 .shifts-date-clear-btn .material-icons {
     font-size: 18px;
@@ -1049,12 +1085,15 @@
 .chart-point-group circle {
     cursor: pointer;
     transition: r 0.2s ease, stroke-width 0.2s ease;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .chart-point-group:hover circle {
 
-.chart-point-group:hover circle {
     r: 7;
     stroke-width: 4;
+
+    }
 }
+
 
 @media (hover: none) and (pointer: coarse) {
     .stat-card:active,

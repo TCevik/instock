@@ -137,11 +137,14 @@ textarea[disabled] {
     background-color: var(--input-background);
     border: 1px solid var(--card-border);
     color: var(--text-color);
+}@media (hover: hover) and (pointer: fine) {
+    .btn-add-vuller:hover {
+
+    background-color: var(--card-border);
+
+    }
 }
 
-.btn-add-vuller:hover {
-    background-color: var(--card-border);
-}
 
 .btn-add-vuller .btn-icon {
     font-size: 14px;
@@ -155,12 +158,15 @@ textarea[disabled] {
     border: 1px solid var(--accent-color);
     color: var(--text-color);
     font-weight: 600;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .btn-primary:hover {
 
-.btn-primary:hover {
     background-color: var(--accent-hover);
     border-color: var(--accent-hover);
+
+    }
 }
+
 
 .btn-primary .btn-icon {
     font-size: 14px;
@@ -174,11 +180,14 @@ textarea[disabled] {
     border: 1px solid var(--card-border);
     color: var(--text-color);
     text-decoration: none;
+}@media (hover: hover) and (pointer: fine) {
+    .btn-secondary:hover {
+
+    background-color: var(--card-border);
+
+    }
 }
 
-.btn-secondary:hover {
-    background-color: var(--card-border);
-}
 
 .btn-secondary .btn-icon {
     font-size: 14px;

@@ -30,12 +30,15 @@
     cursor: pointer;
     text-align: center;
     transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .day-tab:hover {
 
-.day-tab:hover {
     border-color: var(--text-color-muted);
     color: var(--text-color);
+
+    }
 }
+
 
 .day-tab.active {
     background-color: var(--bg-active);
@@ -60,11 +63,14 @@
     gap: 10px;
     box-sizing: border-box;
     transition: border-color 0.2s ease;
+}@media (hover: hover) and (pointer: fine) {
+    .stat-card:hover {
+
+    border-color: var(--card-border-hover);
+
+    }
 }
 
-.stat-card:hover {
-    border-color: var(--card-border-hover);
-}
 
 .stat-card-icon-wrapper {
     width: 36px;
@@ -242,11 +248,14 @@
     display: inline-flex;
     align-items: center;
     border-radius: 4px;
+}@media (hover: hover) and (pointer: fine) {
+    .btn-toggle-cat:hover {
+
+    color: var(--text-color);
+
+    }
 }
 
-.btn-toggle-cat:hover {
-    color: var(--text-color);
-}
 
 .chevron-icon {
     transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -273,12 +282,15 @@
     min-width: 160px;
     cursor: text;
     transition: background-color 0.2s ease, border-color 0.2s ease;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .category-title-input:hover {
 
-.category-title-input:hover {
     border-color: var(--text-color-muted);
     border-style: solid;
+
+    }
 }
+
 
 .category-title-input:focus {
     background-color: var(--input-background);
@@ -320,12 +332,15 @@
     font-weight: 600;
     cursor: pointer;
     transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .btn-cart-type-toggle:hover {
 
-.btn-cart-type-toggle:hover {
     border-color: var(--text-color-muted);
     color: var(--text-color);
+
+    }
 }
+
 
 .btn-cart-type-toggle.is-ontdooi {
     background-color: rgba(59, 130, 246, 0.15);
@@ -348,12 +363,15 @@
     align-items: center;
     justify-content: center;
     transition: color 0.15s ease, background-color 0.15s ease;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .btn-delete-cat:hover {
 
-.btn-delete-cat:hover {
     color: var(--danger-color);
     background-color: rgba(239, 68, 68, 0.12);
+
+    }
 }
+
 
 .btn-delete-cat .material-icons {
     font-size: 16px;
@@ -513,12 +531,15 @@
     align-items: center;
     justify-content: center;
     transition: color 0.15s ease, background-color 0.15s ease;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .btn-delete-row:hover {
 
-.btn-delete-row:hover {
     color: var(--danger-color);
     background-color: rgba(239, 68, 68, 0.12);
+
+    }
 }
+
 
 .btn-delete-row .material-icons {
     font-size: 16px;
@@ -545,13 +566,16 @@
     justify-content: center;
     gap: 4px;
     transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .btn-add-row-in-cat:hover {
 
-.btn-add-row-in-cat:hover {
     background-color: var(--input-background);
     border-color: var(--accent-color);
     color: var(--accent-color);
+
+    }
 }
+
 
 .btn-add-row-in-cat .material-icons {
     font-size: 18px;
@@ -581,21 +605,27 @@
 .btn-primary {
     background-color: var(--accent-color);
     color: #ffffff;
+}@media (hover: hover) and (pointer: fine) {
+    .btn-primary:hover {
+
+    background-color: var(--accent-hover);
+
+    }
 }
 
-.btn-primary:hover {
-    background-color: var(--accent-hover);
-}
 
 .btn-secondary {
     background-color: var(--input-background);
     border-color: var(--card-border);
     color: var(--text-color);
+}@media (hover: hover) and (pointer: fine) {
+    .btn-secondary:hover {
+
+    background-color: var(--card-border);
+
+    }
 }
 
-.btn-secondary:hover {
-    background-color: var(--card-border);
-}
 
 .btn-icon {
     font-size: 18px;
@@ -640,20 +670,26 @@
     border-radius: 6px;
     cursor: pointer;
     transition: background-color 0.15s ease;
+}@media (hover: hover) and (pointer: fine) {
+    .sync-menu-item:hover {
+
+    background-color: var(--bg-active);
+
+    }
 }
 
-.sync-menu-item:hover {
-    background-color: var(--bg-active);
-}
 
 .sync-menu-item .material-icons {
     font-size: 16px;
     color: var(--text-color-muted);
+}@media (hover: hover) and (pointer: fine) {
+    .sync-menu-item:hover .material-icons {
+
+    color: var(--accent-color);
+
+    }
 }
 
-.sync-menu-item:hover .material-icons {
-    color: var(--accent-color);
-}
 
 .sync-menu-divider {
     height: 1px;
@@ -892,12 +928,15 @@
     align-items: center;
     justify-content: center;
     transition: color 0.15s ease, background-color 0.15s ease;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .cart-row-delete-btn:hover {
 
-.cart-row-delete-btn:hover {
     color: var(--danger-color);
     background-color: rgba(239, 68, 68, 0.12);
+
+    }
 }
+
 
 .carts-actions-row {
     margin-top: 10px;
@@ -918,9 +957,12 @@
     align-items: center;
     gap: 6px;
     transition: background-color 0.2s ease;
+}@media (hover: hover) and (pointer: fine) {
+    .btn-add-cart-row:hover {
+
+    background-color: var(--accent-hover);
+
+    }
 }
 
-.btn-add-cart-row:hover {
-    background-color: var(--accent-hover);
-}
 

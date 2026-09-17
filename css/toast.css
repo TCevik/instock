@@ -112,12 +112,15 @@
     cursor: pointer;
     flex-shrink: 0;
     transition: color 0.2s, background-color 0.2s;
-}
+}@media (hover: hover) and (pointer: fine) {
+    .toast-close-btn:hover {
 
-.toast-close-btn:hover {
     color: var(--text-color);
     background-color: var(--card-border);
+
+    }
 }
+
 
 .toast-close-btn .material-icons {
     font-size: 18px;

@@ -1,5 +1,6 @@
 import { extractTextLinesFromPage } from '../pdf-helper.js';
 import { DAYS } from './state.js';
+import { getRememberedPerPlaatMap, syncBakplanPerPlaatMemory } from './utils.js';
 
 export async function parseBakplanPdf(file, existingData = []) {
     if (!window.pdfjsLib) {
@@ -10,6 +11,23 @@ export async function parseBakplanPdf(file, existingData = []) {
     const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
     const resultData = JSON.parse(JSON.stringify(existingData));
+    const rememberedMap = getRememberedPerPlaatMap();
+    const existingItemsMap = new Map();
+
+    if (Array.isArray(existingData)) {
+        for (const cat of existingData) {
+            if (Array.isArray(cat?.items)) {
+                for (const item of cat.items) {
+                    if (item?.omschrijving) {
+                        const key = item.omschrijving.trim().toLowerCase();
+                        if (!existingItemsMap.has(key)) {
+                            existingItemsMap.set(key, item);
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     let currentDay = 'maandag';
     let currentCatName = 'Overig';
@@ -139,10 +157,19 @@ export async function parseBakplanPdf(file, existingData = []) {
 
             let prodObj = catObj.items.find(p => p.omschrijving.toLowerCase() === descVal.toLowerCase());
             if (!prodObj) {
+                const key = descVal.trim().toLowerCase();
+                const matchedExisting = existingItemsMap.get(key);
+                let initialPerPlaat = 12;
+                if (matchedExisting && matchedExisting.perPlaat !== null && matchedExisting.perPlaat !== undefined && matchedExisting.perPlaat !== '') {
+                    initialPerPlaat = matchedExisting.perPlaat;
+                } else if (rememberedMap[key] !== undefined && rememberedMap[key] !== null) {
+                    initialPerPlaat = rememberedMap[key];
+                }
+
                 prodObj = {
                     id: 'item-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
                     omschrijving: descVal,
-                    perPlaat: 12,
+                    perPlaat: initialPerPlaat,
                     prijs: cleanPrice,
                     promo: cleanPromo,
                     opleggen: cleanGemVerk,
@@ -150,6 +177,21 @@ export async function parseBakplanPdf(file, existingData = []) {
                     days: {}
                 };
                 catObj.items.push(prodObj);
+                existingItemsMap.set(key, prodObj);
+            } else {
+                if (cleanPrice !== null) {
+                    prodObj.prijs = cleanPrice;
+                }
+                prodObj.promo = cleanPromo;
+                prodObj.opleggen = cleanGemVerk;
+                prodObj.derving = cleanDerving;
+
+                if (prodObj.perPlaat === null || prodObj.perPlaat === undefined || prodObj.perPlaat === '') {
+                    const key = descVal.trim().toLowerCase();
+                    if (rememberedMap[key] !== undefined && rememberedMap[key] !== null) {
+                        prodObj.perPlaat = rememberedMap[key];
+                    }
+                }
             }
 
             if (!prodObj.days) prodObj.days = {};
@@ -161,5 +203,6 @@ export async function parseBakplanPdf(file, existingData = []) {
         }
     }
 
+    syncBakplanPerPlaatMemory(resultData);
     return resultData;
 }
