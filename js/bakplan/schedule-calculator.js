@@ -1,8 +1,12 @@
 export const DEFAULT_CARTS = [
-    { id: 1, name: 'Kar 1', type: 'single', capacity: 10, oven: true, desc: 'Enkele kar' },
-    { id: 2, name: 'Kar 2', type: 'single', capacity: 10, oven: true, desc: 'Enkele kar' },
-    { id: 3, name: 'Kar 3', type: 'mixed', capacity: 10, oven: true, desc: 'Gemengde kar' },
-    { id: 4, name: 'Kar 4', type: 'thaw', capacity: 10, oven: false, desc: 'Ontdooikar' }
+    { id: 1, name: 'Kar 1', type: 'single', reservedCategory: '', capacity: 8, oven: true },
+    { id: 2, name: 'Kar 2', type: 'single', reservedCategory: '', capacity: 15, oven: true },
+    { id: 3, name: 'Kar 3', type: 'single', reservedCategory: '', capacity: 15, oven: true },
+    { id: 4, name: 'Kar 4', type: 'single', reservedCategory: '', capacity: 15, oven: true },
+    { id: 5, name: 'Kar 5', type: 'single', reservedCategory: '', capacity: 18, oven: true },
+    { id: 6, name: 'Kar 6', type: 'mixed', reservedCategory: '', capacity: 18, oven: true },
+    { id: 7, name: 'Kar 7', type: 'mixed', reservedCategory: '', capacity: 18, oven: true },
+    { id: 8, name: 'Kar 8', type: 'mixed', reservedCategory: '', capacity: 18, oven: false }
 ];
 
 export function getPlateQuantity(item) {
@@ -15,10 +19,15 @@ export function generateBakplanSchedule(bakplanCategories, dayName = 'maandag', 
 
     const allBakeProducts = [];
     const allThawProducts = [];
+    const hasThawCart = cartsConfig.some(c => !c.oven || c.type === 'thaw');
 
     (bakplanCategories || []).forEach(catObj => {
         const catName = catObj.name || 'Overig';
-        const isThawCat = catObj.cartType === 'ontdooi';
+        const isThawCat = hasThawCart && (
+            catObj.cartType === 'ontdooi' || 
+            cartsConfig.some(c => (!c.oven || c.type === 'thaw') && c.reservedCategory === catName)
+        );
+
 
         (catObj.items || []).forEach(prod => {
             if (!prod.omschrijving || prod.omschrijving.trim() === '') return;

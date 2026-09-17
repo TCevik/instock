@@ -6,6 +6,7 @@ import { findItem, deleteCategory, deleteRow, addCategory, addRowToCategory, tog
 import { showBakplanSyncMenu, initContextMenuDismiss } from './syncMenu.js';
 import { parseBakplanPdf } from './pdf-handler.js';
 import { openPrintableBakplan } from './printable-overview.js';
+import { openCartsModal } from './carts-modal.js';
 
 export async function saveBakplan() {
     const btnSave = document.getElementById('btn-save-bakplan');
@@ -110,7 +111,9 @@ export function initEvents() {
 
     if (btnGenerate) {
         btnGenerate.addEventListener('click', () => {
-            openPrintableBakplan(getBakplanData());
+            openCartsModal(getBakplanData(), (carts) => {
+                openPrintableBakplan(getBakplanData(), carts);
+            });
         });
     }
 
