@@ -101,6 +101,9 @@
     font-weight: 700;
     line-height: 1.1;
     color: var(--text-color);
+    min-height: 24px;
+    display: inline-flex;
+    align-items: center;
 }
 
 .stat-value.accent {

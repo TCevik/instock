@@ -52,27 +52,13 @@ export function keepInViewport(dropdown, anchor = null) {
 
     dropdown.style.maxWidth = `calc(${viewportWidth}px - ${margin * 2}px)`;
 
-    let curRect = dropdown.getBoundingClientRect();
-    if (curRect.right > viewportWidth - margin) {
-        dropdown.style.left = 'auto';
-        dropdown.style.right = '0px';
-        dropdown.style.transform = 'none';
-    }
-
-    curRect = dropdown.getBoundingClientRect();
+    const curRect = dropdown.getBoundingClientRect();
     if (curRect.left < margin) {
-        dropdown.style.right = 'auto';
-        dropdown.style.left = '0px';
-        dropdown.style.transform = 'none';
-    }
-
-    curRect = dropdown.getBoundingClientRect();
-    if (curRect.right > viewportWidth - margin) {
-        const diff = curRect.right - (viewportWidth - margin);
-        dropdown.style.transform = `translateX(-${diff}px)`;
-    } else if (curRect.left < margin) {
         const diff = margin - curRect.left;
         dropdown.style.transform = `translateX(${diff}px)`;
+    } else if (curRect.right > viewportWidth - margin) {
+        const diff = curRect.right - (viewportWidth - margin);
+        dropdown.style.transform = `translateX(-${diff}px)`;
     }
 }
 

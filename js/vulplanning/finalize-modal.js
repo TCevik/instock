@@ -153,8 +153,8 @@ export async function openFinalizeModal() {
                 <input type="checkbox" id="finalize-select-all" ${readyCount > 0 ? 'checked' : ''} />
                 <span>Alles selecteren</span>
             </label>
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <label style="font-size: 13px; font-weight: 500;">Datum:</label>
+            <div class="finalize-controls-right">
+                <label class="finalize-date-label">Datum:</label>
                 <div id="finalizeDatePickerContainer"></div>
                 <span class="finalize-count-indicator" id="finalize-selected-count">0 geselecteerd</span>
             </div>

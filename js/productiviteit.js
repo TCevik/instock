@@ -699,18 +699,22 @@ function renderProductivityChart(entries) {
 
     const subtitleEl = document.getElementById('chartCardSubtitle');
     if (subtitleEl) {
+        const userSuffix = (selectedFillerUserData && selectedFillerUserId !== currentUserId)
+            ? ` van ${selectedFillerUserData.full_name || selectedFillerUserData.username || 'Medewerker'}`
+            : '';
+
         if (isMonthView) {
-            subtitleEl.textContent = currentChartMode === 'average'
+            subtitleEl.textContent = (currentChartMode === 'average'
                 ? 'Gemiddelde productiviteit per maand'
-                : 'Productiviteit per maand';
+                : 'Productiviteit per maand') + userSuffix;
         } else if (filtered.length > 12) {
-            subtitleEl.textContent = currentChartMode === 'average'
+            subtitleEl.textContent = (currentChartMode === 'average'
                 ? 'Gemiddelde trend per periode'
-                : 'Productiviteit per periode';
+                : 'Productiviteit per periode') + userSuffix;
         } else {
-            subtitleEl.textContent = currentChartMode === 'average'
+            subtitleEl.textContent = (currentChartMode === 'average'
                 ? 'Gemiddelde van de laatste 10 shifts per punt'
-                : 'Productiviteit per gewerkte shift';
+                : 'Productiviteit per gewerkte shift') + userSuffix;
         }
     }
 

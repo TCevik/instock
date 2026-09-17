@@ -329,7 +329,7 @@ export function createDatePicker(containerElement, initialDateStr = '', onSelect
             renderDays();
         }
         if (dropdown.classList.contains('active')) {
-            keepInViewport(dropdown, root);
+            requestAnimationFrame(() => keepInViewport(dropdown, root));
         }
     }
 
@@ -339,7 +339,7 @@ export function createDatePicker(containerElement, initialDateStr = '', onSelect
         viewDate = selectedDate ? new Date(selectedDate) : new Date();
         renderCalendar();
         dropdown.classList.add('active');
-        keepInViewport(dropdown, root);
+        requestAnimationFrame(() => keepInViewport(dropdown, root));
     }
 
     function closeDropdown() {
