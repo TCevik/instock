@@ -1478,7 +1478,7 @@ function openDetailsModal(log) {
         <div class="modal-footer">
             <button type="button" class="modal-btn-secondary" id="closeDetailsModalBtn">Sluiten</button>
         </div>
-    `);
+    `, 'modal-wide');
 
     const closeBtn = document.getElementById('closeDetailsModalBtn');
     if (closeBtn) {

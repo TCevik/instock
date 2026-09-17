@@ -711,7 +711,7 @@
 }
 
 .modal-overlay.modal-wide .modal-container {
-    max-width: 640px;
+    max-width: min(92vw, 760px);
 }
 
 .modal-tasks-section {

@@ -1,14 +1,15 @@
-import { showModal, closeModal, showToast, escapeHtml, supabase } from '../main.js';
+import { showModal, closeModal, showToast, showConfirmModal, escapeHtml, supabase } from '../main.js';
 import { planningState } from './state.js';
 import { getFillerStats, getFormattedTasksWithTimes, formatDuration, calculateShiftTotalColli } from './time-utils.js';
 import { findExactUser, findUserByUsername } from './rooster.js';
+import { createDatePicker } from '../datepicker.js';
 
 export async function openFinalizeModal() {
     const fillersWithUser = [];
 
     const { data: dbUsers } = await supabase
         .from('user_data')
-        .select('user_id, username, full_name, productivity');
+        .select('user_id, username, full_name');
 
     const dbUserMap = new Map();
     (dbUsers || []).forEach(u => {
@@ -35,62 +36,9 @@ export async function openFinalizeModal() {
 
         const cleanUname = uname.toLowerCase().trim();
         const dbUser = dbUserMap.get(cleanUname);
-
         const assigned = planningState.assignedTasks[filler.id] || [];
         const stats = getFillerStats(filler, assigned);
         const hasEndTime = !!(filler.actualEndTime && String(filler.actualEndTime).trim().length >= 4 && stats.prodResult);
-
-        const todayDDMMYYYY = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
-        const isSameDate = (dStr) => {
-            if (!dStr) return false;
-            const s = String(dStr).trim();
-            return s === todayStr || s === todayDDMMYYYY;
-        };
-
-        let existingTodayRecord = null;
-        if (dbUser?.productivity) {
-            const prodObj = dbUser.productivity;
-            if (typeof prodObj === 'object' && !Array.isArray(prodObj)) {
-                if (Array.isArray(prodObj.history)) {
-                    existingTodayRecord = prodObj.history.find(h => h && isSameDate(h.date)) || null;
-                }
-                if (!existingTodayRecord && isSameDate(prodObj.date)) {
-                    existingTodayRecord = prodObj;
-                }
-            } else if (Array.isArray(prodObj)) {
-                existingTodayRecord = prodObj.find(h => h && isSameDate(h.date)) || null;
-            }
-        }
-
-        let isIdentical = false;
-        let isOverwrite = false;
-        let prevProdPercent = null;
-        let checked = false;
-
-        if (existingTodayRecord && hasEndTime) {
-            prevProdPercent = existingTodayRecord.productivity;
-            const oldEnd = String(existingTodayRecord.actual_end_time || existingTodayRecord.shift?.actual_end || '').trim();
-            const newEnd = String(filler.actualEndTime || '').trim();
-            const oldColli = calculateShiftTotalColli(existingTodayRecord);
-            const newColli = Number(stats.totalColli) || 0;
-            const oldTasksLen = Array.isArray(existingTodayRecord.tasks) ? existingTodayRecord.tasks.length : null;
-            const newTasksLen = assigned.length;
-
-            const sameProd = Number(prevProdPercent) === Number(stats.prodResult?.percent);
-            const sameEnd = oldEnd === newEnd;
-            const sameColli = oldColli === newColli;
-            const sameTasks = oldTasksLen === null || oldTasksLen === newTasksLen;
-
-            if (sameProd && sameEnd && sameColli && sameTasks) {
-                isIdentical = true;
-                checked = false;
-            } else {
-                isOverwrite = true;
-                checked = hasEndTime;
-            }
-        } else {
-            checked = hasEndTime;
-        }
 
         fillersWithUser.push({
             filler,
@@ -99,12 +47,63 @@ export async function openFinalizeModal() {
             assigned,
             stats,
             hasEndTime,
-            isIdentical,
-            isOverwrite,
-            prevProdPercent,
-            checked
+            isIdentical: false,
+            isOverwrite: false,
+            prevProdPercent: null,
+            checked: hasEndTime
         });
     });
+
+    async function recalculateStatusesForDate(selectedDateStr) {
+        let userStatuses = {};
+        try {
+            const { data, error } = await supabase.functions.invoke('manage-productivity', {
+                body: { action: 'get_date_status', date: selectedDateStr }
+            });
+            if (!error && data?.userStatuses) {
+                userStatuses = data.userStatuses;
+            }
+        } catch (_) {}
+
+        fillersWithUser.forEach(item => {
+            const cleanU = item.username.toLowerCase().trim();
+            const existingRecord = userStatuses[cleanU] || null;
+            const assigned = item.assigned;
+            const stats = item.stats;
+            const hasEndTime = item.hasEndTime;
+
+            item.isIdentical = false;
+            item.isOverwrite = false;
+            item.prevProdPercent = null;
+
+            if (existingRecord && hasEndTime) {
+                item.prevProdPercent = existingRecord.productivity;
+                const oldEnd = String(existingRecord.actual_end_time || existingRecord.shift?.actual_end || '').trim();
+                const newEnd = String(item.filler.actualEndTime || '').trim();
+                const oldColli = calculateShiftTotalColli(existingRecord);
+                const newColli = Number(stats.totalColli) || 0;
+                const oldTasksLen = Array.isArray(existingRecord.tasks) ? existingRecord.tasks.length : null;
+                const newTasksLen = assigned.length;
+
+                const sameProd = Number(item.prevProdPercent) === Number(stats.prodResult?.percent);
+                const sameEnd = oldEnd === newEnd;
+                const sameColli = oldColli === newColli;
+                const sameTasks = oldTasksLen === null || oldTasksLen === newTasksLen;
+
+                if (sameProd && sameEnd && sameColli && sameTasks) {
+                    item.isIdentical = true;
+                    item.checked = false;
+                } else {
+                    item.isOverwrite = true;
+                    item.checked = hasEndTime;
+                }
+            } else {
+                item.checked = hasEndTime;
+            }
+        });
+    }
+
+    await recalculateStatusesForDate(todayStr);
 
     if (fillersWithUser.length === 0) {
         showToast('error', 'Geen medewerkers met een gekoppelde gebruikersnaam gevonden in de planning.');
@@ -154,7 +153,11 @@ export async function openFinalizeModal() {
                 <input type="checkbox" id="finalize-select-all" ${readyCount > 0 ? 'checked' : ''} />
                 <span>Alles selecteren</span>
             </label>
-            <span class="finalize-count-indicator" id="finalize-selected-count">0 geselecteerd</span>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <label style="font-size: 13px; font-weight: 500;">Datum:</label>
+                <div id="finalizeDatePickerContainer"></div>
+                <span class="finalize-count-indicator" id="finalize-selected-count">0 geselecteerd</span>
+            </div>
         </div>
 
         <div class="finalize-list" id="finalize-list-container">
@@ -264,6 +267,48 @@ export async function openFinalizeModal() {
     const btnFinalizeText = document.getElementById('btn-finalize-text');
     const btnCancel = document.getElementById('btn-cancel-finalize');
 
+    const datePickerContainer = document.getElementById('finalizeDatePickerContainer');
+    let finalizeDatePicker = null;
+    if (datePickerContainer) {
+        finalizeDatePicker = createDatePicker(datePickerContainer, todayStr, async (selectedDateVal) => {
+            if (!selectedDateVal) return;
+            await recalculateStatusesForDate(selectedDateVal);
+
+            fillersWithUser.sort((a, b) => {
+                const aReady = a.hasEndTime && !a.isIdentical;
+                const bReady = b.hasEndTime && !b.isIdentical;
+                if (aReady && !bReady) return -1;
+                if (!aReady && bReady) return 1;
+                if (a.hasEndTime && !b.hasEndTime) return -1;
+                if (!a.hasEndTime && b.hasEndTime) return 1;
+                return (a.filler.name || '').localeCompare(b.filler.name || '');
+            });
+
+            const readyCount = fillersWithUser.filter(f => f.hasEndTime && !f.isIdentical).length;
+            const overwriteCount = fillersWithUser.filter(f => f.hasEndTime && f.isOverwrite).length;
+            const identicalCount = fillersWithUser.filter(f => f.hasEndTime && f.isIdentical).length;
+
+            let bannerExtra = '';
+            if (overwriteCount > 0 || identicalCount > 0) {
+                const parts = [];
+                if (overwriteCount > 0) parts.push(`${overwriteCount} overschrijven`);
+                if (identicalCount > 0) parts.push(`${identicalCount} al identiek`);
+                bannerExtra = ` (${parts.join(', ')})`;
+            }
+
+            const bannerText = document.getElementById('finalize-banner-text');
+            if (bannerText) {
+                bannerText.textContent = `${readyCount} van de ${fillersWithUser.length} medewerkers gereed om te finaliseren${bannerExtra}`;
+            }
+
+            if (listContainer) {
+                listContainer.innerHTML = renderWorkersList(fillersWithUser);
+                bindItemClicks();
+            }
+            updateUiState();
+        });
+    }
+
     function updateUiState() {
         const checkedCount = fillersWithUser.filter(f => f.hasEndTime && !f.isIdentical && f.checked).length;
         const eligibleCount = fillersWithUser.filter(f => f.hasEndTime && !f.isIdentical).length;
@@ -335,6 +380,32 @@ export async function openFinalizeModal() {
             const selected = fillersWithUser.filter(f => f.hasEndTime && !f.isIdentical && f.checked);
             if (selected.length === 0) return;
 
+            const targetDate = (finalizeDatePicker ? finalizeDatePicker.getValue() : '') || todayStr;
+
+            const now = new Date();
+            const currentMins = now.getHours() * 60 + now.getMinutes();
+            const isTargetToday = targetDate === todayStr;
+
+            const futureEndItems = isTargetToday ? selected.filter(item => {
+                if (!item.filler?.actualEndTime) return false;
+                const parts = String(item.filler.actualEndTime).trim().split(':');
+                if (parts.length < 2) return false;
+                const endMins = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+                return endMins > currentMins;
+            }) : [];
+
+            if (futureEndItems.length > 0) {
+                const names = futureEndItems.map(i => i.filler.name || i.username).join(', ');
+                const confirmed = await showConfirmModal({
+                    title: 'Weet je het zeker?',
+                    message: `Er ${futureEndItems.length === 1 ? 'is' : 'zijn'} ${futureEndItems.length} ${futureEndItems.length === 1 ? 'medewerker' : 'medewerkers'} (${names}) waarvan de eindtijd later is dan de huidige tijd van vandaag. Weet je zeker dat je wilt finaliseren?`,
+                    confirmText: 'Ja, finaliseren',
+                    cancelText: 'Annuleren',
+                    isDanger: false
+                });
+                if (!confirmed) return;
+            }
+
             btnSubmit.disabled = true;
             btnSubmit.style.opacity = '0.7';
             btnSubmit.style.cursor = 'wait';
@@ -352,7 +423,7 @@ export async function openFinalizeModal() {
                         productivity: {
                             productivity: prodPercent,
                             finalized_at: new Date().toISOString(),
-                            date: todayStr,
+                            date: targetDate,
                             shift: {
                                 start: item.filler.from,
                                 planned_end: item.filler.to,
