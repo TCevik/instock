@@ -401,7 +401,7 @@ export async function openFinalizeModal() {
                     message: `Er ${futureEndItems.length === 1 ? 'is' : 'zijn'} ${futureEndItems.length} ${futureEndItems.length === 1 ? 'medewerker' : 'medewerkers'} (${names}) waarvan de eindtijd later is dan de huidige tijd van vandaag. Weet je zeker dat je wilt finaliseren?`,
                     confirmText: 'Ja, finaliseren',
                     cancelText: 'Annuleren',
-                    isDanger: false
+                    isDanger: true
                 });
                 if (!confirmed) return;
             }
