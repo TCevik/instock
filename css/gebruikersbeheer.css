@@ -416,7 +416,7 @@
 
 @media (max-width: 992px) {
     .page-container {
-        padding: 20px 14px;
+        padding: 20px 14px calc(64px + env(safe-area-inset-bottom, 24px)) 14px;
     }
 
     .users-table {

@@ -563,7 +563,7 @@
 
 @media (max-width: 768px) {
     .page-container {
-        padding: 12px 14px 24px 14px !important;
+        padding: 12px 14px calc(64px + env(safe-area-inset-bottom, 24px)) 14px !important;
     }
 
     .dashboard-hero {
