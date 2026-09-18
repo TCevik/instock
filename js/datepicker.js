@@ -125,7 +125,7 @@ export function createDatePicker(containerElement, initialDateStr = '', onSelect
         return `
             <div class="dp-footer">
                 <button type="button" class="dp-action-btn dp-clear-btn">Wissen</button>
-                <button type="button" class="dp-action-btn dp-confirm-btn">Bevestigen</button>
+                <button type="button" class="dp-action-btn dp-today-btn">Vandaag</button>
             </div>
         `;
     }
@@ -133,14 +133,14 @@ export function createDatePicker(containerElement, initialDateStr = '', onSelect
     function bindFooterEvents() {
         dropdown.querySelector('.dp-clear-btn')?.addEventListener('click', (e) => {
             e.stopPropagation();
-            tempDate = null;
             applyDate(null, true);
             closeDropdown();
         });
 
-        dropdown.querySelector('.dp-confirm-btn')?.addEventListener('click', (e) => {
+        dropdown.querySelector('.dp-today-btn')?.addEventListener('click', (e) => {
             e.stopPropagation();
-            applyDate(tempDate, true);
+            const today = new Date();
+            applyDate(today, true);
             closeDropdown();
         });
     }
@@ -209,8 +209,9 @@ export function createDatePicker(containerElement, initialDateStr = '', onSelect
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const day = parseInt(btn.getAttribute('data-day'), 10);
-                tempDate = new Date(year, month, day);
-                renderCalendar();
+                const chosenDate = new Date(year, month, day);
+                applyDate(chosenDate, true);
+                closeDropdown();
             });
         });
 
@@ -347,6 +348,13 @@ export function createDatePicker(containerElement, initialDateStr = '', onSelect
         resetDropdownPosition(dropdown);
     }
 
+    input.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!dropdown.classList.contains('active')) {
+            openDropdown();
+        }
+    });
+
     iconBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         if (dropdown.classList.contains('active')) {
@@ -356,11 +364,18 @@ export function createDatePicker(containerElement, initialDateStr = '', onSelect
         }
     });
 
-    document.addEventListener('click', (e) => {
+    dropdown.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+
+    const handleOutsideClick = (e) => {
         if (!root.contains(e.target)) {
             closeDropdown();
         }
-    });
+    };
+
+    document.addEventListener('click', handleOutsideClick);
+    document.addEventListener('touchend', handleOutsideClick, { passive: true });
 
     return {
         getValue: () => hiddenVal.value,

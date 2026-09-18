@@ -483,23 +483,28 @@
     cursor: pointer;
     box-sizing: border-box;
     transition: background-color 0.2s, color 0.2s;
-}@media (hover: hover) and (pointer: fine) {
+}
+
+@media (hover: hover) and (pointer: fine) {
     .dp-cell:hover:not(:disabled):not(.active) {
-
-    background-color: var(--card-border);
-
-    }
-}@media (hover: hover) and (pointer: fine) {
-    .dp-cell.active,
-.dp-cell.active:hover {
-
-    background-color: var(--accent-color);
-    color: var(--text-color);
-    font-weight: 600;
-
+        background-color: var(--card-border);
     }
 }
 
+@media (hover: hover) and (pointer: fine) {
+    .dp-cell.active,
+    .dp-cell.active:hover {
+        background-color: var(--accent-color);
+        color: var(--text-color);
+        font-weight: 600;
+    }
+}
+
+.dp-cell.active {
+    background-color: var(--accent-color);
+    color: var(--text-color);
+    font-weight: 600;
+}
 
 .dp-cell.today:not(.active) {
     border: 1px solid var(--accent-color);
@@ -531,12 +536,9 @@
     transition: color 0.2s;
 }@media (hover: hover) and (pointer: fine) {
     .dp-action-btn:hover {
-
-    color: var(--text-color);
-
+        color: var(--text-color);
     }
 }
-
 
 .custom-timepicker {
     position: relative;
@@ -574,16 +576,16 @@
     pointer-events: none;
 }
 
-.dp-confirm-btn {
+.dp-confirm-btn,
+.dp-today-btn {
     color: var(--accent-color);
-}@media (hover: hover) and (pointer: fine) {
-    .dp-confirm-btn:hover {
-
-    color: var(--accent-hover);
-
+}
+@media (hover: hover) and (pointer: fine) {
+    .dp-confirm-btn:hover,
+    .dp-today-btn:hover {
+        color: var(--accent-hover);
     }
 }
-
 
 .modal-footer {
     display: flex;
@@ -594,7 +596,7 @@
 }
 
 .modal-btn-secondary {
-    background-color: var(--input-background);
+    background-color: transparent;
     border: 1px solid var(--card-border);
     color: var(--text-color);
     border-radius: 12px;
@@ -606,15 +608,7 @@
     align-items: center;
     justify-content: center;
     transition: background-color 0.2s, border-color 0.2s;
-}@media (hover: hover) and (pointer: fine) {
-    .modal-btn-secondary:hover {
-
-    background-color: var(--card-border);
-    border-color: var(--input-focus);
-
-    }
 }
-
 
 .modal-btn-danger {
     background-color: transparent;
