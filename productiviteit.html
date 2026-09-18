@@ -188,8 +188,8 @@
         </div>
 
         <div class="productivity-overview-row" id="productivityOverviewRow">
-            <div id="topFillersSection" class="top-fillers-section" style="display: none;">
-                <div class="section-title-row">
+            <div id="topFillersSection" class="top-fillers-section collapsed" style="display: none;">
+                <div class="section-title-row" id="topFillersHeader">
                     <div class="section-title-left">
                         <span class="material-icons section-title-icon">leaderboard</span>
                         <div>
@@ -197,17 +197,21 @@
                             <p class="section-subtext" id="topFillersSubtext">Laatste 10 shifts per vuller</p>
                         </div>
                     </div>
-                    <div class="section-title-right" id="topFillersDateFilterWrapper" style="display: none;">
-                        <div class="shifts-date-filter-wrapper">
+                    <span class="material-icons top-fillers-chevron" id="topFillersChevron">expand_more</span>
+                </div>
+                <div id="topFillersUserPreview" class="top-fillers-user-preview" style="display: none;"></div>
+                <div class="top-fillers-body" id="topFillersBody">
+                    <div class="top-fillers-body-inner">
+                        <div class="shifts-date-filter-wrapper" id="topFillersDateFilterWrapper" style="display: none;">
                             <div id="topFillersDatePickerContainer" class="shifts-datepicker-container"></div>
                             <button type="button" id="topFillersDateFilterClearBtn" class="shifts-date-clear-btn" style="display: none;" data-tooltip="Datumfilter wissen">
                                 <span class="material-icons">close</span>
                             </button>
                         </div>
+                        <div id="topFillersList" class="top-fillers-list"></div>
+                        <div id="topFillerUserRank" class="top-filler-user-rank" style="display: none;"></div>
                     </div>
                 </div>
-                <div id="topFillersList" class="top-fillers-list"></div>
-                <div id="topFillerUserRank" class="top-filler-user-rank" style="display: none;"></div>
             </div>
 
             <div id="productivityChartCard" class="productivity-chart-card" style="display: none;">

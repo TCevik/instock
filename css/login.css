@@ -236,22 +236,29 @@ body {
 }
 
 
+
 .btn-icon {
     font-size: 20px;
 }
 
 @media (max-width: 768px) {
     body {
-        padding: env(safe-area-inset-top, 20px) env(safe-area-inset-right, 20px) env(safe-area-inset-bottom, 20px) env(safe-area-inset-left, 20px);
+        padding: 0;
         align-items: stretch;
-        justify-content: center;
+        justify-content: flex-start;
+        min-height: 100dvh;
+        overflow-y: auto;
     }
 
     .login-container {
         max-width: 100%;
-        padding: 32px 20px;
-        border-radius: 20px;
+        min-height: 100dvh;
+        padding: calc(env(safe-area-inset-top, 24px) + 24px) 20px calc(env(safe-area-inset-bottom, 24px) + 24px) 20px;
+        border-radius: 0;
+        border: none;
         box-shadow: none;
+        justify-content: center;
+        gap: 32px;
     }
 
     .login-header h1 {

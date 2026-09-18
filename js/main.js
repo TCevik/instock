@@ -466,7 +466,9 @@ export async function logout() {
     window.addEventListener('beforeunload', (e) => {
         delete e.returnValue;
     }, { capture: true });
-    await supabase.auth.signOut();
+    try {
+        await supabase.auth.signOut();
+    } catch (_) {}
     window.location.replace('login');
 }
 
@@ -559,12 +561,17 @@ async function invokeFn(fnName, options) {
         if (!msg && error.message) {
             msg = error.message;
         }
+        const status = Number(error.context?.status || error.status || 0);
+        const errText = `${error.message || ''} ${msg || ''}`.toLowerCase();
+        if (status === 401 || errText.includes('401') || errText.includes('unauthorized') || errText.includes('jwt') || errText.includes('token') || errText.includes('session')) {
+            if (!isLoginPage()) {
+                logout();
+            }
+            throw new Error('Niet ingelogd of sessie verlopen');
+        }
         if (!msg || msg.includes('non-2xx')) {
-            const status = error.context?.status;
             if (status === 403) {
                 msg = 'Geen toegang voor deze actie';
-            } else if (status === 401) {
-                msg = 'Niet ingelogd of sessie verlopen';
             } else if (status === 404) {
                 msg = 'Functie of gegevens niet gevonden';
             } else {

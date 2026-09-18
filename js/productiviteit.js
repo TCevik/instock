@@ -1,4 +1,4 @@
-import { supabase, showToast, escapeHtml, invokeFn } from './main.js';
+import { supabase, showToast, escapeHtml, invokeFn, logout } from './main.js';
 import { formatDuration, timeToMinutes, getProductivityStatusClass, getProductivityStatusIcon, calculateTaskDuration, calculateShiftWorkMinutes, calculateShiftTotalColli } from './vulplanning/time-utils.js';
 import { createCustomSelect } from './select.js';
 import { createDatePicker, MONTH_NAMES, SHORT_MONTH_NAMES, parseDate } from './datepicker.js';
@@ -38,10 +38,7 @@ async function initProductivityPage() {
     try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user) {
-            if (skeletonEl) skeletonEl.style.display = 'none';
-            if (statsSkeletonEl) statsSkeletonEl.style.display = 'none';
-            if (emptyEl) emptyEl.style.display = 'flex';
-            if (overviewRow) overviewRow.classList.add('no-top-fillers');
+            logout();
             return;
         }
 
@@ -54,6 +51,11 @@ async function initProductivityPage() {
             .maybeSingle();
 
         if (error) {
+            const errStr = String(error?.message || '').toLowerCase();
+            if (error.status === 401 || errStr.includes('401') || errStr.includes('unauthorized') || errStr.includes('jwt')) {
+                logout();
+                return;
+            }
             throw error;
         }
 
@@ -76,6 +78,11 @@ async function initProductivityPage() {
         applyUserProductivity(ownUserData, true);
 
     } catch (err) {
+        const errStr = String(err?.message || '').toLowerCase();
+        if (errStr.includes('niet ingelogd') || errStr.includes('sessie verlopen') || errStr.includes('unauthorized') || errStr.includes('jwt') || errStr.includes('401')) {
+            logout();
+            return;
+        }
         if (skeletonEl) skeletonEl.style.display = 'none';
         if (statsSkeletonEl) statsSkeletonEl.style.display = 'none';
         if (emptyEl) emptyEl.style.display = 'flex';
@@ -172,6 +179,18 @@ async function loadTopFillers(userId, date = selectedScoreboardDate) {
         } else {
             renderTopFillers(topFillers, listEl, userId, isManager);
 
+            const userPreviewEl = document.getElementById('topFillersUserPreview');
+            const ownFiller = topFillers.find(f => f.user_id === userId);
+            const ownRank = ownFiller ? (topFillers.indexOf(ownFiller) + 1) : (data.currentUserRanking ? data.currentUserRanking.rank : null);
+            const ownData = ownFiller || data.currentUserRanking;
+
+            if (userPreviewEl) {
+                userPreviewEl.innerHTML = '';
+                if (ownData && ownRank) {
+                    userPreviewEl.appendChild(createTopFillerCard(ownData, ownRank, true, isManager));
+                }
+            }
+
             const isInList = topFillers.some(f => f.user_id === userId);
             if (userRankEl) {
                 if (!isInList && data.currentUserRanking && data.currentUserRanking.rank) {
@@ -186,11 +205,32 @@ async function loadTopFillers(userId, date = selectedScoreboardDate) {
         }
 
         sectionEl.style.display = 'flex';
+        if (window.innerWidth <= 768 && sectionEl._userToggledCollapsed === undefined) {
+            sectionEl.classList.add('collapsed');
+        }
+
+        const headerRow = sectionEl.querySelector('.section-title-row');
+        if (headerRow && !headerRow._hasToggleListener) {
+            headerRow._hasToggleListener = true;
+            headerRow.addEventListener('click', (e) => {
+                if (window.innerWidth <= 768) {
+                    if (e.target.closest('#topFillersDateFilterWrapper')) return;
+                    sectionEl._userToggledCollapsed = true;
+                    sectionEl.classList.toggle('collapsed');
+                }
+            });
+        }
+
         if (sectionDivider) {
             sectionDivider.style.display = (myShiftsSection && myShiftsSection.style.display !== 'none') ? 'block' : 'none';
         }
         return data;
-    } catch (_) {
+    } catch (err) {
+        const errStr = String(err?.message || '').toLowerCase();
+        if (errStr.includes('niet ingelogd') || errStr.includes('sessie verlopen') || errStr.includes('unauthorized') || errStr.includes('jwt') || errStr.includes('401')) {
+            logout();
+            return null;
+        }
         if (!date) {
             sectionEl.style.display = 'none';
             if (userRankEl) userRankEl.style.display = 'none';
@@ -837,8 +877,8 @@ function renderProductivityChart(entries) {
     const width = Math.max(300, Math.floor(container.clientWidth || 600));
     const height = 240;
     const isMobile = width < 480;
-    const padLeft = isMobile ? 36 : 46;
-    const padRight = isMobile ? 16 : 32;
+    const padLeft = isMobile ? 46 : 48;
+    const padRight = isMobile ? 24 : 36;
     const padTop = isMobile ? 26 : 32;
     const padBottom = isMobile ? 36 : 42;
     const chartW = width - padLeft - padRight;
@@ -918,11 +958,11 @@ function renderProductivityChart(entries) {
             </defs>
 
             <line x1="${padLeft}" y1="${bottomY.toFixed(1)}" x2="${width - padRight}" y2="${bottomY.toFixed(1)}" stroke="var(--chart-grid-line)" stroke-width="1"/>
-            <text x="${padLeft - 8}" y="${(bottomY + 4).toFixed(1)}" text-anchor="end" fill="var(--text-color-muted)" font-size="10">${minVal}%</text>
+            <text x="${padLeft - 6}" y="${(bottomY + 4).toFixed(1)}" text-anchor="end" fill="var(--text-color-muted)" font-size="10">${minVal}%</text>
 
             ${minVal < 100 && maxVal > 100 ? `
             <line x1="${padLeft}" y1="${targetY.toFixed(1)}" x2="${width - padRight}" y2="${targetY.toFixed(1)}" stroke="var(--chart-target-line)" stroke-width="1.5" stroke-dasharray="5,4"/>
-            <text x="${padLeft - 8}" y="${(targetY + 4).toFixed(1)}" text-anchor="end" fill="var(--accent-color)" font-size="10.5" font-weight="700">100%</text>
+            <text x="${padLeft - 6}" y="${(targetY + 4).toFixed(1)}" text-anchor="end" fill="var(--accent-color)" font-size="10.5" font-weight="700">100%</text>
             ` : ''}
 
             <path d="${areaD}" fill="url(#prodChartAreaGrad)"/>
