@@ -609,6 +609,12 @@ function renderTableSkeletons(tbody, cardsContainer, columnsCount = 7, rowsCount
     }
 }
 
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+}
+
 export { supabase, initModal, showModal, closeModal, showConfirmModal, showPromptModal, initToast, showToast, openChangePasswordModal, isPermissionError, escapeHtml, initGlobalTooltips, parseUserDisplay, invokeFn, renderTableSkeletons };
 
 
