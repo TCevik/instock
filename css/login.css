@@ -73,7 +73,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
 }
 
 .logo-row {
@@ -83,31 +83,56 @@ body {
     gap: 12px;
 }
 
+.login-logo-box {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background-color: var(--vullen-ghost-bg);
+    border: 1px solid rgba(101, 141, 36, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
 .logo-icon {
-    font-size: 36px;
+    font-size: 26px;
     color: var(--accent-color);
 }
 
+.logo-brand-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.logo-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .login-header h1 {
-    font-size: 30px;
+    font-size: 24px;
     font-weight: 800;
-    letter-spacing: 1.5px;
+    letter-spacing: 1px;
     color: var(--text-color);
+    line-height: 1;
 }
 
 .login-beta-badge {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.5px;
-    padding: 3px 8px;
-    border-radius: 6px;
+    padding: 2px 7px;
+    border-radius: 5px;
     background-color: var(--beta-badge-login-bg);
     color: var(--beta-badge-login-text);
     text-transform: uppercase;
 }
 
 .login-header p {
-    font-size: 14px;
+    font-size: 13.5px;
     color: var(--text-color-muted);
     font-weight: 400;
 }
@@ -227,15 +252,13 @@ body {
     margin-top: 4px;
     min-height: 54px;
     transition: background-color 0.2s;
-}@media (hover: hover) and (pointer: fine) {
-    #loginForm button[type="submit"]:hover {
-
-    background-color: var(--accent-hover);
-
-    }
 }
 
-
+@media (hover: hover) and (pointer: fine) {
+    #loginForm button[type="submit"]:hover {
+        background-color: var(--accent-hover);
+    }
+}
 
 .btn-icon {
     font-size: 20px;
@@ -248,34 +271,101 @@ body {
         justify-content: flex-start;
         min-height: 100dvh;
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        background-color: var(--background-color);
+    }
+
+    .bg-shapes {
+        display: none;
     }
 
     .login-container {
         max-width: 100%;
+        width: 100%;
+        margin: 0;
         min-height: 100dvh;
-        padding: calc(env(safe-area-inset-top, 24px) + 24px) 20px calc(env(safe-area-inset-bottom, 24px) + 24px) 20px;
+        padding: calc(env(safe-area-inset-top, 16px) + 24px) 20px calc(env(safe-area-inset-bottom, 16px) + 24px) 20px;
         border-radius: 0;
         border: none;
+        background: transparent;
         box-shadow: none;
-        justify-content: center;
-        gap: 32px;
+        justify-content: flex-start;
+        gap: 28px;
+    }
+
+    .login-header {
+        align-items: flex-start;
+        text-align: left;
+        gap: 8px;
+    }
+
+    .logo-row {
+        justify-content: flex-start;
+        gap: 12px;
+    }
+
+    .login-logo-box {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+    }
+
+    .logo-icon {
+        font-size: 24px;
     }
 
     .login-header h1 {
-        font-size: 26px;
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
     }
 
     .login-header p {
         font-size: 13px;
+        line-height: 1.4;
+        color: var(--text-color-muted);
+    }
+
+    #loginForm {
+        gap: 16px;
+    }
+
+    .form-group {
+        gap: 6px;
+    }
+
+    .form-group label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.6px;
     }
 
     .input-wrapper input {
-        padding: 14px 14px 14px 44px;
-        font-size: 16px;
+        padding: 15px 16px 15px 44px;
+        font-size: 15px;
+        border-radius: 12px;
+    }
+
+    .input-icon {
+        left: 14px;
+        font-size: 20px;
+    }
+
+    .checkbox-group {
+        margin-top: 2px;
+        gap: 10px;
+    }
+
+    .checkbox-group label {
+        font-size: 13px;
+        line-height: 1.35;
     }
 
     #loginForm button[type="submit"] {
-        padding: 14px;
-        font-size: 16px;
+        margin-top: 10px;
+        padding: 15px;
+        font-size: 15px;
+        min-height: 52px;
+        border-radius: 12px;
     }
 }
