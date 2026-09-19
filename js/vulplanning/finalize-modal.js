@@ -5,6 +5,118 @@ import { findExactUser, findUserByUsername } from './rooster.js';
 import { createDatePicker } from '../datepicker.js';
 
 export async function openFinalizeModal() {
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    function renderSkeletonWorkers(count = 4) {
+        return Array.from({ length: count }).map(() => `
+            <div class="finalize-item finalize-skeleton">
+                <div class="finalize-item-left">
+                    <div class="skeleton" style="width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0;"></div>
+                    <div class="finalize-user-details" style="gap: 6px;">
+                        <div class="finalize-user-header" style="gap: 8px;">
+                            <div class="skeleton" style="width: 120px; height: 14px; border-radius: 4px;"></div>
+                            <div class="skeleton" style="width: 70px; height: 12px; border-radius: 4px;"></div>
+                        </div>
+                        <div class="finalize-user-sub">
+                            <div class="skeleton" style="width: 180px; height: 11px; border-radius: 4px;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="finalize-item-right" style="gap: 8px;">
+                    <div class="skeleton" style="width: 55px; height: 22px; border-radius: 6px;"></div>
+                    <div class="skeleton" style="width: 70px; height: 22px; border-radius: 6px;"></div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    const modalContent = `
+        <div class="modal-header" style="display: flex; flex-direction: row; align-items: center; gap: 14px; padding-right: 28px;">
+            <div class="finalize-modal-icon-wrap">
+                <span class="material-icons" style="font-size: 22px;">fact_check</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+                <h2 class="modal-title" style="font-size: 18px;">Productiviteiten Finaliseren</h2>
+                <p class="modal-subtitle" style="font-size: 12px;">Sla productiviteit en taakstatistieken op naar gebruikersprofielen</p>
+            </div>
+        </div>
+
+        <div class="finalize-info-banner">
+            <span class="material-icons">info</span>
+            <span id="finalize-banner-text">Statussen ophalen...</span>
+        </div>
+
+        <div class="finalize-controls-row">
+            <label class="finalize-select-all-label">
+                <input type="checkbox" id="finalize-select-all" disabled />
+                <span>Alles selecteren</span>
+            </label>
+            <div class="finalize-controls-right">
+                <label class="finalize-date-label">Datum:</label>
+                <div id="finalizeDatePickerContainer"></div>
+                <span class="finalize-count-indicator" id="finalize-selected-count">0 geselecteerd</span>
+            </div>
+        </div>
+
+        <div class="finalize-list" id="finalize-list-container">
+            ${renderSkeletonWorkers(Math.max(3, (planningState.fillers || []).length || 4))}
+        </div>
+
+        <div class="modal-footer" style="margin-top: 14px;">
+            <button type="button" class="modal-btn-secondary" id="btn-cancel-finalize">Annuleren</button>
+            <button type="button" class="btn" id="btn-submit-finalize" disabled style="opacity: 0.5; cursor: not-allowed;">
+                <span class="material-icons btn-icon">check</span>
+                <span id="btn-finalize-text">Finaliseren</span>
+            </button>
+        </div>
+    `;
+
+    const overlay = await showModal(modalContent, 'finalize-modal-overlay');
+    if (overlay && !overlay.classList.contains('finalize-modal-overlay')) {
+        overlay.classList.add('finalize-modal-overlay');
+    }
+
+    const listContainer = document.getElementById('finalize-list-container');
+    const selectAllCheckbox = document.getElementById('finalize-select-all');
+    const selectedCountLabel = document.getElementById('finalize-selected-count');
+    const btnSubmit = document.getElementById('btn-submit-finalize');
+    const btnFinalizeText = document.getElementById('btn-finalize-text');
+    const btnCancel = document.getElementById('btn-cancel-finalize');
+    const bannerText = document.getElementById('finalize-banner-text');
+    const datePickerContainer = document.getElementById('finalizeDatePickerContainer');
+
+    if (btnCancel) {
+        btnCancel.addEventListener('click', () => closeModal());
+    }
+
+    let finalizeDatePicker = null;
+    if (datePickerContainer) {
+        finalizeDatePicker = createDatePicker(datePickerContainer, todayStr, async (selectedDateVal) => {
+            if (!selectedDateVal) return;
+            if (listContainer) {
+                listContainer.innerHTML = renderSkeletonWorkers(Math.max(2, fillersWithUser.length || 3));
+            }
+            if (selectAllCheckbox) selectAllCheckbox.disabled = true;
+            if (btnSubmit) {
+                btnSubmit.disabled = true;
+                btnSubmit.style.opacity = '0.5';
+                btnSubmit.style.cursor = 'not-allowed';
+            }
+            if (bannerText) {
+                bannerText.textContent = 'Statussen bijwerken...';
+            }
+
+            await recalculateStatusesForDate(selectedDateVal);
+            applySortingAndCounts();
+            if (listContainer) {
+                listContainer.innerHTML = renderWorkersList(fillersWithUser);
+                bindItemClicks();
+            }
+            updateUiState();
+        });
+    }
+
     const fillersWithUser = [];
 
     const { data: dbUsers } = await supabase
@@ -17,9 +129,6 @@ export async function openFinalizeModal() {
             dbUserMap.set(u.username.toLowerCase().trim(), u);
         }
     });
-
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
     (planningState.fillers || []).forEach(filler => {
         let uname = filler.username;
@@ -103,75 +212,33 @@ export async function openFinalizeModal() {
         });
     }
 
-    await recalculateStatusesForDate(todayStr);
+    function applySortingAndCounts() {
+        fillersWithUser.sort((a, b) => {
+            const aReady = a.hasEndTime && !a.isIdentical;
+            const bReady = b.hasEndTime && !b.isIdentical;
+            if (aReady && !bReady) return -1;
+            if (!aReady && bReady) return 1;
+            if (a.hasEndTime && !b.hasEndTime) return -1;
+            if (!a.hasEndTime && b.hasEndTime) return 1;
+            return (a.filler.name || '').localeCompare(b.filler.name || '');
+        });
 
-    if (fillersWithUser.length === 0) {
-        showToast('error', 'Geen medewerkers met een gekoppelde gebruikersnaam gevonden in de planning.');
-        return;
+        const readyCount = fillersWithUser.filter(f => f.hasEndTime && !f.isIdentical).length;
+        const overwriteCount = fillersWithUser.filter(f => f.hasEndTime && f.isOverwrite).length;
+        const identicalCount = fillersWithUser.filter(f => f.hasEndTime && f.isIdentical).length;
+
+        let bannerExtra = '';
+        if (overwriteCount > 0 || identicalCount > 0) {
+            const parts = [];
+            if (overwriteCount > 0) parts.push(`${overwriteCount} overschrijven`);
+            if (identicalCount > 0) parts.push(`${identicalCount} al identiek`);
+            bannerExtra = ` (${parts.join(', ')})`;
+        }
+
+        if (bannerText) {
+            bannerText.textContent = `${readyCount} van de ${fillersWithUser.length} medewerkers gereed om te finaliseren${bannerExtra}`;
+        }
     }
-
-    fillersWithUser.sort((a, b) => {
-        const aReady = a.hasEndTime && !a.isIdentical;
-        const bReady = b.hasEndTime && !b.isIdentical;
-        if (aReady && !bReady) return -1;
-        if (!aReady && bReady) return 1;
-        if (a.hasEndTime && !b.hasEndTime) return -1;
-        if (!a.hasEndTime && b.hasEndTime) return 1;
-        return (a.filler.name || '').localeCompare(b.filler.name || '');
-    });
-
-    const readyCount = fillersWithUser.filter(f => f.hasEndTime && !f.isIdentical).length;
-    const overwriteCount = fillersWithUser.filter(f => f.hasEndTime && f.isOverwrite).length;
-    const identicalCount = fillersWithUser.filter(f => f.hasEndTime && f.isIdentical).length;
-
-    let bannerExtra = '';
-    if (overwriteCount > 0 || identicalCount > 0) {
-        const parts = [];
-        if (overwriteCount > 0) parts.push(`${overwriteCount} overschrijven`);
-        if (identicalCount > 0) parts.push(`${identicalCount} al identiek`);
-        bannerExtra = ` (${parts.join(', ')})`;
-    }
-
-    const modalContent = `
-        <div class="modal-header" style="display: flex; flex-direction: row; align-items: center; gap: 14px; padding-right: 28px;">
-            <div class="finalize-modal-icon-wrap">
-                <span class="material-icons" style="font-size: 22px;">fact_check</span>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 2px;">
-                <h2 class="modal-title" style="font-size: 18px;">Productiviteiten Finaliseren</h2>
-                <p class="modal-subtitle" style="font-size: 12px;">Sla productiviteit en taakstatistieken op naar gebruikersprofielen</p>
-            </div>
-        </div>
-
-        <div class="finalize-info-banner">
-            <span class="material-icons">info</span>
-            <span id="finalize-banner-text">${readyCount} van de ${fillersWithUser.length} medewerkers gereed om te finaliseren${bannerExtra}</span>
-        </div>
-
-        <div class="finalize-controls-row">
-            <label class="finalize-select-all-label">
-                <input type="checkbox" id="finalize-select-all" ${readyCount > 0 ? 'checked' : ''} />
-                <span>Alles selecteren</span>
-            </label>
-            <div class="finalize-controls-right">
-                <label class="finalize-date-label">Datum:</label>
-                <div id="finalizeDatePickerContainer"></div>
-                <span class="finalize-count-indicator" id="finalize-selected-count">0 geselecteerd</span>
-            </div>
-        </div>
-
-        <div class="finalize-list" id="finalize-list-container">
-            ${renderWorkersList(fillersWithUser)}
-        </div>
-
-        <div class="modal-footer" style="margin-top: 14px;">
-            <button type="button" class="modal-btn-secondary" id="btn-cancel-finalize">Annuleren</button>
-            <button type="button" class="btn" id="btn-submit-finalize">
-                <span class="material-icons btn-icon">check</span>
-                <span id="btn-finalize-text">Finaliseren</span>
-            </button>
-        </div>
-    `;
 
     function renderWorkersList(items) {
         return items.map((item, idx) => {
@@ -255,59 +322,21 @@ export async function openFinalizeModal() {
         }).join('');
     }
 
-    const overlay = await showModal(modalContent, 'finalize-modal-overlay');
-    if (overlay && !overlay.classList.contains('finalize-modal-overlay')) {
-        overlay.classList.add('finalize-modal-overlay');
+    await recalculateStatusesForDate(todayStr);
+
+    if (fillersWithUser.length === 0) {
+        closeModal();
+        showToast('error', 'Geen medewerkers met een gekoppelde gebruikersnaam gevonden in de planning.');
+        return;
     }
 
-    const listContainer = document.getElementById('finalize-list-container');
-    const selectAllCheckbox = document.getElementById('finalize-select-all');
-    const selectedCountLabel = document.getElementById('finalize-selected-count');
-    const btnSubmit = document.getElementById('btn-submit-finalize');
-    const btnFinalizeText = document.getElementById('btn-finalize-text');
-    const btnCancel = document.getElementById('btn-cancel-finalize');
+    applySortingAndCounts();
 
-    const datePickerContainer = document.getElementById('finalizeDatePickerContainer');
-    let finalizeDatePicker = null;
-    if (datePickerContainer) {
-        finalizeDatePicker = createDatePicker(datePickerContainer, todayStr, async (selectedDateVal) => {
-            if (!selectedDateVal) return;
-            await recalculateStatusesForDate(selectedDateVal);
-
-            fillersWithUser.sort((a, b) => {
-                const aReady = a.hasEndTime && !a.isIdentical;
-                const bReady = b.hasEndTime && !b.isIdentical;
-                if (aReady && !bReady) return -1;
-                if (!aReady && bReady) return 1;
-                if (a.hasEndTime && !b.hasEndTime) return -1;
-                if (!a.hasEndTime && b.hasEndTime) return 1;
-                return (a.filler.name || '').localeCompare(b.filler.name || '');
-            });
-
-            const readyCount = fillersWithUser.filter(f => f.hasEndTime && !f.isIdentical).length;
-            const overwriteCount = fillersWithUser.filter(f => f.hasEndTime && f.isOverwrite).length;
-            const identicalCount = fillersWithUser.filter(f => f.hasEndTime && f.isIdentical).length;
-
-            let bannerExtra = '';
-            if (overwriteCount > 0 || identicalCount > 0) {
-                const parts = [];
-                if (overwriteCount > 0) parts.push(`${overwriteCount} overschrijven`);
-                if (identicalCount > 0) parts.push(`${identicalCount} al identiek`);
-                bannerExtra = ` (${parts.join(', ')})`;
-            }
-
-            const bannerText = document.getElementById('finalize-banner-text');
-            if (bannerText) {
-                bannerText.textContent = `${readyCount} van de ${fillersWithUser.length} medewerkers gereed om te finaliseren${bannerExtra}`;
-            }
-
-            if (listContainer) {
-                listContainer.innerHTML = renderWorkersList(fillersWithUser);
-                bindItemClicks();
-            }
-            updateUiState();
-        });
+    if (listContainer) {
+        listContainer.innerHTML = renderWorkersList(fillersWithUser);
+        bindItemClicks();
     }
+    updateUiState();
 
     function updateUiState() {
         const checkedCount = fillersWithUser.filter(f => f.hasEndTime && !f.isIdentical && f.checked).length;
@@ -330,8 +359,6 @@ export async function openFinalizeModal() {
             selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < eligibleCount;
         }
     }
-
-    updateUiState();
 
     if (selectAllCheckbox) {
         selectAllCheckbox.addEventListener('change', () => {
@@ -367,12 +394,6 @@ export async function openFinalizeModal() {
                 updateUiState();
             });
         });
-    }
-
-    bindItemClicks();
-
-    if (btnCancel) {
-        btnCancel.addEventListener('click', () => closeModal());
     }
 
     if (btnSubmit) {

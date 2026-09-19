@@ -817,6 +817,11 @@
     cursor: not-allowed;
 }
 
+.finalize-item.finalize-skeleton {
+    cursor: default;
+    pointer-events: none;
+}
+
 .finalize-item-left {
     display: flex;
     align-items: center;

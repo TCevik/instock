@@ -261,26 +261,32 @@
 
     .print-task-pill.type-vullen {
         border-color: var(--accent-color);
+        background-color: var(--vullen-ghost-bg);
     }
 
     .print-task-pill.type-spiegelen {
         border-color: var(--warning-color);
+        background-color: var(--spiegelen-ghost-bg);
     }
 
     .print-task-pill.type-restanten {
         border-color: var(--purple-color);
+        background-color: var(--restanten-ghost-bg);
     }
 
     .print-task-pill.type-pauze {
         border-color: var(--pauze-color);
+        background-color: var(--pauze-bg);
     }
 
     .print-task-pill.type-overige {
         border-color: var(--info-color);
+        background-color: var(--overige-ghost-bg);
     }
 
     .print-task-pill.is-helper {
         border-color: var(--helper-color);
+        background-color: var(--helper-bg);
     }
 
     .print-task-pill.is-combo-trio {
