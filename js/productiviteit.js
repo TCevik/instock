@@ -153,7 +153,7 @@ async function loadTopFillers(userId, date = selectedScoreboardDate) {
             if (date) {
                 headingEl.textContent = 'Ranglijst';
             } else {
-                headingEl.textContent = topFillers.length > 5 ? 'Ranglijst Vullers' : 'Top 5 Vullers';
+                headingEl.textContent = topFillers.length > 10 ? 'Ranglijst Vullers' : 'Top 10 Vullers';
             }
         }
 
