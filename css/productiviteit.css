@@ -171,6 +171,7 @@
     flex-direction: column;
     gap: 16px;
     width: 100%;
+    margin-top: 18px;
     animation: fadeIn 0.25s ease;
 }
 
@@ -285,7 +286,13 @@
 }
 
 .top-fillers-section .shifts-datepicker-container {
-    width: 160px;
+    width: 150px;
+}
+
+.top-fillers-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .productivity-chart-card {
@@ -1261,6 +1268,41 @@
         -webkit-user-select: none;
         touch-action: manipulation;
         gap: 12px;
+    }
+
+    .top-fillers-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .top-fillers-header-actions .shifts-date-filter-wrapper {
+        width: auto !important;
+        flex: none !important;
+    }
+
+    .top-fillers-header-actions .shifts-datepicker-container {
+        width: 130px !important;
+        flex: none !important;
+    }
+
+    .top-fillers-header-actions .datepicker-input {
+        height: 36px !important;
+        padding: 6px 30px 6px 10px !important;
+        font-size: 12px !important;
+    }
+
+    .top-fillers-header-actions .datepicker-icon-btn {
+        top: 4px !important;
+        right: 4px !important;
+        width: 26px !important;
+        height: 26px !important;
+    }
+
+    .top-fillers-header-actions .shifts-date-clear-btn {
+        width: 36px !important;
+        height: 36px !important;
     }
 
     .top-fillers-chevron {

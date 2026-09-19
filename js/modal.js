@@ -14,8 +14,38 @@ export async function initModal() {
     ensureStyles();
 }
 
+function getMainModalButton(overlay) {
+    if (!overlay) return null;
+    const footer = overlay.querySelector('.modal-footer');
+    if (footer) {
+        const btns = Array.from(footer.querySelectorAll('button:not([disabled]):not(.modal-close-btn), input[type="button"]:not([disabled]), input[type="submit"]:not([disabled])'))
+            .filter(el => el.offsetParent !== null || el.offsetWidth > 0 || el.offsetHeight > 0 || getComputedStyle(el).display !== 'none');
+        if (btns.length > 0) {
+            return btns[btns.length - 1];
+        }
+    }
+    const allBtns = Array.from(overlay.querySelectorAll('.modal-container button:not(.modal-close-btn):not([disabled])'))
+        .filter(el => el.offsetParent !== null || el.offsetWidth > 0 || el.offsetHeight > 0 || getComputedStyle(el).display !== 'none');
+    if (allBtns.length > 0) {
+        return allBtns[allBtns.length - 1];
+    }
+    return null;
+}
+
+function focusModalMainButton(overlay) {
+    if (!overlay) return;
+    const mainBtn = getMainModalButton(overlay);
+    if (mainBtn) {
+        mainBtn.focus();
+    }
+}
+
 export async function showModal(contentHtml, extraClass = '') {
     ensureStyles();
+
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+    }
 
     const zIndex = BASE_Z_INDEX + modalStack.length * 10;
     const overlay = document.createElement('div');
@@ -45,7 +75,14 @@ export async function showModal(contentHtml, extraClass = '') {
     requestAnimationFrame(() => {
         overlay.classList.add('active');
         overlay.setAttribute('aria-hidden', 'false');
+        focusModalMainButton(overlay);
     });
+
+    setTimeout(() => {
+        if (!overlay.contains(document.activeElement) || document.activeElement === overlay || document.activeElement === container) {
+            focusModalMainButton(overlay);
+        }
+    }, 50);
 
     const closeBtn = overlay.querySelector('.modal-close-btn');
     if (closeBtn) {
@@ -98,6 +135,8 @@ export function closeModal(targetOverlay = null) {
 
     if (modalStack.length === 0) {
         document.body.style.overflow = '';
+    } else {
+        focusModalMainButton(modalStack[modalStack.length - 1]);
     }
 }
 
@@ -179,8 +218,29 @@ export function showPromptModal({ title = 'Invoer', subtitle = '', placeholder =
 }
 
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modalStack.length > 0) {
-        closeModal();
+    if (modalStack.length === 0) return;
+    const currentOverlay = modalStack[modalStack.length - 1];
+
+    if (e.key === 'Escape') {
+        closeModal(currentOverlay);
+        return;
+    }
+
+    if (e.key === 'Enter') {
+        const activeEl = document.activeElement;
+        const activeTag = activeEl ? activeEl.tagName.toLowerCase() : '';
+        if (activeTag === 'textarea') return;
+        if (activeTag === 'button' || (activeEl && activeEl.getAttribute('role') === 'button')) return;
+        if (activeTag === 'input') {
+            const form = activeEl.closest('form');
+            if (form) return;
+        }
+
+        const targetBtn = getMainModalButton(currentOverlay);
+        if (targetBtn) {
+            e.preventDefault();
+            targetBtn.click();
+        }
     }
 });
 

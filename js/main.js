@@ -7,9 +7,19 @@ const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000;
 const INACTIVITY_WARNING_MS = INACTIVITY_TIMEOUT_MS - 60 * 1000;
 const LAST_ACTIVITY_KEY = 'instock_last_activity';
 let inactivityWarningShown = false;
+let inactivityModalOverlay = null;
+
+function dismissInactivityWarning() {
+    if (inactivityWarningShown && inactivityModalOverlay) {
+        closeModal(inactivityModalOverlay);
+        inactivityModalOverlay = null;
+        inactivityWarningShown = false;
+    }
+}
 
 function recordActivity() {
     localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+    dismissInactivityWarning();
 }
 
 function isLoginPage() {
@@ -36,6 +46,7 @@ function checkInactivity() {
                 cancelText: 'Uitloggen',
                 isDanger: false
             }).then((confirmed) => {
+                inactivityModalOverlay = null;
                 inactivityWarningShown = false;
                 if (confirmed) {
                     recordActivity();
@@ -43,6 +54,9 @@ function checkInactivity() {
                     logout();
                 }
             });
+            setTimeout(() => {
+                inactivityModalOverlay = Array.from(document.querySelectorAll('.modal-overlay')).find(el => el.textContent.includes('Ben je er nog?')) || document.querySelector('.modal-overlay.active');
+            }, 10);
         }
     }
 }
@@ -55,7 +69,7 @@ function initInactivityTracker() {
     let lastRecorded = 0;
     const updateThrottled = () => {
         const now = Date.now();
-        if (now - lastRecorded > 2000) {
+        if (now - lastRecorded > 2000 || inactivityWarningShown) {
             lastRecorded = now;
             recordActivity();
         }
