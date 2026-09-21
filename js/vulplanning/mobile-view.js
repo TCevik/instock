@@ -11,6 +11,13 @@ import {
 } from "./time-utils.js";
 import { triggerAutoSave } from "./storage.js";
 import { escapeHtml } from "../main.js";
+import { sortFillersByNameAsc } from "./filler-sort.js";
+
+const expandedFillerIds = new Set();
+
+export function resetMobileExpandedFillers() {
+  expandedFillerIds.clear();
+}
 
 export function renderMobilePlanningView(container) {
   if (!container) return;
@@ -27,13 +34,7 @@ export function renderMobilePlanningView(container) {
     return;
   }
 
-  const sortedFillers = [...planningState.fillers].sort((a, b) => {
-    const aCount = (planningState.assignedTasks[a.id] || []).length;
-    const bCount = (planningState.assignedTasks[b.id] || []).length;
-    if (aCount === 0 && bCount > 0) return 1;
-    if (aCount > 0 && bCount === 0) return -1;
-    return 0;
-  });
+  const sortedFillers = [...planningState.fillers].sort(sortFillersByNameAsc);
 
   container.innerHTML = sortedFillers
     .map((filler) => {
@@ -55,6 +56,9 @@ export function renderMobilePlanningView(container) {
       const prodResult = stats.prodResult;
       const prodText = prodResult ? `Prod: ${prodResult.percent}%` : "";
       const prodClass = prodResult ? prodResult.statusClass : "";
+
+      const isExpanded = expandedFillerIds.has(String(filler.id));
+      const collapseClass = isExpanded ? "" : "collapsed";
 
       let currentBlockStartMins = shiftStart >= 0 ? shiftStart : 0;
       const tasksHtml =
@@ -92,8 +96,8 @@ export function renderMobilePlanningView(container) {
               .join("");
 
       return `
-            <div class="mobile-worker-card" data-filler-id="${filler.id}">
-                <div class="mobile-worker-card-header">
+            <div class="mobile-worker-card ${collapseClass}" data-filler-id="${filler.id}">
+                <div class="mobile-worker-card-header" role="button" tabindex="0" aria-expanded="${isExpanded}">
                     <div class="mobile-worker-identity">
                         <div class="mobile-worker-name">${escapeHtml(filler.name || "Medewerker")}</div>
                         <div class="mobile-worker-shift">
@@ -105,6 +109,7 @@ export function renderMobilePlanningView(container) {
                             <span>Totaal: ${formatDuration(totalAssignedMins)} / ${formatDuration(targetShiftDuration)}</span>
                         </div>
                     </div>
+                    <span class="material-icons mobile-worker-chevron">expand_more</span>
                 </div>
 
                 <div class="mobile-prod-box">
@@ -126,13 +131,17 @@ export function renderMobilePlanningView(container) {
                     </div>
                 </div>
 
-                <div class="mobile-worker-tasks-section">
-                    <div class="mobile-tasks-heading">
-                        <span>Taken (${assigned.length})</span>
-                        <span class="mobile-tasks-total-work">${formatDuration(workAssignedMins)} werk</span>
-                    </div>
-                    <div class="mobile-worker-tasks-list">
-                        ${tasksHtml}
+                <div class="mobile-worker-tasks-body">
+                    <div class="mobile-worker-tasks-body-inner">
+                        <div class="mobile-worker-tasks-section">
+                            <div class="mobile-tasks-heading">
+                                <span>Taken (${assigned.length})</span>
+                                <span class="mobile-tasks-total-work">${formatDuration(workAssignedMins)} werk</span>
+                            </div>
+                            <div class="mobile-worker-tasks-list">
+                                ${tasksHtml}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -146,6 +155,31 @@ export function renderMobilePlanningView(container) {
       (f) => String(f.id) === String(fillerId),
     );
     if (!filler) return;
+
+    const header = card.querySelector(".mobile-worker-card-header");
+    if (header) {
+      const toggleCard = (e) => {
+        if (e.target.closest("input, button, a, select")) return;
+        const isCurrentlyCollapsed = card.classList.contains("collapsed");
+        if (isCurrentlyCollapsed) {
+          card.classList.remove("collapsed");
+          expandedFillerIds.add(String(filler.id));
+          header.setAttribute("aria-expanded", "true");
+        } else {
+          card.classList.add("collapsed");
+          expandedFillerIds.delete(String(filler.id));
+          header.setAttribute("aria-expanded", "false");
+        }
+      };
+
+      header.addEventListener("click", toggleCard);
+      header.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toggleCard(e);
+        }
+      });
+    }
 
     const assigned = planningState.assignedTasks[filler.id] || [];
     const timeInput = card.querySelector(".mobile-prod-input");

@@ -944,8 +944,8 @@ export function exportTopFillersA4(topFillers, options = {}) {
                 <span>Geweldige prestatie van het hele team! Blijf knallen!</span>
             </div>
             <div class="footer-brand">
-                <div>InStock Vulplanning</div>
-                <div>Geprint voor de winkelkantine</div>
+                <div>Gegevens uit inStock Vulplanning</div>
+                <div>Ga nu naar instock.tctam.nl en log in om het live scorebord te bekijken!</div>
             </div>
         </footer>
     </div>

@@ -21,54 +21,62 @@
     <div class="page-container">
       <div class="page-header-row">
         <div class="page-header-title-group">
-          <h1 class="page-title">Mijn Productiviteit</h1>
-          <p class="productivity-subtitle">
+          <h1 class="page-title" id="pageMainTitle">Mijn Productiviteit</h1>
+          <p class="productivity-subtitle" id="pageSubtitle">
             Bekijk je behaalde productiviteit en uitgevoerde paden per shift.
           </p>
         </div>
-        <div class="productivity-summary-stats" id="productivityStatsSkeleton">
-          <div class="stat-card">
-            <div class="stat-card-icon-wrapper skeleton"></div>
-            <div class="stat-card-content">
-              <div
-                class="skeleton"
-                style="width: 70px; height: 12px; margin-bottom: 6px"
-              ></div>
-              <div class="skeleton" style="width: 42px; height: 22px"></div>
+        <div class="page-header-right">
+          <div class="page-header-actions" id="pageHeaderActions">
+            <button type="button" id="addShiftBtn" style="display: none">
+              <span class="material-icons">add</span>
+              <span>Dienst toevoegen</span>
+            </button>
+          </div>
+          <div class="productivity-summary-stats" id="productivityStatsSkeleton">
+            <div class="stat-card">
+              <div class="stat-card-icon-wrapper skeleton"></div>
+              <div class="stat-card-content">
+                <div
+                  class="skeleton"
+                  style="width: 70px; height: 12px; margin-bottom: 6px"
+                ></div>
+                <div class="skeleton" style="width: 42px; height: 22px"></div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-icon-wrapper skeleton"></div>
+              <div class="stat-card-content">
+                <div
+                  class="skeleton"
+                  style="width: 76px; height: 12px; margin-bottom: 6px"
+                ></div>
+                <div class="skeleton" style="width: 36px; height: 22px"></div>
+              </div>
             </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-card-icon-wrapper skeleton"></div>
-            <div class="stat-card-content">
-              <div
-                class="skeleton"
-                style="width: 76px; height: 12px; margin-bottom: 6px"
-              ></div>
-              <div class="skeleton" style="width: 36px; height: 22px"></div>
+          <div
+            class="productivity-summary-stats"
+            id="productivitySummaryStats"
+            style="display: none"
+          >
+            <div class="stat-card">
+              <div class="stat-card-icon-wrapper">
+                <span class="material-icons">inventory_2</span>
+              </div>
+              <div class="stat-card-content">
+                <span class="stat-label">Totaal Colli</span>
+                <span class="stat-value" id="statTotalColli">-</span>
+              </div>
             </div>
-          </div>
-        </div>
-        <div
-          class="productivity-summary-stats"
-          id="productivitySummaryStats"
-          style="display: none"
-        >
-          <div class="stat-card">
-            <div class="stat-card-icon-wrapper">
-              <span class="material-icons">inventory_2</span>
-            </div>
-            <div class="stat-card-content">
-              <span class="stat-label">Totaal Colli</span>
-              <span class="stat-value" id="statTotalColli">-</span>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-card-icon-wrapper">
-              <span class="material-icons">calendar_month</span>
-            </div>
-            <div class="stat-card-content">
-              <span class="stat-label">Aantal Shifts</span>
-              <span class="stat-value" id="statTotalDays">-</span>
+            <div class="stat-card">
+              <div class="stat-card-icon-wrapper">
+                <span class="material-icons">calendar_month</span>
+              </div>
+              <div class="stat-card-content">
+                <span class="stat-label">Aantal Shifts</span>
+                <span class="stat-value" id="statTotalDays">-</span>
+              </div>
             </div>
           </div>
         </div>
@@ -531,10 +539,6 @@
             </div>
           </div>
           <div class="section-title-right">
-            <button type="button" id="addShiftBtn" style="display: none">
-              <span class="material-icons">add</span>
-              <span>Dienst toevoegen</span>
-            </button>
             <div class="shifts-date-filter-wrapper">
               <div
                 id="shiftsDatePickerContainer"

@@ -1,0 +1,658 @@
+/* ==========================================================================
+   Accountbeheer Styles - Matching InStock Site Design
+   ========================================================================== */
+
+.account-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* --------------------------------------------------------------------------
+   Profile Hero Banner (Top Section)
+   -------------------------------------------------------------------------- */
+.dashboard-hero.profile-hero {
+  background-color: var(--card-background);
+  border: 1px solid var(--card-border);
+  border-radius: 18px;
+  padding: 24px 28px;
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-hero-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.profile-hero-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 0;
+}
+
+.profile-avatar {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(101, 141, 36, 0.25), rgba(101, 141, 36, 0.08));
+  border: 2px solid var(--accent-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color);
+  font-size: 24px;
+  font-weight: 700;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(101, 141, 36, 0.2);
+}
+
+.profile-hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.profile-hero-header-tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hero-badge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  background-color: var(--vullen-ghost-bg);
+  color: var(--accent-color);
+  border: 1px solid rgba(101, 141, 36, 0.3);
+}
+
+.profile-hero-name-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.profile-full-name {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-color);
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.profile-username-tag {
+  font-size: 14.5px;
+  color: var(--text-color-muted);
+  font-weight: 500;
+}
+
+.profile-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 8px;
+  background-color: var(--vullen-ghost-bg);
+  color: var(--accent-color);
+  border: 1px solid rgba(101, 141, 36, 0.3);
+}
+
+.store-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 8px;
+  background-color: var(--input-background);
+  color: var(--text-color);
+  border: 1px solid var(--card-border);
+}
+
+.store-code-tag {
+  color: var(--accent-color);
+  font-size: 11px;
+  font-weight: 600;
+  padding-left: 6px;
+  border-left: 1px solid var(--card-border);
+  margin-left: 2px;
+}
+
+.birthday-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 8px;
+  background-color: var(--input-background);
+  color: var(--text-color);
+  border: 1px solid var(--card-border);
+}
+
+.profile-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.hero-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--input-background);
+  border: 1px solid var(--card-border);
+  color: var(--text-color);
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hero-action-btn:hover {
+    background-color: var(--card-border);
+    border-color: var(--accent-color);
+  }
+}
+
+.hero-action-btn.danger {
+  color: var(--danger-color);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hero-action-btn.danger:hover {
+    background-color: rgba(239, 68, 68, 0.15);
+    border-color: var(--danger-color);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Account Grid Layout (2 Equal Symmetrical Columns)
+   -------------------------------------------------------------------------- */
+.account-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  align-items: stretch;
+}
+
+/* --------------------------------------------------------------------------
+   InStock Account Cards
+   -------------------------------------------------------------------------- */
+.account-card {
+  background-color: var(--card-background);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  height: 100%;
+}
+
+.account-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.account-card-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.account-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background-color: var(--vullen-ghost-bg);
+  border: 1px solid rgba(101, 141, 36, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-color);
+  flex-shrink: 0;
+}
+
+.account-card-icon .material-icons {
+  font-size: 22px;
+}
+
+.account-card-icon.blue {
+  background-color: var(--overige-ghost-bg);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: var(--info-color);
+}
+
+.account-card-icon.amber {
+  background-color: var(--spiegelen-ghost-bg);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: var(--warning-color);
+}
+
+.account-card-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.account-card-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-color);
+  margin: 0;
+}
+
+.account-card-subtitle {
+  font-size: 13px;
+  color: var(--text-color-muted);
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Passkeys List & Item Styles (Matching InStock Passkeys)
+   -------------------------------------------------------------------------- */
+.passkeys-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+}
+
+.passkey-promo-box {
+  background-color: var(--input-background);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.passkey-promo-texts {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.passkey-promo-texts p {
+  margin: 2px 0 0 0;
+  font-size: 12.5px;
+  color: var(--text-color-muted);
+}
+
+.passkey-promo-texts h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.passkeys-list-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+}
+
+.passkeys-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  color: var(--text-color-muted);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.passkeys-list-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Scrollbar styling */
+.passkeys-list-group::-webkit-scrollbar {
+  width: 6px;
+}
+
+.passkeys-list-group::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+}
+
+.passkeys-list-group::-webkit-scrollbar-thumb {
+  background-color: var(--card-border);
+  border-radius: 4px;
+}
+
+.passkeys-list-group::-webkit-scrollbar-thumb:hover {
+  background-color: var(--accent-color);
+}
+
+.passkey-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background-color: var(--input-background);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  transition: border-color 0.2s;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .passkey-item-row:hover {
+    border-color: var(--input-focus);
+  }
+}
+
+.passkey-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.passkey-item-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background-color: var(--vullen-ghost-bg);
+  border: 1px solid rgba(101, 141, 36, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-color);
+  flex-shrink: 0;
+}
+
+.passkey-item-icon .material-icons {
+  font-size: 20px;
+}
+
+.passkey-item-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.passkey-item-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.passkey-item-date {
+  font-size: 12px;
+  color: var(--text-color-muted);
+}
+
+.passkey-item-delete-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-color-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+  flex-shrink: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .passkey-item-delete-btn:hover {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: var(--danger-color);
+  }
+}
+
+.passkey-item-delete-btn .material-icons {
+  font-size: 18px;
+}
+
+/* --------------------------------------------------------------------------
+   Password Change Form & Requirements
+   -------------------------------------------------------------------------- */
+.account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.input-with-action {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-with-action .modal-input {
+  width: 100%;
+  padding-right: 42px;
+}
+
+.input-toggle-btn {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: var(--text-color-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .input-toggle-btn:hover {
+    color: var(--text-color);
+  }
+}
+
+.input-toggle-btn .material-icons {
+  font-size: 20px;
+}
+
+.password-requirements-card {
+  background-color: var(--input-background);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.req-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-color-muted);
+  transition: color 0.2s;
+}
+
+.req-item.valid {
+  color: var(--accent-color);
+}
+
+.req-item .material-icons {
+  font-size: 16px;
+}
+
+.form-submit-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+/* --------------------------------------------------------------------------
+   Empty State (Matching InStock Empty States)
+   -------------------------------------------------------------------------- */
+.empty-passkeys-state {
+  padding: 28px 20px;
+  text-align: center;
+  background-color: var(--input-background);
+  border: 1px dashed var(--card-border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-color-muted);
+}
+
+.empty-passkeys-state .material-icons {
+  font-size: 32px;
+  opacity: 0.5;
+  margin-bottom: 2px;
+}
+
+.empty-passkeys-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.empty-passkeys-desc {
+  font-size: 12px;
+  color: var(--text-color-muted);
+}
+
+/* --------------------------------------------------------------------------
+   Responsive Mobile Adjustments
+   -------------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  .account-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-hero.profile-hero {
+    padding: 20px;
+    border-radius: 14px;
+  }
+
+  .profile-hero-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .profile-hero-left {
+    gap: 14px;
+  }
+
+  .profile-avatar {
+    width: 56px;
+    height: 56px;
+    font-size: 20px;
+  }
+
+  .profile-full-name {
+    font-size: 20px;
+  }
+
+  .profile-hero-actions {
+    width: 100%;
+  }
+
+  .profile-hero-actions .hero-action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .account-card {
+    padding: 18px 16px;
+    border-radius: 14px;
+  }
+
+  .passkey-promo-box {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .passkey-promo-box .btn {
+    width: 100%;
+  }
+
+  .form-submit-row .btn {
+    width: 100%;
+  }
+}

@@ -127,25 +127,93 @@
     flex-direction: column;
     gap: 10px;
     box-sizing: border-box;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
   }
 
   .mobile-worker-card-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
     gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    border-radius: 6px;
+    transition: opacity 0.15s ease;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .mobile-worker-card-header:hover .mobile-worker-name {
+      color: var(--accent-color);
+    }
+    .mobile-worker-card-header:hover .mobile-worker-chevron {
+      color: var(--text-color);
+    }
+  }
+
+  .mobile-worker-card-header:active {
+    opacity: 0.8;
   }
 
   .mobile-worker-identity {
     display: flex;
     flex-direction: column;
     gap: 3px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .mobile-worker-chevron {
+    font-size: 24px;
+    color: var(--text-color-muted);
+    transition:
+      transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+      color 0.2s ease;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobile-worker-card.collapsed .mobile-worker-chevron {
+    transform: rotate(0deg);
+  }
+
+  .mobile-worker-card:not(.collapsed) .mobile-worker-chevron {
+    transform: rotate(-180deg);
+  }
+
+  .mobile-worker-tasks-body {
+    display: grid !important;
+    grid-template-rows: 1fr;
+    opacity: 1;
+    transition:
+      grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 0.25s ease;
+    width: 100%;
+  }
+
+  .mobile-worker-card.collapsed .mobile-worker-tasks-body {
+    grid-template-rows: 0fr !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .mobile-worker-tasks-body-inner {
+    min-height: 0;
+    overflow: hidden;
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100%;
   }
 
   .mobile-worker-name {
     font-size: 15px;
     font-weight: 700;
     color: var(--text-color);
+    transition: color 0.15s ease;
   }
 
   .mobile-worker-shift {
@@ -250,7 +318,8 @@
     flex-direction: column;
     gap: 6px;
     border-top: 1px solid var(--card-border);
-    padding-top: 8px;
+    padding-top: 10px;
+    margin-top: 2px;
   }
 
   .mobile-tasks-heading {

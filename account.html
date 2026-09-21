@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="css/main.css" />
+    <script type="module" src="js/main.js"></script>
+
+    <link rel="stylesheet" href="css/account.css" />
+    <script type="module" src="js/account.js"></script>
+
+    <title>Accountbeheer - InStock</title>
+  </head>
+  <body>
+    <main class="page-container">
+      <div class="account-dashboard">
+        <!-- Profile Hero Header -->
+        <div class="dashboard-hero profile-hero">
+          <div class="profile-hero-content">
+            <div class="profile-hero-left">
+              <div class="profile-avatar" id="userAvatarText">--</div>
+              <div class="profile-hero-info">
+                <div class="profile-hero-header-tags">
+                  <span class="hero-badge">Account</span>
+                </div>
+                <div class="profile-hero-name-row">
+                  <h1 class="profile-full-name" id="userProfileName">Gebruiker laden...</h1>
+                  <span class="profile-username-tag" id="userProfileHandle">@...</span>
+                </div>
+                <div class="profile-badges">
+                  <span class="role-badge" id="userRoleBadge">
+                    <span class="material-icons" style="font-size: 14px;">badge</span>
+                    <span id="userRoleText">Vuller</span>
+                  </span>
+                  <span class="store-badge" id="userStoreBadge">
+                    <span class="material-icons" style="font-size: 14px;">storefront</span>
+                    <span id="userStoreText">Winkel</span>
+                    <span class="store-code-tag" id="userStoreCodeTag" style="display: none;"></span>
+                  </span>
+                  <span class="birthday-badge" id="userBirthdayBadge" style="display: none;">
+                    <span class="material-icons" style="font-size: 14px; color: var(--warning-color, #f59e0b);">cake</span>
+                    <span id="userBirthdayText">-</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="profile-hero-actions">
+              <button
+                type="button"
+                class="hero-action-btn danger"
+                id="accountPageLogoutBtn"
+              >
+                <span class="material-icons">logout</span>
+                <span>Uitloggen</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2-Column Grid: Passkeys & Password Change Side-by-Side -->
+        <div class="account-grid">
+          <!-- Passkeys Card -->
+          <div class="account-card">
+            <div class="account-card-header">
+              <div class="account-card-header-left">
+                <div class="account-card-icon blue">
+                  <span class="material-icons">fingerprint</span>
+                </div>
+                <div class="account-card-titles">
+                  <h2 class="account-card-title">Passkeys & Biometrie</h2>
+                  <p class="account-card-subtitle">Inloggen met Touch ID, Face ID of apparaatsleutel</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="passkeys-container">
+              <div class="passkey-promo-box">
+                <div class="passkey-promo-texts">
+                  <span class="material-icons" style="font-size: 26px; color: var(--accent-color);">verified_user</span>
+                  <div>
+                    <h4>Snel & Veilig Inloggen</h4>
+                    <p>Koppel je apparaat voor directe en wachtwoordloze toegang.</p>
+                  </div>
+                </div>
+                <button type="button" class="btn" id="addNewPasskeyBtn">
+                  <span class="material-icons btn-icon">add</span>
+                  <span>Passkey toevoegen</span>
+                </button>
+              </div>
+
+              <div class="passkeys-list-wrapper">
+                <div class="passkeys-section-label">Gekoppelde Passkeys</div>
+                <div id="passkeyListGroup" class="passkeys-list-group">
+                  <div class="empty-passkeys-state">
+                    <span class="material-icons">hourglass_empty</span>
+                    <div class="empty-passkeys-title">Passkeys laden...</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Password Change Card -->
+          <div class="account-card">
+            <div class="account-card-header">
+              <div class="account-card-header-left">
+                <div class="account-card-icon amber">
+                  <span class="material-icons">lock_reset</span>
+                </div>
+                <div class="account-card-titles">
+                  <h2 class="account-card-title">Wachtwoord Wijzigen</h2>
+                  <p class="account-card-subtitle">Wijzig het wachtwoord van je account</p>
+                </div>
+              </div>
+            </div>
+
+            <form id="changePasswordPageForm" class="account-form">
+              <div class="form-group">
+                <label for="accOldPassword">Huidig wachtwoord *</label>
+                <div class="input-with-action">
+                  <input
+                    type="password"
+                    id="accOldPassword"
+                    class="modal-input"
+                    placeholder="Voer huidig wachtwoord in"
+                    required
+                    autocomplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    class="input-toggle-btn"
+                    data-target="accOldPassword"
+                    title="Wachtwoord tonen/verbergen"
+                  >
+                    <span class="material-icons">visibility</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="accNewPassword">Nieuw wachtwoord *</label>
+                <div class="input-with-action">
+                  <input
+                    type="password"
+                    id="accNewPassword"
+                    class="modal-input"
+                    placeholder="Voer nieuw wachtwoord in (min. 8 tekens)"
+                    required
+                    autocomplete="new-password"
+                    minlength="8"
+                  />
+                  <button
+                    type="button"
+                    class="input-toggle-btn"
+                    data-target="accNewPassword"
+                    title="Wachtwoord tonen/verbergen"
+                  >
+                    <span class="material-icons">visibility</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="accConfirmPassword">Herhaal nieuw wachtwoord *</label>
+                <div class="input-with-action">
+                  <input
+                    type="password"
+                    id="accConfirmPassword"
+                    class="modal-input"
+                    placeholder="Herhaal het nieuwe wachtwoord"
+                    required
+                    autocomplete="new-password"
+                    minlength="8"
+                  />
+                  <button
+                    type="button"
+                    class="input-toggle-btn"
+                    data-target="accConfirmPassword"
+                    title="Wachtwoord tonen/verbergen"
+                  >
+                    <span class="material-icons">visibility</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="password-requirements-card">
+                <div class="req-item" id="reqMinLength">
+                  <span class="material-icons">radio_button_unchecked</span>
+                  <span>Minimaal 8 tekens</span>
+                </div>
+                <div class="req-item" id="reqMatch">
+                  <span class="material-icons">radio_button_unchecked</span>
+                  <span>Wachtwoorden komen overeen</span>
+                </div>
+                <div class="req-item" id="reqDiff">
+                  <span class="material-icons">radio_button_unchecked</span>
+                  <span>Verschilt van huidig wachtwoord</span>
+                </div>
+              </div>
+
+              <div class="form-submit-row">
+                <button type="submit" class="btn" id="saveNewPasswordBtn" style="min-width: 180px;">
+                  <span class="material-icons btn-icon">save</span>
+                  <span>Wachtwoord opslaan</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

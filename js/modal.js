@@ -1,3 +1,5 @@
+import { supabase } from "./supabase.js";
+
 const modalStack = [];
 const BASE_Z_INDEX = 2000;
 
@@ -414,6 +416,128 @@ export function showPromptModal({
   });
 }
 
+export function showPasswordPromptModal({
+  title = "Wachtwoord vereist",
+  subtitle = "Voer je wachtwoord in om door te gaan",
+  confirmText = "Bevestigen",
+  cancelText = "Annuleren",
+  isDanger = false,
+}) {
+  return new Promise(async (resolve) => {
+    let isResolved = false;
+    const finish = (val) => {
+      if (!isResolved) {
+        isResolved = true;
+        document.removeEventListener("keydown", handleKeyDown);
+        resolve(val);
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        finish(false);
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+
+    const btnClass = isDanger ? "btn-danger-confirm" : "btn";
+    const overlay = await showModal(`
+      <div class="modal-header">
+        <h2 class="modal-title">${title}</h2>
+        ${subtitle ? `<p class="modal-subtitle">${subtitle}</p>` : ""}
+      </div>
+      <form class="modal-form" id="passwordPromptForm">
+        <div class="form-group">
+          <label for="passwordPromptInput">Wachtwoord *</label>
+          <input type="password" id="passwordPromptInput" class="modal-input" placeholder="Voer je wachtwoord in" required autocomplete="current-password">
+        </div>
+        <div id="passwordPromptError" style="display: none; color: var(--danger-color); font-size: 13px; margin-top: -6px;"></div>
+        <div class="modal-footer">
+          <button type="button" class="modal-btn-secondary" id="passwordPromptCancelBtn">${cancelText}</button>
+          <button type="submit" class="${btnClass}" id="passwordPromptConfirmBtn">${confirmText}</button>
+        </div>
+      </form>
+    `);
+
+    const input = overlay.querySelector("#passwordPromptInput");
+    const form = overlay.querySelector("#passwordPromptForm");
+    const cancelBtn = overlay.querySelector("#passwordPromptCancelBtn");
+    const confirmBtn = overlay.querySelector("#passwordPromptConfirmBtn");
+    const errorEl = overlay.querySelector("#passwordPromptError");
+    const closeBtn = overlay.querySelector(".modal-close-btn");
+
+    if (closeBtn) {
+      closeBtn.addEventListener("click", () => finish(false));
+    }
+
+    if (input) {
+      setTimeout(() => input.focus(), 60);
+    }
+
+    if (form) {
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const password = input ? input.value : "";
+        if (!password) return;
+
+        if (confirmBtn) {
+          confirmBtn.disabled = true;
+          confirmBtn.textContent = "Controleren...";
+        }
+        if (errorEl) {
+          errorEl.style.display = "none";
+          errorEl.textContent = "";
+        }
+
+        try {
+          const { data: sessionData } = await supabase.auth.getSession();
+          let email = sessionData?.session?.user?.email;
+          if (!email) {
+            const { data: userData } = await supabase.auth.getUser();
+            email = userData?.user?.email;
+          }
+
+          if (!email) {
+            throw new Error("Geen actieve sessie gevonden. Log opnieuw in.");
+          }
+
+          const { error: authError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+
+          if (authError) {
+            throw new Error("Onjuist wachtwoord. Probeer het opnieuw.");
+          }
+
+          closeModal(overlay);
+          finish(true);
+        } catch (err) {
+          if (errorEl) {
+            errorEl.textContent = err.message || "Onjuist wachtwoord";
+            errorEl.style.display = "block";
+          }
+          if (input) {
+            input.value = "";
+            input.focus();
+          }
+          if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = confirmText;
+          }
+        }
+      });
+    }
+
+    if (cancelBtn) {
+      cancelBtn.addEventListener("click", () => {
+        closeModal(overlay);
+        finish(false);
+      });
+    }
+  });
+}
+
 document.addEventListener("keydown", (e) => {
   if (modalStack.length === 0) return;
   const currentOverlay = modalStack[modalStack.length - 1];
@@ -450,4 +574,5 @@ if (typeof window !== "undefined") {
   window.closeModal = closeModal;
   window.showConfirmModal = showConfirmModal;
   window.showPromptModal = showPromptModal;
+  window.showPasswordPromptModal = showPasswordPromptModal;
 }

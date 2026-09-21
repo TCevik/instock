@@ -1,8 +1,7 @@
 import {
   getCurrentUser,
   getAvailableModules,
-  openChangePasswordModal,
-  openPasskeyModal,
+  openAccountModal,
 } from "./main.js";
 
 function escapeHtml(str) {
@@ -15,17 +14,13 @@ function escapeHtml(str) {
 async function initDashboard() {
   const welcomeElement = document.getElementById("welcomeText");
   const gridElement = document.getElementById("dashboardGrid");
-  const changePasswordBtn = document.getElementById(
-    "dashboardChangePasswordBtn",
-  );
-  const passkeyBtn = document.getElementById("dashboardPasskeyBtn");
+  const accountBtn = document.getElementById("dashboardAccountBtn");
 
-  if (changePasswordBtn) {
-    changePasswordBtn.addEventListener("click", openChangePasswordModal);
-  }
-
-  if (passkeyBtn) {
-    passkeyBtn.addEventListener("click", openPasskeyModal);
+  if (accountBtn && window.innerWidth > 768) {
+    accountBtn.addEventListener("click", (e) => {
+      // Optional: on desktop, user can also open modal directly if preferred or navigate
+      // but standard link navigation to account.html works seamlessly.
+    });
   }
 
   const user = await getCurrentUser();

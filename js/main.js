@@ -5,6 +5,7 @@ import {
   closeModal,
   showConfirmModal,
   showPromptModal,
+  showPasswordPromptModal,
 } from "./modal.js";
 import { initToast, showToast } from "./toast.js";
 import { initGlobalTooltips } from "./tooltip.js";
@@ -168,7 +169,7 @@ function isPermissionError(err) {
   );
 }
 
-export async function getCurrentUser() {
+async function getCurrentUser() {
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -176,7 +177,7 @@ export async function getCurrentUser() {
 
   const { data, error } = await supabase
     .from("user_data")
-    .select("full_name, username, store_id, role")
+    .select("full_name, username, store_id, role, birthday")
     .eq("user_id", session.user.id)
     .maybeSingle();
 
@@ -186,7 +187,7 @@ export async function getCurrentUser() {
   return currentUserData;
 }
 
-export async function getStorePaths() {
+async function getStorePaths() {
   const user = await getCurrentUser();
   if (!user || !user.store_id) return [];
 
@@ -259,7 +260,7 @@ const APP_MODULES = [
   },
 ];
 
-export function getAvailableModules(role = 1) {
+function getAvailableModules(role = 1) {
   const numericRole = Number(role) || 1;
   return APP_MODULES.filter((m) => numericRole >= (m.minRole || 1));
 }
@@ -402,55 +403,327 @@ async function loadOverlay() {
   } catch (error) {}
 }
 
-async function openChangePasswordModal() {
-  await showModal(`
+async function openAccountModal(initialTab = "passkeys") {
+  const overlay = await showModal(`
         <div class="modal-header">
-            <h2 class="modal-title">Wachtwoord wijzigen</h2>
-            <p class="modal-subtitle">Voer je huidige en nieuwe wachtwoord in</p>
+            <h2 class="modal-title">Accountbeheer</h2>
+            <p class="modal-subtitle">Beheer je gekoppelde passkeys en wachtwoord op één centrale plek</p>
         </div>
-        <form class="modal-form" id="changePasswordForm">
-            <div class="form-group">
-                <label for="oldPasswordInput">Huidig wachtwoord *</label>
-                <input type="password" id="oldPasswordInput" class="modal-input" placeholder="Voer huidig wachtwoord in" required>
+
+        <div class="native-segmented-control" role="tablist" style="display: flex; background: var(--input-background); border: 1px solid var(--card-border); border-radius: 12px; padding: 4px; gap: 4px; margin-bottom: 4px;">
+            <button type="button" class="native-segment-btn ${initialTab === "passkeys" ? "active" : ""}" id="modalTabBtnPasskeys" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; background: ${initialTab === "passkeys" ? "var(--card-background)" : "transparent"}; color: ${initialTab === "passkeys" ? "var(--text-color)" : "var(--text-color-muted)"};">
+                <span class="material-icons" style="font-size: 17px; color: ${initialTab === "passkeys" ? "var(--accent-color)" : "inherit"};">fingerprint</span>
+                <span>Passkeys</span>
+            </button>
+            <button type="button" class="native-segment-btn ${initialTab === "password" ? "active" : ""}" id="modalTabBtnPassword" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; background: ${initialTab === "password" ? "var(--card-background)" : "transparent"}; color: ${initialTab === "password" ? "var(--text-color)" : "var(--text-color-muted)"};">
+                <span class="material-icons" style="font-size: 17px; color: ${initialTab === "password" ? "var(--accent-color)" : "inherit"};">lock_reset</span>
+                <span>Wachtwoord</span>
+            </button>
+        </div>
+
+        <!-- TAB 1: PASSKEYS -->
+        <div id="modalPanelPasskeys" style="display: ${initialTab === "passkeys" ? "flex" : "none"}; flex-direction: column; gap: 14px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--input-background); border: 1px solid var(--card-border); border-radius: 12px; padding: 12px 14px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="material-icons" style="font-size: 22px; color: var(--accent-color);">fingerprint</span>
+                    <div>
+                        <div style="font-size: 13.5px; font-weight: 600; color: var(--text-color);">Nieuwe passkey</div>
+                        <div style="font-size: 11.5px; color: var(--text-color-muted);">Touch ID, Face ID of apparaatsleutel</div>
+                    </div>
+                </div>
+                <button type="button" class="btn" id="modalAddPasskeyBtn" style="padding: 8px 12px; font-size: 12.5px; border-radius: 8px; white-space: nowrap;">
+                    <span class="material-icons btn-icon" style="font-size: 15px;">add</span>
+                    Toevoegen
+                </button>
             </div>
-            <div class="form-group">
-                <label for="newPasswordInput">Nieuw wachtwoord *</label>
-                <input type="password" id="newPasswordInput" class="modal-input" placeholder="Voer nieuw wachtwoord in" required>
+
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <label style="font-size: 11px; font-weight: 600; letter-spacing: 0.8px; color: var(--text-color-muted); text-transform: uppercase;">
+                    Gekoppelde Passkeys
+                </label>
+                <div id="passkeyListContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; padding-right: 4px;">
+                    <div style="padding: 20px; text-align: center; color: var(--text-color-muted); font-size: 13px;">
+                        Passkeys laden...
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="confirmPasswordInput">Herhaal nieuw wachtwoord *</label>
-                <input type="password" id="confirmPasswordInput" class="modal-input" placeholder="Herhaal nieuw wachtwoord" required>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="modal-btn-secondary" id="cancelChangePasswordBtn">Annuleren</button>
-                <button type="submit" class="btn" id="submitPasswordBtn">Wijzigen</button>
-            </div>
-        </form>
+        </div>
+
+        <!-- TAB 2: WACHTWOORD -->
+        <div id="modalPanelPassword" style="display: ${initialTab === "password" ? "flex" : "none"}; flex-direction: column; gap: 12px;">
+            <form class="modal-form" id="modalChangePasswordForm">
+                <div class="form-group">
+                    <label for="modalOldPasswordInput">Huidig wachtwoord *</label>
+                    <input type="password" id="modalOldPasswordInput" class="modal-input" placeholder="Voer huidig wachtwoord in" required autocomplete="current-password">
+                </div>
+                <div class="form-group">
+                    <label for="modalNewPasswordInput">Nieuw wachtwoord *</label>
+                    <input type="password" id="modalNewPasswordInput" class="modal-input" placeholder="Voer nieuw wachtwoord in (min. 8 tekens)" required autocomplete="new-password" minlength="8">
+                </div>
+                <div class="form-group">
+                    <label for="modalConfirmPasswordInput">Herhaal nieuw wachtwoord *</label>
+                    <input type="password" id="modalConfirmPasswordInput" class="modal-input" placeholder="Herhaal nieuw wachtwoord" required autocomplete="new-password" minlength="8">
+                </div>
+                <button type="submit" class="btn" id="modalSubmitPasswordBtn" style="width: 100%; margin-top: 4px;">Wachtwoord wijzigen</button>
+            </form>
+        </div>
+
+        <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <a href="account.html" class="modal-btn-secondary" style="text-decoration: none; font-size: 12.5px; display: inline-flex; align-items: center; gap: 4px; padding: 8px 12px;">
+                <span class="material-icons" style="font-size: 15px;">open_in_new</span>
+                <span>Volledige pagina</span>
+            </a>
+            <button type="button" class="modal-btn-secondary" id="closeAccountModalBtn">Sluiten</button>
+        </div>
     `);
 
-  const cancelBtn = document.getElementById("cancelChangePasswordBtn");
-  if (cancelBtn) {
-    cancelBtn.addEventListener("click", closeModal);
+  const closeBtn = document.getElementById("closeAccountModalBtn");
+  if (closeBtn) {
+    closeBtn.addEventListener("click", closeModal);
   }
 
-  const form = document.getElementById("changePasswordForm");
+  // Tab switching
+  const tabBtnPasskeys = document.getElementById("modalTabBtnPasskeys");
+  const tabBtnPassword = document.getElementById("modalTabBtnPassword");
+  const panelPasskeys = document.getElementById("modalPanelPasskeys");
+  const panelPassword = document.getElementById("modalPanelPassword");
+
+  function switchTab(tab) {
+    const isPk = tab === "passkeys";
+    if (panelPasskeys) panelPasskeys.style.display = isPk ? "flex" : "none";
+    if (panelPassword) panelPassword.style.display = isPk ? "none" : "flex";
+
+    if (tabBtnPasskeys) {
+      tabBtnPasskeys.style.background = isPk ? "var(--card-background)" : "transparent";
+      tabBtnPasskeys.style.color = isPk ? "var(--text-color)" : "var(--text-color-muted)";
+      const icon = tabBtnPasskeys.querySelector(".material-icons");
+      if (icon) icon.style.color = isPk ? "var(--accent-color)" : "inherit";
+    }
+
+    if (tabBtnPassword) {
+      tabBtnPassword.style.background = isPk ? "transparent" : "var(--card-background)";
+      tabBtnPassword.style.color = isPk ? "var(--text-color-muted)" : "var(--text-color)";
+      const icon = tabBtnPassword.querySelector(".material-icons");
+      if (icon) icon.style.color = isPk ? "inherit" : "var(--accent-color)";
+    }
+  }
+
+  if (tabBtnPasskeys) tabBtnPasskeys.addEventListener("click", () => switchTab("passkeys"));
+  if (tabBtnPassword) tabBtnPassword.addEventListener("click", () => switchTab("password"));
+
+  // Passkey loading
+  async function loadPasskeys() {
+    const container = document.getElementById("passkeyListContainer");
+    if (!container) return;
+
+    try {
+      const listFn =
+        typeof supabase.auth.passkey?.list === "function"
+          ? supabase.auth.passkey.list.bind(supabase.auth.passkey)
+          : null;
+
+      if (!listFn) {
+        container.innerHTML = `
+          <div style="padding: 16px; text-align: center; color: var(--text-color-muted); font-size: 13px;">
+            Geen passkey beheer ondersteuning beschikbaar in deze browser.
+          </div>
+        `;
+        return;
+      }
+
+      const { data, error } = await listFn();
+
+      if (error) {
+        container.innerHTML = `
+          <div style="padding: 16px; text-align: center; color: var(--danger-color); font-size: 13px;">
+            ${escapeHtml(error.message || "Fout bij het ophalen van passkeys")}
+          </div>
+        `;
+        return;
+      }
+
+      const passkeys = Array.isArray(data) ? data : data?.passkeys || [];
+
+      if (passkeys.length === 0) {
+        container.innerHTML = `
+          <div style="padding: 20px; text-align: center; background: var(--input-background); border: 1px dashed var(--card-border); border-radius: 12px; color: var(--text-color-muted); font-size: 13px;">
+            <span class="material-icons" style="font-size: 26px; opacity: 0.5; margin-bottom: 4px; display: block;">fingerprint</span>
+            Nog geen passkeys ingesteld voor dit account.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = passkeys
+        .map((pk, idx) => {
+          const pkId = pk.id || pk.passkey_id || pk.credential_id || "";
+          const name = pk.friendly_name || pk.name || `Passkey ${idx + 1}`;
+          const createdDate = pk.created_at
+            ? new Date(pk.created_at).toLocaleDateString("nl-NL", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+            : "";
+
+          return `
+            <div class="passkey-item" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--input-background); border: 1px solid var(--card-border); border-radius: 10px;">
+              <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background: var(--vullen-ghost-bg); border: 1px solid rgba(101, 141, 36, 0.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                  <span class="material-icons" style="font-size: 18px; color: var(--accent-color);">fingerprint</span>
+                </div>
+                <div style="min-width: 0;">
+                  <div style="font-size: 13px; font-weight: 600; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(name)}</div>
+                  ${createdDate ? `<div style="font-size: 11px; color: var(--text-color-muted);">Gekoppeld op ${escapeHtml(createdDate)}</div>` : ""}
+                </div>
+              </div>
+              <button type="button" class="action-btn delete-passkey-btn" data-id="${escapeHtml(pkId)}" title="Passkey verwijderen" style="color: var(--danger-color); margin-left: 8px; padding: 6px;">
+                <span class="material-icons" style="font-size: 18px;">delete</span>
+              </button>
+            </div>
+          `;
+        })
+        .join("");
+
+      container.querySelectorAll(".delete-passkey-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const passkeyId = btn.getAttribute("data-id");
+          if (!passkeyId) return;
+
+          const verified = await showPasswordPromptModal({
+            title: "Passkey verwijderen",
+            subtitle:
+              "Voer je wachtwoord in om deze passkey te verwijderen. Je kunt hierna niet meer inloggen met dit apparaat.",
+            confirmText: "Verwijderen",
+            cancelText: "Annuleren",
+            isDanger: true,
+          });
+
+          if (!verified) return;
+
+          btn.disabled = true;
+          btn.innerHTML = `<span class="material-icons" style="font-size: 18px;">hourglass_empty</span>`;
+
+          try {
+            let delRes;
+            if (typeof supabase.auth.passkey?.delete === "function") {
+              delRes = await supabase.auth.passkey.delete({
+                passkeyId: passkeyId,
+                id: passkeyId,
+              });
+            }
+
+            if (delRes?.error) {
+              throw delRes.error;
+            }
+
+            showToast("notification", "Passkey succesvol verwijderd");
+            loadPasskeys();
+          } catch (delErr) {
+            showToast(
+              "error",
+              delErr.message || "Fout bij het verwijderen van passkey",
+            );
+            loadPasskeys();
+          }
+        });
+      });
+    } catch (err) {
+      container.innerHTML = `
+        <div style="padding: 16px; text-align: center; color: var(--danger-color); font-size: 13px;">
+          ${escapeHtml(err.message || "Fout bij het ophalen van passkeys")}
+        </div>
+      `;
+    }
+  }
+
+  // Passkey Add
+  const addBtn = document.getElementById("modalAddPasskeyBtn");
+  if (addBtn) {
+    addBtn.addEventListener("click", async () => {
+      const verified = await showPasswordPromptModal({
+        title: "Passkey toevoegen",
+        subtitle:
+          "Voer je wachtwoord in om een nieuwe passkey te koppelen aan dit account.",
+        confirmText: "Doorgaan",
+        cancelText: "Annuleren",
+      });
+
+      if (!verified) return;
+
+      const originalContent = addBtn.innerHTML;
+      addBtn.disabled = true;
+      addBtn.innerHTML = `
+        <span class="material-icons btn-icon" style="font-size: 15px;">hourglass_empty</span>
+        Toevoegen...
+      `;
+
+      try {
+        const registerFn =
+          typeof supabase.auth.registerPasskey === "function"
+            ? supabase.auth.registerPasskey.bind(supabase.auth)
+            : supabase.auth.passkey?.register?.bind(supabase.auth.passkey);
+
+        if (!registerFn) {
+          throw new Error(
+            "Passkey registratie wordt niet ondersteund door deze client/browser.",
+          );
+        }
+
+        const { data, error } = await registerFn();
+
+        if (error) {
+          showToast(
+            "error",
+            error.message || "Fout bij het registreren van passkey",
+          );
+          addBtn.disabled = false;
+          addBtn.innerHTML = originalContent;
+          return;
+        }
+
+        showToast("notification", "Passkey succesvol geregistreerd");
+        addBtn.disabled = false;
+        addBtn.innerHTML = originalContent;
+        loadPasskeys();
+      } catch (err) {
+        showToast(
+          "error",
+          err.message || "Fout bij het registreren van passkey",
+        );
+        addBtn.disabled = false;
+        addBtn.innerHTML = originalContent;
+      }
+    });
+  }
+
+  // Change Password Form in modal
+  const form = document.getElementById("modalChangePasswordForm");
   if (form) {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const submitBtn = document.getElementById("submitPasswordBtn");
-      const oldPassword = document.getElementById("oldPasswordInput")?.value;
-      const newPassword = document.getElementById("newPasswordInput")?.value;
-      const confirmPassword = document.getElementById(
-        "confirmPasswordInput",
-      )?.value;
+      const submitBtn = document.getElementById("modalSubmitPasswordBtn");
+      const oldPassword = document.getElementById("modalOldPasswordInput")?.value;
+      const newPassword = document.getElementById("modalNewPasswordInput")?.value;
+      const confirmPassword = document.getElementById("modalConfirmPasswordInput")?.value;
 
       if (!oldPassword || !newPassword) {
         showToast("error", "Beide wachtwoorden zijn verplicht");
         return;
       }
 
+      if (newPassword.length < 8) {
+        showToast("error", "Nieuw wachtwoord moet minimaal 8 tekens bevatten");
+        return;
+      }
+
       if (newPassword !== confirmPassword) {
         showToast("error", "Nieuwe wachtwoorden komen niet overeen");
+        return;
+      }
+
+      if (oldPassword === newPassword) {
+        showToast("error", "Nieuw wachtwoord mag niet hetzelfde zijn als het huidige");
         return;
       }
 
@@ -508,225 +781,8 @@ async function openChangePasswordModal() {
         showToast("error", err.message || "Fout bij wijzigen van wachtwoord");
         if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.textContent = "Wijzigen";
+          submitBtn.textContent = "Wachtwoord wijzigen";
         }
-      }
-    });
-  }
-}
-
-async function openPasskeyModal() {
-  await showModal(`
-        <div class="modal-header">
-            <h2 class="modal-title">Passkeys beheren</h2>
-            <p class="modal-subtitle">Beheer je gekoppelde passkeys voor snel en veilig inloggen zonder wachtwoord</p>
-        </div>
-        <div class="modal-body" style="gap: 16px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--input-background); border: 1px solid var(--card-border); border-radius: 12px; padding: 14px 16px;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <span class="material-icons" style="font-size: 24px; color: var(--accent-color);">fingerprint</span>
-                    <div>
-                        <div style="font-size: 14px; font-weight: 600; color: var(--text-color);">Nieuwe passkey</div>
-                        <div style="font-size: 12px; color: var(--text-color-muted);">Koppel Touch ID, Face ID of beveiligingssleutel</div>
-                    </div>
-                </div>
-                <button type="button" class="btn" id="modalAddPasskeyBtn" style="padding: 8px 14px; font-size: 13px; border-radius: 8px;">
-                    <span class="material-icons btn-icon" style="font-size: 16px;">add</span>
-                    Toevoegen
-                </button>
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-                <label style="font-size: 11px; font-weight: 600; letter-spacing: 0.8px; color: var(--text-color-muted); text-transform: uppercase;">
-                    Gekoppelde Passkeys
-                </label>
-                <div id="passkeyListContainer" style="display: flex; flex-direction: column; gap: 8px;">
-                    <div style="padding: 24px; text-align: center; color: var(--text-color-muted); font-size: 13px;">
-                        Passkeys laden...
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="modal-btn-secondary" id="closePasskeyModalBtn">Sluiten</button>
-        </div>
-    `);
-
-  const closeBtn = document.getElementById("closePasskeyModalBtn");
-  if (closeBtn) {
-    closeBtn.addEventListener("click", closeModal);
-  }
-
-  async function loadPasskeys() {
-    const container = document.getElementById("passkeyListContainer");
-    if (!container) return;
-
-    try {
-      const listFn =
-        typeof supabase.auth.passkey?.list === "function"
-          ? supabase.auth.passkey.list.bind(supabase.auth.passkey)
-          : null;
-
-      if (!listFn) {
-        container.innerHTML = `
-                    <div style="padding: 16px; text-align: center; color: var(--text-color-muted); font-size: 13px;">
-                        Geen passkey beheer ondersteuning beschikbaar.
-                    </div>
-                `;
-        return;
-      }
-
-      const { data, error } = await listFn();
-
-      if (error) {
-        container.innerHTML = `
-                    <div style="padding: 16px; text-align: center; color: var(--danger-color); font-size: 13px;">
-                        ${escapeHtml(error.message || "Fout bij het ophalen van passkeys")}
-                    </div>
-                `;
-        return;
-      }
-
-      const passkeys = Array.isArray(data) ? data : data?.passkeys || [];
-
-      if (passkeys.length === 0) {
-        container.innerHTML = `
-                    <div style="padding: 24px; text-align: center; background: var(--input-background); border: 1px dashed var(--card-border); border-radius: 12px; color: var(--text-color-muted); font-size: 13px;">
-                        <span class="material-icons" style="font-size: 28px; opacity: 0.5; margin-bottom: 6px; display: block;">fingerprint</span>
-                        Nog geen passkeys ingesteld voor dit account.
-                    </div>
-                `;
-        return;
-      }
-
-      container.innerHTML = passkeys
-        .map((pk, idx) => {
-          const pkId = pk.id || pk.passkey_id || pk.credential_id || "";
-          const name = pk.friendly_name || pk.name || `Passkey ${idx + 1}`;
-          const createdDate = pk.created_at
-            ? new Date(pk.created_at).toLocaleDateString("nl-NL", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })
-            : "";
-
-          return `
-                    <div class="passkey-item" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: var(--input-background); border: 1px solid var(--card-border); border-radius: 10px;">
-                        <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
-                            <div style="width: 36px; height: 36px; border-radius: 8px; background: var(--vullen-ghost-bg); border: 1px solid rgba(101, 141, 36, 0.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                <span class="material-icons" style="font-size: 20px; color: var(--accent-color);">fingerprint</span>
-                            </div>
-                            <div style="min-width: 0;">
-                                <div style="font-size: 13.5px; font-weight: 600; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(name)}</div>
-                                ${createdDate ? `<div style="font-size: 11.5px; color: var(--text-color-muted);">Toegevoegd op ${escapeHtml(createdDate)}</div>` : ""}
-                            </div>
-                        </div>
-                        <button type="button" class="action-btn delete-passkey-btn" data-id="${escapeHtml(pkId)}" title="Passkey verwijderen" style="color: var(--danger-color); margin-left: 8px;">
-                            <span class="material-icons" style="font-size: 18px;">delete</span>
-                        </button>
-                    </div>
-                `;
-        })
-        .join("");
-
-      container.querySelectorAll(".delete-passkey-btn").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          const passkeyId = btn.getAttribute("data-id");
-          if (!passkeyId) return;
-
-          const confirmed = await showConfirmModal({
-            title: "Passkey verwijderen",
-            message:
-              "Weet je zeker dat je deze passkey wilt verwijderen? Je kunt hierna niet meer inloggen met dit apparaat.",
-            confirmText: "Verwijderen",
-            cancelText: "Annuleren",
-            isDanger: true,
-          });
-
-          if (!confirmed) return;
-
-          btn.disabled = true;
-          btn.innerHTML = `<span class="material-icons" style="font-size: 18px;">hourglass_empty</span>`;
-
-          try {
-            let delRes;
-            if (typeof supabase.auth.passkey?.delete === "function") {
-              delRes = await supabase.auth.passkey.delete({
-                passkeyId: passkeyId,
-                id: passkeyId,
-              });
-            }
-
-            if (delRes?.error) {
-              throw delRes.error;
-            }
-
-            showToast("notification", "Passkey succesvol verwijderd");
-            loadPasskeys();
-          } catch (delErr) {
-            showToast(
-              "error",
-              delErr.message || "Fout bij het verwijderen van passkey",
-            );
-            loadPasskeys();
-          }
-        });
-      });
-    } catch (err) {
-      container.innerHTML = `
-                <div style="padding: 16px; text-align: center; color: var(--danger-color); font-size: 13px;">
-                    ${escapeHtml(err.message || "Fout bij het ophalen van passkeys")}
-                </div>
-            `;
-    }
-  }
-
-  const addBtn = document.getElementById("modalAddPasskeyBtn");
-  if (addBtn) {
-    addBtn.addEventListener("click", async () => {
-      const originalContent = addBtn.innerHTML;
-      addBtn.disabled = true;
-      addBtn.innerHTML = `
-                <span class="material-icons btn-icon" style="font-size: 16px;">hourglass_empty</span>
-                Toevoegen...
-            `;
-
-      try {
-        const registerFn =
-          typeof supabase.auth.registerPasskey === "function"
-            ? supabase.auth.registerPasskey.bind(supabase.auth)
-            : supabase.auth.passkey?.register?.bind(supabase.auth.passkey);
-
-        if (!registerFn) {
-          throw new Error(
-            "Passkey registratie wordt niet ondersteund door deze client/browser.",
-          );
-        }
-
-        const { data, error } = await registerFn();
-
-        if (error) {
-          showToast(
-            "error",
-            error.message || "Fout bij het registreren van passkey",
-          );
-          addBtn.disabled = false;
-          addBtn.innerHTML = originalContent;
-          return;
-        }
-
-        showToast("notification", "Passkey succesvol geregistreerd");
-        addBtn.disabled = false;
-        addBtn.innerHTML = originalContent;
-        loadPasskeys();
-      } catch (err) {
-        showToast(
-          "error",
-          err.message || "Fout bij het registreren van passkey",
-        );
-        addBtn.disabled = false;
-        addBtn.innerHTML = originalContent;
       }
     });
   }
@@ -734,7 +790,15 @@ async function openPasskeyModal() {
   loadPasskeys();
 }
 
-export async function logout() {
+async function openChangePasswordModal() {
+  return openAccountModal("password");
+}
+
+async function openPasskeyModal() {
+  return openAccountModal("passkeys");
+}
+
+async function logout() {
   window.isLoggingOut = true;
   currentUserData = null;
   localStorage.removeItem(LAST_ACTIVITY_KEY);
@@ -922,13 +986,19 @@ if ("serviceWorker" in navigator) {
 
 export {
   supabase,
+  getCurrentUser,
+  getStorePaths,
+  getAvailableModules,
+  logout,
   initModal,
   showModal,
   closeModal,
   showConfirmModal,
   showPromptModal,
+  showPasswordPromptModal,
   initToast,
   showToast,
+  openAccountModal,
   openChangePasswordModal,
   openPasskeyModal,
   isPermissionError,

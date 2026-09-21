@@ -1,4 +1,11 @@
-import { supabase, showToast, escapeHtml, invokeFn, logout } from "./main.js";
+import {
+  supabase,
+  showToast,
+  escapeHtml,
+  invokeFn,
+  logout,
+  parseUserDisplay,
+} from "./main.js";
 import {
   formatDuration,
   timeToMinutes,
@@ -18,6 +25,103 @@ import {
 import { createTimePicker } from "./timepicker.js";
 import { showModal, closeModal, showConfirmModal } from "./modal.js";
 import { exportTopFillersA4 } from "./productiviteit-export.js";
+
+let availableUsers = [];
+let storeUsersPromise = null;
+
+async function loadStoreUsers() {
+  if (!storeUsersPromise) {
+    storeUsersPromise = (async () => {
+      const { data: users, error } = await supabase
+        .from("user_data")
+        .select("user_id, full_name, username, role")
+        .order("full_name");
+      if (!error && users) {
+        availableUsers = users;
+      }
+      return availableUsers;
+    })();
+  }
+  return storeUsersPromise;
+}
+
+function stripDiacritics(str) {
+  return (str || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function filterUsers(query) {
+  const q = (query || "").toLowerCase().trim();
+  if (!q) return availableUsers;
+  const parsed = parseUserDisplay(q);
+  const searchName = (parsed.title || "").toLowerCase();
+  const searchUname = parsed.sub ? parsed.sub.replace(/^@/, "").toLowerCase() : "";
+  const normQ = stripDiacritics(q);
+  const normName = stripDiacritics(searchName);
+
+  return availableUsers.filter((u) => {
+    const fullName = (u.full_name || "").toLowerCase();
+    const username = (u.username || "").toLowerCase();
+    if (searchUname && username.includes(searchUname)) return true;
+    if (
+      fullName.includes(q) ||
+      username.includes(q) ||
+      (searchName && fullName.includes(searchName))
+    ) {
+      return true;
+    }
+    const normFull = stripDiacritics(fullName);
+    const normUser = stripDiacritics(username);
+    return (
+      normFull.includes(normQ) ||
+      normUser.includes(normQ) ||
+      (normName && normFull.includes(normName))
+    );
+  });
+}
+
+function findUserByUsername(uname) {
+  if (!uname) return null;
+  const clean = String(uname).replace(/^@/, "").toLowerCase().trim();
+  if (!clean) return null;
+  return (
+    availableUsers.find(
+      (u) => (u.username || "").toLowerCase().trim() === clean,
+    ) || null
+  );
+}
+
+function findExactUser(val) {
+  const q = (val || "").toLowerCase().trim();
+  if (!q) return null;
+
+  const parsed = parseUserDisplay(val);
+  if (parsed.sub) {
+    const bySub = findUserByUsername(parsed.sub);
+    if (bySub) return bySub;
+  }
+
+  const byUser = findUserByUsername(q);
+  if (byUser) return byUser;
+
+  const normQ = stripDiacritics(q);
+  const exactNameMatches = availableUsers.filter((u) => {
+    const fullName = (u.full_name || "").toLowerCase().trim();
+    return (
+      fullName === q ||
+      stripDiacritics(fullName) === normQ ||
+      (parsed.title && fullName === parsed.title.toLowerCase().trim())
+    );
+  });
+
+  if (exactNameMatches.length === 1) {
+    return exactNameMatches[0];
+  }
+
+  return null;
+}
 
 let cachedProductivityEntries = [];
 let cachedTopFillers = [];
@@ -84,6 +188,7 @@ async function initProductivityPage() {
 
     currentUserRole = Number(userData?.role) || 1;
     ownUserData = userData;
+    updateAddShiftBtnVisibility();
 
     const topData = await loadTopFillers(session.user.id);
     if (topData?.currentUserProductivity) {
@@ -92,7 +197,6 @@ async function initProductivityPage() {
 
     if (skeletonEl) skeletonEl.style.display = "none";
     if (statsSkeletonEl) statsSkeletonEl.style.display = "none";
-    if (statsEl) statsEl.style.display = "flex";
 
     initChartControls();
     initPaginationControls();
@@ -145,9 +249,12 @@ async function loadTopFillers(userId, date = selectedScoreboardDate) {
   }
 
   try {
-    const data = await invokeFn("get-top-fillers", {
-      body: date ? { date } : {},
-    });
+    const [data] = await Promise.all([
+      invokeFn("get-top-fillers", {
+        body: date ? { date } : {},
+      }),
+      loadStoreUsers(),
+    ]);
 
     const isManager = data?.isManager ?? [2, 3].includes(currentUserRole);
 
@@ -310,14 +417,20 @@ async function loadTopFillers(userId, date = selectedScoreboardDate) {
 }
 
 function createTopFillerCard(filler, rank, isCurrentUser, canClick) {
-  const rawName = filler.full_name || filler.username || "Medewerker";
-  const name = escapeHtml(rawName);
+  const storeUser = availableUsers?.find((u) => u.user_id === filler.user_id);
+  const rawFullName = filler.full_name || storeUser?.full_name || "";
+  const rawUsername = filler.username || storeUser?.username || "";
+  const parsed = parseUserDisplay(rawFullName, rawUsername);
+  const name = escapeHtml(parsed.title || rawFullName || rawUsername || "Medewerker");
+  const username = rawUsername || (parsed.sub ? parsed.sub.replace(/^@/, "") : "");
+  const cleanUsername = username ? `@${username.replace(/^@/, "")}` : "";
+
   const avgProd = Math.round(Number(filler.average_productivity) || 0);
   const shiftCount = Number(filler.shifts_count) || 0;
   const statusClass = getProductivityStatusClass(avgProd);
   const statusIcon = getProductivityStatusIcon(avgProd);
   const initials =
-    rawName
+    (parsed.title || rawFullName || "M")
       .split(" ")
       .filter(Boolean)
       .map((n) => n[0])
@@ -360,6 +473,7 @@ function createTopFillerCard(filler, rank, isCurrentUser, canClick) {
             <div class="top-filler-info">
                 <div class="top-filler-name-row">
                     <span class="top-filler-name" data-tooltip="${name}">${name}</span>
+                    ${cleanUsername ? `<span class="top-filler-username">${escapeHtml(cleanUsername)}</span>` : ""}
                     ${isCurrentUser ? '<span class="you-pill">Jij</span>' : ""}
                 </div>
                 <span class="top-filler-shifts">${shiftCount} ${shiftCount === 1 ? "shift" : "shifts"} opgeslagen</span>
@@ -427,6 +541,8 @@ function showProductivityUserSkeleton(user) {
   const rawName = user?.full_name || user?.username || "Medewerker";
   const name = escapeHtml(rawName);
 
+  const pageTitleEl = document.getElementById("pageMainTitle");
+  const pageSubEl = document.getElementById("pageSubtitle");
   const chartTitleEl = document.getElementById("productivityChartTitle");
   const chartSubEl = document.getElementById("chartCardSubtitle");
   const shiftsHeadingEl = document.getElementById("myShiftsSectionHeading");
@@ -434,10 +550,17 @@ function showProductivityUserSkeleton(user) {
   const emptyEl = document.getElementById("productivityEmpty");
   const chartCard = document.getElementById("productivityChartCard");
   const myShiftsSection = document.getElementById("myShiftsSection");
-  const chartContainer = document.getElementById("productivityChart");
+  const chartContainer = document.getElementById("productivityChartContainer");
   const listEl = document.getElementById("productivityList");
   const colliEl = document.getElementById("statTotalColli");
   const daysEl = document.getElementById("statTotalDays");
+  const statsEl = document.getElementById("productivitySummaryStats");
+  const sectionDivider = document.getElementById("productivitySectionDivider");
+  const overviewRow = document.getElementById("productivityOverviewRow");
+
+  if (pageTitleEl) pageTitleEl.textContent = `Productiviteit van ${name}`;
+  if (pageSubEl)
+    pageSubEl.textContent = `Bekijk de behaalde productiviteit en uitgevoerde paden van ${name}.`;
 
   if (chartTitleEl) chartTitleEl.textContent = `Voortgang van ${name}`;
   if (chartSubEl)
@@ -450,6 +573,9 @@ function showProductivityUserSkeleton(user) {
   if (emptyEl) emptyEl.style.display = "none";
   if (chartCard) chartCard.style.display = "flex";
   if (myShiftsSection) myShiftsSection.style.display = "flex";
+  if (statsEl) statsEl.style.display = "flex";
+  if (sectionDivider) sectionDivider.style.display = "block";
+  if (overviewRow) overviewRow.classList.remove("only-top-fillers");
 
   if (colliEl)
     colliEl.innerHTML =
@@ -478,6 +604,8 @@ function applyUserProductivity(user, isSelf) {
   const rawName = user?.full_name || user?.username || "Medewerker";
   const name = escapeHtml(rawName);
 
+  const pageTitleEl = document.getElementById("pageMainTitle");
+  const pageSubEl = document.getElementById("pageSubtitle");
   const chartTitleEl = document.getElementById("productivityChartTitle");
   const chartSubEl = document.getElementById("chartCardSubtitle");
   const shiftsHeadingEl = document.getElementById("myShiftsSectionHeading");
@@ -489,6 +617,19 @@ function applyUserProductivity(user, isSelf) {
   const myShiftsSection = document.getElementById("myShiftsSection");
   const sectionDivider = document.getElementById("productivitySectionDivider");
   const topFillersSection = document.getElementById("topFillersSection");
+  const statsEl = document.getElementById("productivitySummaryStats");
+  const overviewRow = document.getElementById("productivityOverviewRow");
+
+  if (pageTitleEl) {
+    pageTitleEl.textContent = isSelf
+      ? "Mijn Productiviteit"
+      : `Productiviteit van ${name}`;
+  }
+  if (pageSubEl) {
+    pageSubEl.textContent = isSelf
+      ? "Bekijk je behaalde productiviteit en uitgevoerde paden per shift."
+      : `Bekijk de behaalde productiviteit en uitgevoerde paden van ${name}.`;
+  }
 
   if (chartTitleEl) {
     chartTitleEl.textContent = isSelf
@@ -513,72 +654,82 @@ function applyUserProductivity(user, isSelf) {
 
   const entries = extractProductivities(user?.productivity);
   cachedProductivityEntries = entries || [];
+  const hasEntries = cachedProductivityEntries.length > 0;
   currentShiftPage = 1;
   selectedDateFilter = "";
+
+  const containerEl =
+    document.querySelector(".page-container") || document.body;
+  if (!hasEntries) {
+    containerEl.classList.add("page-has-no-shifts");
+  } else {
+    containerEl.classList.remove("page-has-no-shifts");
+  }
 
   const clearDateBtn = document.getElementById("shiftsDateFilterClearBtn");
   if (clearDateBtn) clearDateBtn.style.display = "none";
   if (shiftsDatePicker) shiftsDatePicker.setValue("");
 
-  if (!entries || entries.length === 0) {
-    if (emptyTitleEl) {
-      emptyTitleEl.textContent = isSelf
-        ? "Geen productiviteitsgegevens gevonden"
-        : "Geen gegevens gevonden";
-    }
-    if (emptyTextEl) {
-      emptyTextEl.textContent = isSelf
-        ? "Er zijn nog geen gefinaliseerde vulplanningen gekoppeld aan jouw account."
-        : `Er zijn nog geen gefinaliseerde vulplanningen gekoppeld aan ${name}.`;
-    }
-    const canManage = currentUserRole === 3;
-    const addShiftBtn = document.getElementById("addShiftBtn");
-    if (addShiftBtn) {
-      if (canManage) {
-        addShiftBtn.style.display = "inline-flex";
-        if (!addShiftBtn.dataset.initialized) {
-          addShiftBtn.dataset.initialized = "true";
-          addShiftBtn.addEventListener("click", () => openAddShiftModal());
-        }
-      } else {
-        addShiftBtn.style.display = "none";
-      }
-    }
+  const hasTopFillers = cachedTopFillers && cachedTopFillers.length > 0;
 
-    if (emptyEl) emptyEl.style.display = "flex";
-    if (chartCard) chartCard.style.display = "none";
-    if (myShiftsSection)
-      myShiftsSection.style.display = canManage ? "flex" : "none";
-    if (sectionDivider) sectionDivider.style.display = "none";
-  } else {
-    const canManage = currentUserRole === 3;
-    const addShiftBtn = document.getElementById("addShiftBtn");
-    if (addShiftBtn) {
-      if (canManage) {
-        addShiftBtn.style.display = "inline-flex";
-        if (!addShiftBtn.dataset.initialized) {
-          addShiftBtn.dataset.initialized = "true";
-          addShiftBtn.addEventListener("click", () => openAddShiftModal());
-        }
-      } else {
-        addShiftBtn.style.display = "none";
-      }
-    }
+  if (statsEl) statsEl.style.display = "flex";
+  if (chartCard) chartCard.style.display = "flex";
+  if (myShiftsSection) myShiftsSection.style.display = "flex";
 
+  if (overviewRow) overviewRow.classList.remove("only-top-fillers");
+
+  if (hasTopFillers) {
     if (emptyEl) emptyEl.style.display = "none";
-    if (chartCard) chartCard.style.display = "flex";
-    if (myShiftsSection) myShiftsSection.style.display = "flex";
-    if (sectionDivider) {
-      sectionDivider.style.display =
-        topFillersSection && topFillersSection.style.display !== "none"
-          ? "block"
-          : "none";
+    if (overviewRow) overviewRow.classList.remove("no-top-fillers");
+    if (topFillersSection) {
+      topFillersSection.style.display = "flex";
+      if (isSelf && topFillersSection._userToggledCollapsed === undefined) {
+        topFillersSection.classList.remove("collapsed");
+      }
     }
-    renderProductivityChart(cachedProductivityEntries);
-    renderPaginatedProductivityList();
+    if (sectionDivider) sectionDivider.style.display = "block";
+  } else {
+    if (overviewRow) overviewRow.classList.add("no-top-fillers");
+    if (topFillersSection) topFillersSection.style.display = "none";
+    if (sectionDivider) sectionDivider.style.display = "none";
+
+    if (!hasEntries) {
+      if (emptyEl) emptyEl.style.display = "flex";
+      if (emptyTitleEl) {
+        emptyTitleEl.textContent = isSelf
+          ? "Geen productiviteitsgegevens gevonden"
+          : "Geen gegevens gevonden";
+      }
+      if (emptyTextEl) {
+        emptyTextEl.textContent = isSelf
+          ? "Er zijn nog geen gefinaliseerde vulplanningen gekoppeld aan jouw account."
+          : `Er zijn nog geen gefinaliseerde vulplanningen gekoppeld aan ${name}.`;
+      }
+    } else {
+      if (emptyEl) emptyEl.style.display = "none";
+    }
   }
 
+  renderProductivityChart(cachedProductivityEntries);
+  renderPaginatedProductivityList();
   renderSummaryStats(cachedProductivityEntries);
+
+  updateAddShiftBtnVisibility();
+}
+
+function updateAddShiftBtnVisibility() {
+  const addShiftBtn = document.getElementById("addShiftBtn");
+  if (!addShiftBtn) return;
+  const canManage = currentUserRole === 3;
+  if (canManage) {
+    addShiftBtn.style.display = "inline-flex";
+    if (!addShiftBtn.dataset.initialized) {
+      addShiftBtn.dataset.initialized = "true";
+      addShiftBtn.addEventListener("click", () => openAddShiftModal());
+    }
+  } else {
+    addShiftBtn.style.display = "none";
+  }
 }
 
 function updateTopFillerCardSelection() {
@@ -1262,10 +1413,11 @@ function renderProductivityList(entries, container) {
   const canManageShifts = [3].includes(currentUserRole);
 
   if (!entries || entries.length === 0) {
+    const isFiltered = Boolean(selectedDateFilter);
     container.innerHTML = `
             <div style="padding: 40px 20px; text-align: center; color: var(--text-color-muted); background-color: var(--card-background); border: 1px solid var(--card-border); border-radius: 14px; width: 100%;">
                 <span class="material-icons" style="font-size: 32px; margin-bottom: 8px; display: block; color: var(--text-color-placeholder);">event_busy</span>
-                <span>Geen shifts gevonden voor de geselecteerde datum.</span>
+                <span>${isFiltered ? "Geen shifts gevonden voor de geselecteerde datum." : "Nog geen gewerkte diensten geregistreerd."}</span>
             </div>
         `;
     return;
@@ -1654,8 +1806,11 @@ async function handleDeleteShift(entry) {
     showToast("notification", "Dienst succesvol verwijderd");
 
     if (data?.user) {
+      if (targetUserId === currentUserId) {
+        ownUserData = data.user;
+      }
       selectedFillerUserData = data.user;
-      applyUserProductivity(data.user, false);
+      applyUserProductivity(data.user, targetUserId === currentUserId);
     }
 
     await loadTopFillers(currentUserId, selectedScoreboardDate);
@@ -1665,7 +1820,30 @@ async function handleDeleteShift(entry) {
 }
 
 async function openShiftModal(entry = {}, isEdit = true) {
-  const targetUserId = selectedFillerUserId || currentUserId;
+  await loadStoreUsers();
+
+  const initialTargetUserId = selectedFillerUserId || currentUserId;
+  const initialUser =
+    availableUsers.find((u) => u.user_id === initialTargetUserId) ||
+    selectedFillerUserData ||
+    ownUserData || {
+      full_name: "Medewerker",
+      user_id: initialTargetUserId,
+      username: "",
+    };
+  const parsedInitial = parseUserDisplay(
+    initialUser.full_name,
+    initialUser.username,
+  );
+  const initialName = parsedInitial.title;
+  const initialUsername =
+    parsedInitial.sub ||
+    (initialUser.username
+      ? `@${initialUser.username.replace(/^@/, "")}`
+      : "");
+  const initialDisplayWithUser = initialUsername
+    ? `${initialName} (${initialUsername})`
+    : initialName;
 
   const shift = entry.shift || {};
   const startTime = shift.start || shift.start_time || (isEdit ? "" : "08:00");
@@ -1681,12 +1859,6 @@ async function openShiftModal(entry = {}, isEdit = true) {
     entry.productivity !== undefined
       ? Math.round(Number(entry.productivity))
       : 100;
-  const targetName =
-    selectedFillerUserData?.full_name ||
-    selectedFillerUserData?.username ||
-    ownUserData?.full_name ||
-    ownUserData?.username ||
-    "Medewerker";
 
   const modalTasks = Array.isArray(entry.tasks)
     ? JSON.parse(JSON.stringify(entry.tasks))
@@ -1694,8 +1866,8 @@ async function openShiftModal(entry = {}, isEdit = true) {
 
   const titleText = isEdit ? "Dienst bewerken" : "Dienst toevoegen";
   const subtitleText = isEdit
-    ? `Dienst van ${escapeHtml(targetName)} aanpassen`
-    : `Nieuwe dienst toevoegen voor ${escapeHtml(targetName)}`;
+    ? `Dienst van ${escapeHtml(initialDisplayWithUser)} aanpassen`
+    : `Nieuwe dienst toevoegen voor ${escapeHtml(initialDisplayWithUser)}`;
   const defaultDate =
     entry.date ||
     (selectedDateFilter
@@ -1708,17 +1880,38 @@ async function openShiftModal(entry = {}, isEdit = true) {
     `
         <div class="modal-header">
             <h2 class="modal-title">${titleText}</h2>
-            <p class="modal-subtitle">${subtitleText}</p>
+            <p class="modal-subtitle" id="editShiftModalSubtitle">${subtitleText}</p>
         </div>
         <form class="modal-form" id="editShiftForm">
             <div class="modal-form-row">
-                <div class="form-group">
+                <div class="form-group" style="flex: 1;">
+                    <label for="shiftWorkerInput">Medewerker</label>
+                    ${
+                      isEdit
+                        ? `
+                        <input type="text" id="shiftWorkerInput" class="modal-input" value="${escapeHtml(initialDisplayWithUser)}" disabled style="cursor: not-allowed; opacity: 0.85; background-color: var(--input-background);">
+                    `
+                        : `
+                        <div class="worker-autocomplete-wrapper">
+                            <input type="text" id="shiftWorkerInput" class="modal-input" placeholder="Zoek of kies medewerker..." value="${escapeHtml(parsedInitial.title)}" data-user-id="${initialUser.user_id || currentUserId}" data-username="${escapeHtml(initialUser.username || (initialUsername ? initialUsername.replace(/^@/, "") : ""))}" autocomplete="off">
+                            <div id="shiftWorkerDropdown" class="worker-autocomplete-dropdown"></div>
+                        </div>
+                    `
+                    }
+                </div>
+                <div class="form-group" style="flex: 1;">
                     <label>Datum</label>
                     <div id="editShiftDatePickerContainer"></div>
                 </div>
+            </div>
+            <div class="modal-form-row">
                 <div class="form-group">
                     <label for="editShiftProd">Productiviteit (%)</label>
                     <input type="number" id="editShiftProd" class="modal-input" value="${percent}">
+                </div>
+                <div class="form-group">
+                    <label for="editShiftPause">Pauze (minuten)</label>
+                    <input type="number" id="editShiftPause" class="modal-input" value="${pauseMinutes}">
                 </div>
             </div>
             <div class="modal-form-row">
@@ -1732,11 +1925,7 @@ async function openShiftModal(entry = {}, isEdit = true) {
                 </div>
             </div>
             <div class="modal-form-row">
-                <div class="form-group">
-                    <label for="editShiftPause">Pauze (minuten)</label>
-                    <input type="number" id="editShiftPause" class="modal-input" value="${pauseMinutes}">
-                </div>
-                <div class="form-group">
+                <div class="form-group" style="flex: 1;">
                     <label>Totaal colli</label>
                     <div class="modal-input" style="display: flex; align-items: center; background-color: var(--card-background-hover); cursor: default;">
                         <span id="editShiftColliDisplay" style="font-weight: 600;">${totalColli}</span>
@@ -1773,6 +1962,198 @@ async function openShiftModal(entry = {}, isEdit = true) {
     `,
     "modal-wide",
   );
+
+  const workerInput = overlay.querySelector("#shiftWorkerInput");
+  const workerDropdown = overlay.querySelector("#shiftWorkerDropdown");
+  const modalSubtitle = overlay.querySelector("#editShiftModalSubtitle");
+
+  if (!isEdit && workerInput && workerDropdown) {
+    let highlightedIndex = -1;
+
+    const renderWorkerMatches = (matches) => {
+      if (!matches || matches.length === 0) {
+        workerDropdown.innerHTML = `
+          <div style="padding: 10px 12px; font-size: 12px; color: var(--text-color-muted); text-align: center;">
+            Geen medewerkers gevonden
+          </div>
+        `;
+        workerDropdown.classList.add("active");
+        highlightedIndex = -1;
+        return;
+      }
+
+      workerDropdown.innerHTML = matches
+        .map((u, idx) => {
+          const parsed = parseUserDisplay(u.full_name, u.username);
+          const roleLabel =
+            u.role === 3 ? "Beheerder" : u.role === 2 ? "Teamleider" : "";
+          return `
+            <div class="worker-autocomplete-item ${idx === 0 ? "selected" : ""}" data-id="${u.user_id}" data-name="${escapeHtml(parsed.title)}" data-user="${escapeHtml(u.username || "")}">
+              <div class="worker-autocomplete-left">
+                <span class="worker-autocomplete-name">${escapeHtml(parsed.title)}</span>
+                ${u.username ? `<span class="worker-autocomplete-badge">@${escapeHtml(u.username)}</span>` : ""}
+              </div>
+              ${roleLabel ? `<span class="worker-role-badge">${roleLabel}</span>` : ""}
+            </div>
+          `;
+        })
+        .join("");
+
+      highlightedIndex = 0;
+      workerDropdown.classList.add("active");
+
+      workerDropdown
+        .querySelectorAll(".worker-autocomplete-item")
+        .forEach((item) => {
+          item.addEventListener("mousedown", (e) => {
+            e.preventDefault();
+            selectWorker(item.dataset.id, item.dataset.name, item.dataset.user);
+          });
+        });
+    };
+
+    const selectWorker = (uId, displayName, uname) => {
+      workerInput.value = displayName;
+      workerInput.dataset.userId = uId;
+      workerInput.dataset.username = uname || "";
+      workerDropdown.classList.remove("active");
+      workerDropdown.innerHTML = "";
+      if (modalSubtitle) {
+        modalSubtitle.textContent = `Nieuwe dienst toevoegen voor ${displayName}${uname ? ` (@${uname})` : ""}`;
+      }
+      workerInput.blur();
+    };
+
+    workerInput.addEventListener("focus", () => {
+      renderWorkerMatches(filterUsers(workerInput.value));
+    });
+
+    workerInput.addEventListener("input", () => {
+      const val = workerInput.value.trim();
+      const userByUname = findUserByUsername(val);
+      if (userByUname) {
+        workerInput.dataset.username = userByUname.username || "";
+        workerInput.dataset.userId = userByUname.user_id || "";
+        if (modalSubtitle) {
+          const parsed = parseUserDisplay(userByUname.full_name, userByUname.username);
+          const unameBadge = userByUname.username ? `@${userByUname.username.replace(/^@/, "")}` : "";
+          modalSubtitle.textContent = `Nieuwe dienst toevoegen voor ${parsed.title}${unameBadge ? ` (${unameBadge})` : ""}`;
+        }
+      } else {
+        const boundId = workerInput.dataset.userId;
+        const currentBoundUser = availableUsers.find((u) => u.user_id === boundId);
+        if (currentBoundUser) {
+          const boundName = (currentBoundUser.full_name || "").toLowerCase().trim();
+          const boundUname = (currentBoundUser.username || "").toLowerCase().trim();
+          const vLower = val.toLowerCase();
+          if (
+            boundName !== vLower &&
+            stripDiacritics(boundName) !== stripDiacritics(vLower) &&
+            boundUname !== vLower &&
+            `@${boundUname}` !== vLower
+          ) {
+            const exact = findExactUser(val);
+            if (exact) {
+              workerInput.dataset.username = exact.username || "";
+              workerInput.dataset.userId = exact.user_id || "";
+              if (modalSubtitle) {
+                const parsed = parseUserDisplay(exact.full_name, exact.username);
+                const unameBadge = exact.username ? `@${exact.username.replace(/^@/, "")}` : "";
+                modalSubtitle.textContent = `Nieuwe dienst toevoegen voor ${parsed.title}${unameBadge ? ` (${unameBadge})` : ""}`;
+              }
+            } else {
+              workerInput.dataset.username = "";
+              workerInput.dataset.userId = "";
+            }
+          }
+        } else {
+          const exact = findExactUser(val);
+          if (exact) {
+            workerInput.dataset.username = exact.username || "";
+            workerInput.dataset.userId = exact.user_id || "";
+            if (modalSubtitle) {
+              const parsed = parseUserDisplay(exact.full_name, exact.username);
+              const unameBadge = exact.username ? `@${exact.username.replace(/^@/, "")}` : "";
+              modalSubtitle.textContent = `Nieuwe dienst toevoegen voor ${parsed.title}${unameBadge ? ` (${unameBadge})` : ""}`;
+            }
+          } else {
+            workerInput.dataset.username = "";
+            workerInput.dataset.userId = "";
+          }
+        }
+      }
+
+      renderWorkerMatches(filterUsers(workerInput.value));
+    });
+
+    workerInput.addEventListener("blur", () => {
+      setTimeout(() => {
+        if (!workerInput.dataset.userId && workerInput.value.trim()) {
+          const exact = findExactUser(workerInput.value.trim());
+          if (exact) {
+            const parsed = parseUserDisplay(exact.full_name, exact.username);
+            selectWorker(exact.user_id, parsed.title, exact.username);
+          }
+        }
+      }, 200);
+    });
+
+    workerInput.addEventListener("keydown", (e) => {
+      const items = workerDropdown.querySelectorAll(
+        ".worker-autocomplete-item",
+      );
+      if (e.key === "ArrowDown" && items.length > 0) {
+        e.preventDefault();
+        highlightedIndex = (highlightedIndex + 1) % items.length;
+        items.forEach((it, idx) =>
+          it.classList.toggle("selected", idx === highlightedIndex),
+        );
+        items[highlightedIndex]?.scrollIntoView({ block: "nearest" });
+      } else if (e.key === "ArrowUp" && items.length > 0) {
+        e.preventDefault();
+        highlightedIndex = (highlightedIndex - 1 + items.length) % items.length;
+        items.forEach((it, idx) =>
+          it.classList.toggle("selected", idx === highlightedIndex),
+        );
+        items[highlightedIndex]?.scrollIntoView({ block: "nearest" });
+      } else if (e.key === "Enter") {
+        if (workerDropdown.classList.contains("active") && items.length > 0) {
+          e.preventDefault();
+          const targetItem =
+            items[highlightedIndex >= 0 ? highlightedIndex : 0];
+          if (targetItem) {
+            selectWorker(
+              targetItem.dataset.id,
+              targetItem.dataset.name,
+              targetItem.dataset.user,
+            );
+          }
+        } else {
+          e.preventDefault();
+          const exact = findExactUser(workerInput.value.trim());
+          if (exact) {
+            const parsed = parseUserDisplay(exact.full_name, exact.username);
+            selectWorker(exact.user_id, parsed.title, exact.username);
+          } else {
+            workerInput.blur();
+          }
+        }
+      } else if (e.key === "Escape") {
+        workerDropdown.classList.remove("active");
+        workerInput.blur();
+      }
+    });
+
+    const outsideClickListener = (e) => {
+      if (
+        !workerInput.contains(e.target) &&
+        !workerDropdown.contains(e.target)
+      ) {
+        workerDropdown.classList.remove("active");
+      }
+    };
+    document.addEventListener("click", outsideClickListener);
+  }
 
   const dateContainer = overlay.querySelector("#editShiftDatePickerContainer");
   let shiftDatePicker = null;
@@ -2021,11 +2402,25 @@ async function openShiftModal(entry = {}, isEdit = true) {
         colli: Number(t.colli) || 0,
       }));
 
+      const chosenWorkerId = isEdit
+        ? initialTargetUserId
+        : (workerInput?.dataset?.userId || "");
+
+      if (!chosenWorkerId) {
+        showToast("error", "Selecteer een geldige medewerker uit de lijst");
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = isEdit ? "Opslaan" : "Toevoegen";
+        }
+        workerInput?.focus();
+        return;
+      }
+
       try {
         const payloadAction = isEdit ? "update_shift" : "add_shift";
         const payloadBody = {
           action: payloadAction,
-          target_user_id: targetUserId,
+          target_user_id: chosenWorkerId,
           shift_date: chosenDate,
           shift_data: {
             date: chosenDate,
@@ -2062,11 +2457,14 @@ async function openShiftModal(entry = {}, isEdit = true) {
         );
 
         if (data?.user) {
-          if (targetUserId === currentUserId) {
+          if (chosenWorkerId === currentUserId) {
             ownUserData = data.user;
           }
           selectedFillerUserData = data.user;
-          applyUserProductivity(data.user, targetUserId === currentUserId);
+          selectedFillerUserId =
+            chosenWorkerId === currentUserId ? null : chosenWorkerId;
+          applyUserProductivity(data.user, chosenWorkerId === currentUserId);
+          updateTopFillerCardSelection();
         }
 
         await loadTopFillers(currentUserId, selectedScoreboardDate);

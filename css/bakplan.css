@@ -786,9 +786,11 @@
   overflow: hidden;
 }
 
-.modal-overlay.modal-carts-wide .modal-container {
-  max-width: 900px;
-  padding: 24px;
+@media (min-width: 769px) {
+  .modal-overlay.modal-carts-wide .modal-container {
+    max-width: 900px;
+    padding: 24px;
+  }
 }
 
 .carts-table-wrapper {
