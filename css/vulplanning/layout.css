@@ -1,270 +1,266 @@
 body {
-    user-select: none;
-    -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 input:not([readonly]):not([disabled]),
 textarea:not([readonly]):not([disabled]),
 [contenteditable="true"] {
-    user-select: text;
-    -webkit-user-select: text;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 input[readonly],
 input[disabled],
 textarea[readonly],
 textarea[disabled] {
-    user-select: none;
-    -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .vulplanning-main-layout {
-    padding: 0 !important;
-    max-width: 100%;
-    height: calc(100vh - 60px);
-    height: calc(100dvh - 60px);
-    max-height: calc(100vh - 60px);
-    max-height: calc(100dvh - 60px);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    box-sizing: border-box;
-    position: relative;
+  padding: 0 !important;
+  max-width: 100%;
+  height: calc(100vh - 60px);
+  height: calc(100dvh - 60px);
+  max-height: calc(100vh - 60px);
+  max-height: calc(100dvh - 60px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  position: relative;
 }
 
 .vulplanning-step-view {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 0%;
-    min-height: 0;
-    height: 100%;
-    max-height: 100%;
-    overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0%;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
 }
 
 .vulplanning-input-scroll-container {
-    flex: 1 1 0%;
-    overflow-y: auto;
-    min-height: 0;
+  flex: 1 1 0%;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .vulplanning-top-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin: 0;
-    padding: 10px 16px;
-    background-color: var(--card-background);
-    border-bottom: 1px solid var(--card-border);
-    flex-wrap: wrap;
-    flex-shrink: 0;
-    box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding: 10px 16px;
+  background-color: var(--card-background);
+  border-bottom: 1px solid var(--card-border);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .vulplanning-top-info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .vulplanning-page-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-color);
-    letter-spacing: -0.2px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+  letter-spacing: -0.2px;
 }
 
 .vulplanning-page-subtitle {
-    font-size: 11px;
-    color: var(--text-color-muted);
+  font-size: 11px;
+  color: var(--text-color-muted);
 }
 
 .vulplanning-top-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .planning-section {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin: 0;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--card-border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--card-border);
 }
 
 .section-header {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    padding-bottom: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-bottom: 4px;
 }
 
 .section-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-color);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-color);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .section-subtitle {
-    font-size: 11px;
-    color: var(--text-color-muted);
+  font-size: 11px;
+  color: var(--text-color-muted);
 }
 
 .section-body {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .planning-actions {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
-    margin-top: 1px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 1px;
 }
 
 .btn-add-vuller {
-    padding: 4px 10px;
-    font-size: 11px;
-    border-radius: 4px;
-    background-color: var(--input-background);
-    border: 1px solid var(--card-border);
-    color: var(--text-color);
-}@media (hover: hover) and (pointer: fine) {
-    .btn-add-vuller:hover {
-
+  padding: 4px 10px;
+  font-size: 11px;
+  border-radius: 4px;
+  background-color: var(--input-background);
+  border: 1px solid var(--card-border);
+  color: var(--text-color);
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn-add-vuller:hover {
     background-color: var(--card-border);
-
-    }
+  }
 }
 
-
 .btn-add-vuller .btn-icon {
-    font-size: 14px;
+  font-size: 14px;
 }
 
 .btn-primary {
-    padding: 4px 10px;
-    font-size: 11px;
-    border-radius: 4px;
-    background-color: var(--accent-color);
-    border: 1px solid var(--accent-color);
-    color: var(--text-color);
-    font-weight: 600;
-}@media (hover: hover) and (pointer: fine) {
-    .btn-primary:hover {
-
+  padding: 4px 10px;
+  font-size: 11px;
+  border-radius: 4px;
+  background-color: var(--accent-color);
+  border: 1px solid var(--accent-color);
+  color: var(--text-color);
+  font-weight: 600;
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover {
     background-color: var(--accent-hover);
     border-color: var(--accent-hover);
-
-    }
+  }
 }
 
-
 .btn-primary .btn-icon {
-    font-size: 14px;
+  font-size: 14px;
 }
 
 .btn-secondary {
-    padding: 4px 10px;
-    font-size: 11px;
-    border-radius: 4px;
-    background-color: var(--input-background);
-    border: 1px solid var(--card-border);
-    color: var(--text-color);
-    text-decoration: none;
-}@media (hover: hover) and (pointer: fine) {
-    .btn-secondary:hover {
-
+  padding: 4px 10px;
+  font-size: 11px;
+  border-radius: 4px;
+  background-color: var(--input-background);
+  border: 1px solid var(--card-border);
+  color: var(--text-color);
+  text-decoration: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn-secondary:hover {
     background-color: var(--card-border);
-
-    }
+  }
 }
 
-
 .btn-secondary .btn-icon {
-    font-size: 14px;
+  font-size: 14px;
 }
 
 .btn-continue {
-    padding: 4px 12px;
-    font-size: 11px;
-    border-radius: 4px;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
+  padding: 4px 12px;
+  font-size: 11px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .btn-continue .btn-icon {
-    font-size: 14px;
+  font-size: 14px;
 }
 
 .btn-sm {
-    padding: 4px 10px;
-    font-size: 11px;
-    border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 11px;
+  border-radius: 4px;
 }
 
 .btn-sm .btn-icon {
-    font-size: 14px;
+  font-size: 14px;
 }
 
 .empty-state {
-    text-align: center;
-    padding: 16px 12px;
-    color: var(--text-color-muted);
-    font-size: 12px;
+  text-align: center;
+  padding: 16px 12px;
+  color: var(--text-color-muted);
+  font-size: 12px;
 }
 
 .vulplanning-loading-screen {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: var(--background-color);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    z-index: 50;
-    opacity: 1;
-    transition: opacity 0.25s ease, visibility 0.25s ease;
-    visibility: visible;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--background-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 50;
+  opacity: 1;
+  transition:
+    opacity 0.25s ease,
+    visibility 0.25s ease;
+  visibility: visible;
 }
 
 .vulplanning-loading-screen.fade-out {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .vulplanning-loading-spinner {
-    width: 42px;
-    height: 42px;
-    border: 3px solid var(--card-border);
-    border-top-color: var(--accent-color);
-    border-radius: 50%;
-    animation: vulplanning-spin 0.8s linear infinite;
+  width: 42px;
+  height: 42px;
+  border: 3px solid var(--card-border);
+  border-top-color: var(--accent-color);
+  border-radius: 50%;
+  animation: vulplanning-spin 0.8s linear infinite;
 }
 
 .vulplanning-loading-text {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-color-muted);
-    letter-spacing: 0.3px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-color-muted);
+  letter-spacing: 0.3px;
 }
 
 @keyframes vulplanning-spin {
-    to {
-        transform: rotate(360deg);
-    }
+  to {
+    transform: rotate(360deg);
+  }
 }

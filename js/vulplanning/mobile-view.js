@@ -1,58 +1,75 @@
-import { planningState } from './state.js';
-import { timeToMinutes, minutesToTime, formatDuration, parsePauseMinutes, calculateProductivity, formatTimeInput, normalizeTimeOnBlur, getFillerStats } from './time-utils.js';
-import { triggerAutoSave } from './storage.js';
-import { escapeHtml } from '../main.js';
+import { planningState } from "./state.js";
+import {
+  timeToMinutes,
+  minutesToTime,
+  formatDuration,
+  parsePauseMinutes,
+  calculateProductivity,
+  formatTimeInput,
+  normalizeTimeOnBlur,
+  getFillerStats,
+} from "./time-utils.js";
+import { triggerAutoSave } from "./storage.js";
+import { escapeHtml } from "../main.js";
 
 export function renderMobilePlanningView(container) {
-    if (!container) return;
-    if (container.contains(document.activeElement)) return;
+  if (!container) return;
+  if (container.contains(document.activeElement)) return;
 
-    if (!planningState.fillers || planningState.fillers.length === 0) {
-        container.innerHTML = `
+  if (!planningState.fillers || planningState.fillers.length === 0) {
+    container.innerHTML = `
             <div class="mobile-planning-empty">
                 <span class="material-icons mobile-empty-icon">assignment</span>
                 <p>Geen planning gevonden</p>
                 <span class="mobile-empty-sub">Maak eerst een planning op de computer</span>
             </div>
         `;
-        return;
-    }
+    return;
+  }
 
-    const sortedFillers = [...planningState.fillers].sort((a, b) => {
-        const aCount = (planningState.assignedTasks[a.id] || []).length;
-        const bCount = (planningState.assignedTasks[b.id] || []).length;
-        if (aCount === 0 && bCount > 0) return 1;
-        if (aCount > 0 && bCount === 0) return -1;
-        return 0;
-    });
+  const sortedFillers = [...planningState.fillers].sort((a, b) => {
+    const aCount = (planningState.assignedTasks[a.id] || []).length;
+    const bCount = (planningState.assignedTasks[b.id] || []).length;
+    if (aCount === 0 && bCount > 0) return 1;
+    if (aCount > 0 && bCount === 0) return -1;
+    return 0;
+  });
 
-    container.innerHTML = sortedFillers.map(filler => {
-        const shiftStart = timeToMinutes(filler.from);
-        let shiftEnd = timeToMinutes(filler.to);
-        if (shiftEnd > 0 && shiftEnd <= shiftStart) {
-            shiftEnd += 24 * 60;
-        }
-        const shiftGrossDuration = Math.max(0, shiftEnd - shiftStart);
-        const assigned = planningState.assignedTasks[filler.id] || [];
-        const stats = getFillerStats(filler, assigned);
-        const workAssignedMins = stats.workAssignedMins;
-        const assignedPauzeMins = stats.assignedPauzeMins;
-        const totalAssignedMins = workAssignedMins + assignedPauzeMins;
-        const presetPauseStr = formatDuration(stats.presetPause);
-        const targetShiftDuration = Math.max(0, shiftGrossDuration - stats.presetPause) + assignedPauzeMins;
+  container.innerHTML = sortedFillers
+    .map((filler) => {
+      const shiftStart = timeToMinutes(filler.from);
+      let shiftEnd = timeToMinutes(filler.to);
+      if (shiftEnd > 0 && shiftEnd <= shiftStart) {
+        shiftEnd += 24 * 60;
+      }
+      const shiftGrossDuration = Math.max(0, shiftEnd - shiftStart);
+      const assigned = planningState.assignedTasks[filler.id] || [];
+      const stats = getFillerStats(filler, assigned);
+      const workAssignedMins = stats.workAssignedMins;
+      const assignedPauzeMins = stats.assignedPauzeMins;
+      const totalAssignedMins = workAssignedMins + assignedPauzeMins;
+      const presetPauseStr = formatDuration(stats.presetPause);
+      const targetShiftDuration =
+        Math.max(0, shiftGrossDuration - stats.presetPause) + assignedPauzeMins;
 
-        const prodResult = stats.prodResult;
-        const prodText = prodResult ? `Prod: ${prodResult.percent}%` : '';
-        const prodClass = prodResult ? prodResult.statusClass : '';
+      const prodResult = stats.prodResult;
+      const prodText = prodResult ? `Prod: ${prodResult.percent}%` : "";
+      const prodClass = prodResult ? prodResult.statusClass : "";
 
-        let currentBlockStartMins = shiftStart >= 0 ? shiftStart : 0;
-        const tasksHtml = assigned.length === 0
-            ? `<div class="mobile-worker-no-tasks">Geen taken toegewezen</div>`
-            : assigned.map((t, taskIdx) => {
+      let currentBlockStartMins = shiftStart >= 0 ? shiftStart : 0;
+      const tasksHtml =
+        assigned.length === 0
+          ? `<div class="mobile-worker-no-tasks">Geen taken toegewezen</div>`
+          : assigned
+              .map((t, taskIdx) => {
                 const isHelper = !!t.isHelper;
-                const typeClass = isHelper ? 'is-helper' : `type-${t.type || 'overige'}`;
-                const typeLabel = isHelper ? 'HELPER' : (t.type || 'overige').toUpperCase();
-                const colliText = t.colli ? ` &bull; ${t.colli} colli` : '';
+                const typeClass = isHelper
+                  ? "is-helper"
+                  : `type-${t.type || "overige"}`;
+                const typeLabel = isHelper
+                  ? "HELPER"
+                  : (t.type || "overige").toUpperCase();
+                const colliText = t.colli ? ` &bull; ${t.colli} colli` : "";
                 const taskStartMins = currentBlockStartMins;
                 const taskEndMins = currentBlockStartMins + t.duration;
                 const startStr = minutesToTime(taskStartMins);
@@ -63,7 +80,7 @@ export function renderMobilePlanningView(container) {
                     <div class="mobile-worker-task-item ${typeClass}">
                         <div class="mobile-task-main">
                             <span class="mobile-task-pill ${typeClass}">${typeLabel}</span>
-                            <div class="mobile-task-title">${escapeHtml(t.title || 'Taak')}</div>
+                            <div class="mobile-task-title">${escapeHtml(t.title || "Taak")}</div>
                         </div>
                         <div class="mobile-task-time-info">
                             <span class="mobile-task-duration">${formatDuration(t.duration)}${colliText}</span>
@@ -71,16 +88,17 @@ export function renderMobilePlanningView(container) {
                         </div>
                     </div>
                 `;
-            }).join('');
+              })
+              .join("");
 
-        return `
+      return `
             <div class="mobile-worker-card" data-filler-id="${filler.id}">
                 <div class="mobile-worker-card-header">
                     <div class="mobile-worker-identity">
-                        <div class="mobile-worker-name">${escapeHtml(filler.name || 'Medewerker')}</div>
+                        <div class="mobile-worker-name">${escapeHtml(filler.name || "Medewerker")}</div>
                         <div class="mobile-worker-shift">
                             <span class="material-icons mobile-icon-small">schedule</span>
-                            <span>${filler.from || '00:00'} - ${filler.to || '00:00'}</span>
+                            <span>${filler.from || "00:00"} - ${filler.to || "00:00"}</span>
                             <span class="mobile-dot">&bull;</span>
                             <span>Pauze: ${formatDuration(assignedPauzeMins)} / ${presetPauseStr}</span>
                             <span class="mobile-dot">&bull;</span>
@@ -101,7 +119,7 @@ export function renderMobilePlanningView(container) {
                                 class="input-field mobile-prod-input" 
                                 placeholder="00:00" 
                                 maxlength="5" 
-                                value="${filler.actualEndTime || ''}"
+                                value="${filler.actualEndTime || ""}"
                                 data-filler-id="${filler.id}"
                             />
                         </div>
@@ -119,67 +137,72 @@ export function renderMobilePlanningView(container) {
                 </div>
             </div>
         `;
-    }).join('');
+    })
+    .join("");
 
-    container.querySelectorAll('.mobile-worker-card').forEach(card => {
-        const fillerId = card.getAttribute('data-filler-id');
-        const filler = planningState.fillers.find(f => String(f.id) === String(fillerId));
-        if (!filler) return;
+  container.querySelectorAll(".mobile-worker-card").forEach((card) => {
+    const fillerId = card.getAttribute("data-filler-id");
+    const filler = planningState.fillers.find(
+      (f) => String(f.id) === String(fillerId),
+    );
+    if (!filler) return;
 
-        const assigned = planningState.assignedTasks[filler.id] || [];
-        const timeInput = card.querySelector('.mobile-prod-input');
-        const badge = card.querySelector('.mobile-prod-badge');
+    const assigned = planningState.assignedTasks[filler.id] || [];
+    const timeInput = card.querySelector(".mobile-prod-input");
+    const badge = card.querySelector(".mobile-prod-badge");
 
-        const updateProd = () => {
-            filler.actualEndTime = timeInput.value;
-            const res = getFillerStats(filler, assigned).prodResult;
-            if (!res) {
-                badge.textContent = '';
-                badge.className = 'mobile-prod-badge';
-                return;
-            }
-            badge.textContent = `Prod: ${res.percent}%`;
-            badge.className = `mobile-prod-badge ${res.statusClass}`;
-        };
+    const updateProd = () => {
+      filler.actualEndTime = timeInput.value;
+      const res = getFillerStats(filler, assigned).prodResult;
+      if (!res) {
+        badge.textContent = "";
+        badge.className = "mobile-prod-badge";
+        return;
+      }
+      badge.textContent = `Prod: ${res.percent}%`;
+      badge.className = `mobile-prod-badge ${res.statusClass}`;
+    };
 
-        if (timeInput) {
-            let lastVal = timeInput.value;
+    if (timeInput) {
+      let lastVal = timeInput.value;
 
-            timeInput.addEventListener('input', (e) => {
-                const isDeleting = (e && e.inputType && e.inputType.startsWith('delete')) || (timeInput.value.length < lastVal.length);
-                timeInput.value = formatTimeInput(timeInput.value, isDeleting);
-                lastVal = timeInput.value;
-                updateProd();
-                if (timeInput.value.length === 5 || timeInput.value === '') {
-                    triggerAutoSave(true);
-                } else {
-                    triggerAutoSave(false);
-                }
-            });
-
-            timeInput.addEventListener('change', () => {
-                if (timeInput.value) {
-                    timeInput.value = normalizeTimeOnBlur(timeInput.value);
-                    lastVal = timeInput.value;
-                }
-                updateProd();
-                triggerAutoSave(true);
-            });
-
-            timeInput.addEventListener('blur', () => {
-                if (timeInput.value) {
-                    timeInput.value = normalizeTimeOnBlur(timeInput.value);
-                    lastVal = timeInput.value;
-                }
-                updateProd();
-                triggerAutoSave(true);
-            });
-
-            timeInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    timeInput.blur();
-                }
-            });
+      timeInput.addEventListener("input", (e) => {
+        const isDeleting =
+          (e && e.inputType && e.inputType.startsWith("delete")) ||
+          timeInput.value.length < lastVal.length;
+        timeInput.value = formatTimeInput(timeInput.value, isDeleting);
+        lastVal = timeInput.value;
+        updateProd();
+        if (timeInput.value.length === 5 || timeInput.value === "") {
+          triggerAutoSave(true);
+        } else {
+          triggerAutoSave(false);
         }
-    });
+      });
+
+      timeInput.addEventListener("change", () => {
+        if (timeInput.value) {
+          timeInput.value = normalizeTimeOnBlur(timeInput.value);
+          lastVal = timeInput.value;
+        }
+        updateProd();
+        triggerAutoSave(true);
+      });
+
+      timeInput.addEventListener("blur", () => {
+        if (timeInput.value) {
+          timeInput.value = normalizeTimeOnBlur(timeInput.value);
+          lastVal = timeInput.value;
+        }
+        updateProd();
+        triggerAutoSave(true);
+      });
+
+      timeInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          timeInput.blur();
+        }
+      });
+    }
+  });
 }

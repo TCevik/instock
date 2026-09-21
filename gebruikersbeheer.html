@@ -1,100 +1,141 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-
-    <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="css/main.css">
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="css/main.css" />
     <script type="module" src="js/main.js"></script>
 
-    <link rel="stylesheet" href="css/gebruikersbeheer.css">
+    <link rel="stylesheet" href="css/gebruikersbeheer.css" />
     <script type="module" src="js/gebruikersbeheer.js"></script>
 
     <title>Gebruikersbeheer</title>
-</head>
+  </head>
 
-<body>
+  <body>
     <div class="page-container">
-        <div class="page-header-row">
-            <h1 class="page-title">Gebruikersbeheer</h1>
-            <div class="page-header-actions">
-                <div class="table-search-wrapper">
-                    <span class="material-icons search-icon">search</span>
-                    <input type="text" id="searchInput" class="search-input" placeholder="Zoek op naam of gebruikersnaam...">
-                </div>
-                <div class="filter-select-wrapper" id="roleFilterContainer"></div>
-                <button type="button" class="btn" id="createUserBtn">
-                    <span class="material-icons btn-icon">person_add</span>
-                    <span>Nieuwe gebruiker</span>
-                </button>
-            </div>
+      <div class="page-header-row">
+        <h1 class="page-title">Gebruikersbeheer</h1>
+        <div class="page-header-actions">
+          <div class="table-search-wrapper">
+            <span class="material-icons search-icon">search</span>
+            <input
+              type="text"
+              id="searchInput"
+              class="search-input"
+              placeholder="Zoek op naam of gebruikersnaam..."
+            />
+          </div>
+          <div class="filter-select-wrapper" id="roleFilterContainer"></div>
+          <button type="button" class="btn" id="createUserBtn">
+            <span class="material-icons btn-icon">person_add</span>
+            <span>Nieuwe gebruiker</span>
+          </button>
         </div>
-        <div class="table-card">
-            <div class="table-responsive">
-                <table class="users-table">
-                    <thead>
-                        <tr>
-                            <th class="th-sortable th-user" data-sort-key="name">
-                                <div class="th-content">
-                                    <span>Gebruiker</span>
-                                    <span class="material-icons sort-icon" id="sortIcon_name">unfold_more</span>
-                                </div>
-                            </th>
-                            <th class="th-sortable th-username" data-sort-key="username">
-                                <div class="th-content">
-                                    <span>Gebruikersnaam</span>
-                                    <span class="material-icons sort-icon" id="sortIcon_username">unfold_more</span>
-                                </div>
-                            </th>
-                            <th class="th-sortable th-role" data-sort-key="role">
-                                <div class="th-content">
-                                    <span>Rol</span>
-                                    <span class="material-icons sort-icon" id="sortIcon_role">unfold_more</span>
-                                </div>
-                            </th>
-                            <th class="th-sortable th-departments" data-sort-key="departments">
-                                <div class="th-content">
-                                    <span>Afdeling</span>
-                                    <span class="material-icons sort-icon" id="sortIcon_departments">unfold_more</span>
-                                </div>
-                            </th>
-                            <th class="th-sortable th-birthday" data-sort-key="birthday">
-                                <div class="th-content">
-                                    <span>Geboortedatum</span>
-                                    <span class="material-icons sort-icon" id="sortIcon_birthday">unfold_more</span>
-                                </div>
-                            </th>
+      </div>
+      <div class="table-card">
+        <div class="table-responsive">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th class="th-sortable th-user" data-sort-key="name">
+                  <div class="th-content">
+                    <span>Gebruiker</span>
+                    <span class="material-icons sort-icon" id="sortIcon_name"
+                      >unfold_more</span
+                    >
+                  </div>
+                </th>
+                <th class="th-sortable th-username" data-sort-key="username">
+                  <div class="th-content">
+                    <span>Gebruikersnaam</span>
+                    <span
+                      class="material-icons sort-icon"
+                      id="sortIcon_username"
+                      >unfold_more</span
+                    >
+                  </div>
+                </th>
+                <th class="th-sortable th-role" data-sort-key="role">
+                  <div class="th-content">
+                    <span>Rol</span>
+                    <span class="material-icons sort-icon" id="sortIcon_role"
+                      >unfold_more</span
+                    >
+                  </div>
+                </th>
+                <th
+                  class="th-sortable th-departments"
+                  data-sort-key="departments"
+                >
+                  <div class="th-content">
+                    <span>Afdeling</span>
+                    <span
+                      class="material-icons sort-icon"
+                      id="sortIcon_departments"
+                      >unfold_more</span
+                    >
+                  </div>
+                </th>
+                <th class="th-sortable th-birthday" data-sort-key="birthday">
+                  <div class="th-content">
+                    <span>Geboortedatum</span>
+                    <span
+                      class="material-icons sort-icon"
+                      id="sortIcon_birthday"
+                      >unfold_more</span
+                    >
+                  </div>
+                </th>
 
-                            <th class="th-sortable th-last-login" data-sort-key="last_sign_in_at">
-                                <div class="th-content">
-                                    <span>Laatst ingelogd</span>
-                                    <span class="material-icons sort-icon" id="sortIcon_last_sign_in_at">unfold_more</span>
-                                </div>
-                            </th>
-                            <th class="th-actions">Acties</th>
-                        </tr>
-                    </thead>
-                    <tbody id="usersTableBody">
-                    </tbody>
-                </table>
-            </div>
-            <div class="users-cards" id="usersCardsContainer"></div>
-            <div class="table-pagination">
-                <span class="pagination-info" id="paginationInfo"></span>
-                <div class="pagination-buttons">
-                    <button type="button" class="pagination-btn" id="prevPageBtn" title="Vorige Pagina - Ga naar de vorige pagina gebruikers">
-                        <span class="material-icons">chevron_left</span>
-                    </button>
-                    <span class="pagination-current" id="paginationCurrent"></span>
-                    <button type="button" class="pagination-btn" id="nextPageBtn" title="Volgende Pagina - Ga naar de volgende pagina gebruikers">
-                        <span class="material-icons">chevron_right</span>
-                    </button>
-                </div>
-            </div>
+                <th
+                  class="th-sortable th-last-login"
+                  data-sort-key="last_sign_in_at"
+                >
+                  <div class="th-content">
+                    <span>Laatst ingelogd</span>
+                    <span
+                      class="material-icons sort-icon"
+                      id="sortIcon_last_sign_in_at"
+                      >unfold_more</span
+                    >
+                  </div>
+                </th>
+                <th class="th-actions">Acties</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody"></tbody>
+          </table>
         </div>
+        <div class="users-cards" id="usersCardsContainer"></div>
+        <div class="table-pagination">
+          <span class="pagination-info" id="paginationInfo"></span>
+          <div class="pagination-buttons">
+            <button
+              type="button"
+              class="pagination-btn"
+              id="prevPageBtn"
+              title="Vorige Pagina - Ga naar de vorige pagina gebruikers"
+            >
+              <span class="material-icons">chevron_left</span>
+            </button>
+            <span class="pagination-current" id="paginationCurrent"></span>
+            <button
+              type="button"
+              class="pagination-btn"
+              id="nextPageBtn"
+              title="Volgende Pagina - Ga naar de volgende pagina gebruikers"
+            >
+              <span class="material-icons">chevron_right</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
-</body>
-
+  </body>
 </html>

@@ -1,42 +1,51 @@
-import { getCurrentUser, getAvailableModules, openChangePasswordModal, openPasskeyModal } from './main.js';
+import {
+  getCurrentUser,
+  getAvailableModules,
+  openChangePasswordModal,
+  openPasskeyModal,
+} from "./main.js";
 
 function escapeHtml(str) {
-    if (!str) return '';
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+  if (!str) return "";
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
 }
 
 async function initDashboard() {
-    const welcomeElement = document.getElementById('welcomeText');
-    const gridElement = document.getElementById('dashboardGrid');
-    const changePasswordBtn = document.getElementById('dashboardChangePasswordBtn');
-    const passkeyBtn = document.getElementById('dashboardPasskeyBtn');
+  const welcomeElement = document.getElementById("welcomeText");
+  const gridElement = document.getElementById("dashboardGrid");
+  const changePasswordBtn = document.getElementById(
+    "dashboardChangePasswordBtn",
+  );
+  const passkeyBtn = document.getElementById("dashboardPasskeyBtn");
 
-    if (changePasswordBtn) {
-        changePasswordBtn.addEventListener('click', openChangePasswordModal);
-    }
+  if (changePasswordBtn) {
+    changePasswordBtn.addEventListener("click", openChangePasswordModal);
+  }
 
-    if (passkeyBtn) {
-        passkeyBtn.addEventListener('click', openPasskeyModal);
-    }
+  if (passkeyBtn) {
+    passkeyBtn.addEventListener("click", openPasskeyModal);
+  }
 
-    const user = await getCurrentUser();
-    if (!user) return;
+  const user = await getCurrentUser();
+  if (!user) return;
 
-    const displayName = user.full_name?.trim() || user.username?.trim();
-    if (displayName && welcomeElement) {
-        welcomeElement.textContent = `Welkom terug, ${displayName}`;
-    }
+  const displayName = user.full_name?.trim() || user.username?.trim();
+  if (displayName && welcomeElement) {
+    welcomeElement.textContent = `Welkom terug, ${displayName}`;
+  }
 
-    const countBadge = document.getElementById('moduleCountBadge');
-    const modules = getAvailableModules(user.role);
+  const countBadge = document.getElementById("moduleCountBadge");
+  const modules = getAvailableModules(user.role);
 
-    if (countBadge) {
-        countBadge.textContent = `${modules.length} actief`;
-    }
+  if (countBadge) {
+    countBadge.textContent = `${modules.length} actief`;
+  }
 
-    gridElement.innerHTML = modules.map((m, index) => `
+  gridElement.innerHTML = modules
+    .map(
+      (m, index) => `
         <a href="${escapeHtml(m.href)}" class="dashboard-tile">
             <div class="tile-header">
                 <div class="tile-icon-box">
@@ -52,7 +61,9 @@ async function initDashboard() {
                 <p class="tile-desc">${escapeHtml(m.description)}</p>
             </div>
         </a>
-    `).join('');
+    `,
+    )
+    .join("");
 }
 
 initDashboard();

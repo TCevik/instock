@@ -1,295 +1,591 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-
-    <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="css/main.css">
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="css/main.css" />
     <script type="module" src="js/main.js"></script>
 
-    <link rel="stylesheet" href="css/productiviteit.css">
+    <link rel="stylesheet" href="css/productiviteit.css" />
     <script type="module" src="js/productiviteit.js"></script>
 
     <title>Productiviteit</title>
-</head>
+  </head>
 
-<body>
+  <body>
     <div class="page-container">
-        <div class="page-header-row">
-            <div class="page-header-title-group">
-                <h1 class="page-title">Mijn Productiviteit</h1>
-                <p class="productivity-subtitle">Bekijk je behaalde productiviteit en uitgevoerde paden per shift.</p>
-            </div>
-            <div class="productivity-summary-stats" id="productivityStatsSkeleton">
-                <div class="stat-card">
-                    <div class="stat-card-icon-wrapper skeleton"></div>
-                    <div class="stat-card-content">
-                        <div class="skeleton" style="width: 70px; height: 12px; margin-bottom: 6px;"></div>
-                        <div class="skeleton" style="width: 42px; height: 22px;"></div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-card-icon-wrapper skeleton"></div>
-                    <div class="stat-card-content">
-                        <div class="skeleton" style="width: 76px; height: 12px; margin-bottom: 6px;"></div>
-                        <div class="skeleton" style="width: 36px; height: 22px;"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="productivity-summary-stats" id="productivitySummaryStats" style="display: none;">
-                <div class="stat-card">
-                    <div class="stat-card-icon-wrapper">
-                        <span class="material-icons">inventory_2</span>
-                    </div>
-                    <div class="stat-card-content">
-                        <span class="stat-label">Totaal Colli</span>
-                        <span class="stat-value" id="statTotalColli">-</span>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-card-icon-wrapper">
-                        <span class="material-icons">calendar_month</span>
-                    </div>
-                    <div class="stat-card-content">
-                        <span class="stat-label">Aantal Shifts</span>
-                        <span class="stat-value" id="statTotalDays">-</span>
-                    </div>
-                </div>
-            </div>
+      <div class="page-header-row">
+        <div class="page-header-title-group">
+          <h1 class="page-title">Mijn Productiviteit</h1>
+          <p class="productivity-subtitle">
+            Bekijk je behaalde productiviteit en uitgevoerde paden per shift.
+          </p>
         </div>
-
-        <div id="productivitySkeleton" class="productivity-skeleton">
-            <div class="productivity-overview-row">
-                <div class="top-fillers-section">
-                    <div class="section-title-row">
-                        <div class="section-title-left">
-                            <div class="skeleton" style="width: 24px; height: 24px; border-radius: 6px;"></div>
-                            <div>
-                                <div class="skeleton" style="width: 110px; height: 16px; margin-bottom: 6px;"></div>
-                                <div class="skeleton" style="width: 80px; height: 12px;"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="top-fillers-list">
-                        <div class="top-filler-card">
-                            <div class="top-filler-left">
-                                <div class="skeleton skeleton-circle" style="width: 28px; height: 28px; flex-shrink: 0;"></div>
-                                <div class="skeleton skeleton-circle" style="width: 36px; height: 36px; flex-shrink: 0;"></div>
-                                <div class="top-filler-info" style="gap: 6px;">
-                                    <div class="skeleton" style="width: 110px; height: 14px;"></div>
-                                    <div class="skeleton" style="width: 70px; height: 11px;"></div>
-                                </div>
-                            </div>
-                            <div class="skeleton" style="width: 58px; height: 26px; border-radius: 8px; flex-shrink: 0;"></div>
-                        </div>
-                        <div class="top-filler-card">
-                            <div class="top-filler-left">
-                                <div class="skeleton skeleton-circle" style="width: 28px; height: 28px; flex-shrink: 0;"></div>
-                                <div class="skeleton skeleton-circle" style="width: 36px; height: 36px; flex-shrink: 0;"></div>
-                                <div class="top-filler-info" style="gap: 6px;">
-                                    <div class="skeleton" style="width: 95px; height: 14px;"></div>
-                                    <div class="skeleton" style="width: 65px; height: 11px;"></div>
-                                </div>
-                            </div>
-                            <div class="skeleton" style="width: 58px; height: 26px; border-radius: 8px; flex-shrink: 0;"></div>
-                        </div>
-                        <div class="top-filler-card">
-                            <div class="top-filler-left">
-                                <div class="skeleton skeleton-circle" style="width: 28px; height: 28px; flex-shrink: 0;"></div>
-                                <div class="skeleton skeleton-circle" style="width: 36px; height: 36px; flex-shrink: 0;"></div>
-                                <div class="top-filler-info" style="gap: 6px;">
-                                    <div class="skeleton" style="width: 120px; height: 14px;"></div>
-                                    <div class="skeleton" style="width: 75px; height: 11px;"></div>
-                                </div>
-                            </div>
-                            <div class="skeleton" style="width: 58px; height: 26px; border-radius: 8px; flex-shrink: 0;"></div>
-                        </div>
-                        <div class="top-filler-card">
-                            <div class="top-filler-left">
-                                <div class="skeleton skeleton-circle" style="width: 28px; height: 28px; flex-shrink: 0;"></div>
-                                <div class="skeleton skeleton-circle" style="width: 36px; height: 36px; flex-shrink: 0;"></div>
-                                <div class="top-filler-info" style="gap: 6px;">
-                                    <div class="skeleton" style="width: 85px; height: 14px;"></div>
-                                    <div class="skeleton" style="width: 60px; height: 11px;"></div>
-                                </div>
-                            </div>
-                            <div class="skeleton" style="width: 58px; height: 26px; border-radius: 8px; flex-shrink: 0;"></div>
-                        </div>
-                        <div class="top-filler-card">
-                            <div class="top-filler-left">
-                                <div class="skeleton skeleton-circle" style="width: 28px; height: 28px; flex-shrink: 0;"></div>
-                                <div class="skeleton skeleton-circle" style="width: 36px; height: 36px; flex-shrink: 0;"></div>
-                                <div class="top-filler-info" style="gap: 6px;">
-                                    <div class="skeleton" style="width: 105px; height: 14px;"></div>
-                                    <div class="skeleton" style="width: 70px; height: 11px;"></div>
-                                </div>
-                            </div>
-                            <div class="skeleton" style="width: 58px; height: 26px; border-radius: 8px; flex-shrink: 0;"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="productivity-chart-card">
-                    <div class="chart-header-row">
-                        <div class="chart-header-left">
-                            <div class="skeleton" style="width: 24px; height: 24px; border-radius: 6px;"></div>
-                            <div>
-                                <div class="skeleton" style="width: 120px; height: 16px; margin-bottom: 6px;"></div>
-                                <div class="skeleton" style="width: 160px; height: 12px;"></div>
-                            </div>
-                        </div>
-                        <div class="chart-header-right">
-                            <div class="skeleton" style="width: 160px; height: 32px; border-radius: 8px;"></div>
-                            <div class="skeleton" style="width: 90px; height: 32px; border-radius: 8px;"></div>
-                        </div>
-                    </div>
-                    <div class="skeleton" style="width: 100%; height: 270px; border-radius: 10px; margin-top: 8px;"></div>
-                </div>
+        <div class="productivity-summary-stats" id="productivityStatsSkeleton">
+          <div class="stat-card">
+            <div class="stat-card-icon-wrapper skeleton"></div>
+            <div class="stat-card-content">
+              <div
+                class="skeleton"
+                style="width: 70px; height: 12px; margin-bottom: 6px"
+              ></div>
+              <div class="skeleton" style="width: 42px; height: 22px"></div>
             </div>
-            <div class="section-divider"></div>
-            <div class="my-shifts-section">
-                <div class="section-title-row">
-                    <div class="section-title-left">
-                        <div class="skeleton" style="width: 24px; height: 24px; border-radius: 6px;"></div>
-                        <div>
-                            <div class="skeleton" style="width: 160px; height: 16px; margin-bottom: 6px;"></div>
-                            <div class="skeleton" style="width: 260px; height: 12px;"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="productivity-list">
-                    <div class="productivity-day-card" style="padding: 18px 20px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
-                            <div style="display: flex; align-items: center; gap: 12px;">
-                                <div class="skeleton" style="width: 140px; height: 18px;"></div>
-                                <div class="skeleton" style="width: 70px; height: 26px; border-radius: 8px;"></div>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <div class="skeleton" style="width: 120px; height: 24px; border-radius: 6px;"></div>
-                                <div class="skeleton" style="width: 100px; height: 24px; border-radius: 6px;"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="productivity-day-card" style="padding: 18px 20px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
-                            <div style="display: flex; align-items: center; gap: 12px;">
-                                <div class="skeleton" style="width: 130px; height: 18px;"></div>
-                                <div class="skeleton" style="width: 70px; height: 26px; border-radius: 8px;"></div>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <div class="skeleton" style="width: 115px; height: 24px; border-radius: 6px;"></div>
-                                <div class="skeleton" style="width: 95px; height: 24px; border-radius: 6px;"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon-wrapper skeleton"></div>
+            <div class="stat-card-content">
+              <div
+                class="skeleton"
+                style="width: 76px; height: 12px; margin-bottom: 6px"
+              ></div>
+              <div class="skeleton" style="width: 36px; height: 22px"></div>
             </div>
+          </div>
         </div>
-
-        <div class="productivity-overview-row" id="productivityOverviewRow">
-            <div id="topFillersSection" class="top-fillers-section collapsed" style="display: none;">
-                <div class="section-title-row" id="topFillersHeader">
-                    <div class="section-title-left">
-                        <span class="material-icons section-title-icon">leaderboard</span>
-                        <div>
-                            <h2 class="section-heading" id="topFillersHeading">Top 10 Vullers</h2>
-                            <p class="section-subtext" id="topFillersSubtext">Laatste 10 shifts per vuller</p>
-                        </div>
-                    </div>
-                    <span class="material-icons top-fillers-chevron" id="topFillersChevron">expand_more</span>
-                    <div class="top-fillers-header-actions">
-                        <button type="button" id="exportTopFillersBtn" class="top-fillers-export-btn" data-tooltip="Top 10 exporteren (A4)">
-                            <span class="material-icons">print</span>
-                            <span class="export-btn-text">Exporteren</span>
-                        </button>
-                        <div class="shifts-date-filter-wrapper" id="topFillersDateFilterWrapper" style="display: none;">
-                            <div id="topFillersDatePickerContainer" class="shifts-datepicker-container"></div>
-                            <button type="button" id="topFillersDateFilterClearBtn" class="shifts-date-clear-btn" style="display: none;" data-tooltip="Datumfilter wissen">
-                                <span class="material-icons">close</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div id="topFillersUserPreview" class="top-fillers-user-preview" style="display: none;"></div>
-                <div class="top-fillers-body" id="topFillersBody">
-                    <div class="top-fillers-body-inner">
-                        <div id="topFillersList" class="top-fillers-list"></div>
-                        <div id="topFillerUserRank" class="top-filler-user-rank" style="display: none;"></div>
-                    </div>
-                </div>
+        <div
+          class="productivity-summary-stats"
+          id="productivitySummaryStats"
+          style="display: none"
+        >
+          <div class="stat-card">
+            <div class="stat-card-icon-wrapper">
+              <span class="material-icons">inventory_2</span>
             </div>
-
-            <div id="productivityChartCard" class="productivity-chart-card" style="display: none;">
-                <div class="chart-header-row">
-                    <div class="chart-header-left">
-                        <span class="material-icons chart-header-icon">show_chart</span>
-                        <div>
-                            <h2 class="chart-title" id="productivityChartTitle">Mijn Voortgang</h2>
-                            <p class="chart-subtitle" id="chartCardSubtitle">Productiviteit per gewerkte shift</p>
-                        </div>
-                    </div>
-                    <div class="chart-header-right">
-                        <div class="chart-timeframe-select-wrapper" id="chartTimeframeSelectContainer"></div>
-                        <div class="chart-toggle-group">
-                            <button type="button" class="chart-toggle-btn active" id="chartModeIndividual">Individueel</button>
-                            <button type="button" class="chart-toggle-btn" id="chartModeAverage">Gemiddeld</button>
-                        </div>
-                        <div class="chart-target-badge">
-                            <span class="chart-target-line-sample"></span>
-                            <span>Norm: 100%</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="chart-container" id="productivityChartContainer"></div>
+            <div class="stat-card-content">
+              <span class="stat-label">Totaal Colli</span>
+              <span class="stat-value" id="statTotalColli">-</span>
             </div>
-
-            <div id="productivityEmpty" class="productivity-empty" style="display: none;">
-                <span class="material-icons empty-icon">trending_up</span>
-                <h3 class="empty-title" id="emptyTitle">Geen productiviteitsgegevens gevonden</h3>
-                <p class="empty-text" id="emptyText">Er zijn nog geen gefinaliseerde vulplanningen gekoppeld aan jouw account.</p>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon-wrapper">
+              <span class="material-icons">calendar_month</span>
             </div>
+            <div class="stat-card-content">
+              <span class="stat-label">Aantal Shifts</span>
+              <span class="stat-value" id="statTotalDays">-</span>
+            </div>
+          </div>
         </div>
+      </div>
 
-        <div id="productivitySectionDivider" class="section-divider" style="display: none;"></div>
-
-        <div id="myShiftsSection" class="my-shifts-section" style="display: none;">
+      <div id="productivitySkeleton" class="productivity-skeleton">
+        <div class="productivity-overview-row">
+          <div class="top-fillers-section">
             <div class="section-title-row">
-                <div class="section-title-left">
-                    <span class="material-icons section-title-icon">history</span>
-                    <div>
-                        <h2 class="section-heading" id="myShiftsSectionHeading">Mijn Gewerkte Diensten</h2>
-                        <p class="section-subtext" id="myShiftsSectionSubtext">Overzicht van al jouw opgeslagen shifts en behaalde productiviteit</p>
-                    </div>
+              <div class="section-title-left">
+                <div
+                  class="skeleton"
+                  style="width: 24px; height: 24px; border-radius: 6px"
+                ></div>
+                <div>
+                  <div
+                    class="skeleton"
+                    style="width: 110px; height: 16px; margin-bottom: 6px"
+                  ></div>
+                  <div class="skeleton" style="width: 80px; height: 12px"></div>
                 </div>
-                <div class="section-title-right">
-                    <button type="button" id="addShiftBtn" style="display: none;">
-                        <span class="material-icons">add</span>
-                        <span>Dienst toevoegen</span>
-                    </button>
-                    <div class="shifts-date-filter-wrapper">
-                        <div id="shiftsDatePickerContainer" class="shifts-datepicker-container"></div>
-                        <button type="button" id="shiftsDateFilterClearBtn" class="shifts-date-clear-btn" style="display: none;" data-tooltip="Datumfilter wissen">
-                            <span class="material-icons">close</span>
-                        </button>
-                    </div>
-                </div>
+              </div>
             </div>
-            <div id="productivityList" class="productivity-list"></div>
-            <div class="table-pagination my-shifts-pagination" id="productivityPagination" style="display: none;">
-                <span class="pagination-info" id="productivityPaginationInfo">0 shifts</span>
-                <div class="pagination-buttons">
-                    <button type="button" class="pagination-btn" id="productivityPrevPageBtn" disabled data-tooltip="Vorige Pagina">
-                        <span class="material-icons">chevron_left</span>
-                    </button>
-                    <span class="pagination-current" id="productivityPaginationCurrent">Pagina 1 van 1</span>
-                    <button type="button" class="pagination-btn" id="productivityNextPageBtn" disabled data-tooltip="Volgende Pagina">
-                        <span class="material-icons">chevron_right</span>
-                    </button>
+            <div class="top-fillers-list">
+              <div class="top-filler-card">
+                <div class="top-filler-left">
+                  <div
+                    class="skeleton skeleton-circle"
+                    style="width: 28px; height: 28px; flex-shrink: 0"
+                  ></div>
+                  <div
+                    class="skeleton skeleton-circle"
+                    style="width: 36px; height: 36px; flex-shrink: 0"
+                  ></div>
+                  <div class="top-filler-info" style="gap: 6px">
+                    <div
+                      class="skeleton"
+                      style="width: 110px; height: 14px"
+                    ></div>
+                    <div
+                      class="skeleton"
+                      style="width: 70px; height: 11px"
+                    ></div>
+                  </div>
                 </div>
+                <div
+                  class="skeleton"
+                  style="
+                    width: 58px;
+                    height: 26px;
+                    border-radius: 8px;
+                    flex-shrink: 0;
+                  "
+                ></div>
+              </div>
+              <div class="top-filler-card">
+                <div class="top-filler-left">
+                  <div
+                    class="skeleton skeleton-circle"
+                    style="width: 28px; height: 28px; flex-shrink: 0"
+                  ></div>
+                  <div
+                    class="skeleton skeleton-circle"
+                    style="width: 36px; height: 36px; flex-shrink: 0"
+                  ></div>
+                  <div class="top-filler-info" style="gap: 6px">
+                    <div
+                      class="skeleton"
+                      style="width: 95px; height: 14px"
+                    ></div>
+                    <div
+                      class="skeleton"
+                      style="width: 65px; height: 11px"
+                    ></div>
+                  </div>
+                </div>
+                <div
+                  class="skeleton"
+                  style="
+                    width: 58px;
+                    height: 26px;
+                    border-radius: 8px;
+                    flex-shrink: 0;
+                  "
+                ></div>
+              </div>
+              <div class="top-filler-card">
+                <div class="top-filler-left">
+                  <div
+                    class="skeleton skeleton-circle"
+                    style="width: 28px; height: 28px; flex-shrink: 0"
+                  ></div>
+                  <div
+                    class="skeleton skeleton-circle"
+                    style="width: 36px; height: 36px; flex-shrink: 0"
+                  ></div>
+                  <div class="top-filler-info" style="gap: 6px">
+                    <div
+                      class="skeleton"
+                      style="width: 120px; height: 14px"
+                    ></div>
+                    <div
+                      class="skeleton"
+                      style="width: 75px; height: 11px"
+                    ></div>
+                  </div>
+                </div>
+                <div
+                  class="skeleton"
+                  style="
+                    width: 58px;
+                    height: 26px;
+                    border-radius: 8px;
+                    flex-shrink: 0;
+                  "
+                ></div>
+              </div>
+              <div class="top-filler-card">
+                <div class="top-filler-left">
+                  <div
+                    class="skeleton skeleton-circle"
+                    style="width: 28px; height: 28px; flex-shrink: 0"
+                  ></div>
+                  <div
+                    class="skeleton skeleton-circle"
+                    style="width: 36px; height: 36px; flex-shrink: 0"
+                  ></div>
+                  <div class="top-filler-info" style="gap: 6px">
+                    <div
+                      class="skeleton"
+                      style="width: 85px; height: 14px"
+                    ></div>
+                    <div
+                      class="skeleton"
+                      style="width: 60px; height: 11px"
+                    ></div>
+                  </div>
+                </div>
+                <div
+                  class="skeleton"
+                  style="
+                    width: 58px;
+                    height: 26px;
+                    border-radius: 8px;
+                    flex-shrink: 0;
+                  "
+                ></div>
+              </div>
+              <div class="top-filler-card">
+                <div class="top-filler-left">
+                  <div
+                    class="skeleton skeleton-circle"
+                    style="width: 28px; height: 28px; flex-shrink: 0"
+                  ></div>
+                  <div
+                    class="skeleton skeleton-circle"
+                    style="width: 36px; height: 36px; flex-shrink: 0"
+                  ></div>
+                  <div class="top-filler-info" style="gap: 6px">
+                    <div
+                      class="skeleton"
+                      style="width: 105px; height: 14px"
+                    ></div>
+                    <div
+                      class="skeleton"
+                      style="width: 70px; height: 11px"
+                    ></div>
+                  </div>
+                </div>
+                <div
+                  class="skeleton"
+                  style="
+                    width: 58px;
+                    height: 26px;
+                    border-radius: 8px;
+                    flex-shrink: 0;
+                  "
+                ></div>
+              </div>
             </div>
+          </div>
+          <div class="productivity-chart-card">
+            <div class="chart-header-row">
+              <div class="chart-header-left">
+                <div
+                  class="skeleton"
+                  style="width: 24px; height: 24px; border-radius: 6px"
+                ></div>
+                <div>
+                  <div
+                    class="skeleton"
+                    style="width: 120px; height: 16px; margin-bottom: 6px"
+                  ></div>
+                  <div
+                    class="skeleton"
+                    style="width: 160px; height: 12px"
+                  ></div>
+                </div>
+              </div>
+              <div class="chart-header-right">
+                <div
+                  class="skeleton"
+                  style="width: 160px; height: 32px; border-radius: 8px"
+                ></div>
+                <div
+                  class="skeleton"
+                  style="width: 90px; height: 32px; border-radius: 8px"
+                ></div>
+              </div>
+            </div>
+            <div
+              class="skeleton"
+              style="
+                width: 100%;
+                height: 270px;
+                border-radius: 10px;
+                margin-top: 8px;
+              "
+            ></div>
+          </div>
         </div>
-    </div>
-</body>
+        <div class="section-divider"></div>
+        <div class="my-shifts-section">
+          <div class="section-title-row">
+            <div class="section-title-left">
+              <div
+                class="skeleton"
+                style="width: 24px; height: 24px; border-radius: 6px"
+              ></div>
+              <div>
+                <div
+                  class="skeleton"
+                  style="width: 160px; height: 16px; margin-bottom: 6px"
+                ></div>
+                <div class="skeleton" style="width: 260px; height: 12px"></div>
+              </div>
+            </div>
+          </div>
+          <div class="productivity-list">
+            <div class="productivity-day-card" style="padding: 18px 20px">
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  gap: 12px;
+                  flex-wrap: wrap;
+                "
+              >
+                <div style="display: flex; align-items: center; gap: 12px">
+                  <div
+                    class="skeleton"
+                    style="width: 140px; height: 18px"
+                  ></div>
+                  <div
+                    class="skeleton"
+                    style="width: 70px; height: 26px; border-radius: 8px"
+                  ></div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px">
+                  <div
+                    class="skeleton"
+                    style="width: 120px; height: 24px; border-radius: 6px"
+                  ></div>
+                  <div
+                    class="skeleton"
+                    style="width: 100px; height: 24px; border-radius: 6px"
+                  ></div>
+                </div>
+              </div>
+            </div>
+            <div class="productivity-day-card" style="padding: 18px 20px">
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  gap: 12px;
+                  flex-wrap: wrap;
+                "
+              >
+                <div style="display: flex; align-items: center; gap: 12px">
+                  <div
+                    class="skeleton"
+                    style="width: 130px; height: 18px"
+                  ></div>
+                  <div
+                    class="skeleton"
+                    style="width: 70px; height: 26px; border-radius: 8px"
+                  ></div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px">
+                  <div
+                    class="skeleton"
+                    style="width: 115px; height: 24px; border-radius: 6px"
+                  ></div>
+                  <div
+                    class="skeleton"
+                    style="width: 95px; height: 24px; border-radius: 6px"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
+      <div class="productivity-overview-row" id="productivityOverviewRow">
+        <div
+          id="topFillersSection"
+          class="top-fillers-section collapsed"
+          style="display: none"
+        >
+          <div class="section-title-row" id="topFillersHeader">
+            <div class="section-title-left">
+              <span class="material-icons section-title-icon">leaderboard</span>
+              <div>
+                <h2 class="section-heading" id="topFillersHeading">
+                  Top 10 Vullers
+                </h2>
+                <p class="section-subtext" id="topFillersSubtext">
+                  Laatste 10 shifts per vuller
+                </p>
+              </div>
+            </div>
+            <span
+              class="material-icons top-fillers-chevron"
+              id="topFillersChevron"
+              >expand_more</span
+            >
+            <div class="top-fillers-header-actions">
+              <button
+                type="button"
+                id="exportTopFillersBtn"
+                class="top-fillers-export-btn"
+                data-tooltip="Top 10 exporteren (A4)"
+              >
+                <span class="material-icons">print</span>
+                <span class="export-btn-text">Exporteren</span>
+              </button>
+              <div
+                class="shifts-date-filter-wrapper"
+                id="topFillersDateFilterWrapper"
+                style="display: none"
+              >
+                <div
+                  id="topFillersDatePickerContainer"
+                  class="shifts-datepicker-container"
+                ></div>
+                <button
+                  type="button"
+                  id="topFillersDateFilterClearBtn"
+                  class="shifts-date-clear-btn"
+                  style="display: none"
+                  data-tooltip="Datumfilter wissen"
+                >
+                  <span class="material-icons">close</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div
+            id="topFillersUserPreview"
+            class="top-fillers-user-preview"
+            style="display: none"
+          ></div>
+          <div class="top-fillers-body" id="topFillersBody">
+            <div class="top-fillers-body-inner">
+              <div id="topFillersList" class="top-fillers-list"></div>
+              <div
+                id="topFillerUserRank"
+                class="top-filler-user-rank"
+                style="display: none"
+              ></div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          id="productivityChartCard"
+          class="productivity-chart-card"
+          style="display: none"
+        >
+          <div class="chart-header-row">
+            <div class="chart-header-left">
+              <span class="material-icons chart-header-icon">show_chart</span>
+              <div>
+                <h2 class="chart-title" id="productivityChartTitle">
+                  Mijn Voortgang
+                </h2>
+                <p class="chart-subtitle" id="chartCardSubtitle">
+                  Productiviteit per gewerkte shift
+                </p>
+              </div>
+            </div>
+            <div class="chart-header-right">
+              <div
+                class="chart-timeframe-select-wrapper"
+                id="chartTimeframeSelectContainer"
+              ></div>
+              <div class="chart-toggle-group">
+                <button
+                  type="button"
+                  class="chart-toggle-btn active"
+                  id="chartModeIndividual"
+                >
+                  Individueel
+                </button>
+                <button
+                  type="button"
+                  class="chart-toggle-btn"
+                  id="chartModeAverage"
+                >
+                  Gemiddeld
+                </button>
+              </div>
+              <div class="chart-target-badge">
+                <span class="chart-target-line-sample"></span>
+                <span>Norm: 100%</span>
+              </div>
+            </div>
+          </div>
+          <div class="chart-container" id="productivityChartContainer"></div>
+        </div>
+
+        <div
+          id="productivityEmpty"
+          class="productivity-empty"
+          style="display: none"
+        >
+          <span class="material-icons empty-icon">trending_up</span>
+          <h3 class="empty-title" id="emptyTitle">
+            Geen productiviteitsgegevens gevonden
+          </h3>
+          <p class="empty-text" id="emptyText">
+            Er zijn nog geen gefinaliseerde vulplanningen gekoppeld aan jouw
+            account.
+          </p>
+        </div>
+      </div>
+
+      <div
+        id="productivitySectionDivider"
+        class="section-divider"
+        style="display: none"
+      ></div>
+
+      <div id="myShiftsSection" class="my-shifts-section" style="display: none">
+        <div class="section-title-row">
+          <div class="section-title-left">
+            <span class="material-icons section-title-icon">history</span>
+            <div>
+              <h2 class="section-heading" id="myShiftsSectionHeading">
+                Mijn Gewerkte Diensten
+              </h2>
+              <p class="section-subtext" id="myShiftsSectionSubtext">
+                Overzicht van al jouw opgeslagen shifts en behaalde
+                productiviteit
+              </p>
+            </div>
+          </div>
+          <div class="section-title-right">
+            <button type="button" id="addShiftBtn" style="display: none">
+              <span class="material-icons">add</span>
+              <span>Dienst toevoegen</span>
+            </button>
+            <div class="shifts-date-filter-wrapper">
+              <div
+                id="shiftsDatePickerContainer"
+                class="shifts-datepicker-container"
+              ></div>
+              <button
+                type="button"
+                id="shiftsDateFilterClearBtn"
+                class="shifts-date-clear-btn"
+                style="display: none"
+                data-tooltip="Datumfilter wissen"
+              >
+                <span class="material-icons">close</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div id="productivityList" class="productivity-list"></div>
+        <div
+          class="table-pagination my-shifts-pagination"
+          id="productivityPagination"
+          style="display: none"
+        >
+          <span class="pagination-info" id="productivityPaginationInfo"
+            >0 shifts</span
+          >
+          <div class="pagination-buttons">
+            <button
+              type="button"
+              class="pagination-btn"
+              id="productivityPrevPageBtn"
+              disabled
+              data-tooltip="Vorige Pagina"
+            >
+              <span class="material-icons">chevron_left</span>
+            </button>
+            <span class="pagination-current" id="productivityPaginationCurrent"
+              >Pagina 1 van 1</span
+            >
+            <button
+              type="button"
+              class="pagination-btn"
+              id="productivityNextPageBtn"
+              disabled
+              data-tooltip="Volgende Pagina"
+            >
+              <span class="material-icons">chevron_right</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
 </html>

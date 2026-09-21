@@ -1,52 +1,59 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="nl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
 
-    <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="css/main.css">
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="css/main.css" />
     <script type="module" src="js/main.js"></script>
 
-    <link rel="stylesheet" href="css/instellingen.css">
+    <link rel="stylesheet" href="css/instellingen.css" />
     <script type="module" src="js/instellingen.js"></script>
 
     <title>Instellingen Winkel</title>
-</head>
-<body>
+  </head>
+  <body>
     <main class="page-container">
-        <div class="dashboard-hero">
-            <div class="hero-content">
-                <div class="hero-greeting">
-                    <span class="hero-badge">Instellingen</span>
-                    <h1 class="welcome-heading">Instellingen Winkel</h1>
-                    <p class="dashboard-subtitle">Beheer de vaste paden, categorieën en normen van de winkel</p>
-                </div>
-                <button type="button" class="hero-action-btn" id="saveAllPathsBtn">
-                    <span class="material-icons">save</span>
-                    <span>Wijzigingen opslaan</span>
-                </button>
-            </div>
+      <div class="dashboard-hero">
+        <div class="hero-content">
+          <div class="hero-greeting">
+            <span class="hero-badge">Instellingen</span>
+            <h1 class="welcome-heading">Instellingen Winkel</h1>
+            <p class="dashboard-subtitle">
+              Beheer de vaste paden, categorieën en normen van de winkel
+            </p>
+          </div>
+          <button type="button" class="hero-action-btn" id="saveAllPathsBtn">
+            <span class="material-icons">save</span>
+            <span>Wijzigingen opslaan</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="paths-master-detail" data-mobile-view="list">
+        <div class="paths-sidebar">
+          <div class="paths-sidebar-header">
+            <span class="paths-sidebar-title">Paden</span>
+            <button type="button" class="btn-secondary btn-sm" id="addPathBtn">
+              <span class="material-icons btn-icon">add</span>
+              <span>Nieuw pad</span>
+            </button>
+          </div>
+          <div class="paths-list" id="pathsListContainer">
+            <div class="empty-state">Paden laden...</div>
+          </div>
         </div>
 
-        <div class="paths-master-detail" data-mobile-view="list">
-            <div class="paths-sidebar">
-                <div class="paths-sidebar-header">
-                    <span class="paths-sidebar-title">Paden</span>
-                    <button type="button" class="btn-secondary btn-sm" id="addPathBtn">
-                        <span class="material-icons btn-icon">add</span>
-                        <span>Nieuw pad</span>
-                    </button>
-                </div>
-                <div class="paths-list" id="pathsListContainer">
-                    <div class="empty-state">Paden laden...</div>
-                </div>
-            </div>
-
-            <div class="paths-detail-panel" id="pathDetailPanel">
-                <div class="empty-state">Selecteer een pad om de details en categorieën te bewerken</div>
-            </div>
+        <div class="paths-detail-panel" id="pathDetailPanel">
+          <div class="empty-state">
+            Selecteer een pad om de details en categorieën te bewerken
+          </div>
         </div>
+      </div>
     </main>
-</body>
+  </body>
 </html>

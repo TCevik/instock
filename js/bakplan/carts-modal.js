@@ -1,44 +1,52 @@
-import { showModal, closeModal } from '../modal.js';
-import { DEFAULT_CARTS } from './schedule-calculator.js';
+import { showModal, closeModal } from "../modal.js";
+import { DEFAULT_CARTS } from "./schedule-calculator.js";
 
 export function getStoredCarts() {
-    try {
-        const stored = localStorage.getItem('bakplan_carts_config');
-        if (stored) {
-            const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-    } catch (e) {}
-    return DEFAULT_CARTS;
+  try {
+    const stored = localStorage.getItem("bakplan_carts_config");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {}
+  return DEFAULT_CARTS;
 }
 
 export function openCartsModal(bakplanData, onConfirm) {
-    const categories = (bakplanData || []).map(cat => ({ id: cat.id, name: cat.name || '' }));
-    let carts = JSON.parse(JSON.stringify(getStoredCarts()));
+  const categories = (bakplanData || []).map((cat) => ({
+    id: cat.id,
+    name: cat.name || "",
+  }));
+  let carts = JSON.parse(JSON.stringify(getStoredCarts()));
 
-    const renderRowsHtml = () => {
-        return carts.map((cart, index) => {
-            const isMixed = cart.type === 'mixed';
-            const catOptions = categories.map(cat => `
-                <option value="${cat.name}" ${cart.reservedCategory === cat.name ? 'selected' : ''}>
+  const renderRowsHtml = () => {
+    return carts
+      .map((cart, index) => {
+        const isMixed = cart.type === "mixed";
+        const catOptions = categories
+          .map(
+            (cat) => `
+                <option value="${cat.name}" ${cart.reservedCategory === cat.name ? "selected" : ""}>
                     ${cat.name}
                 </option>
-            `).join('');
+            `,
+          )
+          .join("");
 
-            return `
+        return `
                 <tr data-index="${index}">
                     <td>
                         <input type="text" class="cart-modal-input cart-input-name" value="${cart.name || `Kar ${index + 1}`}">
                     </td>
                     <td>
                         <select class="cart-modal-select cart-select-type">
-                            <option value="single" ${cart.type === 'single' ? 'selected' : ''}>1 Categorie</option>
-                            <option value="mixed" ${cart.type === 'mixed' ? 'selected' : ''}>Gemixt</option>
+                            <option value="single" ${cart.type === "single" ? "selected" : ""}>1 Categorie</option>
+                            <option value="mixed" ${cart.type === "mixed" ? "selected" : ""}>Gemixt</option>
                         </select>
                     </td>
                     <td>
-                        <select class="cart-modal-select cart-select-cat" ${isMixed ? 'disabled' : ''}>
-                            <option value="" ${!cart.reservedCategory ? 'selected' : ''}>Alle categorieën</option>
+                        <select class="cart-modal-select cart-select-cat" ${isMixed ? "disabled" : ""}>
+                            <option value="" ${!cart.reservedCategory ? "selected" : ""}>Alle categorieën</option>
                             ${catOptions}
                         </select>
                     </td>
@@ -47,12 +55,12 @@ export function openCartsModal(bakplanData, onConfirm) {
                     </td>
                     <td>
                         <div class="cart-toggle-wrapper">
-                            <span class="cart-toggle-label label-thaw ${!cart.oven ? 'active' : ''}">Ontdooien</span>
+                            <span class="cart-toggle-label label-thaw ${!cart.oven ? "active" : ""}">Ontdooien</span>
                             <label class="cart-switch">
-                                <input type="checkbox" class="cart-toggle-oven" ${cart.oven ? 'checked' : ''}>
+                                <input type="checkbox" class="cart-toggle-oven" ${cart.oven ? "checked" : ""}>
                                 <span class="cart-slider"></span>
                             </label>
-                            <span class="cart-toggle-label label-oven ${cart.oven ? 'active' : ''}">Oven</span>
+                            <span class="cart-toggle-label label-oven ${cart.oven ? "active" : ""}">Oven</span>
                         </div>
                     </td>
                     <td style="text-align: center;">
@@ -62,10 +70,11 @@ export function openCartsModal(bakplanData, onConfirm) {
                     </td>
                 </tr>
             `;
-        }).join('');
-    };
+      })
+      .join("");
+  };
 
-    const modalHtml = `
+  const modalHtml = `
         <div class="modal-header">
             <h2 class="modal-title">Karren Beheren</h2>
         </div>
@@ -99,103 +108,107 @@ export function openCartsModal(bakplanData, onConfirm) {
         </div>
     `;
 
-    showModal(modalHtml, 'modal-carts-wide').then(overlay => {
-        const tableBody = overlay.querySelector('#carts-table-body');
-        const btnAddRow = overlay.querySelector('#btn-add-cart-row');
-        const btnCancel = overlay.querySelector('#btn-carts-cancel');
-        const btnSave = overlay.querySelector('#btn-carts-save');
+  showModal(modalHtml, "modal-carts-wide").then((overlay) => {
+    const tableBody = overlay.querySelector("#carts-table-body");
+    const btnAddRow = overlay.querySelector("#btn-add-cart-row");
+    const btnCancel = overlay.querySelector("#btn-carts-cancel");
+    const btnSave = overlay.querySelector("#btn-carts-save");
 
-        const bindEvents = () => {
-            tableBody.querySelectorAll('tr').forEach((row, idx) => {
-                const typeSelect = row.querySelector('.cart-select-type');
-                const catSelect = row.querySelector('.cart-select-cat');
-                const ovenToggle = row.querySelector('.cart-toggle-oven');
-                const labelThaw = row.querySelector('.label-thaw');
-                const labelOven = row.querySelector('.label-oven');
-                const btnDelete = row.querySelector('.cart-row-delete-btn');
+    const bindEvents = () => {
+      tableBody.querySelectorAll("tr").forEach((row, idx) => {
+        const typeSelect = row.querySelector(".cart-select-type");
+        const catSelect = row.querySelector(".cart-select-cat");
+        const ovenToggle = row.querySelector(".cart-toggle-oven");
+        const labelThaw = row.querySelector(".label-thaw");
+        const labelOven = row.querySelector(".label-oven");
+        const btnDelete = row.querySelector(".cart-row-delete-btn");
 
-                typeSelect.addEventListener('change', (e) => {
-                    const isMixed = e.target.value === 'mixed';
-                    catSelect.disabled = isMixed;
-                    if (isMixed) catSelect.value = '';
-                    carts[idx].type = e.target.value;
-                    if (isMixed) carts[idx].reservedCategory = '';
-                });
+        typeSelect.addEventListener("change", (e) => {
+          const isMixed = e.target.value === "mixed";
+          catSelect.disabled = isMixed;
+          if (isMixed) catSelect.value = "";
+          carts[idx].type = e.target.value;
+          if (isMixed) carts[idx].reservedCategory = "";
+        });
 
-                ovenToggle.addEventListener('change', (e) => {
-                    const isOven = e.target.checked;
-                    carts[idx].oven = isOven;
-                    if (isOven) {
-                        labelOven.classList.add('active');
-                        labelThaw.classList.remove('active');
-                    } else {
-                        labelThaw.classList.add('active');
-                        labelOven.classList.remove('active');
-                    }
-                });
+        ovenToggle.addEventListener("change", (e) => {
+          const isOven = e.target.checked;
+          carts[idx].oven = isOven;
+          if (isOven) {
+            labelOven.classList.add("active");
+            labelThaw.classList.remove("active");
+          } else {
+            labelThaw.classList.add("active");
+            labelOven.classList.remove("active");
+          }
+        });
 
-                btnDelete.addEventListener('click', () => {
-                    carts.splice(idx, 1);
-                    tableBody.innerHTML = renderRowsHtml();
-                    bindEvents();
-                });
-            });
-        };
+        btnDelete.addEventListener("click", () => {
+          carts.splice(idx, 1);
+          tableBody.innerHTML = renderRowsHtml();
+          bindEvents();
+        });
+      });
+    };
 
+    bindEvents();
+
+    if (btnAddRow) {
+      btnAddRow.addEventListener("click", () => {
+        const newId = carts.length + 1;
+        carts.push({
+          id: newId,
+          name: `Kar ${newId}`,
+          type: "single",
+          reservedCategory: "",
+          capacity: 15,
+          oven: true,
+        });
+        tableBody.innerHTML = renderRowsHtml();
         bindEvents();
+      });
+    }
 
-        if (btnAddRow) {
-            btnAddRow.addEventListener('click', () => {
-                const newId = carts.length + 1;
-                carts.push({
-                    id: newId,
-                    name: `Kar ${newId}`,
-                    type: 'single',
-                    reservedCategory: '',
-                    capacity: 15,
-                    oven: true
-                });
-                tableBody.innerHTML = renderRowsHtml();
-                bindEvents();
-            });
-        }
+    if (btnCancel) {
+      btnCancel.addEventListener("click", () => {
+        closeModal(overlay);
+      });
+    }
 
-        if (btnCancel) {
-            btnCancel.addEventListener('click', () => {
-                closeModal(overlay);
-            });
-        }
+    if (btnSave) {
+      btnSave.addEventListener("click", () => {
+        const rows = tableBody.querySelectorAll("tr");
+        const finalCarts = [];
 
-        if (btnSave) {
-            btnSave.addEventListener('click', () => {
-                const rows = tableBody.querySelectorAll('tr');
-                const finalCarts = [];
+        rows.forEach((row, idx) => {
+          const nameInput = row.querySelector(".cart-input-name");
+          const typeSelect = row.querySelector(".cart-select-type");
+          const catSelect = row.querySelector(".cart-select-cat");
+          const capInput = row.querySelector(".cart-input-cap");
+          const ovenToggle = row.querySelector(".cart-toggle-oven");
 
-                rows.forEach((row, idx) => {
-                    const nameInput = row.querySelector('.cart-input-name');
-                    const typeSelect = row.querySelector('.cart-select-type');
-                    const catSelect = row.querySelector('.cart-select-cat');
-                    const capInput = row.querySelector('.cart-input-cap');
-                    const ovenToggle = row.querySelector('.cart-toggle-oven');
+          const capVal = parseInt(capInput.value, 10);
+          finalCarts.push({
+            id: idx + 1,
+            name: nameInput.value.trim() || `Kar ${idx + 1}`,
+            type: typeSelect.value,
+            reservedCategory:
+              typeSelect.value === "mixed" ? "" : catSelect.value || "",
+            capacity: isNaN(capVal) || capVal <= 0 ? 15 : capVal,
+            oven: ovenToggle.checked,
+          });
+        });
 
-                    const capVal = parseInt(capInput.value, 10);
-                    finalCarts.push({
-                        id: idx + 1,
-                        name: nameInput.value.trim() || `Kar ${idx + 1}`,
-                        type: typeSelect.value,
-                        reservedCategory: typeSelect.value === 'mixed' ? '' : (catSelect.value || ''),
-                        capacity: isNaN(capVal) || capVal <= 0 ? 15 : capVal,
-                        oven: ovenToggle.checked
-                    });
-                });
+        try {
+          localStorage.setItem(
+            "bakplan_carts_config",
+            JSON.stringify(finalCarts),
+          );
+        } catch (e) {}
 
-                try {
-                    localStorage.setItem('bakplan_carts_config', JSON.stringify(finalCarts));
-                } catch (e) {}
-
-                closeModal(overlay);
-                if (onConfirm) onConfirm(finalCarts);
-            });
-        }
-    });
+        closeModal(overlay);
+        if (onConfirm) onConfirm(finalCarts);
+      });
+    }
+  });
 }

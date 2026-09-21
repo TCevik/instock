@@ -1,4 +1,4 @@
-import { escapeHtml } from './main.js';
+import { escapeHtml } from "./main.js";
 
 /**
  * Exporteert de Top 10 productiviteit naar een feestelijk gedecoreerd A4-document (print & PDF).
@@ -10,55 +10,66 @@ import { escapeHtml } from './main.js';
  * @param {Object} options - Optionele configuratie (bijv. date, title, subtitle)
  */
 export function exportTopFillersA4(topFillers, options = {}) {
-    if (!Array.isArray(topFillers) || topFillers.length === 0) {
-        throw new Error('Geen productiviteitsgegevens beschikbaar om te exporteren.');
-    }
+  if (!Array.isArray(topFillers) || topFillers.length === 0) {
+    throw new Error(
+      "Geen productiviteitsgegevens beschikbaar om te exporteren.",
+    );
+  }
 
-    const fillers = topFillers.slice(0, 10);
-    const dateLabel = options.dateLabel || (options.date ? options.date : 'Laatste 10 shifts per vuller');
-    const generationDate = new Intl.DateTimeFormat('nl-NL', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-    }).format(new Date());
+  const fillers = topFillers.slice(0, 10);
+  const dateLabel =
+    options.dateLabel ||
+    (options.date ? options.date : "Laatste 10 shifts per vuller");
+  const generationDate = new Intl.DateTimeFormat("nl-NL", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
 
-    // Verdeel over categorieën
-    const first = fillers[0] || null;
-    const second = fillers[1] || null;
-    const third = fillers[2] || null;
-    const fourth = fillers[3] || null;
-    const fifth = fillers[4] || null;
-    const remainingOthers = fillers.slice(5); // 6 t/m 10
+  // Verdeel over categorieën
+  const first = fillers[0] || null;
+  const second = fillers[1] || null;
+  const third = fillers[2] || null;
+  const fourth = fillers[3] || null;
+  const fifth = fillers[4] || null;
+  const remainingOthers = fillers.slice(5); // 6 t/m 10
 
-    let iframe = document.getElementById('print-top-fillers-iframe');
-    if (!iframe) {
-        iframe = document.createElement('iframe');
-        iframe.id = 'print-top-fillers-iframe';
-        iframe.style.position = 'fixed';
-        iframe.style.right = '0';
-        iframe.style.bottom = '0';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
-        iframe.style.border = '0';
-        document.body.appendChild(iframe);
-    }
+  let iframe = document.getElementById("print-top-fillers-iframe");
+  if (!iframe) {
+    iframe = document.createElement("iframe");
+    iframe.id = "print-top-fillers-iframe";
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    document.body.appendChild(iframe);
+  }
 
-    const doc = iframe.contentWindow.document;
-    doc.open();
+  const doc = iframe.contentWindow.document;
+  doc.open();
 
-    const renderPodiumItem = (filler, rank, medal, title, stars) => {
-        if (!filler) return '<div class="podium-col empty"></div>';
-        const rawName = filler.full_name || filler.username || 'Medewerker';
-        const name = escapeHtml(rawName);
-        const avgProd = Math.round(Number(filler.average_productivity) || 0);
-        const shiftCount = Number(filler.shifts_count) || 0;
-        const initials = rawName.split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'M';
+  const renderPodiumItem = (filler, rank, medal, title, stars) => {
+    if (!filler) return '<div class="podium-col empty"></div>';
+    const rawName = filler.full_name || filler.username || "Medewerker";
+    const name = escapeHtml(rawName);
+    const avgProd = Math.round(Number(filler.average_productivity) || 0);
+    const shiftCount = Number(filler.shifts_count) || 0;
+    const initials =
+      rawName
+        .split(" ")
+        .filter(Boolean)
+        .map((n) => n[0])
+        .slice(0, 2)
+        .join("")
+        .toUpperCase() || "M";
 
-        return `
+    return `
             <div class="podium-col rank-${rank}">
                 <div class="podium-crown-area">
                     <span class="podium-medal">${medal}</span>
-                    ${rank === 1 ? '<span class="crown-icon">👑</span>' : ''}
+                    ${rank === 1 ? '<span class="crown-icon">👑</span>' : ""}
                 </div>
                 <div class="podium-card rank-${rank}">
                     <div class="stars-row">${stars}</div>
@@ -72,24 +83,31 @@ export function exportTopFillersA4(topFillers, options = {}) {
                         <span class="prod-percent">${avgProd}%</span>
                         <span class="prod-sub">productiviteit</span>
                     </div>
-                    <div class="podium-shifts">${shiftCount} ${shiftCount === 1 ? 'shift' : 'shifts'}</div>
+                    <div class="podium-shifts">${shiftCount} ${shiftCount === 1 ? "shift" : "shifts"}</div>
                 </div>
                 <div class="podium-pedestal rank-${rank}">
                     <span class="pedestal-rank">${rank}</span>
                 </div>
             </div>
         `;
-    };
+  };
 
-    const renderHonorableItem = (filler, rank, medal, title) => {
-        if (!filler) return '';
-        const rawName = filler.full_name || filler.username || 'Medewerker';
-        const name = escapeHtml(rawName);
-        const avgProd = Math.round(Number(filler.average_productivity) || 0);
-        const shiftCount = Number(filler.shifts_count) || 0;
-        const initials = rawName.split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'M';
+  const renderHonorableItem = (filler, rank, medal, title) => {
+    if (!filler) return "";
+    const rawName = filler.full_name || filler.username || "Medewerker";
+    const name = escapeHtml(rawName);
+    const avgProd = Math.round(Number(filler.average_productivity) || 0);
+    const shiftCount = Number(filler.shifts_count) || 0;
+    const initials =
+      rawName
+        .split(" ")
+        .filter(Boolean)
+        .map((n) => n[0])
+        .slice(0, 2)
+        .join("")
+        .toUpperCase() || "M";
 
-        return `
+    return `
             <div class="honorable-card rank-${rank}">
                 <div class="honorable-badge-wrapper">
                     <span class="honorable-medal">${medal}</span>
@@ -101,7 +119,7 @@ export function exportTopFillersA4(topFillers, options = {}) {
                         <span class="honorable-name">${name}</span>
                         <span class="honorable-title-tag">${title}</span>
                     </div>
-                    <span class="honorable-shifts">${shiftCount} ${shiftCount === 1 ? 'shift' : 'shifts'} opgeslagen</span>
+                    <span class="honorable-shifts">${shiftCount} ${shiftCount === 1 ? "shift" : "shifts"} opgeslagen</span>
                 </div>
                 <div class="honorable-prod-badge">
                     <span class="honorable-prod-val">${avgProd}%</span>
@@ -109,31 +127,38 @@ export function exportTopFillersA4(topFillers, options = {}) {
                 </div>
             </div>
         `;
-    };
+  };
 
-    const renderRemainingRow = (filler, rank) => {
-        const rawName = filler.full_name || filler.username || 'Medewerker';
-        const name = escapeHtml(rawName);
-        const avgProd = Math.round(Number(filler.average_productivity) || 0);
-        const shiftCount = Number(filler.shifts_count) || 0;
-        const initials = rawName.split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'M';
+  const renderRemainingRow = (filler, rank) => {
+    const rawName = filler.full_name || filler.username || "Medewerker";
+    const name = escapeHtml(rawName);
+    const avgProd = Math.round(Number(filler.average_productivity) || 0);
+    const shiftCount = Number(filler.shifts_count) || 0;
+    const initials =
+      rawName
+        .split(" ")
+        .filter(Boolean)
+        .map((n) => n[0])
+        .slice(0, 2)
+        .join("")
+        .toUpperCase() || "M";
 
-        return `
+    return `
             <div class="remaining-row">
                 <div class="remaining-rank-badge">#${rank}</div>
                 <div class="remaining-avatar">${initials}</div>
                 <div class="remaining-info">
                     <div class="remaining-name">${name}</div>
-                    <div class="remaining-shifts">${shiftCount} ${shiftCount === 1 ? 'shift' : 'shifts'}</div>
+                    <div class="remaining-shifts">${shiftCount} ${shiftCount === 1 ? "shift" : "shifts"}</div>
                 </div>
                 <div class="remaining-prod-badge">
                     <span class="remaining-prod-val">${avgProd}%</span>
                 </div>
             </div>
         `;
-    };
+  };
 
-    const html = `<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
@@ -872,22 +897,26 @@ export function exportTopFillersA4(topFillers, options = {}) {
         <section class="podium-section">
             <div class="section-label">🌟 Het Ere-Podium 🌟</div>
             <div class="podium-container">
-                ${renderPodiumItem(second, 2, '🥈', 'Zilveren Vuller', '⭐⭐⭐⭐')}
-                ${renderPodiumItem(first, 1, '🥇', 'Kampioen der Vullers', '⭐⭐⭐⭐⭐')}
-                ${renderPodiumItem(third, 3, '🥉', 'Bronzen Vuller', '⭐⭐⭐')}
+                ${renderPodiumItem(second, 2, "🥈", "Zilveren Vuller", "⭐⭐⭐⭐")}
+                ${renderPodiumItem(first, 1, "🥇", "Kampioen der Vullers", "⭐⭐⭐⭐⭐")}
+                ${renderPodiumItem(third, 3, "🥉", "Bronzen Vuller", "⭐⭐⭐")}
             </div>
         </section>
 
         <!-- PLEK 4 EN 5 MET EXTRA ROEM -->
-        ${(fourth || fifth) ? `
+        ${
+          fourth || fifth
+            ? `
         <section class="honorable-section">
             <div class="section-label">✨ Top Vullers &bull; Eervolle Vermeldingen ✨</div>
             <div class="honorable-grid">
-                ${renderHonorableItem(fourth, 4, '🎖️', 'Toppresteerder')}
-                ${renderHonorableItem(fifth, 5, '⭐', 'Krachtpatser')}
+                ${renderHonorableItem(fourth, 4, "🎖️", "Toppresteerder")}
+                ${renderHonorableItem(fifth, 5, "⭐", "Krachtpatser")}
             </div>
         </section>
-        ` : ''}
+        `
+            : ""
+        }
 
         <!-- PLEK 6 T/M 10 GEWOON ONDER ELKAAR -->
         <section class="remaining-section">
@@ -896,8 +925,13 @@ export function exportTopFillersA4(topFillers, options = {}) {
                 <span>Productiviteit</span>
             </div>
             <div class="remaining-list">
-                ${remainingOthers.length > 0 
-                    ? remainingOthers.map((filler, idx) => renderRemainingRow(filler, idx + 6)).join('')
+                ${
+                  remainingOthers.length > 0
+                    ? remainingOthers
+                        .map((filler, idx) =>
+                          renderRemainingRow(filler, idx + 6),
+                        )
+                        .join("")
                     : '<div style="text-align: center; color: #94a3b8; padding: 6px; font-size: 10px;">Geen verdere vullers in de ranglijst</div>'
                 }
             </div>
@@ -918,11 +952,11 @@ export function exportTopFillersA4(topFillers, options = {}) {
 </body>
 </html>`;
 
-    doc.write(html);
-    doc.close();
+  doc.write(html);
+  doc.close();
 
-    setTimeout(() => {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-    }, 250);
+  setTimeout(() => {
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+  }, 250);
 }

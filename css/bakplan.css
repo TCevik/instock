@@ -1,968 +1,967 @@
 .bakplan-subtitle {
-    font-size: 13px;
-    color: var(--text-color-muted);
-    margin-top: 4px;
+  font-size: 13px;
+  color: var(--text-color-muted);
+  margin-top: 4px;
 }
 
 .mobile-warning-container {
-    display: none;
+  display: none;
 }
 
 .bakplan-days-tabs {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 12px;
-    overflow-x: auto;
-    padding-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  padding-bottom: 2px;
 }
 
 .day-tab {
-    flex: 1;
-    min-width: 85px;
-    padding: 7px 10px;
-    background-color: var(--card-background);
-    border: 1px solid var(--card-border);
-    border-radius: 8px;
-    color: var(--text-color-muted);
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    text-align: center;
-    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-}@media (hover: hover) and (pointer: fine) {
-    .day-tab:hover {
-
+  flex: 1;
+  min-width: 85px;
+  padding: 7px 10px;
+  background-color: var(--card-background);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  color: var(--text-color-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .day-tab:hover {
     border-color: var(--text-color-muted);
     color: var(--text-color);
-
-    }
+  }
 }
 
-
 .day-tab.active {
-    background-color: var(--bg-active);
-    border-color: var(--accent-color);
-    color: var(--accent-color);
+  background-color: var(--bg-active);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
 }
 
 .bakplan-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 10px;
-    margin-bottom: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
 .stat-card {
-    background-color: var(--card-background);
-    border: 1px solid var(--card-border);
-    border-radius: 10px;
-    padding: 10px 14px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    box-sizing: border-box;
-    transition: border-color 0.2s ease;
-}@media (hover: hover) and (pointer: fine) {
-    .stat-card:hover {
-
+  background-color: var(--card-background);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .stat-card:hover {
     border-color: var(--card-border-hover);
-
-    }
+  }
 }
 
-
 .stat-card-icon-wrapper {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    background-color: var(--input-background);
-    border: 1px solid var(--card-border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-color-muted);
-    flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background-color: var(--input-background);
+  border: 1px solid var(--card-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color-muted);
+  flex-shrink: 0;
 }
 
 .stat-card-icon-wrapper.accent {
-    background-color: var(--stat-icon-accent-bg);
-    border-color: var(--stat-icon-accent-border);
-    color: var(--accent-color);
+  background-color: var(--stat-icon-accent-bg);
+  border-color: var(--stat-icon-accent-border);
+  color: var(--accent-color);
 }
 
 .stat-card-icon-wrapper .material-icons {
-    font-size: 18px;
+  font-size: 18px;
 }
 
 .stat-card-content {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
 }
 
 .stat-value {
-    font-size: 1.25rem;
-    font-weight: 700;
-    line-height: 1.1;
-    color: var(--text-color);
-    min-height: 24px;
-    display: inline-flex;
-    align-items: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--text-color);
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .stat-value.accent {
-    color: var(--accent-color);
+  color: var(--accent-color);
 }
 
 .stat-label {
-    font-size: 11px;
-    color: var(--text-color-muted);
-    font-weight: 500;
-    margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-color-muted);
+  font-weight: 500;
+  margin-top: 2px;
 }
 
 .bakplan-toolbar-card {
-    background-color: var(--card-background);
-    border: 1px solid var(--card-border);
-    border-radius: 10px;
-    padding: 8px 12px;
-    margin-bottom: 12px;
+  background-color: var(--card-background);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
 }
 
 .bakplan-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .search-input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-    width: 280px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 280px;
 }
 
 .search-input-wrapper .search-icon {
-    position: absolute;
-    left: 10px;
-    font-size: 16px;
-    color: var(--text-color-placeholder);
-    pointer-events: none;
+  position: absolute;
+  left: 10px;
+  font-size: 16px;
+  color: var(--text-color-placeholder);
+  pointer-events: none;
 }
 
 .bakplan-search-input {
-    background-color: var(--input-background);
-    border: 1px solid var(--card-border);
-    border-radius: 6px;
-    padding: 6px 10px 6px 32px;
-    color: var(--text-color);
-    font-size: 12px;
-    outline: none;
-    transition: border-color 0.2s ease;
-    width: 100%;
-    box-sizing: border-box;
+  background-color: var(--input-background);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 6px 10px 6px 32px;
+  color: var(--text-color);
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .bakplan-search-input::placeholder {
-    color: var(--text-color-placeholder);
+  color: var(--text-color-placeholder);
 }
 
 .bakplan-search-input:focus {
-    border-color: var(--accent-color);
-    outline: none;
-    box-shadow: none;
+  border-color: var(--accent-color);
+  outline: none;
+  box-shadow: none;
 }
 
 .toolbar-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .categories-container {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .category-card {
-    background-color: var(--card-background);
-    border: 1px solid var(--card-border);
-    border-radius: 10px;
-    overflow: hidden;
-    transition: border-color 0.2s ease;
+  background-color: var(--card-background);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.2s ease;
 }
 
 .category-card-header {
-    background-color: var(--bg-active);
-    padding: 8px 12px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--card-border);
-    user-select: none;
-    cursor: pointer;
-    transition: border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background-color: var(--bg-active);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--card-border);
+  user-select: none;
+  cursor: pointer;
+  transition: border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .category-card.collapsed .category-card-header {
-    border-bottom-color: transparent;
+  border-bottom-color: transparent;
 }
 
 .category-card-body {
-    display: grid;
-    grid-template-rows: 1fr;
-    opacity: 1;
-    transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
-    width: 100%;
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s ease;
+  width: 100%;
 }
 
 .category-card.collapsed .category-card-body {
-    grid-template-rows: 0fr;
-    opacity: 0;
-    pointer-events: none;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .category-card-body-inner {
-    min-height: 0;
-    overflow: hidden;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .cat-header-left {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .btn-toggle-cat {
-    background: transparent;
-    border: none;
-    color: var(--text-color-muted);
-    cursor: pointer;
-    padding: 2px;
-    display: inline-flex;
-    align-items: center;
-    border-radius: 4px;
-}@media (hover: hover) and (pointer: fine) {
-    .btn-toggle-cat:hover {
-
+  background: transparent;
+  border: none;
+  color: var(--text-color-muted);
+  cursor: pointer;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 4px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn-toggle-cat:hover {
     color: var(--text-color);
-
-    }
+  }
 }
 
-
 .chevron-icon {
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .category-card.collapsed .chevron-icon {
-    transform: rotate(-180deg);
+  transform: rotate(-180deg);
 }
 
 .cat-icon {
-    color: var(--accent-color);
-    font-size: 18px;
+  color: var(--accent-color);
+  font-size: 18px;
 }
 
 .category-title-input {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text-color);
-    background: var(--input-background);
-    border: 1px dashed var(--card-border);
-    outline: none;
-    padding: 3px 6px;
-    border-radius: 5px;
-    min-width: 160px;
-    cursor: text;
-    transition: background-color 0.2s ease, border-color 0.2s ease;
-}@media (hover: hover) and (pointer: fine) {
-    .category-title-input:hover {
-
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-color);
+  background: var(--input-background);
+  border: 1px dashed var(--card-border);
+  outline: none;
+  padding: 3px 6px;
+  border-radius: 5px;
+  min-width: 160px;
+  cursor: text;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .category-title-input:hover {
     border-color: var(--text-color-muted);
     border-style: solid;
-
-    }
+  }
 }
 
-
 .category-title-input:focus {
-    background-color: var(--input-background);
-    border-color: var(--accent-color);
-    border-style: solid;
-    outline: none;
-    box-shadow: none;
+  background-color: var(--input-background);
+  border-color: var(--accent-color);
+  border-style: solid;
+  outline: none;
+  box-shadow: none;
 }
 
 .cat-subtotal-badge {
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--text-color-muted);
-    background-color: var(--input-background);
-    border: 1px solid var(--card-border);
-    padding: 2px 8px;
-    border-radius: 12px;
-    white-space: nowrap;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-color-muted);
+  background-color: var(--input-background);
+  border: 1px solid var(--card-border);
+  padding: 2px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
 }
 
 .cat-header-right {
-    display: flex;
-    align-items: center;
-    gap: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .btn-cart-type-toggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    width: 110px;
-    background-color: var(--input-background);
-    border: 1px solid var(--card-border);
-    color: var(--text-color-muted);
-    padding: 3px 8px;
-    border-radius: 14px;
-    font-size: 10px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-}@media (hover: hover) and (pointer: fine) {
-    .btn-cart-type-toggle:hover {
-
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 110px;
+  background-color: var(--input-background);
+  border: 1px solid var(--card-border);
+  color: var(--text-color-muted);
+  padding: 3px 8px;
+  border-radius: 14px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn-cart-type-toggle:hover {
     border-color: var(--text-color-muted);
     color: var(--text-color);
-
-    }
+  }
 }
 
-
 .btn-cart-type-toggle.is-ontdooi {
-    background-color: rgba(59, 130, 246, 0.15);
-    border-color: var(--info-color);
-    color: var(--info-color);
+  background-color: rgba(59, 130, 246, 0.15);
+  border-color: var(--info-color);
+  color: var(--info-color);
 }
 
 .btn-cart-type-toggle .material-icons {
-    font-size: 13px;
+  font-size: 13px;
 }
 
 .btn-delete-cat {
-    background: transparent;
-    border: none;
-    color: var(--text-color-muted);
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 5px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: color 0.15s ease, background-color 0.15s ease;
-}@media (hover: hover) and (pointer: fine) {
-    .btn-delete-cat:hover {
-
+  background: transparent;
+  border: none;
+  color: var(--text-color-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn-delete-cat:hover {
     color: var(--danger-color);
     background-color: rgba(239, 68, 68, 0.12);
-
-    }
+  }
 }
 
-
 .btn-delete-cat .material-icons {
-    font-size: 16px;
+  font-size: 16px;
 }
 
 .category-card-body {
-    padding: 0;
+  padding: 0;
 }
 
 .table-responsive {
-    width: 100%;
-    overflow-x: auto;
+  width: 100%;
+  overflow-x: auto;
 }
 
 .bakplan-table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: left;
-    font-size: 12px;
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 12px;
 }
 
 .bakplan-table th {
-    padding: 6px 10px;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    color: var(--text-color-muted);
-    text-transform: uppercase;
-    white-space: nowrap;
-    border-bottom: 1px solid var(--card-border);
-    background-color: var(--card-background);
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text-color-muted);
+  text-transform: uppercase;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--card-border);
+  background-color: var(--card-background);
 }
 
 .bakplan-table th.th-day {
-    color: var(--accent-color);
+  color: var(--accent-color);
 }
 
 .header-day-tag {
-    font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-    background-color: var(--stat-icon-accent-bg);
-    border: 1px solid var(--stat-icon-accent-border);
-    color: var(--accent-color);
-    padding: 1px 0;
-    width: 22px;
-    display: inline-block;
-    text-align: center;
-    border-radius: 4px;
-    margin-left: 3px;
-    vertical-align: middle;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  background-color: var(--stat-icon-accent-bg);
+  border: 1px solid var(--stat-icon-accent-border);
+  color: var(--accent-color);
+  padding: 1px 0;
+  width: 22px;
+  display: inline-block;
+  text-align: center;
+  border-radius: 4px;
+  margin-left: 3px;
+  vertical-align: middle;
 }
 
 .th-desc {
-    width: 32%;
-    text-align: left;
+  width: 32%;
+  text-align: left;
 }
 
 .th-num {
-    width: 11%;
-    text-align: right;
+  width: 11%;
+  text-align: right;
 }
 
 .th-actions {
-    width: 36px;
-    text-align: center;
+  width: 36px;
+  text-align: center;
 }
 
 .bakplan-table td {
-    padding: 4px 6px;
-    color: var(--text-color);
-    border-bottom: 1px solid var(--card-border);
-    white-space: nowrap;
-    vertical-align: middle;
+  padding: 4px 6px;
+  color: var(--text-color);
+  border-bottom: 1px solid var(--card-border);
+  white-space: nowrap;
+  vertical-align: middle;
 }
 
 .bakplan-table td.td-desc {
-    text-align: left;
+  text-align: left;
 }
 
 .bakplan-table td.td-num {
-    text-align: right;
+  text-align: right;
 }
 
 .bakplan-table td.td-actions {
-    text-align: center;
+  text-align: center;
 }
 
 .bakplan-input {
-    background-color: var(--input-background);
-    border: 1px solid var(--input-border);
-    border-radius: 5px;
-    padding: 4px 8px;
-    color: var(--text-color);
-    font-size: 12px;
-    outline: none;
-    width: 100%;
-    box-sizing: border-box;
-    font-family: inherit;
-    transition: border-color 0.15s ease;
+  background-color: var(--input-background);
+  border: 1px solid var(--input-border);
+  border-radius: 5px;
+  padding: 4px 8px;
+  color: var(--text-color);
+  font-size: 12px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  transition: border-color 0.15s ease;
 }
 
 .bakplan-input::placeholder {
-    color: var(--text-color-placeholder);
+  color: var(--text-color-placeholder);
 }
 
 .bakplan-input.input-num {
-    text-align: right;
-    -moz-appearance: textfield;
-    appearance: textfield;
+  text-align: right;
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .bakplan-input.input-num::-webkit-outer-spin-button,
 .bakplan-input.input-num::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .bakplan-input.input-day {
-    border-color: rgba(101, 141, 36, 0.35);
+  border-color: rgba(101, 141, 36, 0.35);
 }
 
 .bakplan-input:focus {
-    border-color: var(--accent-color);
-    outline: none;
-    box-shadow: none;
+  border-color: var(--accent-color);
+  outline: none;
+  box-shadow: none;
 }
 
 .bakplan-input.input-day:focus {
-    border-color: var(--accent-color);
-    outline: none;
-    box-shadow: none;
+  border-color: var(--accent-color);
+  outline: none;
+  box-shadow: none;
 }
 
 .read-only-badge {
-    font-weight: 700;
-    font-size: 12px;
-    color: var(--text-color);
-    background-color: var(--bg-active);
-    border: 1px solid var(--card-border);
-    padding: 3px 8px;
-    border-radius: 5px;
-    display: inline-block;
-    min-width: 36px;
-    text-align: right;
-    user-select: none;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--text-color);
+  background-color: var(--bg-active);
+  border: 1px solid var(--card-border);
+  padding: 3px 8px;
+  border-radius: 5px;
+  display: inline-block;
+  min-width: 36px;
+  text-align: right;
+  user-select: none;
 }
 
 .btn-delete-row {
-    background: transparent;
-    border: none;
-    color: var(--text-color-muted);
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 4px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: color 0.15s ease, background-color 0.15s ease;
-}@media (hover: hover) and (pointer: fine) {
-    .btn-delete-row:hover {
-
+  background: transparent;
+  border: none;
+  color: var(--text-color-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn-delete-row:hover {
     color: var(--danger-color);
     background-color: rgba(239, 68, 68, 0.12);
-
-    }
+  }
 }
 
-
 .btn-delete-row .material-icons {
-    font-size: 16px;
+  font-size: 16px;
 }
 
 .category-card-footer {
-    padding: 6px 12px;
-    background-color: var(--card-background);
-    border-top: 1px solid var(--card-border);
+  padding: 6px 12px;
+  background-color: var(--card-background);
+  border-top: 1px solid var(--card-border);
 }
 
 .btn-add-row-in-cat {
-    background: transparent;
-    border: 1px dashed var(--card-border);
-    border-radius: 6px;
-    color: var(--text-color-muted);
-    width: 100%;
-    padding: 4px 10px;
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-}@media (hover: hover) and (pointer: fine) {
-    .btn-add-row-in-cat:hover {
-
+  background: transparent;
+  border: 1px dashed var(--card-border);
+  border-radius: 6px;
+  color: var(--text-color-muted);
+  width: 100%;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn-add-row-in-cat:hover {
     background-color: var(--input-background);
     border-color: var(--accent-color);
     color: var(--accent-color);
-
-    }
+  }
 }
 
-
 .btn-add-row-in-cat .material-icons {
-    font-size: 18px;
+  font-size: 18px;
 }
 
 .bakplan-empty-state {
-    padding: 32px;
-    text-align: center;
-    color: var(--text-color-muted);
-    font-style: italic;
-    animation: bakplanFadeIn 0.3s ease forwards;
+  padding: 32px;
+  text-align: center;
+  color: var(--text-color-muted);
+  font-style: italic;
+  animation: bakplanFadeIn 0.3s ease forwards;
 }
 
 .btn-sm {
-    padding: 8px 14px;
-    font-size: 13px;
-    border-radius: 8px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-    border: 1px solid transparent;
-    font-weight: 500;
-    transition: opacity 0.2s ease, background-color 0.2s ease;
+  padding: 8px 14px;
+  font-size: 13px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  font-weight: 500;
+  transition:
+    opacity 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .btn-primary {
-    background-color: var(--accent-color);
-    color: #ffffff;
-}@media (hover: hover) and (pointer: fine) {
-    .btn-primary:hover {
-
-    background-color: var(--accent-hover);
-
-    }
+  background-color: var(--accent-color);
+  color: #ffffff;
 }
-
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover {
+    background-color: var(--accent-hover);
+  }
+}
 
 .btn-secondary {
-    background-color: var(--input-background);
-    border-color: var(--card-border);
-    color: var(--text-color);
-}@media (hover: hover) and (pointer: fine) {
-    .btn-secondary:hover {
-
+  background-color: var(--input-background);
+  border-color: var(--card-border);
+  color: var(--text-color);
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn-secondary:hover {
     background-color: var(--card-border);
-
-    }
+  }
 }
 
-
 .btn-icon {
-    font-size: 18px;
+  font-size: 18px;
 }
 
 .bakplan-sync-menu {
-    position: fixed;
-    z-index: 9999;
-    background-color: var(--card-background);
-    border: 1px solid var(--card-border);
-    border-radius: 10px;
-    padding: 6px;
-    min-width: 240px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-    user-select: none;
-    animation: bakplanFadeIn 0.15s ease forwards;
+  position: fixed;
+  z-index: 9999;
+  background-color: var(--card-background);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 6px;
+  min-width: 240px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  user-select: none;
+  animation: bakplanFadeIn 0.15s ease forwards;
 }
 
 .sync-menu-header {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--accent-color);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-color);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .sync-menu-header .material-icons {
-    font-size: 16px;
+  font-size: 16px;
 }
 
 .sync-menu-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
-    font-size: 12px;
-    color: var(--text-color);
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.15s ease;
-}@media (hover: hover) and (pointer: fine) {
-    .sync-menu-item:hover {
-
-    background-color: var(--bg-active);
-
-    }
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--text-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
 }
-
+@media (hover: hover) and (pointer: fine) {
+  .sync-menu-item:hover {
+    background-color: var(--bg-active);
+  }
+}
 
 .sync-menu-item .material-icons {
-    font-size: 16px;
-    color: var(--text-color-muted);
-}@media (hover: hover) and (pointer: fine) {
-    .sync-menu-item:hover .material-icons {
-
+  font-size: 16px;
+  color: var(--text-color-muted);
+}
+@media (hover: hover) and (pointer: fine) {
+  .sync-menu-item:hover .material-icons {
     color: var(--accent-color);
-
-    }
+  }
 }
 
-
 .sync-menu-divider {
-    height: 1px;
-    background-color: var(--card-border);
-    margin: 4px 0;
+  height: 1px;
+  background-color: var(--card-border);
+  margin: 4px 0;
 }
 
 @media (max-width: 1024px) {
-    .page-header-row,
-    .bakplan-days-tabs,
-    .bakplan-stats-grid,
-    .bakplan-toolbar-card,
-    .categories-container {
-        display: none !important;
-    }
+  .page-header-row,
+  .bakplan-days-tabs,
+  .bakplan-stats-grid,
+  .bakplan-toolbar-card,
+  .categories-container {
+    display: none !important;
+  }
 
-    .mobile-warning-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 60vh;
-        padding: 24px;
-        text-align: center;
-    }
+  .mobile-warning-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    padding: 24px;
+    text-align: center;
+  }
 
-    .mobile-warning-card {
-        background-color: var(--card-background);
-        border: 1px solid var(--card-border);
-        border-radius: 16px;
-        padding: 32px 24px;
-        max-width: 440px;
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 12px;
-    }
+  .mobile-warning-card {
+    background-color: var(--card-background);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 32px 24px;
+    max-width: 440px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
 
-    .mobile-warning-icon {
-        font-size: 48px;
-        color: var(--accent-color);
-    }
+  .mobile-warning-icon {
+    font-size: 48px;
+    color: var(--accent-color);
+  }
 
-    .mobile-warning-card h2 {
-        font-size: 18px;
-        font-weight: 700;
-        color: var(--text-color);
-    }
+  .mobile-warning-card h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-color);
+  }
 
-    .mobile-warning-card p {
-        font-size: 13px;
-        color: var(--text-color-muted);
-        line-height: 1.5;
-    }
+  .mobile-warning-card p {
+    font-size: 13px;
+    color: var(--text-color-muted);
+    line-height: 1.5;
+  }
 }
 
 @keyframes bakplanFadeIn {
-    0% { opacity: 0; }
-    100% { opacity: 1; }
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 @keyframes bakplanCardEnter {
-    0% {
-        opacity: 0;
-        transform: translateY(-16px) scale(0.97);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+  0% {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @keyframes bakplanCardExit {
-    0% {
-        opacity: 1;
-        transform: scale(1);
-        max-height: 500px;
-    }
-    100% {
-        opacity: 0;
-        transform: scale(0.95) translateY(-10px);
-        max-height: 0;
-        margin: 0;
-        padding: 0;
-    }
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    max-height: 500px;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+    max-height: 0;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 .category-card-enter {
-    animation: bakplanCardEnter 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: bakplanCardEnter 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .category-card-exit {
-    animation: bakplanCardExit 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-    pointer-events: none;
-    overflow: hidden;
+  animation: bakplanCardExit 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  pointer-events: none;
+  overflow: hidden;
 }
 
 .modal-overlay.modal-carts-wide .modal-container {
-    max-width: 900px;
-    padding: 24px;
+  max-width: 900px;
+  padding: 24px;
 }
 
 .carts-table-wrapper {
-    max-height: 440px;
-    overflow-y: auto;
-    border: 1px solid var(--card-border);
-    border-radius: 10px;
-    background-color: var(--input-background);
+  max-height: 440px;
+  overflow-y: auto;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background-color: var(--input-background);
 }
 
 .carts-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
 }
 
 .carts-table th {
-    padding: 10px 12px;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--text-color-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    border-bottom: 1px solid var(--card-border);
-    background-color: var(--card-background);
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    text-align: left;
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  border-bottom: 1px solid var(--card-border);
+  background-color: var(--card-background);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  text-align: left;
 }
 
 .carts-table td {
-    padding: 8px 10px;
-    border-bottom: 1px solid var(--card-border);
-    vertical-align: middle;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--card-border);
+  vertical-align: middle;
 }
 
 .cart-modal-input,
 .cart-modal-select {
-    background-color: var(--card-background);
-    border: 1px solid var(--card-border);
-    border-radius: 8px;
-    padding: 7px 10px;
-    color: var(--text-color);
-    font-size: 13px;
-    outline: none;
-    width: 100%;
-    box-sizing: border-box;
-    transition: border-color 0.2s ease;
+  background-color: var(--card-background);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: var(--text-color);
+  font-size: 13px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
 }
 
 .cart-modal-input:focus,
 .cart-modal-select:focus {
-    border-color: var(--accent-color);
+  border-color: var(--accent-color);
 }
 
 .cart-modal-select:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .cart-toggle-wrapper {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
 }
 
 .cart-toggle-label {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-color-placeholder);
-    transition: color 0.2s ease;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-color-placeholder);
+  transition: color 0.2s ease;
 }
 
 .cart-toggle-label.label-oven.active {
-    color: var(--accent-color);
-    font-weight: 700;
+  color: var(--accent-color);
+  font-weight: 700;
 }
 
 .cart-toggle-label.label-thaw.active {
-    color: var(--warning-color);
-    font-weight: 700;
+  color: var(--warning-color);
+  font-weight: 700;
 }
 
 .cart-switch {
-    position: relative;
-    display: inline-block;
-    width: 38px;
-    height: 20px;
+  position: relative;
+  display: inline-block;
+  width: 38px;
+  height: 20px;
 }
 
 .cart-switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
+  opacity: 0;
+  width: 0;
+  height: 0;
 }
 
 .cart-slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background-color: var(--card-border);
-    border-radius: 20px;
-    transition: background-color 0.2s ease;
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--card-border);
+  border-radius: 20px;
+  transition: background-color 0.2s ease;
 }
 
 .cart-slider::before {
-    position: absolute;
-    content: "";
-    height: 14px;
-    width: 14px;
-    left: 3px;
-    bottom: 3px;
-    background-color: #ffffff;
-    border-radius: 50%;
-    transition: transform 0.2s ease;
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
 }
 
 .cart-switch input:checked + .cart-slider {
-    background-color: var(--accent-color);
+  background-color: var(--accent-color);
 }
 
 .cart-switch input:checked + .cart-slider::before {
-    transform: translateX(18px);
+  transform: translateX(18px);
 }
 
 .cart-row-delete-btn {
-    background: transparent;
-    border: none;
-    color: var(--text-color-muted);
-    cursor: pointer;
-    padding: 6px;
-    border-radius: 6px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: color 0.15s ease, background-color 0.15s ease;
-}@media (hover: hover) and (pointer: fine) {
-    .cart-row-delete-btn:hover {
-
+  background: transparent;
+  border: none;
+  color: var(--text-color-muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .cart-row-delete-btn:hover {
     color: var(--danger-color);
     background-color: rgba(239, 68, 68, 0.12);
-
-    }
+  }
 }
 
-
 .carts-actions-row {
-    margin-top: 10px;
-    display: flex;
-    align-items: center;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
 }
 
 .btn-add-cart-row {
-    background-color: var(--accent-color);
-    color: #ffffff;
-    border: none;
-    border-radius: 8px;
-    padding: 8px 14px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    transition: background-color 0.2s ease;
-}@media (hover: hover) and (pointer: fine) {
-    .btn-add-cart-row:hover {
-
-    background-color: var(--accent-hover);
-
-    }
+  background-color: var(--accent-color);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 0.2s ease;
 }
-
-
+@media (hover: hover) and (pointer: fine) {
+  .btn-add-cart-row:hover {
+    background-color: var(--accent-hover);
+  }
+}

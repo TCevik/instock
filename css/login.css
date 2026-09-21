@@ -1,396 +1,579 @@
 body {
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-    position: relative;
-    overflow: hidden;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
 }
 
 .bg-shapes {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .shape {
-    position: absolute;
-    color: var(--bg-shape-stroke);
+  position: absolute;
+  color: var(--bg-shape-stroke);
 }
 
-.shape-1 { top: 6%; left: 8%; transform: rotate(18deg); width: 44px; height: 44px; }
-.shape-2 { top: 14%; right: 10%; transform: rotate(-25deg); width: 40px; height: 40px; }
-.shape-3 { top: 32%; left: 5%; transform: rotate(42deg); width: 34px; height: 34px; }
-.shape-4 { top: 56%; right: 7%; transform: rotate(14deg); width: 50px; height: 50px; }
-.shape-5 { bottom: 12%; left: 10%; transform: rotate(-35deg); width: 42px; height: 42px; }
-.shape-6 { bottom: 10%; right: 12%; transform: rotate(50deg); width: 36px; height: 36px; }
-.shape-7 { top: 8%; left: 40%; transform: rotate(30deg); width: 32px; height: 32px; }
-.shape-8 { bottom: 6%; left: 46%; transform: rotate(-15deg); width: 38px; height: 38px; }
-.shape-9 { top: 74%; left: 6%; transform: rotate(65deg); width: 46px; height: 46px; }
-.shape-10 { top: 36%; right: 4%; transform: rotate(-48deg); width: 32px; height: 32px; }
-.shape-11 { top: 22%; left: 18%; transform: rotate(12deg); width: 30px; height: 30px; }
-.shape-12 { top: 78%; right: 22%; transform: rotate(-22deg); width: 40px; height: 40px; }
-.shape-13 { top: 6%; right: 34%; transform: rotate(24deg); width: 36px; height: 36px; }
-.shape-14 { bottom: 22%; left: 24%; transform: rotate(-18deg); width: 34px; height: 34px; }
-.shape-15 { top: 48%; left: 14%; transform: rotate(55deg); width: 42px; height: 42px; }
-.shape-16 { top: 24%; right: 24%; transform: rotate(-38deg); width: 30px; height: 30px; }
-.shape-17 { bottom: 32%; right: 6%; transform: rotate(16deg); width: 48px; height: 48px; }
-.shape-18 { bottom: 4%; left: 32%; transform: rotate(-45deg); width: 32px; height: 32px; }
-.shape-19 { top: 4%; left: 24%; transform: rotate(60deg); width: 28px; height: 28px; }
-.shape-20 { bottom: 6%; right: 38%; transform: rotate(10deg); width: 36px; height: 36px; }
-.shape-21 { top: 18%; left: 2%; transform: rotate(-30deg); width: 38px; height: 38px; }
-.shape-22 { top: 88%; left: 18%; transform: rotate(20deg); width: 34px; height: 34px; }
-.shape-23 { top: 46%; right: 15%; transform: rotate(-15deg); width: 42px; height: 42px; }
-.shape-24 { top: 2%; right: 18%; transform: rotate(70deg); width: 32px; height: 32px; }
-.shape-25 { bottom: 20%; right: 18%; transform: rotate(-60deg); width: 36px; height: 36px; }
-.shape-26 { top: 64%; left: 20%; transform: rotate(40deg); width: 30px; height: 30px; }
-.shape-27 { bottom: 2%; right: 4%; transform: rotate(-25deg); width: 44px; height: 44px; }
-.shape-28 { top: 2%; left: 55%; transform: rotate(15deg); width: 32px; height: 32px; }
-.shape-29 { bottom: 2%; left: 62%; transform: rotate(-35deg); width: 38px; height: 38px; }
-.shape-30 { top: 92%; right: 52%; transform: rotate(50deg); width: 30px; height: 30px; }
+.shape-1 {
+  top: 6%;
+  left: 8%;
+  transform: rotate(18deg);
+  width: 44px;
+  height: 44px;
+}
+.shape-2 {
+  top: 14%;
+  right: 10%;
+  transform: rotate(-25deg);
+  width: 40px;
+  height: 40px;
+}
+.shape-3 {
+  top: 32%;
+  left: 5%;
+  transform: rotate(42deg);
+  width: 34px;
+  height: 34px;
+}
+.shape-4 {
+  top: 56%;
+  right: 7%;
+  transform: rotate(14deg);
+  width: 50px;
+  height: 50px;
+}
+.shape-5 {
+  bottom: 12%;
+  left: 10%;
+  transform: rotate(-35deg);
+  width: 42px;
+  height: 42px;
+}
+.shape-6 {
+  bottom: 10%;
+  right: 12%;
+  transform: rotate(50deg);
+  width: 36px;
+  height: 36px;
+}
+.shape-7 {
+  top: 8%;
+  left: 40%;
+  transform: rotate(30deg);
+  width: 32px;
+  height: 32px;
+}
+.shape-8 {
+  bottom: 6%;
+  left: 46%;
+  transform: rotate(-15deg);
+  width: 38px;
+  height: 38px;
+}
+.shape-9 {
+  top: 74%;
+  left: 6%;
+  transform: rotate(65deg);
+  width: 46px;
+  height: 46px;
+}
+.shape-10 {
+  top: 36%;
+  right: 4%;
+  transform: rotate(-48deg);
+  width: 32px;
+  height: 32px;
+}
+.shape-11 {
+  top: 22%;
+  left: 18%;
+  transform: rotate(12deg);
+  width: 30px;
+  height: 30px;
+}
+.shape-12 {
+  top: 78%;
+  right: 22%;
+  transform: rotate(-22deg);
+  width: 40px;
+  height: 40px;
+}
+.shape-13 {
+  top: 6%;
+  right: 34%;
+  transform: rotate(24deg);
+  width: 36px;
+  height: 36px;
+}
+.shape-14 {
+  bottom: 22%;
+  left: 24%;
+  transform: rotate(-18deg);
+  width: 34px;
+  height: 34px;
+}
+.shape-15 {
+  top: 48%;
+  left: 14%;
+  transform: rotate(55deg);
+  width: 42px;
+  height: 42px;
+}
+.shape-16 {
+  top: 24%;
+  right: 24%;
+  transform: rotate(-38deg);
+  width: 30px;
+  height: 30px;
+}
+.shape-17 {
+  bottom: 32%;
+  right: 6%;
+  transform: rotate(16deg);
+  width: 48px;
+  height: 48px;
+}
+.shape-18 {
+  bottom: 4%;
+  left: 32%;
+  transform: rotate(-45deg);
+  width: 32px;
+  height: 32px;
+}
+.shape-19 {
+  top: 4%;
+  left: 24%;
+  transform: rotate(60deg);
+  width: 28px;
+  height: 28px;
+}
+.shape-20 {
+  bottom: 6%;
+  right: 38%;
+  transform: rotate(10deg);
+  width: 36px;
+  height: 36px;
+}
+.shape-21 {
+  top: 18%;
+  left: 2%;
+  transform: rotate(-30deg);
+  width: 38px;
+  height: 38px;
+}
+.shape-22 {
+  top: 88%;
+  left: 18%;
+  transform: rotate(20deg);
+  width: 34px;
+  height: 34px;
+}
+.shape-23 {
+  top: 46%;
+  right: 15%;
+  transform: rotate(-15deg);
+  width: 42px;
+  height: 42px;
+}
+.shape-24 {
+  top: 2%;
+  right: 18%;
+  transform: rotate(70deg);
+  width: 32px;
+  height: 32px;
+}
+.shape-25 {
+  bottom: 20%;
+  right: 18%;
+  transform: rotate(-60deg);
+  width: 36px;
+  height: 36px;
+}
+.shape-26 {
+  top: 64%;
+  left: 20%;
+  transform: rotate(40deg);
+  width: 30px;
+  height: 30px;
+}
+.shape-27 {
+  bottom: 2%;
+  right: 4%;
+  transform: rotate(-25deg);
+  width: 44px;
+  height: 44px;
+}
+.shape-28 {
+  top: 2%;
+  left: 55%;
+  transform: rotate(15deg);
+  width: 32px;
+  height: 32px;
+}
+.shape-29 {
+  bottom: 2%;
+  left: 62%;
+  transform: rotate(-35deg);
+  width: 38px;
+  height: 38px;
+}
+.shape-30 {
+  top: 92%;
+  right: 52%;
+  transform: rotate(50deg);
+  width: 30px;
+  height: 30px;
+}
 
 .login-container {
-    width: 100%;
-    max-width: 440px;
-    background-color: var(--card-background);
-    border: 1px solid var(--card-border);
-    border-radius: 16px;
-    padding: 36px 32px;
-    display: flex;
-    flex-direction: column;
-    gap: 28px;
-    position: relative;
-    z-index: 1;
+  width: 100%;
+  max-width: 440px;
+  background-color: var(--card-background);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 36px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  position: relative;
+  z-index: 1;
 }
 
 .login-header {
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
 }
 
 .logo-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
 }
 
 .login-logo-box {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
-    background-color: var(--vullen-ghost-bg);
-    border: 1px solid rgba(101, 141, 36, 0.35);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background-color: var(--vullen-ghost-bg);
+  border: 1px solid rgba(101, 141, 36, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .logo-icon {
-    font-size: 26px;
-    color: var(--accent-color);
+  font-size: 26px;
+  color: var(--accent-color);
 }
 
 .logo-brand-col {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .logo-title-wrap {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .login-header h1 {
-    font-size: 24px;
-    font-weight: 800;
-    letter-spacing: 1px;
-    color: var(--text-color);
-    line-height: 1;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--text-color);
+  line-height: 1;
 }
 
 .login-beta-badge {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    padding: 2px 7px;
-    border-radius: 5px;
-    background-color: var(--beta-badge-login-bg);
-    color: var(--beta-badge-login-text);
-    text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background-color: var(--beta-badge-login-bg);
+  color: var(--beta-badge-login-text);
+  text-transform: uppercase;
 }
 
 .login-header p {
-    font-size: 13.5px;
-    color: var(--text-color-muted);
-    font-weight: 400;
+  font-size: 13.5px;
+  color: var(--text-color-muted);
+  font-weight: 400;
 }
 
 #loginForm {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .form-group label {
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.8px;
-    color: var(--text-color-muted);
-    text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  color: var(--text-color-muted);
+  text-transform: uppercase;
 }
 
 .input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .input-icon {
-    position: absolute;
-    left: 16px;
-    font-size: 20px;
-    color: var(--text-color-placeholder);
-    pointer-events: none;
+  position: absolute;
+  left: 16px;
+  font-size: 20px;
+  color: var(--text-color-placeholder);
+  pointer-events: none;
 }
 
 .input-wrapper input {
-    width: 100%;
-    background-color: var(--input-background);
-    border: 1px solid var(--input-border);
-    border-radius: 12px;
-    padding: 16px 16px 16px 48px;
-    font-size: 15px;
-    color: var(--text-color);
-    outline: none;
-    transition: border-color 0.2s;
+  width: 100%;
+  background-color: var(--input-background);
+  border: 1px solid var(--input-border);
+  border-radius: 12px;
+  padding: 16px 16px 16px 48px;
+  font-size: 15px;
+  color: var(--text-color);
+  outline: none;
+  transition: border-color 0.2s;
 }
 
 .input-wrapper input::placeholder {
-    color: var(--text-color-placeholder);
+  color: var(--text-color-placeholder);
 }
 
 .input-wrapper input:focus {
-    border-color: var(--input-focus);
+  border-color: var(--input-focus);
 }
 
 .checkbox-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: -4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: -4px;
 }
 
 .checkbox-group input[type="checkbox"] {
-    appearance: none;
-    -webkit-appearance: none;
-    width: 18px;
-    height: 18px;
-    background-color: var(--input-background);
-    border: 1px solid var(--input-border);
-    border-radius: 5px;
-    cursor: pointer;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  background-color: var(--input-background);
+  border: 1px solid var(--input-border);
+  border-radius: 5px;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .checkbox-group input[type="checkbox"]:checked {
-    background-color: var(--accent-color);
-    border-color: var(--accent-color);
+  background-color: var(--accent-color);
+  border-color: var(--accent-color);
 }
 
 .checkbox-group input[type="checkbox"]:checked::after {
-    content: '';
-    position: absolute;
-    width: 4px;
-    height: 8px;
-    border: solid var(--text-color);
-    border-width: 0 2px 2px 0;
-    transform: rotate(45deg);
-    top: 2px;
+  content: "";
+  position: absolute;
+  width: 4px;
+  height: 8px;
+  border: solid var(--text-color);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  top: 2px;
 }
 
 .checkbox-group label {
-    font-size: 13px;
-    color: var(--text-color-muted);
-    cursor: pointer;
-    user-select: none;
+  font-size: 13px;
+  color: var(--text-color-muted);
+  cursor: pointer;
+  user-select: none;
 }
 
 #loginForm button[type="submit"] {
-    background-color: var(--accent-color);
-    color: var(--text-color);
-    border: none;
-    border-radius: 12px;
-    padding: 15px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin-top: 4px;
-    min-height: 54px;
-    transition: background-color 0.2s;
+  background-color: var(--accent-color);
+  color: var(--text-color);
+  border: none;
+  border-radius: 12px;
+  padding: 15px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+  min-height: 54px;
+  transition: background-color 0.2s;
 }
 
 @media (hover: hover) and (pointer: fine) {
-    #loginForm button[type="submit"]:hover {
-        background-color: var(--accent-hover);
-    }
+  #loginForm button[type="submit"]:hover {
+    background-color: var(--accent-hover);
+  }
 }
 
 #loginForm .btn-secondary {
-    background-color: var(--input-background);
-    border: 1px solid var(--card-border);
-    color: var(--text-color);
-    border-radius: 12px;
-    padding: 15px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-height: 54px;
-    transition: background-color 0.2s, border-color 0.2s;
+  background-color: var(--input-background);
+  border: 1px solid var(--card-border);
+  color: var(--text-color);
+  border-radius: 12px;
+  padding: 15px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 54px;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
 }
 
 @media (hover: hover) and (pointer: fine) {
-    #loginForm .btn-secondary:hover {
-        background-color: var(--card-border);
-        border-color: var(--input-focus);
-    }
+  #loginForm .btn-secondary:hover {
+    background-color: var(--card-border);
+    border-color: var(--input-focus);
+  }
 }
 
 .btn-icon {
-    font-size: 20px;
+  font-size: 20px;
 }
 
 @media (max-width: 768px) {
-    body {
-        padding: 0;
-        align-items: stretch;
-        justify-content: flex-start;
-        min-height: 100dvh;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        background-color: var(--background-color);
-    }
+  body {
+    padding: 0;
+    align-items: stretch;
+    justify-content: flex-start;
+    min-height: 100dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    background-color: var(--background-color);
+  }
 
-    .bg-shapes {
-        display: none;
-    }
+  .bg-shapes {
+    display: none;
+  }
 
-    .login-container {
-        max-width: 100%;
-        width: 100%;
-        margin: 0;
-        min-height: 100dvh;
-        padding: calc(env(safe-area-inset-top, 16px) + 24px) 20px calc(env(safe-area-inset-bottom, 16px) + 24px) 20px;
-        border-radius: 0;
-        border: none;
-        background: transparent;
-        box-shadow: none;
-        justify-content: flex-start;
-        gap: 28px;
-    }
+  .login-container {
+    max-width: 100%;
+    width: 100%;
+    margin: 0;
+    min-height: 100dvh;
+    padding: calc(env(safe-area-inset-top, 16px) + 24px) 20px
+      calc(env(safe-area-inset-bottom, 16px) + 24px) 20px;
+    border-radius: 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    justify-content: flex-start;
+    gap: 28px;
+  }
 
-    .login-header {
-        align-items: flex-start;
-        text-align: left;
-        gap: 8px;
-    }
+  .login-header {
+    align-items: flex-start;
+    text-align: left;
+    gap: 8px;
+  }
 
-    .logo-row {
-        justify-content: flex-start;
-        gap: 12px;
-    }
+  .logo-row {
+    justify-content: flex-start;
+    gap: 12px;
+  }
 
-    .login-logo-box {
-        width: 44px;
-        height: 44px;
-        border-radius: 12px;
-    }
+  .login-logo-box {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+  }
 
-    .logo-icon {
-        font-size: 24px;
-    }
+  .logo-icon {
+    font-size: 24px;
+  }
 
-    .login-header h1 {
-        font-size: 22px;
-        font-weight: 800;
-        letter-spacing: 0.5px;
-    }
+  .login-header h1 {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+  }
 
-    .login-header p {
-        font-size: 13px;
-        line-height: 1.4;
-        color: var(--text-color-muted);
-    }
+  .login-header p {
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--text-color-muted);
+  }
 
-    #loginForm {
-        gap: 16px;
-    }
+  #loginForm {
+    gap: 16px;
+  }
 
-    .form-group {
-        gap: 6px;
-    }
+  .form-group {
+    gap: 6px;
+  }
 
-    .form-group label {
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.6px;
-    }
+  .form-group label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+  }
 
-    .input-wrapper input {
-        padding: 15px 16px 15px 44px;
-        font-size: 15px;
-        border-radius: 12px;
-    }
+  .input-wrapper input {
+    padding: 15px 16px 15px 44px;
+    font-size: 15px;
+    border-radius: 12px;
+  }
 
-    .input-icon {
-        left: 14px;
-        font-size: 20px;
-    }
+  .input-icon {
+    left: 14px;
+    font-size: 20px;
+  }
 
-    .checkbox-group {
-        margin-top: 2px;
-        gap: 10px;
-    }
+  .checkbox-group {
+    margin-top: 2px;
+    gap: 10px;
+  }
 
-    .checkbox-group label {
-        font-size: 13px;
-        line-height: 1.35;
-    }
+  .checkbox-group label {
+    font-size: 13px;
+    line-height: 1.35;
+  }
 
-    #loginForm button[type="submit"],
-    #loginForm .btn-secondary {
-        margin-top: 10px;
-        padding: 15px;
-        font-size: 15px;
-        min-height: 52px;
-        border-radius: 12px;
-    }
+  #loginForm button[type="submit"],
+  #loginForm .btn-secondary {
+    margin-top: 10px;
+    padding: 15px;
+    font-size: 15px;
+    min-height: 52px;
+    border-radius: 12px;
+  }
 }

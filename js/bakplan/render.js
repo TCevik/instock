@@ -1,106 +1,111 @@
-import { getBakplanData, getCurrentDay } from './state.js';
-import { getDayValue, calculatePlaten } from './utils.js';
+import { getBakplanData, getCurrentDay } from "./state.js";
+import { getDayValue, calculatePlaten } from "./utils.js";
 
 export function updateSummaryStats() {
-    let totalItems = 0;
-    let totalOpleggen = 0;
-    let totalPlaten = 0;
-    let totalDerving = 0;
+  let totalItems = 0;
+  let totalOpleggen = 0;
+  let totalPlaten = 0;
+  let totalDerving = 0;
 
-    const bakplanData = getBakplanData();
+  const bakplanData = getBakplanData();
 
-    bakplanData.forEach(cat => {
-        let catItems = 0;
-        let catPlaten = 0;
-        cat.items.forEach(item => {
-            if (item.omschrijving && item.omschrijving.trim() !== '') {
-                totalItems++;
-                catItems++;
-            }
-            const opl = parseFloat(getDayValue(item, 'opleggen')) || 0;
-            const der = parseFloat(getDayValue(item, 'derving')) || 0;
-            const pl = calculatePlaten(getDayValue(item, 'opleggen'), item.perPlaat);
-            
-            totalOpleggen += opl;
-            totalDerving += der;
-            catPlaten += pl;
-            totalPlaten += pl;
-        });
+  bakplanData.forEach((cat) => {
+    let catItems = 0;
+    let catPlaten = 0;
+    cat.items.forEach((item) => {
+      if (item.omschrijving && item.omschrijving.trim() !== "") {
+        totalItems++;
+        catItems++;
+      }
+      const opl = parseFloat(getDayValue(item, "opleggen")) || 0;
+      const der = parseFloat(getDayValue(item, "derving")) || 0;
+      const pl = calculatePlaten(getDayValue(item, "opleggen"), item.perPlaat);
 
-        const badgeEl = document.getElementById(`cat-badge-${cat.id}`);
-        if (badgeEl) {
-            badgeEl.textContent = `${catItems} artikelen · ${catPlaten} platen`;
-        }
+      totalOpleggen += opl;
+      totalDerving += der;
+      catPlaten += pl;
+      totalPlaten += pl;
     });
 
-    const elItems = document.getElementById('stat-total-items');
-    const elOpleggen = document.getElementById('stat-total-opleggen');
-    const elPlaten = document.getElementById('stat-total-platen');
-    const elDerving = document.getElementById('stat-total-derving');
+    const badgeEl = document.getElementById(`cat-badge-${cat.id}`);
+    if (badgeEl) {
+      badgeEl.textContent = `${catItems} artikelen · ${catPlaten} platen`;
+    }
+  });
 
-    if (elItems) elItems.textContent = totalItems;
-    if (elOpleggen) elOpleggen.textContent = totalOpleggen;
-    if (elPlaten) elPlaten.textContent = totalPlaten;
-    if (elDerving) elDerving.textContent = totalDerving;
+  const elItems = document.getElementById("stat-total-items");
+  const elOpleggen = document.getElementById("stat-total-opleggen");
+  const elPlaten = document.getElementById("stat-total-platen");
+  const elDerving = document.getElementById("stat-total-derving");
+
+  if (elItems) elItems.textContent = totalItems;
+  if (elOpleggen) elOpleggen.textContent = totalOpleggen;
+  if (elPlaten) elPlaten.textContent = totalPlaten;
+  if (elDerving) elDerving.textContent = totalDerving;
 }
 
 export function updateToggleAllButton() {
-    const iconToggle = document.getElementById('icon-toggle-all');
-    const textToggle = document.getElementById('text-toggle-all');
-    if (!iconToggle || !textToggle) return;
+  const iconToggle = document.getElementById("icon-toggle-all");
+  const textToggle = document.getElementById("text-toggle-all");
+  if (!iconToggle || !textToggle) return;
 
-    const bakplanData = getBakplanData();
-    const anyCollapsed = bakplanData.some(c => c.collapsed);
-    if (anyCollapsed) {
-        iconToggle.textContent = 'unfold_more';
-        textToggle.textContent = 'Alles uitklappen';
-    } else {
-        iconToggle.textContent = 'unfold_less';
-        textToggle.textContent = 'Alles inklappen';
-    }
+  const bakplanData = getBakplanData();
+  const anyCollapsed = bakplanData.some((c) => c.collapsed);
+  if (anyCollapsed) {
+    iconToggle.textContent = "unfold_more";
+    textToggle.textContent = "Alles uitklappen";
+  } else {
+    iconToggle.textContent = "unfold_less";
+    textToggle.textContent = "Alles inklappen";
+  }
 }
 
-export function renderCategories(filterText = '') {
-    const container = document.getElementById('categories-container');
-    if (!container) return;
+export function renderCategories(filterText = "") {
+  const container = document.getElementById("categories-container");
+  if (!container) return;
 
-    const bakplanData = getBakplanData();
-    const currentDay = getCurrentDay();
+  const bakplanData = getBakplanData();
+  const currentDay = getCurrentDay();
 
-    if (bakplanData.length === 0) {
-        container.innerHTML = `<p class="bakplan-empty-state">Geen categorieën aanwezig. Klik op "+ Categorie toevoegen" om te beginnen.</p>`;
-        updateSummaryStats();
-        updateToggleAllButton();
-        return;
-    }
+  if (bakplanData.length === 0) {
+    container.innerHTML = `<p class="bakplan-empty-state">Geen categorieën aanwezig. Klik op "+ Categorie toevoegen" om te beginnen.</p>`;
+    updateSummaryStats();
+    updateToggleAllButton();
+    return;
+  }
 
-    const query = filterText.toLowerCase().trim();
-    let html = '';
+  const query = filterText.toLowerCase().trim();
+  let html = "";
 
-    bakplanData.forEach(cat => {
-        const matchingItems = cat.items.filter(item => 
-            !query || item.omschrijving.toLowerCase().includes(query)
-        );
+  bakplanData.forEach((cat) => {
+    const matchingItems = cat.items.filter(
+      (item) => !query || item.omschrijving.toLowerCase().includes(query),
+    );
 
-        if (query && matchingItems.length === 0) return;
+    if (query && matchingItems.length === 0) return;
 
-        let catItemsCount = 0;
-        let catPlatenCount = 0;
-        cat.items.forEach(item => {
-            if (item.omschrijving && item.omschrijving.trim() !== '') catItemsCount++;
-            catPlatenCount += calculatePlaten(getDayValue(item, 'opleggen'), item.perPlaat);
-        });
+    let catItemsCount = 0;
+    let catPlatenCount = 0;
+    cat.items.forEach((item) => {
+      if (item.omschrijving && item.omschrijving.trim() !== "") catItemsCount++;
+      catPlatenCount += calculatePlaten(
+        getDayValue(item, "opleggen"),
+        item.perPlaat,
+      );
+    });
 
-        const isCollapsed = cat.collapsed ? 'collapsed' : '';
-        const enterClass = cat.isNew ? ' category-card-enter' : '';
-        delete cat.isNew;
+    const isCollapsed = cat.collapsed ? "collapsed" : "";
+    const enterClass = cat.isNew ? " category-card-enter" : "";
+    delete cat.isNew;
 
-        const isOntdooi = cat.cartType === 'ontdooi';
-        const cartBtnClass = isOntdooi ? 'btn-cart-type-toggle is-ontdooi' : 'btn-cart-type-toggle';
-        const cartIcon = isOntdooi ? 'ac_unit' : 'shopping_cart';
-        const cartText = isOntdooi ? 'Ontdooikar' : 'Normale kar';
+    const isOntdooi = cat.cartType === "ontdooi";
+    const cartBtnClass = isOntdooi
+      ? "btn-cart-type-toggle is-ontdooi"
+      : "btn-cart-type-toggle";
+    const cartIcon = isOntdooi ? "ac_unit" : "shopping_cart";
+    const cartText = isOntdooi ? "Ontdooikar" : "Normale kar";
 
-        html += `
+    html += `
             <div class="category-card ${isCollapsed}${enterClass}" data-cat-id="${cat.id}">
                 <div class="category-card-header" data-cat-id="${cat.id}">
                     <div class="cat-header-left">
@@ -140,24 +145,51 @@ export function renderCategories(filterText = '') {
                                 <tbody>
         `;
 
-        matchingItems.forEach(item => {
-            const currentOpleggen = getDayValue(item, 'opleggen');
-            const currentPromo = getDayValue(item, 'promo');
-            const currentDerving = getDayValue(item, 'derving');
+    matchingItems.forEach((item) => {
+      const currentOpleggen = getDayValue(item, "opleggen");
+      const currentPromo = getDayValue(item, "promo");
+      const currentDerving = getDayValue(item, "derving");
 
-            const platen = calculatePlaten(currentOpleggen, item.perPlaat);
-            const perPlaatVal = (item.perPlaat !== null && item.perPlaat !== undefined && item.perPlaat !== '') ? item.perPlaat : '';
-            const prijsVal = (item.prijs !== null && item.prijs !== undefined && item.prijs !== '') ? parseFloat(item.prijs).toFixed(2) : '';
-            const promoVal = (currentPromo !== null && currentPromo !== undefined && currentPromo !== '') ? parseFloat(currentPromo).toFixed(2) : '';
-            const opleggenVal = (currentOpleggen !== null && currentOpleggen !== undefined && currentOpleggen !== '') ? currentOpleggen : '';
-            const dervingVal = (currentDerving !== null && currentDerving !== undefined && currentDerving !== '') ? currentDerving : '';
-            delete item.isNew;
+      const platen = calculatePlaten(currentOpleggen, item.perPlaat);
+      const perPlaatVal =
+        item.perPlaat !== null &&
+        item.perPlaat !== undefined &&
+        item.perPlaat !== ""
+          ? item.perPlaat
+          : "";
+      const prijsVal =
+        item.prijs !== null && item.prijs !== undefined && item.prijs !== ""
+          ? parseFloat(item.prijs).toFixed(2)
+          : "";
+      const promoVal =
+        currentPromo !== null &&
+        currentPromo !== undefined &&
+        currentPromo !== ""
+          ? parseFloat(currentPromo).toFixed(2)
+          : "";
+      const opleggenVal =
+        currentOpleggen !== null &&
+        currentOpleggen !== undefined &&
+        currentOpleggen !== ""
+          ? currentOpleggen
+          : "";
+      const dervingVal =
+        currentDerving !== null &&
+        currentDerving !== undefined &&
+        currentDerving !== ""
+          ? currentDerving
+          : "";
+      delete item.isNew;
 
-            const isOnlyRow = cat.items.length <= 1;
-            const deleteAttr = isOnlyRow ? ' disabled style="opacity:0.25; cursor:not-allowed;"' : '';
-            const deleteTitle = isOnlyRow ? 'Minimaal 1 artikel verplicht per categorie' : 'Rij verwijderen';
+      const isOnlyRow = cat.items.length <= 1;
+      const deleteAttr = isOnlyRow
+        ? ' disabled style="opacity:0.25; cursor:not-allowed;"'
+        : "";
+      const deleteTitle = isOnlyRow
+        ? "Minimaal 1 artikel verplicht per categorie"
+        : "Rij verwijderen";
 
-            html += `
+      html += `
                 <tr data-id="${item.id}" data-cat-id="${cat.id}">
                     <td class="td-desc">
                         <input type="text" class="bakplan-input" value="${item.omschrijving}" placeholder="Productomschrijving..." data-field="omschrijving">
@@ -187,9 +219,9 @@ export function renderCategories(filterText = '') {
                     </td>
                 </tr>
             `;
-        });
+    });
 
-        html += `
+    html += `
                                 </tbody>
                             </table>
                         </div>
@@ -202,9 +234,9 @@ export function renderCategories(filterText = '') {
                 </div>
             </div>
         `;
-    });
+  });
 
-    container.innerHTML = html;
-    updateSummaryStats();
-    updateToggleAllButton();
+  container.innerHTML = html;
+  updateSummaryStats();
+  updateToggleAllButton();
 }

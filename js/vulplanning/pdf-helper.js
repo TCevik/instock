@@ -1,1 +1,1 @@
-export { extractTextFromPdf, extractTextLinesFromPage } from '../pdf-helper.js';
+export { extractTextFromPdf, extractTextLinesFromPage } from "../pdf-helper.js";

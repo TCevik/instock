@@ -1,35 +1,35 @@
-import { showToast } from '../main.js';
-import { getCurrentDay, DAYS, saveState } from './state.js';
-import { setDayValue, getDayValue } from './utils.js';
-import { renderCategories } from './render.js';
+import { showToast } from "../main.js";
+import { getCurrentDay, DAYS, saveState } from "./state.js";
+import { setDayValue, getDayValue } from "./utils.js";
+import { renderCategories } from "./render.js";
 
 let activeBakplanMenu = null;
 
 export function removeBakplanSyncMenu() {
-    if (activeBakplanMenu) {
-        activeBakplanMenu.remove();
-        activeBakplanMenu = null;
-    }
+  if (activeBakplanMenu) {
+    activeBakplanMenu.remove();
+    activeBakplanMenu = null;
+  }
 }
 
 export function showBakplanSyncMenu(x, y, item, field, value) {
-    removeBakplanSyncMenu();
+  removeBakplanSyncMenu();
 
-    const menu = document.createElement('div');
-    menu.className = 'bakplan-sync-menu';
-    menu.style.left = `${x}px`;
-    menu.style.top = `${y}px`;
+  const menu = document.createElement("div");
+  menu.className = "bakplan-sync-menu";
+  menu.style.left = `${x}px`;
+  menu.style.top = `${y}px`;
 
-    const currentDay = getCurrentDay();
-    const fieldNames = {
-        promo: 'Promoprijs',
-        opleggen: 'Aantal opleggen',
-        derving: 'Aantal derving'
-    };
-    const fieldLabel = fieldNames[field] || field;
-    const dayLabel = currentDay.charAt(0).toUpperCase() + currentDay.slice(1);
+  const currentDay = getCurrentDay();
+  const fieldNames = {
+    promo: "Promoprijs",
+    opleggen: "Aantal opleggen",
+    derving: "Aantal derving",
+  };
+  const fieldLabel = fieldNames[field] || field;
+  const dayLabel = currentDay.charAt(0).toUpperCase() + currentDay.slice(1);
 
-    menu.innerHTML = `
+  menu.innerHTML = `
         <div class="sync-menu-header">
             <span class="material-icons">sync</span>
             <span>Sync ${fieldLabel} (${dayLabel})</span>
@@ -53,56 +53,58 @@ export function showBakplanSyncMenu(x, y, item, field, value) {
         </div>
     `;
 
-    menu.addEventListener('click', (e) => {
-        const itemEl = e.target.closest('.sync-menu-item');
-        if (!itemEl) return;
-        const action = itemEl.dataset.action;
+  menu.addEventListener("click", (e) => {
+    const itemEl = e.target.closest(".sync-menu-item");
+    if (!itemEl) return;
+    const action = itemEl.dataset.action;
 
-        saveState();
+    saveState();
 
-        if (action === 'sync-field-all') {
-            DAYS.forEach(d => setDayValue(item, field, value, d));
-            showToast('notification', `${fieldLabel} gekopieerd naar alle dagen`);
-        } else if (action === 'sync-item-all') {
-            const currentPromo = getDayValue(item, 'promo');
-            const currentOpleggen = getDayValue(item, 'opleggen');
-            const currentDerving = getDayValue(item, 'derving');
+    if (action === "sync-field-all") {
+      DAYS.forEach((d) => setDayValue(item, field, value, d));
+      showToast("notification", `${fieldLabel} gekopieerd naar alle dagen`);
+    } else if (action === "sync-item-all") {
+      const currentPromo = getDayValue(item, "promo");
+      const currentOpleggen = getDayValue(item, "opleggen");
+      const currentDerving = getDayValue(item, "derving");
 
-            DAYS.forEach(d => {
-                setDayValue(item, 'promo', currentPromo, d);
-                setDayValue(item, 'opleggen', currentOpleggen, d);
-                setDayValue(item, 'derving', currentDerving, d);
-            });
-            showToast('notification', `Alle dagwaardes gekopieerd naar alle dagen`);
-        } else if (action === 'sync-field-workdays') {
-            ['maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag'].forEach(d => setDayValue(item, field, value, d));
-            showToast('notification', `${fieldLabel} gekopieerd naar werkdagen`);
-        } else if (action === 'sync-field-weekend') {
-            ['zaterdag', 'zondag'].forEach(d => setDayValue(item, field, value, d));
-            showToast('notification', `${fieldLabel} gekopieerd naar het weekend`);
-        }
-
-        removeBakplanSyncMenu();
-        const searchInput = document.getElementById('bakplan-search');
-        renderCategories(searchInput ? searchInput.value : '');
-    });
-
-    document.body.appendChild(menu);
-    activeBakplanMenu = menu;
-
-    const rect = menu.getBoundingClientRect();
-    if (rect.right > window.innerWidth) {
-        menu.style.left = `${window.innerWidth - rect.width - 12}px`;
+      DAYS.forEach((d) => {
+        setDayValue(item, "promo", currentPromo, d);
+        setDayValue(item, "opleggen", currentOpleggen, d);
+        setDayValue(item, "derving", currentDerving, d);
+      });
+      showToast("notification", `Alle dagwaardes gekopieerd naar alle dagen`);
+    } else if (action === "sync-field-workdays") {
+      ["maandag", "dinsdag", "woensdag", "donderdag", "vrijdag"].forEach((d) =>
+        setDayValue(item, field, value, d),
+      );
+      showToast("notification", `${fieldLabel} gekopieerd naar werkdagen`);
+    } else if (action === "sync-field-weekend") {
+      ["zaterdag", "zondag"].forEach((d) => setDayValue(item, field, value, d));
+      showToast("notification", `${fieldLabel} gekopieerd naar het weekend`);
     }
-    if (rect.bottom > window.innerHeight) {
-        menu.style.top = `${window.innerHeight - rect.height - 12}px`;
-    }
+
+    removeBakplanSyncMenu();
+    const searchInput = document.getElementById("bakplan-search");
+    renderCategories(searchInput ? searchInput.value : "");
+  });
+
+  document.body.appendChild(menu);
+  activeBakplanMenu = menu;
+
+  const rect = menu.getBoundingClientRect();
+  if (rect.right > window.innerWidth) {
+    menu.style.left = `${window.innerWidth - rect.width - 12}px`;
+  }
+  if (rect.bottom > window.innerHeight) {
+    menu.style.top = `${window.innerHeight - rect.height - 12}px`;
+  }
 }
 
 export function initContextMenuDismiss() {
-    document.addEventListener('click', (e) => {
-        if (activeBakplanMenu && !e.target.closest('.bakplan-sync-menu')) {
-            removeBakplanSyncMenu();
-        }
-    });
+  document.addEventListener("click", (e) => {
+    if (activeBakplanMenu && !e.target.closest(".bakplan-sync-menu")) {
+      removeBakplanSyncMenu();
+    }
+  });
 }

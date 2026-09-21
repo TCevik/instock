@@ -1,1 +1,1 @@
-export * from './bakplan/app.js';
+export * from "./bakplan/app.js";

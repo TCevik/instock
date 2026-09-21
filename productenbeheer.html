@@ -1,102 +1,142 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-
-    <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="css/main.css">
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="css/main.css" />
     <script type="module" src="js/main.js"></script>
 
-    <link rel="stylesheet" href="css/productenbeheer.css">
+    <link rel="stylesheet" href="css/productenbeheer.css" />
     <script type="module" src="js/productenbeheer.js"></script>
 
     <title>Productenbeheer</title>
-</head>
+  </head>
 
-<body>
+  <body>
     <div class="page-container">
-        <div class="page-header-row">
-            <h1 class="page-title">Productenbeheer</h1>
-            <div class="page-header-actions">
-                <div class="table-search-wrapper">
-                    <span class="material-icons search-icon">search</span>
-                    <input type="text" id="searchInput" class="search-input" placeholder="Zoek op naam of EAN...">
-                </div>
-                <div class="filter-select-wrapper" id="departmentFilterContainer"></div>
-                <button type="button" class="btn" id="createProductBtn">
-                    <span class="material-icons btn-icon">add</span>
-                    <span>Nieuw product</span>
-                </button>
-            </div>
+      <div class="page-header-row">
+        <h1 class="page-title">Productenbeheer</h1>
+        <div class="page-header-actions">
+          <div class="table-search-wrapper">
+            <span class="material-icons search-icon">search</span>
+            <input
+              type="text"
+              id="searchInput"
+              class="search-input"
+              placeholder="Zoek op naam of EAN..."
+            />
+          </div>
+          <div
+            class="filter-select-wrapper"
+            id="departmentFilterContainer"
+          ></div>
+          <button type="button" class="btn" id="createProductBtn">
+            <span class="material-icons btn-icon">add</span>
+            <span>Nieuw product</span>
+          </button>
         </div>
-        <div class="table-card">
-            <div class="table-responsive">
-                <table class="products-table">
-                    <thead>
-                        <tr>
-                            <th class="th-sortable th-product" data-sort-key="name">
-                                <div class="th-content">
-                                    <span>Product</span>
-                                    <span class="material-icons sort-icon" id="sortIcon_name">unfold_more</span>
-                                </div>
-                            </th>
-                            <th class="th-sortable th-ean" data-sort-key="ean">
-                                <div class="th-content">
-                                    <span>EAN</span>
-                                    <span class="material-icons sort-icon" id="sortIcon_ean">unfold_more</span>
-                                </div>
-                            </th>
-                            <th class="th-sortable th-brand" data-sort-key="brand">
-                                <div class="th-content">
-                                    <span>Merk</span>
-                                    <span class="material-icons sort-icon" id="sortIcon_brand">unfold_more</span>
-                                </div>
-                            </th>
-                            <th class="th-sortable th-department" data-sort-key="department">
-                                <div class="th-content">
-                                    <span>Afdeling</span>
-                                    <span class="material-icons sort-icon" id="sortIcon_department">unfold_more</span>
-                                </div>
-                            </th>
-                            <th class="th-sortable th-price" data-sort-key="price">
-                                <div class="th-content">
-                                    <span>Prijs</span>
-                                    <span class="material-icons sort-icon" id="sortIcon_price">unfold_more</span>
-                                </div>
-                            </th>
-                            <th class="th-sortable th-stock" data-sort-key="stock_quantity">
-                                <div class="th-content">
-                                    <span>Voorraad</span>
-                                    <span class="material-icons sort-icon" id="sortIcon_stock_quantity">unfold_more</span>
-                                </div>
-                            </th>
-                            <th class="th-actions">Acties</th>
-                        </tr>
-                    </thead>
-                    <tbody id="productsTableBody">
-                        <tr>
-                            <td colspan="7" class="empty-state">Geen producten gevonden</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="products-cards" id="productsCardsContainer"></div>
-            <div class="table-pagination">
-                <span class="pagination-info" id="paginationInfo">0 producten</span>
-                <div class="pagination-buttons">
-                    <button type="button" class="pagination-btn" id="prevPageBtn" disabled title="Vorige Pagina - Ga naar de vorige set producten">
-                        <span class="material-icons">chevron_left</span>
-                    </button>
-                    <span class="pagination-current" id="paginationCurrent">1</span>
-                    <button type="button" class="pagination-btn" id="nextPageBtn" disabled title="Volgende Pagina - Ga naar de volgende set producten">
-                        <span class="material-icons">chevron_right</span>
-                    </button>
-                </div>
-            </div>
+      </div>
+      <div class="table-card">
+        <div class="table-responsive">
+          <table class="products-table">
+            <thead>
+              <tr>
+                <th class="th-sortable th-product" data-sort-key="name">
+                  <div class="th-content">
+                    <span>Product</span>
+                    <span class="material-icons sort-icon" id="sortIcon_name"
+                      >unfold_more</span
+                    >
+                  </div>
+                </th>
+                <th class="th-sortable th-ean" data-sort-key="ean">
+                  <div class="th-content">
+                    <span>EAN</span>
+                    <span class="material-icons sort-icon" id="sortIcon_ean"
+                      >unfold_more</span
+                    >
+                  </div>
+                </th>
+                <th class="th-sortable th-brand" data-sort-key="brand">
+                  <div class="th-content">
+                    <span>Merk</span>
+                    <span class="material-icons sort-icon" id="sortIcon_brand"
+                      >unfold_more</span
+                    >
+                  </div>
+                </th>
+                <th
+                  class="th-sortable th-department"
+                  data-sort-key="department"
+                >
+                  <div class="th-content">
+                    <span>Afdeling</span>
+                    <span
+                      class="material-icons sort-icon"
+                      id="sortIcon_department"
+                      >unfold_more</span
+                    >
+                  </div>
+                </th>
+                <th class="th-sortable th-price" data-sort-key="price">
+                  <div class="th-content">
+                    <span>Prijs</span>
+                    <span class="material-icons sort-icon" id="sortIcon_price"
+                      >unfold_more</span
+                    >
+                  </div>
+                </th>
+                <th class="th-sortable th-stock" data-sort-key="stock_quantity">
+                  <div class="th-content">
+                    <span>Voorraad</span>
+                    <span
+                      class="material-icons sort-icon"
+                      id="sortIcon_stock_quantity"
+                      >unfold_more</span
+                    >
+                  </div>
+                </th>
+                <th class="th-actions">Acties</th>
+              </tr>
+            </thead>
+            <tbody id="productsTableBody">
+              <tr>
+                <td colspan="7" class="empty-state">Geen producten gevonden</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
+        <div class="products-cards" id="productsCardsContainer"></div>
+        <div class="table-pagination">
+          <span class="pagination-info" id="paginationInfo">0 producten</span>
+          <div class="pagination-buttons">
+            <button
+              type="button"
+              class="pagination-btn"
+              id="prevPageBtn"
+              disabled
+              title="Vorige Pagina - Ga naar de vorige set producten"
+            >
+              <span class="material-icons">chevron_left</span>
+            </button>
+            <span class="pagination-current" id="paginationCurrent">1</span>
+            <button
+              type="button"
+              class="pagination-btn"
+              id="nextPageBtn"
+              disabled
+              title="Volgende Pagina - Ga naar de volgende set producten"
+            >
+              <span class="material-icons">chevron_right</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
-</body>
-
+  </body>
 </html>

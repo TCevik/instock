@@ -1,116 +1,124 @@
-import { supabase } from './supabase.js';
-import { showToast } from './toast.js';
+import { supabase } from "./supabase.js";
+import { showToast } from "./toast.js";
 
-const loginForm = document.getElementById('loginForm');
-const storecodeInput = document.getElementById('storecode');
-const usernameInput = document.getElementById('username');
-const passwordInput = document.getElementById('password');
-const rememberCheckbox = document.getElementById('remember');
-const passkeyBtn = document.getElementById('passkeyBtn');
+const loginForm = document.getElementById("loginForm");
+const storecodeInput = document.getElementById("storecode");
+const usernameInput = document.getElementById("username");
+const passwordInput = document.getElementById("password");
+const rememberCheckbox = document.getElementById("remember");
+const passkeyBtn = document.getElementById("passkeyBtn");
 
-const savedStorecode = localStorage.getItem('saved_storecode');
-const savedUsername = localStorage.getItem('saved_username');
+const savedStorecode = localStorage.getItem("saved_storecode");
+const savedUsername = localStorage.getItem("saved_username");
 
 if (savedStorecode) {
-    storecodeInput.value = savedStorecode;
+  storecodeInput.value = savedStorecode;
 }
 
 if (savedUsername) {
-    usernameInput.value = savedUsername;
+  usernameInput.value = savedUsername;
 }
 
 if (passwordInput) {
-    passwordInput.focus();
+  passwordInput.focus();
 }
 
 if (loginForm) {
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-        const submitBtn = loginForm.querySelector('button[type="submit"]');
+    const submitBtn = loginForm.querySelector('button[type="submit"]');
 
-        const storecode = storecodeInput.value.trim().toLowerCase();
-        const username = usernameInput.value.trim().toLowerCase();
-        const password = passwordInput.value;
+    const storecode = storecodeInput.value.trim().toLowerCase();
+    const username = usernameInput.value.trim().toLowerCase();
+    const password = passwordInput.value;
 
+    if (submitBtn) {
+      submitBtn.classList.add("btn-loading");
+      submitBtn.disabled = true;
+    }
+
+    if (rememberCheckbox && rememberCheckbox.checked) {
+      localStorage.setItem("saved_storecode", storecodeInput.value.trim());
+      localStorage.setItem("saved_username", usernameInput.value.trim());
+    } else {
+      localStorage.removeItem("saved_storecode");
+      localStorage.removeItem("saved_username");
+    }
+
+    const email = `${username}@${storecode}.instock`;
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        showToast("error", error.message);
         if (submitBtn) {
-            submitBtn.classList.add('btn-loading');
-            submitBtn.disabled = true;
+          submitBtn.classList.remove("btn-loading");
+          submitBtn.disabled = false;
         }
+        return;
+      }
 
-        if (rememberCheckbox && rememberCheckbox.checked) {
-            localStorage.setItem('saved_storecode', storecodeInput.value.trim());
-            localStorage.setItem('saved_username', usernameInput.value.trim());
-        } else {
-            localStorage.removeItem('saved_storecode');
-            localStorage.removeItem('saved_username');
-        }
-
-        const email = `${username}@${storecode}.instock`;
-
-        try {
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email,
-                password
-            });
-
-            if (error) {
-                showToast('error', error.message);
-                if (submitBtn) {
-                    submitBtn.classList.remove('btn-loading');
-                    submitBtn.disabled = false;
-                }
-                return;
-            }
-
-            if (data.session) {
-                localStorage.setItem('instock_last_activity', Date.now().toString());
-                window.location.replace('index');
-            }
-        } catch (err) {
-            showToast('error', err.message || 'Er is een fout opgetreden');
-            if (submitBtn) {
-                submitBtn.classList.remove('btn-loading');
-                submitBtn.disabled = false;
-            }
-        }
-    });
+      if (data.session) {
+        localStorage.setItem("instock_last_activity", Date.now().toString());
+        window.location.replace("index");
+      }
+    } catch (err) {
+      showToast("error", err.message || "Er is een fout opgetreden");
+      if (submitBtn) {
+        submitBtn.classList.remove("btn-loading");
+        submitBtn.disabled = false;
+      }
+    }
+  });
 }
 
 if (passkeyBtn) {
-    passkeyBtn.addEventListener('click', async () => {
-        passkeyBtn.classList.add('btn-loading');
-        passkeyBtn.disabled = true;
+  passkeyBtn.addEventListener("click", async () => {
+    passkeyBtn.classList.add("btn-loading");
+    passkeyBtn.disabled = true;
 
-        try {
-            const signInFn = typeof supabase.auth.signInWithPasskey === 'function'
-                ? supabase.auth.signInWithPasskey.bind(supabase.auth)
-                : supabase.auth.passkey?.signInWithPasskey?.bind(supabase.auth.passkey);
+    try {
+      const signInFn =
+        typeof supabase.auth.signInWithPasskey === "function"
+          ? supabase.auth.signInWithPasskey.bind(supabase.auth)
+          : supabase.auth.passkey?.signInWithPasskey?.bind(
+              supabase.auth.passkey,
+            );
 
-            if (!signInFn) {
-                throw new Error('Passkey inloggen wordt niet ondersteund door deze client/browser.');
-            }
+      if (!signInFn) {
+        throw new Error(
+          "Passkey inloggen wordt niet ondersteund door deze client/browser.",
+        );
+      }
 
-            const { data, error } = await signInFn();
+      const { data, error } = await signInFn();
 
-            if (error) {
-                showToast('error', error.message || 'Inloggen met Passkey mislukt');
-                passkeyBtn.classList.remove('btn-loading');
-                passkeyBtn.disabled = false;
-                return;
-            }
+      if (error) {
+        showToast("error", error.message || "Inloggen met Passkey mislukt");
+        passkeyBtn.classList.remove("btn-loading");
+        passkeyBtn.disabled = false;
+        return;
+      }
 
-            if (data?.session) {
-                localStorage.setItem('instock_last_activity', Date.now().toString());
-                window.location.replace('index');
-            } else {
-                passkeyBtn.classList.remove('btn-loading');
-                passkeyBtn.disabled = false;
-            }
-        } catch (err) {
-            showToast('error', err.message || 'Er is een fout opgetreden bij het inloggen met Passkey');
-            passkeyBtn.classList.remove('btn-loading');
-            passkeyBtn.disabled = false;
-        }
-    });
+      if (data?.session) {
+        localStorage.setItem("instock_last_activity", Date.now().toString());
+        window.location.replace("index");
+      } else {
+        passkeyBtn.classList.remove("btn-loading");
+        passkeyBtn.disabled = false;
+      }
+    } catch (err) {
+      showToast(
+        "error",
+        err.message || "Er is een fout opgetreden bij het inloggen met Passkey",
+      );
+      passkeyBtn.classList.remove("btn-loading");
+      passkeyBtn.disabled = false;
+    }
+  });
 }

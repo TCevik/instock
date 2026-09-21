@@ -1,258 +1,430 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-
-    <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="css/main.css">
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="css/main.css" />
     <script type="module" src="js/main.js"></script>
 
-    <link rel="stylesheet" href="css/vulplanning.css">
+    <link rel="stylesheet" href="css/vulplanning.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script type="module" src="js/vulplanning/rooster.js"></script>
     <script type="module" src="js/vulplanning/colli-invoer.js"></script>
     <script type="module" src="js/vulplanning.js"></script>
 
     <title>Vulplanning Maker</title>
-</head>
+  </head>
 
-<body>
+  <body>
     <div class="page-container vulplanning-main-layout">
-        <div id="vulplanning-loading-screen" class="vulplanning-loading-screen">
-            <div class="vulplanning-loading-spinner"></div>
-            <span class="vulplanning-loading-text">Vulplanning laden...</span>
-        </div>
-        <div id="step-input-view" class="vulplanning-step-view">
-            <div class="vulplanning-top-bar">
-                <div class="vulplanning-top-info">
-                    <h1 class="vulplanning-page-title">Vulplanning Maken</h1>
-                    <p class="vulplanning-page-subtitle">Vul het rooster en de colli in of importeer de PDF-bestanden.
-                    </p>
-                </div>
-                <div class="vulplanning-top-actions">
-                    <button type="button" id="btn-back-to-timeline" class="btn btn-secondary" style="display: none;">
-                        <span class="material-icons btn-icon">arrow_back</span>
-                        <span>Terug naar Planning</span>
-                    </button>
-                    <button type="button" id="btn-clear-input" class="btn btn-secondary">
-                        <span class="material-icons btn-icon">delete_sweep</span>
-                        <span>Maak leeg</span>
-                    </button>
-                    <button type="button" id="btn-unified-import" class="btn btn-secondary">
-                        <span class="material-icons btn-icon">file_download</span>
-                        <span>Documenten Importeren</span>
-                    </button>
-                    <button type="button" id="btn-continue" class="btn btn-continue">
-                        <span>Planning Maken</span>
-                        <span class="material-icons btn-icon">arrow_forward</span>
-                    </button>
-                </div>
-            </div>
-
-            <div class="vulplanning-input-scroll-container">
-                <div class="planning-section">
-                    <div class="section-header">
-                        <h2 class="section-title">1. Rooster / Vulploeg Invoeren</h2>
-                        <p class="section-subtitle">Voer medewerkers in met hun werktijden en pauze.</p>
-                    </div>
-                    <div class="section-body">
-                        <div id="vullers-container" class="vullers-list"></div>
-                        <div class="planning-actions">
-                            <button type="button" id="btn-add-vuller" class="btn btn-add-vuller">
-                                <span class="material-icons btn-icon">add</span>
-                                <span>Vuller Toevoegen</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="planning-section">
-                    <div class="section-header">
-                        <h2 class="section-title">2. Colli Invoeren Per Categorie</h2>
-                        <p class="section-subtitle">Vul het aantal colli in. Paden en normen worden overgenomen uit de
-                            instellingen.</p>
-                    </div>
-                    <div class="section-body">
-                        <div id="colli-categories-container">
-                            <div class="empty-state">Paden en categorieën laden...</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      <div id="vulplanning-loading-screen" class="vulplanning-loading-screen">
+        <div class="vulplanning-loading-spinner"></div>
+        <span class="vulplanning-loading-text">Vulplanning laden...</span>
+      </div>
+      <div id="step-input-view" class="vulplanning-step-view">
+        <div class="vulplanning-top-bar">
+          <div class="vulplanning-top-info">
+            <h1 class="vulplanning-page-title">Vulplanning Maken</h1>
+            <p class="vulplanning-page-subtitle">
+              Vul het rooster en de colli in of importeer de PDF-bestanden.
+            </p>
+          </div>
+          <div class="vulplanning-top-actions">
+            <button
+              type="button"
+              id="btn-back-to-timeline"
+              class="btn btn-secondary"
+              style="display: none"
+            >
+              <span class="material-icons btn-icon">arrow_back</span>
+              <span>Terug naar Planning</span>
+            </button>
+            <button
+              type="button"
+              id="btn-clear-input"
+              class="btn btn-secondary"
+            >
+              <span class="material-icons btn-icon">delete_sweep</span>
+              <span>Maak leeg</span>
+            </button>
+            <button
+              type="button"
+              id="btn-unified-import"
+              class="btn btn-secondary"
+            >
+              <span class="material-icons btn-icon">file_download</span>
+              <span>Documenten Importeren</span>
+            </button>
+            <button type="button" id="btn-continue" class="btn btn-continue">
+              <span>Planning Maken</span>
+              <span class="material-icons btn-icon">arrow_forward</span>
+            </button>
+          </div>
         </div>
 
-        <div id="step-timeline-view" class="vulplanning-step-view" style="display: none;">
-            <div class="timeline-app-header">
-                <div class="timeline-header-left">
-                    <button type="button" id="btn-back-to-input" class="btn btn-secondary btn-sm">
-                        <span class="material-icons btn-icon">arrow_back</span>
-                        <span>Invoer Aanpassen</span>
-                    </button>
-                    <div class="timeline-header-titles">
-                        <h1 class="vulplanning-page-title">Vulplanning Overzicht</h1>
-                        <p class="vulplanning-page-subtitle" id="timelineSubtitle">Beheer en bekijk de vulplanning</p>
-                    </div>
-                </div>
-                <div class="timeline-header-actions">
-                    <button type="button" id="btn-add-custom-task" class="btn btn-secondary btn-sm">
-                        <span class="material-icons btn-icon">add_task</span>
-                        <span>Taak Toevoegen</span>
-                    </button>
-                    <button type="button" id="btn-combo-settings" class="btn btn-secondary btn-sm">
-                        <span class="material-icons btn-icon">tune</span>
-                        <span>Samen Indelen</span>
-                    </button>
-                    <button type="button" id="clear-planning-btn" class="btn btn-secondary btn-sm" title="Alle taken van medewerkers leegmaken">
-                        <span class="material-icons btn-icon">delete_sweep</span>
-                        <span>Planning leegmaken</span>
-                    </button>
-                    <div class="timeline-header-divider"></div>
-                    <button type="button" id="btn-print-planning" class="btn btn-secondary btn-sm">
-                        <span class="material-icons btn-icon">print</span>
-                        <span>Printen</span>
-                    </button>
-                    <button type="button" id="btn-finalize-productivity" class="btn btn-secondary btn-sm">
-                        <span class="material-icons btn-icon">fact_check</span>
-                        <span>Productiviteiten finaliseren</span>
-                    </button>
-                    <div class="timeline-header-divider"></div>
-                    <a href="instellingen-winkel" id="btn-settings-planning" class="btn btn-secondary btn-sm">
-                        <span class="material-icons btn-icon">settings</span>
-                        <span>Instellingen</span>
-                    </a>
-                </div>
+        <div class="vulplanning-input-scroll-container">
+          <div class="planning-section">
+            <div class="section-header">
+              <h2 class="section-title">1. Rooster / Vulploeg Invoeren</h2>
+              <p class="section-subtitle">
+                Voer medewerkers in met hun werktijden en pauze.
+              </p>
             </div>
-
-            <div id="mobile-planning-view" class="mobile-planning-view"></div>
-
-            <div class="timeline-workspace">
-                <div class="timeline-board-container">
-                    <div class="timeline-board-topbar">
-                        <div class="timeline-workers-header-cell">
-                            <div class="timeline-workers-header-left">
-                                <span class="timeline-col-title-main sortable-header" id="header-sort-name" title="Klik om te sorteren op naam">MEDEWERKERS</span>
-                                <div class="timeline-sort-dropdown-container">
-                                    <button type="button" id="btn-sort-fillers" class="timeline-sort-btn" title="Medewerkers sorteren">
-                                        <span class="material-icons sort-main-icon">sort</span>
-                                        <span class="sort-btn-text">Sorteren</span>
-                                        <span class="material-icons sort-chevron-icon">expand_more</span>
-                                    </button>
-                                    <div id="timeline-sort-menu" class="timeline-sort-menu">
-                                        <div class="sort-menu-header">Sorteren op</div>
-                                        <button type="button" class="sort-menu-item" data-sort="start-asc">
-                                            <span class="material-icons">schedule</span>
-                                            <span class="sort-item-text">Begintijd (omhoog)</span>
-                                        </button>
-                                        <button type="button" class="sort-menu-item" data-sort="start-desc">
-                                            <span class="material-icons">schedule</span>
-                                            <span class="sort-item-text">Begintijd (omlaag)</span>
-                                        </button>
-                                        <div class="sort-menu-divider"></div>
-                                        <button type="button" class="sort-menu-item" data-sort="end-asc">
-                                            <span class="material-icons">update</span>
-                                            <span class="sort-item-text">Eindtijd (omhoog)</span>
-                                        </button>
-                                        <button type="button" class="sort-menu-item" data-sort="end-desc">
-                                            <span class="material-icons">update</span>
-                                            <span class="sort-item-text">Eindtijd (omlaag)</span>
-                                        </button>
-                                        <div class="sort-menu-divider"></div>
-                                        <button type="button" class="sort-menu-item" data-sort="name-asc">
-                                            <span class="material-icons">sort_by_alpha</span>
-                                            <span class="sort-item-text">Naam (A-Z)</span>
-                                        </button>
-                                        <button type="button" class="sort-menu-item" data-sort="name-desc">
-                                            <span class="material-icons">sort_by_alpha</span>
-                                            <span class="sort-item-text">Naam (Z-A)</span>
-                                        </button>
-                                        <div class="sort-menu-divider"></div>
-                                        <button type="button" class="sort-menu-item" data-sort="custom">
-                                            <span class="material-icons">tune</span>
-                                            <span class="sort-item-text">Aangepast (volgorde)</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <span class="timeline-col-title-sub sortable-header" id="header-sort-end" title="Klik om te sorteren op eindtijd">EINDTIJD</span>
-                        </div>
-                        <div class="timeline-axis-label-row">
-                            <span class="timeline-axis-title">TOEGEWEZEN TAKEN</span>
-                            <div class="timeline-zoom-controls">
-                                <button type="button" id="btn-history-undo" class="zoom-btn"
-                                    title="Ongedaan Maken - Laatste actie herstellen (Ctrl+Z)" disabled><span
-                                        class="material-icons">undo</span></button>
-                                <button type="button" id="btn-history-redo" class="zoom-btn"
-                                    title="Opnieuw Uitvoeren - Ongedaan gemaakte actie herhalen (Ctrl+Y)" disabled><span
-                                        class="material-icons">redo</span></button>
-                                <div class="timeline-zoom-divider"></div>
-                                <button type="button" id="btn-zoom-out" class="zoom-btn"
-                                    title="Uitzoomen - Tijdlijnschaal verkleinen"><span
-                                        class="material-icons">remove</span></button>
-                                <span id="zoom-level-indicator" class="zoom-indicator">100%</span>
-                                <button type="button" id="btn-zoom-in" class="zoom-btn"
-                                    title="Inzoomen - Tijdlijnschaal vergroten"><span
-                                        class="material-icons">add</span></button>
-                                <button type="button" id="btn-zoom-reset" class="zoom-btn"
-                                    title="Herstellen - Tijdlijnschaal herstellen naar standaard"><span
-                                        class="material-icons">refresh</span></button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="timeline-board-body">
-                        <div class="timeline-workers-pane">
-                            <div class="timeline-hours-axis-spacer"></div>
-                            <div id="timeline-workers-list" class="timeline-workers-list"></div>
-                        </div>
-                        <div class="timeline-schedule-pane" id="timeline-schedule-pane">
-                            <div id="timeline-hours-axis" class="timeline-hours-axis"></div>
-                            <div id="timeline-tracks-container" class="timeline-tracks-container"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="unassigned-tasks-sidebar">
-                    <div class="unassigned-sidebar-header">
-                        <div class="unassigned-title-row">
-                            <span class="unassigned-sidebar-title">Taken Overzicht</span>
-                        </div>
-                        <div class="unassigned-filter-tabs">
-                            <button type="button" class="unassigned-tab active" data-tab="vullen">VULLEN (<span
-                                    id="count-tab-vullen">0</span>)</button>
-                            <button type="button" class="unassigned-tab" data-tab="spiegelen">SPIEGELEN (<span
-                                    id="count-tab-spiegelen">0</span>)</button>
-                            <button type="button" class="unassigned-tab" data-tab="restanten">RESTANTEN (<span
-                                    id="count-tab-restanten">0</span>)</button>
-                            <button type="button" class="unassigned-tab" data-tab="overige">OVERIGE (<span
-                                    id="count-tab-overige">0</span>)</button>
-                        </div>
-                    </div>
-                    <div class="unassigned-list-section">
-                        <div class="sidebar-tasks-group">
-                            <div class="sidebar-group-header">
-                                <span class="unassigned-section-label">Onverdeelde Taken</span>
-                                <span class="sidebar-count-badge" id="count-unassigned-badge">0</span>
-                            </div>
-                            <div id="unassigned-tasks-list" class="unassigned-tasks-list"></div>
-                        </div>
-                        <div class="sidebar-tasks-group">
-                            <div class="sidebar-group-header">
-                                <span class="unassigned-section-label">Verdeelde Taken - Sleep om een hulp taak in te voegen</span>
-                                <span class="sidebar-count-badge" id="count-assigned-badge">0</span>
-                            </div>
-                            <div id="assigned-tasks-list" class="unassigned-tasks-list assigned-tasks-list"></div>
-                        </div>
-                    </div>
-                    <div class="sidebar-drop-overlay" id="sidebar-drop-overlay">
-                        <span class="material-icons drop-icon">delete_outline</span>
-                        <span class="drop-text">Terug naar<br>onverdeelde taken</span>
-                    </div>
-                </div>
+            <div class="section-body">
+              <div id="vullers-container" class="vullers-list"></div>
+              <div class="planning-actions">
+                <button
+                  type="button"
+                  id="btn-add-vuller"
+                  class="btn btn-add-vuller"
+                >
+                  <span class="material-icons btn-icon">add</span>
+                  <span>Vuller Toevoegen</span>
+                </button>
+              </div>
             </div>
+          </div>
+
+          <div class="planning-section">
+            <div class="section-header">
+              <h2 class="section-title">2. Colli Invoeren Per Categorie</h2>
+              <p class="section-subtitle">
+                Vul het aantal colli in. Paden en normen worden overgenomen uit
+                de instellingen.
+              </p>
+            </div>
+            <div class="section-body">
+              <div id="colli-categories-container">
+                <div class="empty-state">Paden en categorieën laden...</div>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
+
+      <div
+        id="step-timeline-view"
+        class="vulplanning-step-view"
+        style="display: none"
+      >
+        <div class="timeline-app-header">
+          <div class="timeline-header-left">
+            <button
+              type="button"
+              id="btn-back-to-input"
+              class="btn btn-secondary btn-sm"
+            >
+              <span class="material-icons btn-icon">arrow_back</span>
+              <span>Invoer Aanpassen</span>
+            </button>
+            <div class="timeline-header-titles">
+              <h1 class="vulplanning-page-title">Vulplanning Overzicht</h1>
+              <p class="vulplanning-page-subtitle" id="timelineSubtitle">
+                Beheer en bekijk de vulplanning
+              </p>
+            </div>
+          </div>
+          <div class="timeline-header-actions">
+            <button
+              type="button"
+              id="btn-add-custom-task"
+              class="btn btn-secondary btn-sm"
+            >
+              <span class="material-icons btn-icon">add_task</span>
+              <span>Taak Toevoegen</span>
+            </button>
+            <button
+              type="button"
+              id="btn-combo-settings"
+              class="btn btn-secondary btn-sm"
+            >
+              <span class="material-icons btn-icon">tune</span>
+              <span>Samen Indelen</span>
+            </button>
+            <button
+              type="button"
+              id="clear-planning-btn"
+              class="btn btn-secondary btn-sm"
+              title="Alle taken van medewerkers leegmaken"
+            >
+              <span class="material-icons btn-icon">delete_sweep</span>
+              <span>Planning leegmaken</span>
+            </button>
+            <div class="timeline-header-divider"></div>
+            <button
+              type="button"
+              id="btn-print-planning"
+              class="btn btn-secondary btn-sm"
+            >
+              <span class="material-icons btn-icon">print</span>
+              <span>Printen</span>
+            </button>
+            <button
+              type="button"
+              id="btn-finalize-productivity"
+              class="btn btn-secondary btn-sm"
+            >
+              <span class="material-icons btn-icon">fact_check</span>
+              <span>Productiviteiten finaliseren</span>
+            </button>
+            <div class="timeline-header-divider"></div>
+            <a
+              href="instellingen-winkel"
+              id="btn-settings-planning"
+              class="btn btn-secondary btn-sm"
+            >
+              <span class="material-icons btn-icon">settings</span>
+              <span>Instellingen</span>
+            </a>
+          </div>
+        </div>
+
+        <div id="mobile-planning-view" class="mobile-planning-view"></div>
+
+        <div class="timeline-workspace">
+          <div class="timeline-board-container">
+            <div class="timeline-board-topbar">
+              <div class="timeline-workers-header-cell">
+                <div class="timeline-workers-header-left">
+                  <span
+                    class="timeline-col-title-main sortable-header"
+                    id="header-sort-name"
+                    title="Klik om te sorteren op naam"
+                    >MEDEWERKERS</span
+                  >
+                  <div class="timeline-sort-dropdown-container">
+                    <button
+                      type="button"
+                      id="btn-sort-fillers"
+                      class="timeline-sort-btn"
+                      title="Medewerkers sorteren"
+                    >
+                      <span class="material-icons sort-main-icon">sort</span>
+                      <span class="sort-btn-text">Sorteren</span>
+                      <span class="material-icons sort-chevron-icon"
+                        >expand_more</span
+                      >
+                    </button>
+                    <div id="timeline-sort-menu" class="timeline-sort-menu">
+                      <div class="sort-menu-header">Sorteren op</div>
+                      <button
+                        type="button"
+                        class="sort-menu-item"
+                        data-sort="start-asc"
+                      >
+                        <span class="material-icons">schedule</span>
+                        <span class="sort-item-text">Begintijd (omhoog)</span>
+                      </button>
+                      <button
+                        type="button"
+                        class="sort-menu-item"
+                        data-sort="start-desc"
+                      >
+                        <span class="material-icons">schedule</span>
+                        <span class="sort-item-text">Begintijd (omlaag)</span>
+                      </button>
+                      <div class="sort-menu-divider"></div>
+                      <button
+                        type="button"
+                        class="sort-menu-item"
+                        data-sort="end-asc"
+                      >
+                        <span class="material-icons">update</span>
+                        <span class="sort-item-text">Eindtijd (omhoog)</span>
+                      </button>
+                      <button
+                        type="button"
+                        class="sort-menu-item"
+                        data-sort="end-desc"
+                      >
+                        <span class="material-icons">update</span>
+                        <span class="sort-item-text">Eindtijd (omlaag)</span>
+                      </button>
+                      <div class="sort-menu-divider"></div>
+                      <button
+                        type="button"
+                        class="sort-menu-item"
+                        data-sort="name-asc"
+                      >
+                        <span class="material-icons">sort_by_alpha</span>
+                        <span class="sort-item-text">Naam (A-Z)</span>
+                      </button>
+                      <button
+                        type="button"
+                        class="sort-menu-item"
+                        data-sort="name-desc"
+                      >
+                        <span class="material-icons">sort_by_alpha</span>
+                        <span class="sort-item-text">Naam (Z-A)</span>
+                      </button>
+                      <div class="sort-menu-divider"></div>
+                      <button
+                        type="button"
+                        class="sort-menu-item"
+                        data-sort="custom"
+                      >
+                        <span class="material-icons">tune</span>
+                        <span class="sort-item-text">Aangepast (volgorde)</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <span
+                  class="timeline-col-title-sub sortable-header"
+                  id="header-sort-end"
+                  title="Klik om te sorteren op eindtijd"
+                  >EINDTIJD</span
+                >
+              </div>
+              <div class="timeline-axis-label-row">
+                <span class="timeline-axis-title">TOEGEWEZEN TAKEN</span>
+                <div class="timeline-zoom-controls">
+                  <button
+                    type="button"
+                    id="btn-history-undo"
+                    class="zoom-btn"
+                    title="Ongedaan Maken - Laatste actie herstellen (Ctrl+Z)"
+                    disabled
+                  >
+                    <span class="material-icons">undo</span>
+                  </button>
+                  <button
+                    type="button"
+                    id="btn-history-redo"
+                    class="zoom-btn"
+                    title="Opnieuw Uitvoeren - Ongedaan gemaakte actie herhalen (Ctrl+Y)"
+                    disabled
+                  >
+                    <span class="material-icons">redo</span>
+                  </button>
+                  <div class="timeline-zoom-divider"></div>
+                  <button
+                    type="button"
+                    id="btn-zoom-out"
+                    class="zoom-btn"
+                    title="Uitzoomen - Tijdlijnschaal verkleinen"
+                  >
+                    <span class="material-icons">remove</span>
+                  </button>
+                  <span id="zoom-level-indicator" class="zoom-indicator"
+                    >100%</span
+                  >
+                  <button
+                    type="button"
+                    id="btn-zoom-in"
+                    class="zoom-btn"
+                    title="Inzoomen - Tijdlijnschaal vergroten"
+                  >
+                    <span class="material-icons">add</span>
+                  </button>
+                  <button
+                    type="button"
+                    id="btn-zoom-reset"
+                    class="zoom-btn"
+                    title="Herstellen - Tijdlijnschaal herstellen naar standaard"
+                  >
+                    <span class="material-icons">refresh</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="timeline-board-body">
+              <div class="timeline-workers-pane">
+                <div class="timeline-hours-axis-spacer"></div>
+                <div
+                  id="timeline-workers-list"
+                  class="timeline-workers-list"
+                ></div>
+              </div>
+              <div class="timeline-schedule-pane" id="timeline-schedule-pane">
+                <div id="timeline-hours-axis" class="timeline-hours-axis"></div>
+                <div
+                  id="timeline-tracks-container"
+                  class="timeline-tracks-container"
+                ></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="unassigned-tasks-sidebar">
+            <div class="unassigned-sidebar-header">
+              <div class="unassigned-title-row">
+                <span class="unassigned-sidebar-title">Taken Overzicht</span>
+              </div>
+              <div class="unassigned-filter-tabs">
+                <button
+                  type="button"
+                  class="unassigned-tab active"
+                  data-tab="vullen"
+                >
+                  VULLEN (<span id="count-tab-vullen">0</span>)
+                </button>
+                <button
+                  type="button"
+                  class="unassigned-tab"
+                  data-tab="spiegelen"
+                >
+                  SPIEGELEN (<span id="count-tab-spiegelen">0</span>)
+                </button>
+                <button
+                  type="button"
+                  class="unassigned-tab"
+                  data-tab="restanten"
+                >
+                  RESTANTEN (<span id="count-tab-restanten">0</span>)
+                </button>
+                <button type="button" class="unassigned-tab" data-tab="overige">
+                  OVERIGE (<span id="count-tab-overige">0</span>)
+                </button>
+              </div>
+            </div>
+            <div class="unassigned-list-section">
+              <div class="sidebar-tasks-group">
+                <div class="sidebar-group-header">
+                  <span class="unassigned-section-label"
+                    >Onverdeelde Taken</span
+                  >
+                  <span class="sidebar-count-badge" id="count-unassigned-badge"
+                    >0</span
+                  >
+                </div>
+                <div
+                  id="unassigned-tasks-list"
+                  class="unassigned-tasks-list"
+                ></div>
+              </div>
+              <div class="sidebar-tasks-group">
+                <div class="sidebar-group-header">
+                  <span class="unassigned-section-label"
+                    >Verdeelde Taken - Sleep om een hulp taak in te voegen</span
+                  >
+                  <span class="sidebar-count-badge" id="count-assigned-badge"
+                    >0</span
+                  >
+                </div>
+                <div
+                  id="assigned-tasks-list"
+                  class="unassigned-tasks-list assigned-tasks-list"
+                ></div>
+              </div>
+            </div>
+            <div class="sidebar-drop-overlay" id="sidebar-drop-overlay">
+              <span class="material-icons drop-icon">delete_outline</span>
+              <span class="drop-text">Terug naar<br />onverdeelde taken</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div id="print-planning-container" class="print-planning-container" aria-hidden="true"></div>
-</body>
-
+    <div
+      id="print-planning-container"
+      class="print-planning-container"
+      aria-hidden="true"
+    ></div>
+  </body>
 </html>

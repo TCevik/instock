@@ -1,103 +1,138 @@
-import { planningState, setDraggedTaskData, getDraggedTaskData, getDraggedTask } from './state.js';
-import { timeToMinutes, minutesToTime, formatDuration, parsePauseMinutes, calculateProductivity, formatTimeInput, normalizeTimeOnBlur, getFillerStats } from './time-utils.js';
-import { showCustomTooltip, positionCustomTooltip, hideCustomTooltip } from './tooltip.js';
-import { showContextMenu, showWorkerContextMenu } from './context-menu.js';
-import { findExactUser, fillRoosterShifts } from './rooster.js';
-import { calculateTimelineBounds, renderTimelineAxis, renderGridLines, getPixelsPerMinute, getTimelineTotalMinutes } from './timeline-axis.js';
-import { openPauseModal } from './custom-task-modal.js';
-import { addHelperToTask, getComboTasksForTask, findMainTaskForHelper, findHelpersForMainTask } from './task-actions.js';
-import { triggerAutoSave } from './storage.js';
-import { recordSnapshot } from './history.js';
-import { clearFillerSortState } from './filler-sort.js';
+import {
+  planningState,
+  setDraggedTaskData,
+  getDraggedTaskData,
+  getDraggedTask,
+} from "./state.js";
+import {
+  timeToMinutes,
+  minutesToTime,
+  formatDuration,
+  parsePauseMinutes,
+  calculateProductivity,
+  formatTimeInput,
+  normalizeTimeOnBlur,
+  getFillerStats,
+} from "./time-utils.js";
+import {
+  showCustomTooltip,
+  positionCustomTooltip,
+  hideCustomTooltip,
+} from "./tooltip.js";
+import { showContextMenu, showWorkerContextMenu } from "./context-menu.js";
+import { findExactUser, fillRoosterShifts } from "./rooster.js";
+import {
+  calculateTimelineBounds,
+  renderTimelineAxis,
+  renderGridLines,
+  getPixelsPerMinute,
+  getTimelineTotalMinutes,
+} from "./timeline-axis.js";
+import { openPauseModal } from "./custom-task-modal.js";
+import {
+  addHelperToTask,
+  getComboTasksForTask,
+  findMainTaskForHelper,
+  findHelpersForMainTask,
+} from "./task-actions.js";
+import { triggerAutoSave } from "./storage.js";
+import { recordSnapshot } from "./history.js";
+import { clearFillerSortState } from "./filler-sort.js";
 
 let draggedWorkerFillerId = null;
 
 export function renderTimelineRows(options) {
-    const {
-        timelineWorkersList,
-        timelineTracksContainer,
-        timelineHoursAxis,
-        unassignedTasksSidebar,
-        onAssignTask,
-        onMoveTask,
-        onUnassignTask,
-        onRenderRows,
-        onRenderUnassigned,
-        onEditWorker,
-        onAddWorker
-    } = options;
+  const {
+    timelineWorkersList,
+    timelineTracksContainer,
+    timelineHoursAxis,
+    unassignedTasksSidebar,
+    onAssignTask,
+    onMoveTask,
+    onUnassignTask,
+    onRenderRows,
+    onRenderUnassigned,
+    onEditWorker,
+    onAddWorker,
+  } = options;
 
-    function onWorkerOrderChanged() {
-        clearFillerSortState();
-        fillRoosterShifts(planningState.fillers);
-        recordSnapshot();
-        triggerAutoSave(true);
-        if (onRenderRows) onRenderRows();
+  function onWorkerOrderChanged() {
+    clearFillerSortState();
+    fillRoosterShifts(planningState.fillers);
+    recordSnapshot();
+    triggerAutoSave(true);
+    if (onRenderRows) onRenderRows();
+  }
+
+  if (!timelineWorkersList || !timelineTracksContainer) return;
+  hideCustomTooltip();
+
+  calculateTimelineBounds(planningState.fillers);
+  renderTimelineAxis(timelineHoursAxis);
+
+  if (
+    timelineWorkersList.parentElement &&
+    !timelineWorkersList.parentElement.querySelector(
+      ".timeline-hours-axis-spacer",
+    )
+  ) {
+    const spacer = document.createElement("div");
+    spacer.className = "timeline-hours-axis-spacer";
+    timelineWorkersList.parentElement.insertBefore(spacer, timelineWorkersList);
+  }
+  timelineWorkersList.style.paddingTop = "0px";
+  timelineTracksContainer.style.paddingTop = "0px";
+
+  timelineWorkersList.innerHTML = "";
+  timelineTracksContainer.innerHTML = "";
+
+  const pxPerMin = getPixelsPerMinute();
+  const totalMins = getTimelineTotalMinutes();
+  const startMins = planningState.timelineStartHour * 60;
+  timelineTracksContainer.style.width = `${totalMins * pxPerMin}px`;
+
+  planningState.fillers.forEach((filler) => {
+    const shiftStart = timeToMinutes(filler.from);
+    let shiftEnd = timeToMinutes(filler.to);
+    if (shiftEnd > 0 && shiftEnd <= shiftStart) {
+      shiftEnd += 24 * 60;
+    }
+    const shiftGrossDuration = Math.max(0, shiftEnd - shiftStart);
+
+    const assigned = planningState.assignedTasks[filler.id] || [];
+    const stats = getFillerStats(filler, assigned);
+    const assignedPauzeMins = stats.assignedPauzeMins;
+    const totalAssignedMins = stats.workAssignedMins + assignedPauzeMins;
+    const presetPauseStr = formatDuration(stats.presetPause);
+    const targetShiftDuration =
+      Math.max(0, shiftGrossDuration - stats.presetPause) + assignedPauzeMins;
+
+    const diffMins = totalAssignedMins - targetShiftDuration;
+    let statusClass = "status-fit";
+    let statusText = "Passend";
+    if (diffMins > 0) {
+      statusClass = "status-over";
+      statusText = `Te veel: ${formatDuration(diffMins)}`;
+    } else if (diffMins < 0) {
+      statusClass = "status-rem";
+      statusText = `Over: ${formatDuration(Math.abs(diffMins))}`;
     }
 
-    if (!timelineWorkersList || !timelineTracksContainer) return;
-    hideCustomTooltip();
-    
-    calculateTimelineBounds(planningState.fillers);
-    renderTimelineAxis(timelineHoursAxis);
+    const workerCard = document.createElement("div");
+    workerCard.className = `timeline-worker-info ${diffMins > 0 ? "worker-has-overflow" : ""}`;
+    workerCard.setAttribute("data-filler-id", filler.id);
+    workerCard.draggable = true;
+    let isDraggingThisWorker = false;
 
-    if (timelineWorkersList.parentElement && !timelineWorkersList.parentElement.querySelector('.timeline-hours-axis-spacer')) {
-        const spacer = document.createElement('div');
-        spacer.className = 'timeline-hours-axis-spacer';
-        timelineWorkersList.parentElement.insertBefore(spacer, timelineWorkersList);
-    }
-    timelineWorkersList.style.paddingTop = '0px';
-    timelineTracksContainer.style.paddingTop = '0px';
-
-    timelineWorkersList.innerHTML = '';
-    timelineTracksContainer.innerHTML = '';
-
-    const pxPerMin = getPixelsPerMinute();
-    const totalMins = getTimelineTotalMinutes();
-    const startMins = planningState.timelineStartHour * 60;
-    timelineTracksContainer.style.width = `${totalMins * pxPerMin}px`;
-
-    planningState.fillers.forEach(filler => {
-        const shiftStart = timeToMinutes(filler.from);
-        let shiftEnd = timeToMinutes(filler.to);
-        if (shiftEnd > 0 && shiftEnd <= shiftStart) {
-            shiftEnd += 24 * 60;
-        }
-        const shiftGrossDuration = Math.max(0, shiftEnd - shiftStart);
-
-        const assigned = planningState.assignedTasks[filler.id] || [];
-        const stats = getFillerStats(filler, assigned);
-        const assignedPauzeMins = stats.assignedPauzeMins;
-        const totalAssignedMins = stats.workAssignedMins + assignedPauzeMins;
-        const presetPauseStr = formatDuration(stats.presetPause);
-        const targetShiftDuration = Math.max(0, shiftGrossDuration - stats.presetPause) + assignedPauzeMins;
-
-        const diffMins = totalAssignedMins - targetShiftDuration;
-        let statusClass = 'status-fit';
-        let statusText = 'Passend';
-        if (diffMins > 0) {
-            statusClass = 'status-over';
-            statusText = `Te veel: ${formatDuration(diffMins)}`;
-        } else if (diffMins < 0) {
-            statusClass = 'status-rem';
-            statusText = `Over: ${formatDuration(Math.abs(diffMins))}`;
-        }
-
-        const workerCard = document.createElement('div');
-        workerCard.className = `timeline-worker-info ${diffMins > 0 ? 'worker-has-overflow' : ''}`;
-        workerCard.setAttribute('data-filler-id', filler.id);
-        workerCard.draggable = true;
-        let isDraggingThisWorker = false;
-
-        workerCard.innerHTML = `
+    workerCard.innerHTML = `
             <div class="timeline-worker-left">
                 <div class="timeline-worker-name-row">
                     <span class="material-icons timeline-worker-drag-handle" title="Sleep om volgorde te wijzigen">drag_indicator</span>
-                    <span class="timeline-worker-name">${filler.name || 'Naamloos'}</span>
+                    <span class="timeline-worker-name">${filler.name || "Naamloos"}</span>
                     <span class="material-icons timeline-worker-edit-hint">edit</span>
                 </div>
                 <div class="timeline-worker-subrow">
-                    <span class="timeline-worker-hours">${filler.from || '00:00'} - ${filler.to || '00:00'}</span>
+                    <span class="timeline-worker-hours">${filler.from || "00:00"} - ${filler.to || "00:00"}</span>
                 </div>
             </div>
             <div class="timeline-worker-center">
@@ -113,251 +148,281 @@ export function renderTimelineRows(options) {
                 </div>
             </div>
             <div class="timeline-worker-right">
-                <input type="text" class="input-field timeline-worker-input" placeholder="" maxlength="5" value="${filler.actualEndTime || ''}" />
+                <input type="text" class="input-field timeline-worker-input" placeholder="" maxlength="5" value="${filler.actualEndTime || ""}" />
 
                 <span class="timeline-worker-prod"></span>
             </div>
         `;
 
-        const timeInput = workerCard.querySelector('.timeline-worker-input');
-        const prodLabel = workerCard.querySelector('.timeline-worker-prod');
+    const timeInput = workerCard.querySelector(".timeline-worker-input");
+    const prodLabel = workerCard.querySelector(".timeline-worker-prod");
 
-        function calcProd() {
-            filler.actualEndTime = timeInput.value;
-            const res = getFillerStats(filler, assigned).prodResult;
-            if (!res) {
-                prodLabel.textContent = '';
-                prodLabel.className = 'timeline-worker-prod';
-                return;
-            }
-            prodLabel.textContent = `Prod: ${res.percent}%`;
-            prodLabel.className = `timeline-worker-prod ${res.statusClass}`;
-        }
+    function calcProd() {
+      filler.actualEndTime = timeInput.value;
+      const res = getFillerStats(filler, assigned).prodResult;
+      if (!res) {
+        prodLabel.textContent = "";
+        prodLabel.className = "timeline-worker-prod";
+        return;
+      }
+      prodLabel.textContent = `Prod: ${res.percent}%`;
+      prodLabel.className = `timeline-worker-prod ${res.statusClass}`;
+    }
 
+    calcProd();
+
+    if (timeInput) {
+      let lastVal = timeInput.value;
+
+      timeInput.addEventListener("mouseenter", () => {
+        workerCard.draggable = false;
+      });
+      timeInput.addEventListener("mouseleave", () => {
+        workerCard.draggable = true;
+      });
+      timeInput.addEventListener("focus", () => {
+        workerCard.draggable = false;
+      });
+      timeInput.addEventListener("blur", () => {
+        workerCard.draggable = true;
+      });
+
+      timeInput.addEventListener("input", (e) => {
+        const isDeleting =
+          (e && e.inputType && e.inputType.startsWith("delete")) ||
+          timeInput.value.length < lastVal.length;
+        timeInput.value = formatTimeInput(timeInput.value, isDeleting);
+        lastVal = timeInput.value;
         calcProd();
-
-        if (timeInput) {
-            let lastVal = timeInput.value;
-
-            timeInput.addEventListener('mouseenter', () => { workerCard.draggable = false; });
-            timeInput.addEventListener('mouseleave', () => { workerCard.draggable = true; });
-            timeInput.addEventListener('focus', () => { workerCard.draggable = false; });
-            timeInput.addEventListener('blur', () => { workerCard.draggable = true; });
-
-            timeInput.addEventListener('input', (e) => {
-                const isDeleting = (e && e.inputType && e.inputType.startsWith('delete')) || (timeInput.value.length < lastVal.length);
-                timeInput.value = formatTimeInput(timeInput.value, isDeleting);
-                lastVal = timeInput.value;
-                calcProd();
-                if (timeInput.value.length === 5 || timeInput.value === '') {
-                    triggerAutoSave(true);
-                } else {
-                    triggerAutoSave(false);
-                }
-            });
-
-            timeInput.addEventListener('change', () => {
-                if (timeInput.value) {
-                    timeInput.value = normalizeTimeOnBlur(timeInput.value);
-                    lastVal = timeInput.value;
-                }
-                calcProd();
-                triggerAutoSave(true);
-            });
-
-            timeInput.addEventListener('blur', () => {
-                if (timeInput.value) {
-                    timeInput.value = normalizeTimeOnBlur(timeInput.value);
-                    lastVal = timeInput.value;
-                }
-                calcProd();
-                triggerAutoSave(true);
-            });
-
-            timeInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    timeInput.blur();
-                }
-            });
+        if (timeInput.value.length === 5 || timeInput.value === "") {
+          triggerAutoSave(true);
+        } else {
+          triggerAutoSave(false);
         }
+      });
 
-        let workerUsername = filler.username || '';
-        if (!workerUsername && filler.name) {
-            const matched = findExactUser(filler.name);
-            if (matched?.username) workerUsername = matched.username;
+      timeInput.addEventListener("change", () => {
+        if (timeInput.value) {
+          timeInput.value = normalizeTimeOnBlur(timeInput.value);
+          lastVal = timeInput.value;
         }
+        calcProd();
+        triggerAutoSave(true);
+      });
 
-        workerCard.addEventListener('dragstart', (e) => {
-            if (e.target.closest('.timeline-worker-input') || e.target.closest('button')) {
-                e.preventDefault();
-                return;
-            }
-            draggedWorkerFillerId = filler.id;
-            isDraggingThisWorker = true;
-            hideCustomTooltip();
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', JSON.stringify({
-                source: 'worker',
-                fillerId: filler.id
-            }));
-            setTimeout(() => {
-                workerCard.classList.add('is-dragging');
-            }, 0);
-        });
-
-        workerCard.addEventListener('dragend', () => {
-            draggedWorkerFillerId = null;
-            setTimeout(() => {
-                isDraggingThisWorker = false;
-            }, 50);
-            workerCard.classList.remove('is-dragging');
-            document.querySelectorAll('.timeline-worker-info, .timeline-add-worker-row').forEach(card => {
-                card.classList.remove('drag-over-top', 'drag-over-bottom');
-            });
-        });
-
-        workerCard.addEventListener('dragover', (e) => {
-            if (!draggedWorkerFillerId || draggedWorkerFillerId === filler.id) return;
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            const rect = workerCard.getBoundingClientRect();
-            const isTopHalf = (e.clientY - rect.top) < (rect.height / 2);
-            workerCard.classList.toggle('drag-over-top', isTopHalf);
-            workerCard.classList.toggle('drag-over-bottom', !isTopHalf);
-        });
-
-        workerCard.addEventListener('dragleave', (e) => {
-            if (!workerCard.contains(e.relatedTarget)) {
-                workerCard.classList.remove('drag-over-top', 'drag-over-bottom');
-            }
-        });
-
-        workerCard.addEventListener('drop', (e) => {
-            if (!draggedWorkerFillerId || draggedWorkerFillerId === filler.id) return;
-            e.preventDefault();
-            workerCard.classList.remove('drag-over-top', 'drag-over-bottom');
-
-            const sourceIdx = planningState.fillers.findIndex(f => f.id === draggedWorkerFillerId);
-            if (sourceIdx === -1) return;
-
-            const rect = workerCard.getBoundingClientRect();
-            const isTopHalf = (e.clientY - rect.top) < (rect.height / 2);
-
-            const [movedWorker] = planningState.fillers.splice(sourceIdx, 1);
-            let targetIdx = planningState.fillers.findIndex(f => f.id === filler.id);
-            if (!isTopHalf) {
-                targetIdx += 1;
-            }
-            planningState.fillers.splice(targetIdx, 0, movedWorker);
-            onWorkerOrderChanged();
-        });
-
-        workerCard.addEventListener('mouseenter', (e) => {
-            if (draggedWorkerFillerId) return;
-            if (e.target.closest('.timeline-worker-input')) return;
-            showCustomTooltip(e, {
-                isWorker: true,
-                username: workerUsername
-            });
-        });
-
-        workerCard.addEventListener('mousemove', (e) => {
-            if (draggedWorkerFillerId) return;
-            if (e.target.closest('.timeline-worker-input')) {
-                hideCustomTooltip();
-            } else {
-                showCustomTooltip(e, {
-                    isWorker: true,
-                    username: workerUsername
-                });
-                positionCustomTooltip(e);
-            }
-        });
-
-        workerCard.addEventListener('mouseleave', () => {
-            hideCustomTooltip();
-        });
-
-        workerCard.addEventListener('click', (e) => {
-            hideCustomTooltip();
-            if (isDraggingThisWorker) return;
-            if (e.target.closest('.timeline-worker-input')) return;
-            if (onEditWorker) {
-                onEditWorker(filler);
-            }
-        });
-
-        workerCard.addEventListener('contextmenu', (e) => {
-            if (isDraggingThisWorker) return;
-            if (e.target.closest('.timeline-worker-input')) return;
-            showWorkerContextMenu(e, filler, {
-                onRenderRows,
-                onEditWorker
-            });
-        });
-
-        timelineWorkersList.appendChild(workerCard);
-
-        const trackRow = document.createElement('div');
-        trackRow.className = `timeline-track-row ${diffMins > 0 ? 'has-overflow' : ''}`;
-        trackRow.style.width = `${totalMins * pxPerMin}px`;
-        trackRow.setAttribute('data-filler-id', filler.id);
-
-        renderGridLines(trackRow, planningState.timelineStartHour, planningState.timelineEndHour, pxPerMin);
-
-        const effectiveNetEnd = shiftStart + targetShiftDuration;
-
-        if (effectiveNetEnd > shiftStart) {
-            const shiftLeft = Math.max(0, (shiftStart - startMins) * pxPerMin);
-            const shiftWidth = (effectiveNetEnd - shiftStart) * pxPerMin;
-            const bounds = document.createElement('div');
-            bounds.className = 'timeline-shift-bounds';
-            bounds.style.left = `${shiftLeft}px`;
-            bounds.style.width = `${shiftWidth}px`;
-            trackRow.appendChild(bounds);
+      timeInput.addEventListener("blur", () => {
+        if (timeInput.value) {
+          timeInput.value = normalizeTimeOnBlur(timeInput.value);
+          lastVal = timeInput.value;
         }
+        calcProd();
+        triggerAutoSave(true);
+      });
 
-        let currentBlockStartMins = shiftStart >= 0 ? shiftStart : startMins;
+      timeInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          timeInput.blur();
+        }
+      });
+    }
 
-        assigned.forEach((task, taskIdx) => {
-            const taskDurationMins = Number(task.duration) || 1;
-            const taskLeft = Math.max(0, (currentBlockStartMins - startMins) * pxPerMin);
-            const taskWidth = Math.max(2, taskDurationMins * pxPerMin);
+    let workerUsername = filler.username || "";
+    if (!workerUsername && filler.name) {
+      const matched = findExactUser(filler.name);
+      if (matched?.username) workerUsername = matched.username;
+    }
 
-            const isMicro = taskWidth < 38;
-            const isTiny = taskWidth < 68;
-            const isNano = taskWidth < 20;
+    workerCard.addEventListener("dragstart", (e) => {
+      if (
+        e.target.closest(".timeline-worker-input") ||
+        e.target.closest("button")
+      ) {
+        e.preventDefault();
+        return;
+      }
+      draggedWorkerFillerId = filler.id;
+      isDraggingThisWorker = true;
+      hideCustomTooltip();
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData(
+        "text/plain",
+        JSON.stringify({
+          source: "worker",
+          fillerId: filler.id,
+        }),
+      );
+      setTimeout(() => {
+        workerCard.classList.add("is-dragging");
+      }, 0);
+    });
 
-            const block = document.createElement('div');
-            block.className = `timeline-task-block type-${task.type || 'vullen'} ${task.isHelper ? 'is-helper' : ''} ${isMicro ? 'is-micro' : ''} ${isTiny ? 'is-tiny' : ''} ${isNano ? 'is-nano' : ''}`;
-            block.style.left = `${taskLeft}px`;
-            block.style.width = `${taskWidth}px`;
-            block.setAttribute('draggable', 'true');
-            block.setAttribute('data-task-id', task.id);
-            block.setAttribute('data-filler-id', filler.id);
-            block.setAttribute('data-task-index', taskIdx);
+    workerCard.addEventListener("dragend", () => {
+      draggedWorkerFillerId = null;
+      setTimeout(() => {
+        isDraggingThisWorker = false;
+      }, 50);
+      workerCard.classList.remove("is-dragging");
+      document
+        .querySelectorAll(".timeline-worker-info, .timeline-add-worker-row")
+        .forEach((card) => {
+          card.classList.remove("drag-over-top", "drag-over-bottom");
+        });
+    });
 
-            const taskStartMins = currentBlockStartMins;
-            const taskEndMins = currentBlockStartMins + task.duration;
-            const startStr = minutesToTime(taskStartMins);
-            const endStr = minutesToTime(taskEndMins);
+    workerCard.addEventListener("dragover", (e) => {
+      if (!draggedWorkerFillerId || draggedWorkerFillerId === filler.id) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      const rect = workerCard.getBoundingClientRect();
+      const isTopHalf = e.clientY - rect.top < rect.height / 2;
+      workerCard.classList.toggle("drag-over-top", isTopHalf);
+      workerCard.classList.toggle("drag-over-bottom", !isTopHalf);
+    });
 
-            let typeBadge = '';
-            if (task.isHelper) {
-                typeBadge = `<span class="task-badge-icon badge-helper">H</span>`;
-            } else if (task.type === 'vullen') {
-                typeBadge = `<span class="task-badge-icon badge-vullen">V</span>`;
-            } else if (task.type === 'spiegelen') {
-                typeBadge = `<span class="task-badge-icon badge-spiegelen">S</span>`;
-            } else if (task.type === 'restanten') {
-                typeBadge = `<span class="task-badge-icon badge-restanten">R</span>`;
-            } else if (task.type === 'overige') {
-                typeBadge = `<span class="task-badge-icon badge-overige">O</span>`;
-            } else if (task.type === 'pauze') {
-                typeBadge = `<span class="task-badge-icon badge-pauze">P</span>`;
-            }
+    workerCard.addEventListener("dragleave", (e) => {
+      if (!workerCard.contains(e.relatedTarget)) {
+        workerCard.classList.remove("drag-over-top", "drag-over-bottom");
+      }
+    });
 
-            block.innerHTML = `
+    workerCard.addEventListener("drop", (e) => {
+      if (!draggedWorkerFillerId || draggedWorkerFillerId === filler.id) return;
+      e.preventDefault();
+      workerCard.classList.remove("drag-over-top", "drag-over-bottom");
+
+      const sourceIdx = planningState.fillers.findIndex(
+        (f) => f.id === draggedWorkerFillerId,
+      );
+      if (sourceIdx === -1) return;
+
+      const rect = workerCard.getBoundingClientRect();
+      const isTopHalf = e.clientY - rect.top < rect.height / 2;
+
+      const [movedWorker] = planningState.fillers.splice(sourceIdx, 1);
+      let targetIdx = planningState.fillers.findIndex(
+        (f) => f.id === filler.id,
+      );
+      if (!isTopHalf) {
+        targetIdx += 1;
+      }
+      planningState.fillers.splice(targetIdx, 0, movedWorker);
+      onWorkerOrderChanged();
+    });
+
+    workerCard.addEventListener("mouseenter", (e) => {
+      if (draggedWorkerFillerId) return;
+      if (e.target.closest(".timeline-worker-input")) return;
+      showCustomTooltip(e, {
+        isWorker: true,
+        username: workerUsername,
+      });
+    });
+
+    workerCard.addEventListener("mousemove", (e) => {
+      if (draggedWorkerFillerId) return;
+      if (e.target.closest(".timeline-worker-input")) {
+        hideCustomTooltip();
+      } else {
+        showCustomTooltip(e, {
+          isWorker: true,
+          username: workerUsername,
+        });
+        positionCustomTooltip(e);
+      }
+    });
+
+    workerCard.addEventListener("mouseleave", () => {
+      hideCustomTooltip();
+    });
+
+    workerCard.addEventListener("click", (e) => {
+      hideCustomTooltip();
+      if (isDraggingThisWorker) return;
+      if (e.target.closest(".timeline-worker-input")) return;
+      if (onEditWorker) {
+        onEditWorker(filler);
+      }
+    });
+
+    workerCard.addEventListener("contextmenu", (e) => {
+      if (isDraggingThisWorker) return;
+      if (e.target.closest(".timeline-worker-input")) return;
+      showWorkerContextMenu(e, filler, {
+        onRenderRows,
+        onEditWorker,
+      });
+    });
+
+    timelineWorkersList.appendChild(workerCard);
+
+    const trackRow = document.createElement("div");
+    trackRow.className = `timeline-track-row ${diffMins > 0 ? "has-overflow" : ""}`;
+    trackRow.style.width = `${totalMins * pxPerMin}px`;
+    trackRow.setAttribute("data-filler-id", filler.id);
+
+    renderGridLines(
+      trackRow,
+      planningState.timelineStartHour,
+      planningState.timelineEndHour,
+      pxPerMin,
+    );
+
+    const effectiveNetEnd = shiftStart + targetShiftDuration;
+
+    if (effectiveNetEnd > shiftStart) {
+      const shiftLeft = Math.max(0, (shiftStart - startMins) * pxPerMin);
+      const shiftWidth = (effectiveNetEnd - shiftStart) * pxPerMin;
+      const bounds = document.createElement("div");
+      bounds.className = "timeline-shift-bounds";
+      bounds.style.left = `${shiftLeft}px`;
+      bounds.style.width = `${shiftWidth}px`;
+      trackRow.appendChild(bounds);
+    }
+
+    let currentBlockStartMins = shiftStart >= 0 ? shiftStart : startMins;
+
+    assigned.forEach((task, taskIdx) => {
+      const taskDurationMins = Number(task.duration) || 1;
+      const taskLeft = Math.max(
+        0,
+        (currentBlockStartMins - startMins) * pxPerMin,
+      );
+      const taskWidth = Math.max(2, taskDurationMins * pxPerMin);
+
+      const isMicro = taskWidth < 38;
+      const isTiny = taskWidth < 68;
+      const isNano = taskWidth < 20;
+
+      const block = document.createElement("div");
+      block.className = `timeline-task-block type-${task.type || "vullen"} ${task.isHelper ? "is-helper" : ""} ${isMicro ? "is-micro" : ""} ${isTiny ? "is-tiny" : ""} ${isNano ? "is-nano" : ""}`;
+      block.style.left = `${taskLeft}px`;
+      block.style.width = `${taskWidth}px`;
+      block.setAttribute("draggable", "true");
+      block.setAttribute("data-task-id", task.id);
+      block.setAttribute("data-filler-id", filler.id);
+      block.setAttribute("data-task-index", taskIdx);
+
+      const taskStartMins = currentBlockStartMins;
+      const taskEndMins = currentBlockStartMins + task.duration;
+      const startStr = minutesToTime(taskStartMins);
+      const endStr = minutesToTime(taskEndMins);
+
+      let typeBadge = "";
+      if (task.isHelper) {
+        typeBadge = `<span class="task-badge-icon badge-helper">H</span>`;
+      } else if (task.type === "vullen") {
+        typeBadge = `<span class="task-badge-icon badge-vullen">V</span>`;
+      } else if (task.type === "spiegelen") {
+        typeBadge = `<span class="task-badge-icon badge-spiegelen">S</span>`;
+      } else if (task.type === "restanten") {
+        typeBadge = `<span class="task-badge-icon badge-restanten">R</span>`;
+      } else if (task.type === "overige") {
+        typeBadge = `<span class="task-badge-icon badge-overige">O</span>`;
+      } else if (task.type === "pauze") {
+        typeBadge = `<span class="task-badge-icon badge-pauze">P</span>`;
+      }
+
+      block.innerHTML = `
                 <div class="task-block-header">
                     ${typeBadge}
                     <span class="timeline-task-title">${task.title}</span>
@@ -368,419 +433,512 @@ export function renderTimelineRows(options) {
                 </div>
             `;
 
-            if (effectiveNetEnd > 0 && taskEndMins > effectiveNetEnd) {
-                const overflowMins = Math.min(task.duration, taskEndMins - effectiveNetEnd);
-                const overflowWidth = Math.max(4, overflowMins * pxPerMin);
-                const overflowOverlay = document.createElement('div');
-                overflowOverlay.className = 'timeline-task-overflow';
-                overflowOverlay.style.width = `${overflowWidth}px`;
-                overflowOverlay.title = `Te lang: ${overflowMins}m na werktijd`;
-                block.appendChild(overflowOverlay);
-            }
+      if (effectiveNetEnd > 0 && taskEndMins > effectiveNetEnd) {
+        const overflowMins = Math.min(
+          task.duration,
+          taskEndMins - effectiveNetEnd,
+        );
+        const overflowWidth = Math.max(4, overflowMins * pxPerMin);
+        const overflowOverlay = document.createElement("div");
+        overflowOverlay.className = "timeline-task-overflow";
+        overflowOverlay.style.width = `${overflowWidth}px`;
+        overflowOverlay.title = `Te lang: ${overflowMins}m na werktijd`;
+        block.appendChild(overflowOverlay);
+      }
 
-            block.addEventListener('mouseenter', (e) => {
-                let mainTask = task;
-                if (task.isHelper) {
-                    const mainInfo = findMainTaskForHelper(task);
-                    if (mainInfo) mainTask = mainInfo.task;
-                }
-                const helpers = findHelpersForMainTask(mainTask);
-                const totalDuration = mainTask.duration + helpers.reduce((sum, h) => sum + h.task.duration, 0);
+      block.addEventListener("mouseenter", (e) => {
+        let mainTask = task;
+        if (task.isHelper) {
+          const mainInfo = findMainTaskForHelper(task);
+          if (mainInfo) mainTask = mainInfo.task;
+        }
+        const helpers = findHelpersForMainTask(mainTask);
+        const totalDuration =
+          mainTask.duration +
+          helpers.reduce((sum, h) => sum + h.task.duration, 0);
 
-                showCustomTooltip(e, {
-                    type: task.type,
-                    title: task.title,
-                    duration: task.duration,
-                    totalDuration: totalDuration,
-                    origDuration: mainTask.origDuration,
-                    colli: task.colli,
-                    startStr: startStr,
-                    endStr: endStr,
-                    isHelper: task.isHelper
-                });
-            });
-
-            block.addEventListener('mousemove', (e) => {
-                positionCustomTooltip(e);
-            });
-
-            block.addEventListener('mouseleave', () => {
-                hideCustomTooltip();
-            });
-
-            block.addEventListener('dragstart', (e) => {
-                hideCustomTooltip();
-                const dragData = {
-                    source: 'assigned',
-                    taskId: task.id,
-                    fillerId: filler.id,
-                    taskIndex: taskIdx
-                };
-                setDraggedTaskData(dragData);
-                e.dataTransfer.setData('text/plain', JSON.stringify(dragData));
-
-                setTimeout(() => {
-                    block.classList.add('dragging');
-                }, 0);
-                if (unassignedTasksSidebar) {
-                    unassignedTasksSidebar.classList.add('drag-active');
-                }
-            });
-
-            block.addEventListener('dragend', () => {
-                setDraggedTaskData(null);
-                document.querySelectorAll('.timeline-task-ghost').forEach(el => el.remove());
-                document.querySelectorAll('.timeline-task-block').forEach(b => {
-                    b.style.transform = '';
-                });
-                block.classList.remove('dragging');
-                if (unassignedTasksSidebar) {
-                    unassignedTasksSidebar.classList.remove('drag-active');
-                    unassignedTasksSidebar.classList.remove('drag-over');
-                }
-            });
-
-            block.addEventListener('dblclick', () => {
-                hideCustomTooltip();
-                if (onUnassignTask) onUnassignTask(filler.id, taskIdx);
-            });
-
-            block.addEventListener('contextmenu', (e) => {
-                showContextMenu(e, task, true, filler.id, taskIdx, {
-                    onRenderRows,
-                    onRenderUnassigned,
-                    onUnassignTask
-                });
-            });
-
-            trackRow.appendChild(block);
-            currentBlockStartMins += task.duration;
+        showCustomTooltip(e, {
+          type: task.type,
+          title: task.title,
+          duration: task.duration,
+          totalDuration: totalDuration,
+          origDuration: mainTask.origDuration,
+          colli: task.colli,
+          startStr: startStr,
+          endStr: endStr,
+          isHelper: task.isHelper,
         });
+      });
 
-        trackRow.addEventListener('dragover', (e) => {
-            if (draggedWorkerFillerId) {
-                if (draggedWorkerFillerId !== filler.id) {
-                    e.preventDefault();
-                    e.dataTransfer.dropEffect = 'move';
-                    const rect = trackRow.getBoundingClientRect();
-                    const isTopHalf = (e.clientY - rect.top) < (rect.height / 2);
-                    workerCard.classList.toggle('drag-over-top', isTopHalf);
-                    workerCard.classList.toggle('drag-over-bottom', !isTopHalf);
-                }
-                return;
-            }
+      block.addEventListener("mousemove", (e) => {
+        positionCustomTooltip(e);
+      });
 
-            e.preventDefault();
-            const dragged = getDraggedTask();
-            if (!dragged) return;
+      block.addEventListener("mouseleave", () => {
+        hideCustomTooltip();
+      });
 
-            const dragData = getDraggedTaskData();
-            let previewTasks = [dragged];
-            if (dragData && dragData.source === 'unassigned' && dragged.type === 'vullen') {
-                const { prependedTasks, appendedTasks } = getComboTasksForTask(dragged);
-                previewTasks = [...prependedTasks, dragged, ...appendedTasks];
-            } else if (dragData && dragData.source === 'sidebar_assigned') {
-                const origTask = dragged;
-                const rootTaskId = origTask.id;
-                let existingHelpersDuration = 0;
-                let existingHelpersCount = 0;
-                planningState.fillers.forEach(f => {
-                    const flist = planningState.assignedTasks[f.id] || [];
-                    flist.forEach(t => {
-                        if (t.isHelper && t.parentTaskId === rootTaskId) {
-                            existingHelpersCount++;
-                            existingHelpersDuration += t.duration || 0;
-                        }
-                    });
-                });
-                const activeTotalDuration = origTask.duration + existingHelpersDuration;
-                const totalPeople = 1 + existingHelpersCount + 1;
-                const predictedDuration = Math.max(1, Math.floor(activeTotalDuration / totalPeople));
-                previewTasks = [{ ...origTask, duration: predictedDuration, isHelper: true }];
-            }
+      block.addEventListener("dragstart", (e) => {
+        hideCustomTooltip();
+        const dragData = {
+          source: "assigned",
+          taskId: task.id,
+          fillerId: filler.id,
+          taskIndex: taskIdx,
+        };
+        setDraggedTaskData(dragData);
+        e.dataTransfer.setData("text/plain", JSON.stringify(dragData));
 
-            const rect = trackRow.getBoundingClientRect();
-            const hoverX = e.clientX - rect.left;
+        setTimeout(() => {
+          block.classList.add("dragging");
+        }, 0);
+        if (unassignedTasksSidebar) {
+          unassignedTasksSidebar.classList.add("drag-active");
+        }
+      });
 
-            let ghosts = Array.from(trackRow.querySelectorAll('.timeline-task-ghost'));
-            const matchesExisting = ghosts.length === previewTasks.length && ghosts.every((g, i) => g.getAttribute('data-task-id') === String(previewTasks[i].id));
-            if (!matchesExisting) {
-                document.querySelectorAll('.timeline-task-ghost').forEach(el => el.remove());
-                document.querySelectorAll('.timeline-task-block').forEach(b => {
-                    b.style.transform = '';
-                });
-                ghosts = previewTasks.map(item => {
-                    const g = document.createElement('div');
-                    g.className = `timeline-task-ghost type-${item.type || 'vullen'}`;
-                    g.setAttribute('data-task-id', String(item.id));
-                    g.innerHTML = `<span class="timeline-task-ghost-text">${item.title}</span>`;
-                    trackRow.appendChild(g);
-                    return g;
-                });
-            }
-
-            const allAssigned = planningState.assignedTasks[filler.id] || [];
-            const rowBaseStartMins = shiftStart >= 0 ? shiftStart : startMins;
-            const totalWidthPx = previewTasks.reduce((sum, item) => sum + (Number(item.duration) || 1), 0) * pxPerMin;
-
-            const isSelfDrag = dragData && dragData.source === 'assigned' && dragData.fillerId === filler.id;
-            const selfOrigIdx = isSelfDrag ? dragData.taskIndex : -1;
-
-            const otherItems = [];
-            allAssigned.forEach((item, idx) => {
-                if (isSelfDrag && idx === selfOrigIdx) return;
-                otherItems.push(item);
-            });
-
-            const activeTargetIdxStr = trackRow.getAttribute('data-target-index');
-            const currentSlot = activeTargetIdxStr !== null 
-                ? Math.max(0, Math.min(otherItems.length, parseInt(activeTargetIdxStr, 10))) 
-                : (isSelfDrag ? selfOrigIdx : otherItems.length);
-
-            let slotStart = (rowBaseStartMins - startMins) * pxPerMin;
-            for (let s = 0; s < currentSlot; s++) {
-                slotStart += otherItems[s].duration * pxPerMin;
-            }
-            const slotEnd = slotStart + totalWidthPx;
-
-            let bestSlot = currentSlot;
-
-            if (hoverX < slotStart && currentSlot > 0) {
-                const prevItem = otherItems[currentSlot - 1];
-                const prevItemWidth = prevItem.duration * pxPerMin;
-                const prevItemStart = slotStart - prevItemWidth;
-                const prevItemMid = prevItemStart + (prevItemWidth / 2);
-
-                if (hoverX < prevItemMid) {
-                    bestSlot = currentSlot - 1;
-                }
-            } else if (hoverX > slotEnd && currentSlot < otherItems.length) {
-                const nextItem = otherItems[currentSlot];
-                const nextItemWidth = nextItem.duration * pxPerMin;
-                const nextItemStart = slotEnd;
-                const nextItemMid = nextItemStart + (nextItemWidth / 2);
-
-                if (hoverX > nextItemMid) {
-                    bestSlot = currentSlot + 1;
-                }
-            }
-
-            if (previewTasks.length === 1 && previewTasks[0].isHelper && previewTasks[0].parentTaskId) {
-                const mainTaskIdx = otherItems.findIndex(t => t.id === previewTasks[0].parentTaskId && !t.isHelper);
-                if (mainTaskIdx !== -1) {
-                    bestSlot = mainTaskIdx + 1;
-                }
-            } else if (dragData && dragData.source === 'assigned' && !dragged.isHelper) {
-                const helperTaskIdx = otherItems.findIndex(t => t.isHelper && t.parentTaskId === dragged.id);
-                if (helperTaskIdx !== -1) {
-                    bestSlot = helperTaskIdx + 1;
-                }
-            }
-
-            let currentGhostLeftPx = (rowBaseStartMins - startMins) * pxPerMin;
-            for (let j = 0; j < bestSlot; j++) {
-                currentGhostLeftPx += otherItems[j].duration * pxPerMin;
-            }
-
-            ghosts.forEach((g, idx) => {
-                const item = previewTasks[idx];
-                const itemDurationMins = Number(item.duration) || 1;
-                const itemWidthPx = Math.max(2, itemDurationMins * pxPerMin);
-                const isMicro = itemWidthPx < 38;
-                const isTiny = itemWidthPx < 68;
-                const isNano = itemWidthPx < 20;
-
-                g.className = `timeline-task-ghost type-${item.type || 'vullen'} ${item.isHelper ? 'is-helper' : ''} ${isMicro ? 'is-micro' : ''} ${isTiny ? 'is-tiny' : ''} ${isNano ? 'is-nano' : ''}`;
-                g.style.left = `${Math.max(0, currentGhostLeftPx)}px`;
-                g.style.width = `${itemWidthPx}px`;
-                currentGhostLeftPx += itemDurationMins * pxPerMin;
-            });
-            trackRow.setAttribute('data-target-index', String(bestSlot));
-
-            let runningBasePx = (rowBaseStartMins - startMins) * pxPerMin;
-            otherItems.forEach((item, idx) => {
-                const blockEl = trackRow.querySelector(`.timeline-task-block[data-task-id="${item.id}"]`);
-                if (!blockEl) return;
-
-                const origLeft = parseFloat(blockEl.style.left) || 0;
-                let desiredLeft = runningBasePx;
-                if (idx >= bestSlot) {
-                    desiredLeft += totalWidthPx;
-                }
-                const diffX = desiredLeft - origLeft;
-                blockEl.style.transform = diffX !== 0 ? `translateX(${diffX}px)` : '';
-                runningBasePx += item.duration * pxPerMin;
-            });
-
-            document.querySelectorAll('.timeline-track-row').forEach(otherRow => {
-                if (otherRow === trackRow) return;
-                const otherFillerId = parseInt(otherRow.getAttribute('data-filler-id'), 10);
-                const isSourceRow = dragData && dragData.source === 'assigned' && dragData.fillerId === otherFillerId;
-                if (isSourceRow) {
-                    const sourceBlocks = otherRow.querySelectorAll('.timeline-task-block');
-                    sourceBlocks.forEach(sb => {
-                        const sIdx = parseInt(sb.getAttribute('data-task-index'), 10);
-                        if (sIdx > dragData.taskIndex) {
-                            sb.style.transform = `translateX(-${totalWidthPx}px)`;
-                        } else {
-                            sb.style.transform = '';
-                        }
-                    });
-                } else {
-                    otherRow.querySelectorAll('.timeline-task-block').forEach(sb => {
-                        sb.style.transform = '';
-                    });
-                }
-            });
+      block.addEventListener("dragend", () => {
+        setDraggedTaskData(null);
+        document
+          .querySelectorAll(".timeline-task-ghost")
+          .forEach((el) => el.remove());
+        document.querySelectorAll(".timeline-task-block").forEach((b) => {
+          b.style.transform = "";
         });
+        block.classList.remove("dragging");
+        if (unassignedTasksSidebar) {
+          unassignedTasksSidebar.classList.remove("drag-active");
+          unassignedTasksSidebar.classList.remove("drag-over");
+        }
+      });
 
-        trackRow.addEventListener('dragleave', (e) => {
-            if (draggedWorkerFillerId) {
-                if (!trackRow.contains(e.relatedTarget)) {
-                    workerCard.classList.remove('drag-over-top', 'drag-over-bottom');
-                }
-                return;
-            }
+      block.addEventListener("dblclick", () => {
+        hideCustomTooltip();
+        if (onUnassignTask) onUnassignTask(filler.id, taskIdx);
+      });
 
-            if (!trackRow.contains(e.relatedTarget)) {
-                trackRow.querySelectorAll('.timeline-task-ghost').forEach(el => el.remove());
-                trackRow.removeAttribute('data-target-index');
-                trackRow.querySelectorAll('.timeline-task-block').forEach(b => {
-                    b.style.transform = '';
-                });
-            }
+      block.addEventListener("contextmenu", (e) => {
+        showContextMenu(e, task, true, filler.id, taskIdx, {
+          onRenderRows,
+          onRenderUnassigned,
+          onUnassignTask,
         });
+      });
 
-        trackRow.addEventListener('drop', (e) => {
-            e.preventDefault();
-            if (draggedWorkerFillerId) {
-                workerCard.classList.remove('drag-over-top', 'drag-over-bottom');
-                if (draggedWorkerFillerId !== filler.id) {
-                    const sourceIdx = planningState.fillers.findIndex(f => f.id === draggedWorkerFillerId);
-                    if (sourceIdx !== -1) {
-                        const rect = trackRow.getBoundingClientRect();
-                        const isTopHalf = (e.clientY - rect.top) < (rect.height / 2);
-                        const [movedWorker] = planningState.fillers.splice(sourceIdx, 1);
-                        let targetIdx = planningState.fillers.findIndex(f => f.id === filler.id);
-                        if (!isTopHalf) targetIdx += 1;
-                        planningState.fillers.splice(targetIdx, 0, movedWorker);
-                        onWorkerOrderChanged();
-                    }
-                }
-                return;
-            }
-
-            trackRow.querySelectorAll('.timeline-task-ghost').forEach(el => el.remove());
-
-            trackRow.querySelectorAll('.timeline-task-block').forEach(b => {
-                b.style.transform = '';
-            });
-
-            const targetIdxStr = trackRow.getAttribute('data-target-index');
-            const targetIndex = targetIdxStr !== null ? parseInt(targetIdxStr, 10) : null;
-            trackRow.removeAttribute('data-target-index');
-
-            const dataStr = e.dataTransfer.getData('text/plain');
-            let data = null;
-            if (dataStr) {
-                try { data = JSON.parse(dataStr); } catch (_) {}
-            }
-            if (!data) data = getDraggedTaskData();
-            if (!data) return;
-
-            try {
-                if (data.source === 'unassigned') {
-                    if (data.taskId === 'pauze_template') {
-                        openPauseModal(30, (chosenDuration) => {
-                            if (onAssignTask) onAssignTask(data.taskId, filler.id, targetIndex, chosenDuration);
-                        });
-                    } else if (onAssignTask) {
-                        onAssignTask(data.taskId, filler.id, targetIndex);
-                    }
-                } else if (data.source === 'sidebar_assigned') {
-                    addHelperToTask(data.fillerId, data.taskIndex, filler.id, targetIndex, {
-                        onRenderRows,
-                        onRenderUnassigned
-                    });
-                } else if (data.source === 'assigned') {
-                    if (onMoveTask) onMoveTask(data.fillerId, data.taskIndex, filler.id, targetIndex);
-                }
-            } catch (_) {}
-            setDraggedTaskData(null);
-        });
-
-        timelineTracksContainer.appendChild(trackRow);
+      trackRow.appendChild(block);
+      currentBlockStartMins += task.duration;
     });
 
-    const addRow = document.createElement('div');
-    addRow.className = 'timeline-add-worker-row';
-    addRow.innerHTML = `
+    trackRow.addEventListener("dragover", (e) => {
+      if (draggedWorkerFillerId) {
+        if (draggedWorkerFillerId !== filler.id) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+          const rect = trackRow.getBoundingClientRect();
+          const isTopHalf = e.clientY - rect.top < rect.height / 2;
+          workerCard.classList.toggle("drag-over-top", isTopHalf);
+          workerCard.classList.toggle("drag-over-bottom", !isTopHalf);
+        }
+        return;
+      }
+
+      e.preventDefault();
+      const dragged = getDraggedTask();
+      if (!dragged) return;
+
+      const dragData = getDraggedTaskData();
+      let previewTasks = [dragged];
+      if (
+        dragData &&
+        dragData.source === "unassigned" &&
+        dragged.type === "vullen"
+      ) {
+        const { prependedTasks, appendedTasks } = getComboTasksForTask(dragged);
+        previewTasks = [...prependedTasks, dragged, ...appendedTasks];
+      } else if (dragData && dragData.source === "sidebar_assigned") {
+        const origTask = dragged;
+        const rootTaskId = origTask.id;
+        let existingHelpersDuration = 0;
+        let existingHelpersCount = 0;
+        planningState.fillers.forEach((f) => {
+          const flist = planningState.assignedTasks[f.id] || [];
+          flist.forEach((t) => {
+            if (t.isHelper && t.parentTaskId === rootTaskId) {
+              existingHelpersCount++;
+              existingHelpersDuration += t.duration || 0;
+            }
+          });
+        });
+        const activeTotalDuration = origTask.duration + existingHelpersDuration;
+        const totalPeople = 1 + existingHelpersCount + 1;
+        const predictedDuration = Math.max(
+          1,
+          Math.floor(activeTotalDuration / totalPeople),
+        );
+        previewTasks = [
+          { ...origTask, duration: predictedDuration, isHelper: true },
+        ];
+      }
+
+      const rect = trackRow.getBoundingClientRect();
+      const hoverX = e.clientX - rect.left;
+
+      let ghosts = Array.from(
+        trackRow.querySelectorAll(".timeline-task-ghost"),
+      );
+      const matchesExisting =
+        ghosts.length === previewTasks.length &&
+        ghosts.every(
+          (g, i) =>
+            g.getAttribute("data-task-id") === String(previewTasks[i].id),
+        );
+      if (!matchesExisting) {
+        document
+          .querySelectorAll(".timeline-task-ghost")
+          .forEach((el) => el.remove());
+        document.querySelectorAll(".timeline-task-block").forEach((b) => {
+          b.style.transform = "";
+        });
+        ghosts = previewTasks.map((item) => {
+          const g = document.createElement("div");
+          g.className = `timeline-task-ghost type-${item.type || "vullen"}`;
+          g.setAttribute("data-task-id", String(item.id));
+          g.innerHTML = `<span class="timeline-task-ghost-text">${item.title}</span>`;
+          trackRow.appendChild(g);
+          return g;
+        });
+      }
+
+      const allAssigned = planningState.assignedTasks[filler.id] || [];
+      const rowBaseStartMins = shiftStart >= 0 ? shiftStart : startMins;
+      const totalWidthPx =
+        previewTasks.reduce(
+          (sum, item) => sum + (Number(item.duration) || 1),
+          0,
+        ) * pxPerMin;
+
+      const isSelfDrag =
+        dragData &&
+        dragData.source === "assigned" &&
+        dragData.fillerId === filler.id;
+      const selfOrigIdx = isSelfDrag ? dragData.taskIndex : -1;
+
+      const otherItems = [];
+      allAssigned.forEach((item, idx) => {
+        if (isSelfDrag && idx === selfOrigIdx) return;
+        otherItems.push(item);
+      });
+
+      const activeTargetIdxStr = trackRow.getAttribute("data-target-index");
+      const currentSlot =
+        activeTargetIdxStr !== null
+          ? Math.max(
+              0,
+              Math.min(otherItems.length, parseInt(activeTargetIdxStr, 10)),
+            )
+          : isSelfDrag
+            ? selfOrigIdx
+            : otherItems.length;
+
+      let slotStart = (rowBaseStartMins - startMins) * pxPerMin;
+      for (let s = 0; s < currentSlot; s++) {
+        slotStart += otherItems[s].duration * pxPerMin;
+      }
+      const slotEnd = slotStart + totalWidthPx;
+
+      let bestSlot = currentSlot;
+
+      if (hoverX < slotStart && currentSlot > 0) {
+        const prevItem = otherItems[currentSlot - 1];
+        const prevItemWidth = prevItem.duration * pxPerMin;
+        const prevItemStart = slotStart - prevItemWidth;
+        const prevItemMid = prevItemStart + prevItemWidth / 2;
+
+        if (hoverX < prevItemMid) {
+          bestSlot = currentSlot - 1;
+        }
+      } else if (hoverX > slotEnd && currentSlot < otherItems.length) {
+        const nextItem = otherItems[currentSlot];
+        const nextItemWidth = nextItem.duration * pxPerMin;
+        const nextItemStart = slotEnd;
+        const nextItemMid = nextItemStart + nextItemWidth / 2;
+
+        if (hoverX > nextItemMid) {
+          bestSlot = currentSlot + 1;
+        }
+      }
+
+      if (
+        previewTasks.length === 1 &&
+        previewTasks[0].isHelper &&
+        previewTasks[0].parentTaskId
+      ) {
+        const mainTaskIdx = otherItems.findIndex(
+          (t) => t.id === previewTasks[0].parentTaskId && !t.isHelper,
+        );
+        if (mainTaskIdx !== -1) {
+          bestSlot = mainTaskIdx + 1;
+        }
+      } else if (
+        dragData &&
+        dragData.source === "assigned" &&
+        !dragged.isHelper
+      ) {
+        const helperTaskIdx = otherItems.findIndex(
+          (t) => t.isHelper && t.parentTaskId === dragged.id,
+        );
+        if (helperTaskIdx !== -1) {
+          bestSlot = helperTaskIdx + 1;
+        }
+      }
+
+      let currentGhostLeftPx = (rowBaseStartMins - startMins) * pxPerMin;
+      for (let j = 0; j < bestSlot; j++) {
+        currentGhostLeftPx += otherItems[j].duration * pxPerMin;
+      }
+
+      ghosts.forEach((g, idx) => {
+        const item = previewTasks[idx];
+        const itemDurationMins = Number(item.duration) || 1;
+        const itemWidthPx = Math.max(2, itemDurationMins * pxPerMin);
+        const isMicro = itemWidthPx < 38;
+        const isTiny = itemWidthPx < 68;
+        const isNano = itemWidthPx < 20;
+
+        g.className = `timeline-task-ghost type-${item.type || "vullen"} ${item.isHelper ? "is-helper" : ""} ${isMicro ? "is-micro" : ""} ${isTiny ? "is-tiny" : ""} ${isNano ? "is-nano" : ""}`;
+        g.style.left = `${Math.max(0, currentGhostLeftPx)}px`;
+        g.style.width = `${itemWidthPx}px`;
+        currentGhostLeftPx += itemDurationMins * pxPerMin;
+      });
+      trackRow.setAttribute("data-target-index", String(bestSlot));
+
+      let runningBasePx = (rowBaseStartMins - startMins) * pxPerMin;
+      otherItems.forEach((item, idx) => {
+        const blockEl = trackRow.querySelector(
+          `.timeline-task-block[data-task-id="${item.id}"]`,
+        );
+        if (!blockEl) return;
+
+        const origLeft = parseFloat(blockEl.style.left) || 0;
+        let desiredLeft = runningBasePx;
+        if (idx >= bestSlot) {
+          desiredLeft += totalWidthPx;
+        }
+        const diffX = desiredLeft - origLeft;
+        blockEl.style.transform = diffX !== 0 ? `translateX(${diffX}px)` : "";
+        runningBasePx += item.duration * pxPerMin;
+      });
+
+      document.querySelectorAll(".timeline-track-row").forEach((otherRow) => {
+        if (otherRow === trackRow) return;
+        const otherFillerId = parseInt(
+          otherRow.getAttribute("data-filler-id"),
+          10,
+        );
+        const isSourceRow =
+          dragData &&
+          dragData.source === "assigned" &&
+          dragData.fillerId === otherFillerId;
+        if (isSourceRow) {
+          const sourceBlocks = otherRow.querySelectorAll(
+            ".timeline-task-block",
+          );
+          sourceBlocks.forEach((sb) => {
+            const sIdx = parseInt(sb.getAttribute("data-task-index"), 10);
+            if (sIdx > dragData.taskIndex) {
+              sb.style.transform = `translateX(-${totalWidthPx}px)`;
+            } else {
+              sb.style.transform = "";
+            }
+          });
+        } else {
+          otherRow.querySelectorAll(".timeline-task-block").forEach((sb) => {
+            sb.style.transform = "";
+          });
+        }
+      });
+    });
+
+    trackRow.addEventListener("dragleave", (e) => {
+      if (draggedWorkerFillerId) {
+        if (!trackRow.contains(e.relatedTarget)) {
+          workerCard.classList.remove("drag-over-top", "drag-over-bottom");
+        }
+        return;
+      }
+
+      if (!trackRow.contains(e.relatedTarget)) {
+        trackRow
+          .querySelectorAll(".timeline-task-ghost")
+          .forEach((el) => el.remove());
+        trackRow.removeAttribute("data-target-index");
+        trackRow.querySelectorAll(".timeline-task-block").forEach((b) => {
+          b.style.transform = "";
+        });
+      }
+    });
+
+    trackRow.addEventListener("drop", (e) => {
+      e.preventDefault();
+      if (draggedWorkerFillerId) {
+        workerCard.classList.remove("drag-over-top", "drag-over-bottom");
+        if (draggedWorkerFillerId !== filler.id) {
+          const sourceIdx = planningState.fillers.findIndex(
+            (f) => f.id === draggedWorkerFillerId,
+          );
+          if (sourceIdx !== -1) {
+            const rect = trackRow.getBoundingClientRect();
+            const isTopHalf = e.clientY - rect.top < rect.height / 2;
+            const [movedWorker] = planningState.fillers.splice(sourceIdx, 1);
+            let targetIdx = planningState.fillers.findIndex(
+              (f) => f.id === filler.id,
+            );
+            if (!isTopHalf) targetIdx += 1;
+            planningState.fillers.splice(targetIdx, 0, movedWorker);
+            onWorkerOrderChanged();
+          }
+        }
+        return;
+      }
+
+      trackRow
+        .querySelectorAll(".timeline-task-ghost")
+        .forEach((el) => el.remove());
+
+      trackRow.querySelectorAll(".timeline-task-block").forEach((b) => {
+        b.style.transform = "";
+      });
+
+      const targetIdxStr = trackRow.getAttribute("data-target-index");
+      const targetIndex =
+        targetIdxStr !== null ? parseInt(targetIdxStr, 10) : null;
+      trackRow.removeAttribute("data-target-index");
+
+      const dataStr = e.dataTransfer.getData("text/plain");
+      let data = null;
+      if (dataStr) {
+        try {
+          data = JSON.parse(dataStr);
+        } catch (_) {}
+      }
+      if (!data) data = getDraggedTaskData();
+      if (!data) return;
+
+      try {
+        if (data.source === "unassigned") {
+          if (data.taskId === "pauze_template") {
+            openPauseModal(30, (chosenDuration) => {
+              if (onAssignTask)
+                onAssignTask(
+                  data.taskId,
+                  filler.id,
+                  targetIndex,
+                  chosenDuration,
+                );
+            });
+          } else if (onAssignTask) {
+            onAssignTask(data.taskId, filler.id, targetIndex);
+          }
+        } else if (data.source === "sidebar_assigned") {
+          addHelperToTask(
+            data.fillerId,
+            data.taskIndex,
+            filler.id,
+            targetIndex,
+            {
+              onRenderRows,
+              onRenderUnassigned,
+            },
+          );
+        } else if (data.source === "assigned") {
+          if (onMoveTask)
+            onMoveTask(data.fillerId, data.taskIndex, filler.id, targetIndex);
+        }
+      } catch (_) {}
+      setDraggedTaskData(null);
+    });
+
+    timelineTracksContainer.appendChild(trackRow);
+  });
+
+  const addRow = document.createElement("div");
+  addRow.className = "timeline-add-worker-row";
+  addRow.innerHTML = `
         <button type="button" class="btn-timeline-add-worker">
             <span class="material-icons">add</span>
             <span>Medewerker toevoegen</span>
         </button>
     `;
-    const addBtn = addRow.querySelector('.btn-timeline-add-worker');
-    if (addBtn && onAddWorker) {
-        addBtn.addEventListener('click', () => {
-            onAddWorker();
-        });
+  const addBtn = addRow.querySelector(".btn-timeline-add-worker");
+  if (addBtn && onAddWorker) {
+    addBtn.addEventListener("click", () => {
+      onAddWorker();
+    });
+  }
+
+  addRow.addEventListener("dragover", (e) => {
+    if (!draggedWorkerFillerId) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    addRow.classList.add("drag-over-top");
+  });
+
+  addRow.addEventListener("dragleave", (e) => {
+    if (!addRow.contains(e.relatedTarget)) {
+      addRow.classList.remove("drag-over-top");
     }
+  });
 
-    addRow.addEventListener('dragover', (e) => {
-        if (!draggedWorkerFillerId) return;
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-        addRow.classList.add('drag-over-top');
-    });
+  addRow.addEventListener("drop", (e) => {
+    if (!draggedWorkerFillerId) return;
+    e.preventDefault();
+    addRow.classList.remove("drag-over-top");
+    const sourceIdx = planningState.fillers.findIndex(
+      (f) => f.id === draggedWorkerFillerId,
+    );
+    if (sourceIdx === -1) return;
+    const [movedWorker] = planningState.fillers.splice(sourceIdx, 1);
+    planningState.fillers.push(movedWorker);
+    onWorkerOrderChanged();
+  });
 
-    addRow.addEventListener('dragleave', (e) => {
-        if (!addRow.contains(e.relatedTarget)) {
-            addRow.classList.remove('drag-over-top');
-        }
-    });
+  timelineWorkersList.appendChild(addRow);
 
-    addRow.addEventListener('drop', (e) => {
-        if (!draggedWorkerFillerId) return;
-        e.preventDefault();
-        addRow.classList.remove('drag-over-top');
-        const sourceIdx = planningState.fillers.findIndex(f => f.id === draggedWorkerFillerId);
-        if (sourceIdx === -1) return;
-        const [movedWorker] = planningState.fillers.splice(sourceIdx, 1);
-        planningState.fillers.push(movedWorker);
-        onWorkerOrderChanged();
-    });
+  const addTrackSpacer = document.createElement("div");
+  addTrackSpacer.className = "timeline-track-row timeline-track-add-spacer";
+  addTrackSpacer.style.width = `${totalMins * pxPerMin}px`;
+  renderGridLines(
+    addTrackSpacer,
+    planningState.timelineStartHour,
+    planningState.timelineEndHour,
+    pxPerMin,
+  );
 
-    timelineWorkersList.appendChild(addRow);
+  addTrackSpacer.addEventListener("dragover", (e) => {
+    if (!draggedWorkerFillerId) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    addRow.classList.add("drag-over-top");
+  });
 
-    const addTrackSpacer = document.createElement('div');
-    addTrackSpacer.className = 'timeline-track-row timeline-track-add-spacer';
-    addTrackSpacer.style.width = `${totalMins * pxPerMin}px`;
-    renderGridLines(addTrackSpacer, planningState.timelineStartHour, planningState.timelineEndHour, pxPerMin);
+  addTrackSpacer.addEventListener("dragleave", (e) => {
+    if (!addTrackSpacer.contains(e.relatedTarget)) {
+      addRow.classList.remove("drag-over-top");
+    }
+  });
 
-    addTrackSpacer.addEventListener('dragover', (e) => {
-        if (!draggedWorkerFillerId) return;
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-        addRow.classList.add('drag-over-top');
-    });
+  addTrackSpacer.addEventListener("drop", (e) => {
+    if (!draggedWorkerFillerId) return;
+    e.preventDefault();
+    addRow.classList.remove("drag-over-top");
+    const sourceIdx = planningState.fillers.findIndex(
+      (f) => f.id === draggedWorkerFillerId,
+    );
+    if (sourceIdx === -1) return;
+    const [movedWorker] = planningState.fillers.splice(sourceIdx, 1);
+    planningState.fillers.push(movedWorker);
+    onWorkerOrderChanged();
+  });
 
-    addTrackSpacer.addEventListener('dragleave', (e) => {
-        if (!addTrackSpacer.contains(e.relatedTarget)) {
-            addRow.classList.remove('drag-over-top');
-        }
-    });
-
-    addTrackSpacer.addEventListener('drop', (e) => {
-        if (!draggedWorkerFillerId) return;
-        e.preventDefault();
-        addRow.classList.remove('drag-over-top');
-        const sourceIdx = planningState.fillers.findIndex(f => f.id === draggedWorkerFillerId);
-        if (sourceIdx === -1) return;
-        const [movedWorker] = planningState.fillers.splice(sourceIdx, 1);
-        planningState.fillers.push(movedWorker);
-        onWorkerOrderChanged();
-    });
-
-    timelineTracksContainer.appendChild(addTrackSpacer);
+  timelineTracksContainer.appendChild(addTrackSpacer);
 }

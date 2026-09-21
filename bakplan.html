@@ -1,122 +1,180 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="nl">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
-    <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="css/main.css">
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="css/main.css" />
     <script type="module" src="js/main.js"></script>
 
-    <link rel="stylesheet" href="css/bakplan.css">
+    <link rel="stylesheet" href="css/bakplan.css" />
     <script type="module" src="js/bakplan.js"></script>
 
     <title>Bakplan</title>
-</head>
+  </head>
 
-<body>
+  <body>
     <div class="page-container">
-        <div class="page-container-inner">
-            <div class="mobile-warning-container">
-                <div class="mobile-warning-card">
-                    <span class="material-icons mobile-warning-icon">desktop_windows</span>
-                    <h2>Schermgrootte niet ondersteund</h2>
-                    <p>Het Bakplan is momenteel niet beschikbaar op kleinere schermen. Gebruik een tablet of desktop om het bakplan te beheren.</p>
-                </div>
-            </div>
-
-            <div class="page-header-row">
-                <div>
-                    <h1 class="page-title">Bakplan</h1>
-                    <p class="bakplan-subtitle">Beheer productie aantallen, platen en verwachte derving per categorie</p>
-                </div>
-                <div class="header-actions">
-                    <input type="file" id="bakplan-pdf-input" accept="application/pdf" style="display: none;">
-                    <button type="button" id="btn-upload-pdf" class="btn-secondary btn-sm">
-                        <span class="material-icons btn-icon">picture_as_pdf</span> PDF Uploaden
-                    </button>
-                    <button type="button" id="btn-generate-bakplan" class="btn-secondary btn-sm">
-                        <span class="material-icons btn-icon">print</span> Bakplan Genereren
-                    </button>
-                    <button type="button" id="btn-save-bakplan" class="btn-primary btn-sm">
-                        <span class="material-icons btn-icon">save</span> Bakplan Opslaan
-                    </button>
-                </div>
-            </div>
-
-            <div class="bakplan-days-tabs" id="bakplan-days-tabs">
-                <button type="button" class="day-tab active" data-day="maandag">Maandag</button>
-                <button type="button" class="day-tab" data-day="dinsdag">Dinsdag</button>
-                <button type="button" class="day-tab" data-day="woensdag">Woensdag</button>
-                <button type="button" class="day-tab" data-day="donderdag">Donderdag</button>
-                <button type="button" class="day-tab" data-day="vrijdag">Vrijdag</button>
-                <button type="button" class="day-tab" data-day="zaterdag">Zaterdag</button>
-                <button type="button" class="day-tab" data-day="zondag">Zondag</button>
-            </div>
-
-            <div class="bakplan-stats-grid">
-                <div class="stat-card">
-                    <div class="stat-card-icon-wrapper accent">
-                        <span class="material-icons">inventory_2</span>
-                    </div>
-                    <div class="stat-card-content">
-                        <span class="stat-value" id="stat-total-items">0</span>
-                        <span class="stat-label">Totaal Artikelen</span>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-card-icon-wrapper">
-                        <span class="material-icons">cookie</span>
-                    </div>
-                    <div class="stat-card-content">
-                        <span class="stat-value" id="stat-total-opleggen">0</span>
-                        <span class="stat-label">Totaal Opleggen</span>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-card-icon-wrapper accent">
-                        <span class="material-icons">grid_view</span>
-                    </div>
-                    <div class="stat-card-content">
-                        <span class="stat-value accent" id="stat-total-platen">0</span>
-                        <span class="stat-label">Benodigde Platen</span>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-card-icon-wrapper">
-                        <span class="material-icons">delete_sweep</span>
-                    </div>
-                    <div class="stat-card-content">
-                        <span class="stat-value" id="stat-total-derving">0</span>
-                        <span class="stat-label">Verwachte Derving</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bakplan-toolbar-card">
-                <div class="bakplan-toolbar">
-                    <div class="search-input-wrapper">
-                        <span class="material-icons search-icon">search</span>
-                        <input type="text" id="bakplan-search" class="bakplan-search-input" placeholder="Zoek op omschrijving...">
-                    </div>
-                    <div class="toolbar-actions">
-                        <button type="button" id="btn-toggle-all" class="btn-secondary btn-sm">
-                            <span class="material-icons btn-icon" id="icon-toggle-all">unfold_less</span>
-                            <span id="text-toggle-all">Alles inklappen</span>
-                        </button>
-                        <button type="button" id="btn-add-category" class="btn-primary btn-sm">
-                            <span class="material-icons btn-icon">add</span> Categorie toevoegen
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="categories-container" class="categories-container"></div>
+      <div class="page-container-inner">
+        <div class="mobile-warning-container">
+          <div class="mobile-warning-card">
+            <span class="material-icons mobile-warning-icon"
+              >desktop_windows</span
+            >
+            <h2>Schermgrootte niet ondersteund</h2>
+            <p>
+              Het Bakplan is momenteel niet beschikbaar op kleinere schermen.
+              Gebruik een tablet of desktop om het bakplan te beheren.
+            </p>
+          </div>
         </div>
-    </div>
-</body>
 
+        <div class="page-header-row">
+          <div>
+            <h1 class="page-title">Bakplan</h1>
+            <p class="bakplan-subtitle">
+              Beheer productie aantallen, platen en verwachte derving per
+              categorie
+            </p>
+          </div>
+          <div class="header-actions">
+            <input
+              type="file"
+              id="bakplan-pdf-input"
+              accept="application/pdf"
+              style="display: none"
+            />
+            <button
+              type="button"
+              id="btn-upload-pdf"
+              class="btn-secondary btn-sm"
+            >
+              <span class="material-icons btn-icon">picture_as_pdf</span> PDF
+              Uploaden
+            </button>
+            <button
+              type="button"
+              id="btn-generate-bakplan"
+              class="btn-secondary btn-sm"
+            >
+              <span class="material-icons btn-icon">print</span> Bakplan
+              Genereren
+            </button>
+            <button
+              type="button"
+              id="btn-save-bakplan"
+              class="btn-primary btn-sm"
+            >
+              <span class="material-icons btn-icon">save</span> Bakplan Opslaan
+            </button>
+          </div>
+        </div>
+
+        <div class="bakplan-days-tabs" id="bakplan-days-tabs">
+          <button type="button" class="day-tab active" data-day="maandag">
+            Maandag
+          </button>
+          <button type="button" class="day-tab" data-day="dinsdag">
+            Dinsdag
+          </button>
+          <button type="button" class="day-tab" data-day="woensdag">
+            Woensdag
+          </button>
+          <button type="button" class="day-tab" data-day="donderdag">
+            Donderdag
+          </button>
+          <button type="button" class="day-tab" data-day="vrijdag">
+            Vrijdag
+          </button>
+          <button type="button" class="day-tab" data-day="zaterdag">
+            Zaterdag
+          </button>
+          <button type="button" class="day-tab" data-day="zondag">
+            Zondag
+          </button>
+        </div>
+
+        <div class="bakplan-stats-grid">
+          <div class="stat-card">
+            <div class="stat-card-icon-wrapper accent">
+              <span class="material-icons">inventory_2</span>
+            </div>
+            <div class="stat-card-content">
+              <span class="stat-value" id="stat-total-items">0</span>
+              <span class="stat-label">Totaal Artikelen</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon-wrapper">
+              <span class="material-icons">cookie</span>
+            </div>
+            <div class="stat-card-content">
+              <span class="stat-value" id="stat-total-opleggen">0</span>
+              <span class="stat-label">Totaal Opleggen</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon-wrapper accent">
+              <span class="material-icons">grid_view</span>
+            </div>
+            <div class="stat-card-content">
+              <span class="stat-value accent" id="stat-total-platen">0</span>
+              <span class="stat-label">Benodigde Platen</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon-wrapper">
+              <span class="material-icons">delete_sweep</span>
+            </div>
+            <div class="stat-card-content">
+              <span class="stat-value" id="stat-total-derving">0</span>
+              <span class="stat-label">Verwachte Derving</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bakplan-toolbar-card">
+          <div class="bakplan-toolbar">
+            <div class="search-input-wrapper">
+              <span class="material-icons search-icon">search</span>
+              <input
+                type="text"
+                id="bakplan-search"
+                class="bakplan-search-input"
+                placeholder="Zoek op omschrijving..."
+              />
+            </div>
+            <div class="toolbar-actions">
+              <button
+                type="button"
+                id="btn-toggle-all"
+                class="btn-secondary btn-sm"
+              >
+                <span class="material-icons btn-icon" id="icon-toggle-all"
+                  >unfold_less</span
+                >
+                <span id="text-toggle-all">Alles inklappen</span>
+              </button>
+              <button
+                type="button"
+                id="btn-add-category"
+                class="btn-primary btn-sm"
+              >
+                <span class="material-icons btn-icon">add</span> Categorie
+                toevoegen
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="categories-container" class="categories-container"></div>
+      </div>
+    </div>
+  </body>
 </html>

@@ -1,377 +1,409 @@
-import { supabase } from './supabase.js';
-import { initModal, showModal, closeModal, showConfirmModal, showPromptModal } from './modal.js';
-import { initToast, showToast } from './toast.js';
-import { initGlobalTooltips } from './tooltip.js';
+import { supabase } from "./supabase.js";
+import {
+  initModal,
+  showModal,
+  closeModal,
+  showConfirmModal,
+  showPromptModal,
+} from "./modal.js";
+import { initToast, showToast } from "./toast.js";
+import { initGlobalTooltips } from "./tooltip.js";
 
 const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000;
 const INACTIVITY_WARNING_MS = INACTIVITY_TIMEOUT_MS - 60 * 1000;
-const LAST_ACTIVITY_KEY = 'instock_last_activity';
+const LAST_ACTIVITY_KEY = "instock_last_activity";
 let inactivityWarningShown = false;
 let inactivityModalOverlay = null;
 
 function dismissInactivityWarning() {
-    if (inactivityWarningShown && inactivityModalOverlay) {
-        closeModal(inactivityModalOverlay);
-        inactivityModalOverlay = null;
-        inactivityWarningShown = false;
-    }
+  if (inactivityWarningShown && inactivityModalOverlay) {
+    closeModal(inactivityModalOverlay);
+    inactivityModalOverlay = null;
+    inactivityWarningShown = false;
+  }
 }
 
 function recordActivity() {
-    localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
-    dismissInactivityWarning();
+  localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+  dismissInactivityWarning();
 }
 
 function isLoginPage() {
-    const p = window.location.pathname.replace(/\/$/, '');
-    return p.endsWith('login') || p.endsWith('login.html');
+  const p = window.location.pathname.replace(/\/$/, "");
+  return p.endsWith("login") || p.endsWith("login.html");
 }
 
 function checkInactivity() {
-    if (isLoginPage()) return;
+  if (isLoginPage()) return;
 
-    const last = localStorage.getItem(LAST_ACTIVITY_KEY);
-    if (last) {
-        const elapsed = Date.now() - Number(last);
-        if (elapsed > INACTIVITY_TIMEOUT_MS) {
-            logout();
-            return;
-        }
-        if (elapsed > INACTIVITY_WARNING_MS && !inactivityWarningShown) {
-            inactivityWarningShown = true;
-            showConfirmModal({
-                title: 'Ben je er nog?',
-                message: 'Je wordt over 60 seconden automatisch uitgelogd wegens inactiviteit.',
-                confirmText: 'Ja, ik ben er nog',
-                cancelText: 'Uitloggen',
-                isDanger: false
-            }).then((confirmed) => {
-                inactivityModalOverlay = null;
-                inactivityWarningShown = false;
-                if (confirmed) {
-                    recordActivity();
-                } else {
-                    logout();
-                }
-            });
-            setTimeout(() => {
-                inactivityModalOverlay = Array.from(document.querySelectorAll('.modal-overlay')).find(el => el.textContent.includes('Ben je er nog?')) || document.querySelector('.modal-overlay.active');
-            }, 10);
-        }
+  const last = localStorage.getItem(LAST_ACTIVITY_KEY);
+  if (last) {
+    const elapsed = Date.now() - Number(last);
+    if (elapsed > INACTIVITY_TIMEOUT_MS) {
+      logout();
+      return;
     }
+    if (elapsed > INACTIVITY_WARNING_MS && !inactivityWarningShown) {
+      inactivityWarningShown = true;
+      showConfirmModal({
+        title: "Ben je er nog?",
+        message:
+          "Je wordt over 60 seconden automatisch uitgelogd wegens inactiviteit.",
+        confirmText: "Ja, ik ben er nog",
+        cancelText: "Uitloggen",
+        isDanger: false,
+      }).then((confirmed) => {
+        inactivityModalOverlay = null;
+        inactivityWarningShown = false;
+        if (confirmed) {
+          recordActivity();
+        } else {
+          logout();
+        }
+      });
+      setTimeout(() => {
+        inactivityModalOverlay =
+          Array.from(document.querySelectorAll(".modal-overlay")).find((el) =>
+            el.textContent.includes("Ben je er nog?"),
+          ) || document.querySelector(".modal-overlay.active");
+      }, 10);
+    }
+  }
 }
 
 function initInactivityTracker() {
-    if (isLoginPage()) return;
+  if (isLoginPage()) return;
 
-    recordActivity();
+  recordActivity();
 
-    let lastRecorded = 0;
-    const updateThrottled = () => {
-        const now = Date.now();
-        if (now - lastRecorded > 2000 || inactivityWarningShown) {
-            lastRecorded = now;
-            recordActivity();
-        }
-    };
+  let lastRecorded = 0;
+  const updateThrottled = () => {
+    const now = Date.now();
+    if (now - lastRecorded > 2000 || inactivityWarningShown) {
+      lastRecorded = now;
+      recordActivity();
+    }
+  };
 
-    ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'].forEach((event) => {
-        window.addEventListener(event, updateThrottled, { passive: true });
-    });
+  [
+    "mousemove",
+    "mousedown",
+    "keydown",
+    "scroll",
+    "touchstart",
+    "click",
+  ].forEach((event) => {
+    window.addEventListener(event, updateThrottled, { passive: true });
+  });
 
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-            checkInactivity();
-            updateThrottled();
-        }
-    });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      checkInactivity();
+      updateThrottled();
+    }
+  });
 
-    window.addEventListener('focus', () => {
-        checkInactivity();
-        updateThrottled();
-    });
+  window.addEventListener("focus", () => {
+    checkInactivity();
+    updateThrottled();
+  });
 
-    setInterval(checkInactivity, 5000);
+  setInterval(checkInactivity, 5000);
 }
 
 async function checkAuth() {
-    const isLogin = isLoginPage();
-    const { data: { session } } = await supabase.auth.getSession();
+  const isLogin = isLoginPage();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
-    if (!session && !isLogin) {
-        window.location.replace('login');
-        return;
-    } else if (session && isLogin) {
-        window.location.replace('index');
-        return;
+  if (!session && !isLogin) {
+    window.location.replace("login");
+    return;
+  } else if (session && isLogin) {
+    window.location.replace("index");
+    return;
+  }
+
+  if (!isLogin) {
+    const last = localStorage.getItem(LAST_ACTIVITY_KEY);
+    if (last && Date.now() - Number(last) > INACTIVITY_TIMEOUT_MS) {
+      await logout();
+      return;
     }
+    recordActivity();
+  }
 
-    if (!isLogin) {
-        const last = localStorage.getItem(LAST_ACTIVITY_KEY);
-        if (last && Date.now() - Number(last) > INACTIVITY_TIMEOUT_MS) {
-            await logout();
-            return;
-        }
-        recordActivity();
+  supabase.auth.onAuthStateChange((_event, newSession) => {
+    if (!newSession && !isLoginPage()) {
+      window.isLoggingOut = true;
+      window.onbeforeunload = null;
+      window.location.replace("login");
     }
-
-    supabase.auth.onAuthStateChange((_event, newSession) => {
-        if (!newSession && !isLoginPage()) {
-            window.isLoggingOut = true;
-            window.onbeforeunload = null;
-            window.location.replace('login');
-        }
-    });
+  });
 }
 
 let currentUserData = null;
 
 function isPermissionError(err) {
-    if (!err) return false;
-    const code = String(err.code || '');
-    const status = Number(err.status || err.statusCode || 0);
-    const text = `${err.message || ''} ${err.details || ''} ${err.hint || ''}`.toLowerCase();
+  if (!err) return false;
+  const code = String(err.code || "");
+  const status = Number(err.status || err.statusCode || 0);
+  const text =
+    `${err.message || ""} ${err.details || ""} ${err.hint || ""}`.toLowerCase();
 
-    return (
-        code === '42501' ||
-        code === 'PGRST301' ||
-        status === 401 ||
-        status === 403 ||
-        text.includes('row-level security') ||
-        text.includes('permission denied') ||
-        text.includes('insufficient_privilege') ||
-        text.includes('not authorized') ||
-        text.includes('unauthorized') ||
-        text.includes('forbidden') ||
-        text.includes('rechten') ||
-        text.includes('policy')
-    );
+  return (
+    code === "42501" ||
+    code === "PGRST301" ||
+    status === 401 ||
+    status === 403 ||
+    text.includes("row-level security") ||
+    text.includes("permission denied") ||
+    text.includes("insufficient_privilege") ||
+    text.includes("not authorized") ||
+    text.includes("unauthorized") ||
+    text.includes("forbidden") ||
+    text.includes("rechten") ||
+    text.includes("policy")
+  );
 }
 
 export async function getCurrentUser() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session || !session.user) return null;
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session || !session.user) return null;
 
-    const { data, error } = await supabase
-        .from('user_data')
-        .select('full_name, username, store_id, role')
-        .eq('user_id', session.user.id)
-        .maybeSingle();
+  const { data, error } = await supabase
+    .from("user_data")
+    .select("full_name, username, store_id, role")
+    .eq("user_id", session.user.id)
+    .maybeSingle();
 
-    if (error || !data) return null;
+  if (error || !data) return null;
 
-    currentUserData = data;
-    return currentUserData;
+  currentUserData = data;
+  return currentUserData;
 }
 
 export async function getStorePaths() {
-    const user = await getCurrentUser();
-    if (!user || !user.store_id) return [];
+  const user = await getCurrentUser();
+  if (!user || !user.store_id) return [];
 
-    const { data, error } = await supabase
-        .from('store_data')
-        .select('default_paths')
-        .eq('store_id', user.store_id)
-        .maybeSingle();
+  const { data, error } = await supabase
+    .from("store_data")
+    .select("default_paths")
+    .eq("store_id", user.store_id)
+    .maybeSingle();
 
-    if (error) throw error;
-    return Array.isArray(data?.default_paths) ? data.default_paths : [];
+  if (error) throw error;
+  return Array.isArray(data?.default_paths) ? data.default_paths : [];
 }
 
 const APP_MODULES = [
-
-    {
-        id: 'bakplan',
-        title: 'Bakplan',
-        description: 'Bekijk en beheer het actuele bakplan voor de winkel.',
-        icon: 'bakery_dining',
-        href: 'bakplan',
-        minRole: 2
-    },
-    {
-        id: 'vulplanning',
-        title: 'Vulplanning Maker',
-        description: 'Maak en beheer vulplanningen, taken en shifts.',
-        icon: 'assignment',
-        href: 'vulplanning',
-        minRole: 2
-    },
-    {
-        id: 'productiviteit',
-        title: 'Productiviteit',
-        description: 'Bekijk en analyseer vulprestaties en statistieken.',
-        icon: 'trending_up',
-        href: 'productiviteit',
-        minRole: 1
-    },
-    {
-        id: 'productenbeheer',
-        title: 'Productenbeheer',
-        description: 'Beheer het assortiment, barcodes, vakken en prijzen.',
-        icon: 'inventory_2',
-        href: 'productenbeheer',
-        minRole: 1
-    },
-    {
-        id: 'gebruikersbeheer',
-        title: 'Gebruikersbeheer',
-        description: 'Beheer medewerkers, rollen en winkeltoegang.',
-        icon: 'people',
-        href: 'gebruikersbeheer',
-        minRole: 2
-    },
-    {
-        id: 'instellingen-winkel',
-        title: 'Instellingen Winkel',
-        description: 'Configureer winkelpaden, vulnormen en categorieën.',
-        icon: 'store',
-        href: 'instellingen-winkel',
-        minRole: 3
-    },
-    {
-        id: 'logs',
-        title: 'Systeem Logs',
-        description: 'Bekijk de geschiedenis van acties en wijzigingen.',
-        icon: 'history',
-        href: 'logs',
-        minRole: 3
-    }
+  {
+    id: "bakplan",
+    title: "Bakplan",
+    description: "Bekijk en beheer het actuele bakplan voor de winkel.",
+    icon: "bakery_dining",
+    href: "bakplan",
+    minRole: 2,
+  },
+  {
+    id: "vulplanning",
+    title: "Vulplanning Maker",
+    description: "Maak en beheer vulplanningen, taken en shifts.",
+    icon: "assignment",
+    href: "vulplanning",
+    minRole: 2,
+  },
+  {
+    id: "productiviteit",
+    title: "Productiviteit",
+    description: "Bekijk en analyseer vulprestaties en statistieken.",
+    icon: "trending_up",
+    href: "productiviteit",
+    minRole: 1,
+  },
+  {
+    id: "productenbeheer",
+    title: "Productenbeheer",
+    description: "Beheer het assortiment, barcodes, vakken en prijzen.",
+    icon: "inventory_2",
+    href: "productenbeheer",
+    minRole: 1,
+  },
+  {
+    id: "gebruikersbeheer",
+    title: "Gebruikersbeheer",
+    description: "Beheer medewerkers, rollen en winkeltoegang.",
+    icon: "people",
+    href: "gebruikersbeheer",
+    minRole: 2,
+  },
+  {
+    id: "instellingen-winkel",
+    title: "Instellingen Winkel",
+    description: "Configureer winkelpaden, vulnormen en categorieën.",
+    icon: "store",
+    href: "instellingen-winkel",
+    minRole: 3,
+  },
+  {
+    id: "logs",
+    title: "Systeem Logs",
+    description: "Bekijk de geschiedenis van acties en wijzigingen.",
+    icon: "history",
+    href: "logs",
+    minRole: 3,
+  },
 ];
 
 export function getAvailableModules(role = 1) {
-    const numericRole = Number(role) || 1;
-    return APP_MODULES.filter(m => numericRole >= (m.minRole || 1));
+  const numericRole = Number(role) || 1;
+  return APP_MODULES.filter((m) => numericRole >= (m.minRole || 1));
 }
 
 let overlayLoadingOrLoaded = false;
 
 async function loadOverlay() {
-    if (isLoginPage()) return;
-    if (overlayLoadingOrLoaded || document.querySelector('.app-header')) return;
-    overlayLoadingOrLoaded = true;
+  if (isLoginPage()) return;
+  if (overlayLoadingOrLoaded || document.querySelector(".app-header")) return;
+  overlayLoadingOrLoaded = true;
 
-    try {
-        const response = await fetch('overlay.html');
-        if (response.ok) {
-            if (document.querySelector('.app-header')) return;
-            const html = await response.text();
-            document.body.insertAdjacentHTML('afterbegin', html);
+  try {
+    const response = await fetch("overlay.html");
+    if (response.ok) {
+      if (document.querySelector(".app-header")) return;
+      const html = await response.text();
+      document.body.insertAdjacentHTML("afterbegin", html);
 
-            const rawPath = (window.location.pathname.split('/').pop() || 'index').replace(/\.html$/, '');
-            const currentPath = rawPath === '' ? 'index' : rawPath;
-            const links = document.querySelectorAll('.sidebar-link');
-            links.forEach(link => {
-                const href = (link.getAttribute('href') || '').replace(/\.html$/, '');
-                if (href === currentPath) {
-                    link.classList.add('active');
-                }
-            });
-
-            const sidebar = document.querySelector('.app-sidebar');
-            const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
-            const sidebarBackdrop = document.getElementById('sidebarBackdrop');
-
-            if (sidebar) {
-                const enableHover = () => {
-                    sidebar.classList.remove('hover-disabled');
-                    window.removeEventListener('mousemove', onFirstInteraction, true);
-                    window.removeEventListener('pointerdown', onFirstInteraction, true);
-                    sidebar.removeEventListener('mouseleave', onMouseLeave);
-                };
-
-                const onMouseLeave = () => {
-                    enableHover();
-                };
-
-                const onFirstInteraction = (e) => {
-                    const rect = sidebar.getBoundingClientRect();
-                    const isOver = e.clientX >= rect.left && e.clientX <= rect.right &&
-                                   e.clientY >= rect.top && e.clientY <= rect.bottom;
-                    if (isOver) {
-                        sidebar.addEventListener('mouseleave', onMouseLeave, { once: true });
-                    } else {
-                        enableHover();
-                    }
-                    window.removeEventListener('mousemove', onFirstInteraction, true);
-                    window.removeEventListener('pointerdown', onFirstInteraction, true);
-                };
-
-                window.addEventListener('mousemove', onFirstInteraction, true);
-                window.addEventListener('pointerdown', onFirstInteraction, true);
-            }
-
-            function toggleSidebar() {
-                if (!sidebar) return;
-                const isOpen = sidebar.classList.toggle('open');
-                if (sidebarBackdrop) {
-                    sidebarBackdrop.classList.toggle('active', isOpen);
-                }
-            }
-
-            function closeSidebar() {
-                if (sidebar) sidebar.classList.remove('open');
-                if (sidebarBackdrop) sidebarBackdrop.classList.remove('active');
-            }
-
-            if (sidebarToggleBtn) {
-                sidebarToggleBtn.addEventListener('click', toggleSidebar);
-            }
-
-            if (sidebarBackdrop) {
-                sidebarBackdrop.addEventListener('click', closeSidebar);
-            }
-
-            links.forEach(link => {
-                link.addEventListener('click', closeSidebar);
-            });
-
-            const changePasswordBtn = document.getElementById('changePasswordBtn');
-            if (changePasswordBtn) {
-                changePasswordBtn.addEventListener('click', openChangePasswordModal);
-            }
-
-            const logoutBtn = document.getElementById('logoutBtn');
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', async () => {
-                    const confirmed = await showConfirmModal({
-                        title: 'Uitloggen',
-                        message: 'Weet je zeker dat je wilt uitloggen?',
-                        confirmText: 'Uitloggen',
-                        cancelText: 'Annuleren',
-                        isDanger: true
-                    });
-                    if (confirmed) logout();
-                });
-            }
-
-            const headerUserName = document.getElementById('headerUserName');
-            const headerUserHandle = document.getElementById('headerUserHandle');
-            const user = await getCurrentUser();
-            if (user) {
-                if (headerUserName) {
-                    headerUserName.textContent = user.full_name?.trim() || user.username?.trim() || '';
-                }
-                if (headerUserHandle && user.username) {
-                    const handle = user.username.trim();
-                    headerUserHandle.textContent = handle.startsWith('@') ? handle : `@${handle}`;
-                }
-                const roleNum = Number(user.role) || 1;
-                APP_MODULES.forEach(mod => {
-                    if (roleNum < (mod.minRole || 1)) {
-                        const linkEl = document.querySelector(`.sidebar-link[href="${mod.href}"]`);
-                        if (linkEl) {
-                            linkEl.remove();
-                        }
-                    }
-                });
-            }
+      const rawPath = (
+        window.location.pathname.split("/").pop() || "index"
+      ).replace(/\.html$/, "");
+      const currentPath = rawPath === "" ? "index" : rawPath;
+      const links = document.querySelectorAll(".sidebar-link");
+      links.forEach((link) => {
+        const href = (link.getAttribute("href") || "").replace(/\.html$/, "");
+        if (href === currentPath) {
+          link.classList.add("active");
         }
-    } catch (error) {
+      });
+
+      const sidebar = document.querySelector(".app-sidebar");
+      const sidebarToggleBtn = document.getElementById("sidebarToggleBtn");
+      const sidebarBackdrop = document.getElementById("sidebarBackdrop");
+
+      if (sidebar) {
+        const enableHover = () => {
+          sidebar.classList.remove("hover-disabled");
+          window.removeEventListener("mousemove", onFirstInteraction, true);
+          window.removeEventListener("pointerdown", onFirstInteraction, true);
+          sidebar.removeEventListener("mouseleave", onMouseLeave);
+        };
+
+        const onMouseLeave = () => {
+          enableHover();
+        };
+
+        const onFirstInteraction = (e) => {
+          const rect = sidebar.getBoundingClientRect();
+          const isOver =
+            e.clientX >= rect.left &&
+            e.clientX <= rect.right &&
+            e.clientY >= rect.top &&
+            e.clientY <= rect.bottom;
+          if (isOver) {
+            sidebar.addEventListener("mouseleave", onMouseLeave, {
+              once: true,
+            });
+          } else {
+            enableHover();
+          }
+          window.removeEventListener("mousemove", onFirstInteraction, true);
+          window.removeEventListener("pointerdown", onFirstInteraction, true);
+        };
+
+        window.addEventListener("mousemove", onFirstInteraction, true);
+        window.addEventListener("pointerdown", onFirstInteraction, true);
+      }
+
+      function toggleSidebar() {
+        if (!sidebar) return;
+        const isOpen = sidebar.classList.toggle("open");
+        if (sidebarBackdrop) {
+          sidebarBackdrop.classList.toggle("active", isOpen);
+        }
+      }
+
+      function closeSidebar() {
+        if (sidebar) sidebar.classList.remove("open");
+        if (sidebarBackdrop) sidebarBackdrop.classList.remove("active");
+      }
+
+      if (sidebarToggleBtn) {
+        sidebarToggleBtn.addEventListener("click", toggleSidebar);
+      }
+
+      if (sidebarBackdrop) {
+        sidebarBackdrop.addEventListener("click", closeSidebar);
+      }
+
+      links.forEach((link) => {
+        link.addEventListener("click", closeSidebar);
+      });
+
+      const changePasswordBtn = document.getElementById("changePasswordBtn");
+      if (changePasswordBtn) {
+        changePasswordBtn.addEventListener("click", openChangePasswordModal);
+      }
+
+      const logoutBtn = document.getElementById("logoutBtn");
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", async () => {
+          const confirmed = await showConfirmModal({
+            title: "Uitloggen",
+            message: "Weet je zeker dat je wilt uitloggen?",
+            confirmText: "Uitloggen",
+            cancelText: "Annuleren",
+            isDanger: true,
+          });
+          if (confirmed) logout();
+        });
+      }
+
+      const headerUserName = document.getElementById("headerUserName");
+      const headerUserHandle = document.getElementById("headerUserHandle");
+      const user = await getCurrentUser();
+      if (user) {
+        if (headerUserName) {
+          headerUserName.textContent =
+            user.full_name?.trim() || user.username?.trim() || "";
+        }
+        if (headerUserHandle && user.username) {
+          const handle = user.username.trim();
+          headerUserHandle.textContent = handle.startsWith("@")
+            ? handle
+            : `@${handle}`;
+        }
+        const roleNum = Number(user.role) || 1;
+        APP_MODULES.forEach((mod) => {
+          if (roleNum < (mod.minRole || 1)) {
+            const linkEl = document.querySelector(
+              `.sidebar-link[href="${mod.href}"]`,
+            );
+            if (linkEl) {
+              linkEl.remove();
+            }
+          }
+        });
+      }
     }
+  } catch (error) {}
 }
 
 async function openChangePasswordModal() {
-    await showModal(`
+  await showModal(`
         <div class="modal-header">
             <h2 class="modal-title">Wachtwoord wijzigen</h2>
             <p class="modal-subtitle">Voer je huidige en nieuwe wachtwoord in</p>
@@ -396,84 +428,95 @@ async function openChangePasswordModal() {
         </form>
     `);
 
-    const cancelBtn = document.getElementById('cancelChangePasswordBtn');
-    if (cancelBtn) {
-        cancelBtn.addEventListener('click', closeModal);
-    }
+  const cancelBtn = document.getElementById("cancelChangePasswordBtn");
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", closeModal);
+  }
 
-    const form = document.getElementById('changePasswordForm');
-    if (form) {
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const submitBtn = document.getElementById('submitPasswordBtn');
-            const oldPassword = document.getElementById('oldPasswordInput')?.value;
-            const newPassword = document.getElementById('newPasswordInput')?.value;
-            const confirmPassword = document.getElementById('confirmPasswordInput')?.value;
+  const form = document.getElementById("changePasswordForm");
+  if (form) {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const submitBtn = document.getElementById("submitPasswordBtn");
+      const oldPassword = document.getElementById("oldPasswordInput")?.value;
+      const newPassword = document.getElementById("newPasswordInput")?.value;
+      const confirmPassword = document.getElementById(
+        "confirmPasswordInput",
+      )?.value;
 
-            if (!oldPassword || !newPassword) {
-                showToast('error', 'Beide wachtwoorden zijn verplicht');
-                return;
-            }
+      if (!oldPassword || !newPassword) {
+        showToast("error", "Beide wachtwoorden zijn verplicht");
+        return;
+      }
 
-            if (newPassword !== confirmPassword) {
-                showToast('error', 'Nieuwe wachtwoorden komen niet overeen');
-                return;
-            }
+      if (newPassword !== confirmPassword) {
+        showToast("error", "Nieuwe wachtwoorden komen niet overeen");
+        return;
+      }
 
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Wijzigen...';
-            }
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Wijzigen...";
+      }
 
+      try {
+        const { data, error } = await supabase.functions.invoke(
+          "update-password",
+          {
+            body: { oldPassword, newPassword },
+          },
+        );
+
+        if (error) {
+          let msg = error.message || "Fout bij wijzigen van wachtwoord";
+          if (error.context && typeof error.context.json === "function") {
             try {
-                const { data, error } = await supabase.functions.invoke('update-password', {
-                    body: { oldPassword, newPassword }
-                });
+              const body = await error.context.json();
+              if (body && body.error) msg = body.error;
+            } catch (_) {}
+          } else if (
+            error.context &&
+            typeof error.context.text === "function"
+          ) {
+            try {
+              const text = await error.context.text();
+              const parsed = JSON.parse(text);
+              if (parsed && parsed.error) msg = parsed.error;
+            } catch (_) {}
+          }
+          throw new Error(msg);
+        }
 
-                if (error) {
-                    let msg = error.message || 'Fout bij wijzigen van wachtwoord';
-                    if (error.context && typeof error.context.json === 'function') {
-                        try {
-                            const body = await error.context.json();
-                            if (body && body.error) msg = body.error;
-                        } catch (_) {}
-                    } else if (error.context && typeof error.context.text === 'function') {
-                        try {
-                            const text = await error.context.text();
-                            const parsed = JSON.parse(text);
-                            if (parsed && parsed.error) msg = parsed.error;
-                        } catch (_) {}
-                    }
-                    throw new Error(msg);
-                }
+        if (data && data.error) {
+          throw new Error(data.error);
+        }
 
-                if (data && data.error) {
-                    throw new Error(data.error);
-                }
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData?.session?.user?.email) {
+          await supabase.auth.signInWithPassword({
+            email: sessionData.session.user.email,
+            password: newPassword,
+          });
+        }
 
-                const { data: sessionData } = await supabase.auth.getSession();
-                if (sessionData?.session?.user?.email) {
-                    await supabase.auth.signInWithPassword({
-                        email: sessionData.session.user.email,
-                        password: newPassword
-                    });
-                }
-
-                closeModal();
-                showToast('notification', data?.message || 'Wachtwoord succesvol gewijzigd');
-            } catch (err) {
-                showToast('error', err.message || 'Fout bij wijzigen van wachtwoord');
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Wijzigen';
-                }
-            }
-        });
-    }
+        closeModal();
+        showToast(
+          "notification",
+          data?.message || "Wachtwoord succesvol gewijzigd",
+        );
+      } catch (err) {
+        showToast("error", err.message || "Fout bij wijzigen van wachtwoord");
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Wijzigen";
+        }
+      }
+    });
+  }
 }
 
 async function openPasskeyModal() {
-    await showModal(`
+  await showModal(`
         <div class="modal-header">
             <h2 class="modal-title">Passkeys beheren</h2>
             <p class="modal-subtitle">Beheer je gekoppelde passkeys voor snel en veilig inloggen zonder wachtwoord</p>
@@ -509,58 +552,66 @@ async function openPasskeyModal() {
         </div>
     `);
 
-    const closeBtn = document.getElementById('closePasskeyModalBtn');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', closeModal);
-    }
+  const closeBtn = document.getElementById("closePasskeyModalBtn");
+  if (closeBtn) {
+    closeBtn.addEventListener("click", closeModal);
+  }
 
-    async function loadPasskeys() {
-        const container = document.getElementById('passkeyListContainer');
-        if (!container) return;
+  async function loadPasskeys() {
+    const container = document.getElementById("passkeyListContainer");
+    if (!container) return;
 
-        try {
-            const listFn = typeof supabase.auth.passkey?.list === 'function'
-                ? supabase.auth.passkey.list.bind(supabase.auth.passkey)
-                : null;
+    try {
+      const listFn =
+        typeof supabase.auth.passkey?.list === "function"
+          ? supabase.auth.passkey.list.bind(supabase.auth.passkey)
+          : null;
 
-            if (!listFn) {
-                container.innerHTML = `
+      if (!listFn) {
+        container.innerHTML = `
                     <div style="padding: 16px; text-align: center; color: var(--text-color-muted); font-size: 13px;">
                         Geen passkey beheer ondersteuning beschikbaar.
                     </div>
                 `;
-                return;
-            }
+        return;
+      }
 
-            const { data, error } = await listFn();
+      const { data, error } = await listFn();
 
-            if (error) {
-                container.innerHTML = `
+      if (error) {
+        container.innerHTML = `
                     <div style="padding: 16px; text-align: center; color: var(--danger-color); font-size: 13px;">
-                        ${escapeHtml(error.message || 'Fout bij het ophalen van passkeys')}
+                        ${escapeHtml(error.message || "Fout bij het ophalen van passkeys")}
                     </div>
                 `;
-                return;
-            }
+        return;
+      }
 
-            const passkeys = Array.isArray(data) ? data : (data?.passkeys || []);
+      const passkeys = Array.isArray(data) ? data : data?.passkeys || [];
 
-            if (passkeys.length === 0) {
-                container.innerHTML = `
+      if (passkeys.length === 0) {
+        container.innerHTML = `
                     <div style="padding: 24px; text-align: center; background: var(--input-background); border: 1px dashed var(--card-border); border-radius: 12px; color: var(--text-color-muted); font-size: 13px;">
                         <span class="material-icons" style="font-size: 28px; opacity: 0.5; margin-bottom: 6px; display: block;">fingerprint</span>
                         Nog geen passkeys ingesteld voor dit account.
                     </div>
                 `;
-                return;
-            }
+        return;
+      }
 
-            container.innerHTML = passkeys.map((pk, idx) => {
-                const pkId = pk.id || pk.passkey_id || pk.credential_id || '';
-                const name = pk.friendly_name || pk.name || `Passkey ${idx + 1}`;
-                const createdDate = pk.created_at ? new Date(pk.created_at).toLocaleDateString('nl-NL', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+      container.innerHTML = passkeys
+        .map((pk, idx) => {
+          const pkId = pk.id || pk.passkey_id || pk.credential_id || "";
+          const name = pk.friendly_name || pk.name || `Passkey ${idx + 1}`;
+          const createdDate = pk.created_at
+            ? new Date(pk.created_at).toLocaleDateString("nl-NL", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+            : "";
 
-                return `
+          return `
                     <div class="passkey-item" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: var(--input-background); border: 1px solid var(--card-border); border-radius: 10px;">
                         <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
                             <div style="width: 36px; height: 36px; border-radius: 8px; background: var(--vullen-ghost-bg); border: 1px solid rgba(101, 141, 36, 0.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
@@ -568,7 +619,7 @@ async function openPasskeyModal() {
                             </div>
                             <div style="min-width: 0;">
                                 <div style="font-size: 13.5px; font-weight: 600; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(name)}</div>
-                                ${createdDate ? `<div style="font-size: 11.5px; color: var(--text-color-muted);">Toegevoegd op ${escapeHtml(createdDate)}</div>` : ''}
+                                ${createdDate ? `<div style="font-size: 11.5px; color: var(--text-color-muted);">Toegevoegd op ${escapeHtml(createdDate)}</div>` : ""}
                             </div>
                         </div>
                         <button type="button" class="action-btn delete-passkey-btn" data-id="${escapeHtml(pkId)}" title="Passkey verwijderen" style="color: var(--danger-color); margin-left: 8px;">
@@ -576,134 +627,157 @@ async function openPasskeyModal() {
                         </button>
                     </div>
                 `;
-            }).join('');
+        })
+        .join("");
 
-            container.querySelectorAll('.delete-passkey-btn').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    const passkeyId = btn.getAttribute('data-id');
-                    if (!passkeyId) return;
+      container.querySelectorAll(".delete-passkey-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const passkeyId = btn.getAttribute("data-id");
+          if (!passkeyId) return;
 
-                    const confirmed = await showConfirmModal({
-                        title: 'Passkey verwijderen',
-                        message: 'Weet je zeker dat je deze passkey wilt verwijderen? Je kunt hierna niet meer inloggen met dit apparaat.',
-                        confirmText: 'Verwijderen',
-                        cancelText: 'Annuleren',
-                        isDanger: true
-                    });
+          const confirmed = await showConfirmModal({
+            title: "Passkey verwijderen",
+            message:
+              "Weet je zeker dat je deze passkey wilt verwijderen? Je kunt hierna niet meer inloggen met dit apparaat.",
+            confirmText: "Verwijderen",
+            cancelText: "Annuleren",
+            isDanger: true,
+          });
 
-                    if (!confirmed) return;
+          if (!confirmed) return;
 
-                    btn.disabled = true;
-                    btn.innerHTML = `<span class="material-icons" style="font-size: 18px;">hourglass_empty</span>`;
+          btn.disabled = true;
+          btn.innerHTML = `<span class="material-icons" style="font-size: 18px;">hourglass_empty</span>`;
 
-                    try {
-                        let delRes;
-                        if (typeof supabase.auth.passkey?.delete === 'function') {
-                            delRes = await supabase.auth.passkey.delete({ passkeyId: passkeyId, id: passkeyId });
-                        }
+          try {
+            let delRes;
+            if (typeof supabase.auth.passkey?.delete === "function") {
+              delRes = await supabase.auth.passkey.delete({
+                passkeyId: passkeyId,
+                id: passkeyId,
+              });
+            }
 
-                        if (delRes?.error) {
-                            throw delRes.error;
-                        }
+            if (delRes?.error) {
+              throw delRes.error;
+            }
 
-                        showToast('notification', 'Passkey succesvol verwijderd');
-                        loadPasskeys();
-                    } catch (delErr) {
-                        showToast('error', delErr.message || 'Fout bij het verwijderen van passkey');
-                        loadPasskeys();
-                    }
-                });
-            });
-        } catch (err) {
-            container.innerHTML = `
+            showToast("notification", "Passkey succesvol verwijderd");
+            loadPasskeys();
+          } catch (delErr) {
+            showToast(
+              "error",
+              delErr.message || "Fout bij het verwijderen van passkey",
+            );
+            loadPasskeys();
+          }
+        });
+      });
+    } catch (err) {
+      container.innerHTML = `
                 <div style="padding: 16px; text-align: center; color: var(--danger-color); font-size: 13px;">
-                    ${escapeHtml(err.message || 'Fout bij het ophalen van passkeys')}
+                    ${escapeHtml(err.message || "Fout bij het ophalen van passkeys")}
                 </div>
             `;
-        }
     }
+  }
 
-    const addBtn = document.getElementById('modalAddPasskeyBtn');
-    if (addBtn) {
-        addBtn.addEventListener('click', async () => {
-            const originalContent = addBtn.innerHTML;
-            addBtn.disabled = true;
-            addBtn.innerHTML = `
+  const addBtn = document.getElementById("modalAddPasskeyBtn");
+  if (addBtn) {
+    addBtn.addEventListener("click", async () => {
+      const originalContent = addBtn.innerHTML;
+      addBtn.disabled = true;
+      addBtn.innerHTML = `
                 <span class="material-icons btn-icon" style="font-size: 16px;">hourglass_empty</span>
                 Toevoegen...
             `;
 
-            try {
-                const registerFn = typeof supabase.auth.registerPasskey === 'function'
-                    ? supabase.auth.registerPasskey.bind(supabase.auth)
-                    : supabase.auth.passkey?.register?.bind(supabase.auth.passkey);
+      try {
+        const registerFn =
+          typeof supabase.auth.registerPasskey === "function"
+            ? supabase.auth.registerPasskey.bind(supabase.auth)
+            : supabase.auth.passkey?.register?.bind(supabase.auth.passkey);
 
-                if (!registerFn) {
-                    throw new Error('Passkey registratie wordt niet ondersteund door deze client/browser.');
-                }
+        if (!registerFn) {
+          throw new Error(
+            "Passkey registratie wordt niet ondersteund door deze client/browser.",
+          );
+        }
 
-                const { data, error } = await registerFn();
+        const { data, error } = await registerFn();
 
-                if (error) {
-                    showToast('error', error.message || 'Fout bij het registreren van passkey');
-                    addBtn.disabled = false;
-                    addBtn.innerHTML = originalContent;
-                    return;
-                }
+        if (error) {
+          showToast(
+            "error",
+            error.message || "Fout bij het registreren van passkey",
+          );
+          addBtn.disabled = false;
+          addBtn.innerHTML = originalContent;
+          return;
+        }
 
-                showToast('notification', 'Passkey succesvol geregistreerd');
-                addBtn.disabled = false;
-                addBtn.innerHTML = originalContent;
-                loadPasskeys();
-            } catch (err) {
-                showToast('error', err.message || 'Fout bij het registreren van passkey');
-                addBtn.disabled = false;
-                addBtn.innerHTML = originalContent;
-            }
-        });
-    }
+        showToast("notification", "Passkey succesvol geregistreerd");
+        addBtn.disabled = false;
+        addBtn.innerHTML = originalContent;
+        loadPasskeys();
+      } catch (err) {
+        showToast(
+          "error",
+          err.message || "Fout bij het registreren van passkey",
+        );
+        addBtn.disabled = false;
+        addBtn.innerHTML = originalContent;
+      }
+    });
+  }
 
-    loadPasskeys();
+  loadPasskeys();
 }
 
 export async function logout() {
-    window.isLoggingOut = true;
-    currentUserData = null;
-    localStorage.removeItem(LAST_ACTIVITY_KEY);
-    window.onbeforeunload = null;
-    window.addEventListener('beforeunload', (e) => {
-        delete e.returnValue;
-    }, { capture: true });
-    try {
-        await supabase.auth.signOut();
-    } catch (_) {}
-    window.location.replace('login');
+  window.isLoggingOut = true;
+  currentUserData = null;
+  localStorage.removeItem(LAST_ACTIVITY_KEY);
+  window.onbeforeunload = null;
+  window.addEventListener(
+    "beforeunload",
+    (e) => {
+      delete e.returnValue;
+    },
+    { capture: true },
+  );
+  try {
+    await supabase.auth.signOut();
+  } catch (_) {}
+  window.location.replace("login");
 }
 
 function disableInputSuggestions(root = document) {
-    const inputs = root.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]), textarea');
-    inputs.forEach(input => {
-        input.setAttribute('autocomplete', 'off');
-        input.setAttribute('autocorrect', 'off');
-        input.setAttribute('autocapitalize', 'off');
-        input.setAttribute('spellcheck', 'false');
-    });
+  const inputs = root.querySelectorAll(
+    'input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]), textarea',
+  );
+  inputs.forEach((input) => {
+    input.setAttribute("autocomplete", "off");
+    input.setAttribute("autocorrect", "off");
+    input.setAttribute("autocapitalize", "off");
+    input.setAttribute("spellcheck", "false");
+  });
 }
 
 disableInputSuggestions();
 
 const observer = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-        for (const node of mutation.addedNodes) {
-            if (node.nodeType === 1) {
-                if (node.matches && node.matches('input, textarea')) {
-                    disableInputSuggestions(node.parentElement || document);
-                } else if (node.querySelectorAll) {
-                    disableInputSuggestions(node);
-                }
-            }
+  for (const mutation of mutations) {
+    for (const node of mutation.addedNodes) {
+      if (node.nodeType === 1) {
+        if (node.matches && node.matches("input, textarea")) {
+          disableInputSuggestions(node.parentElement || document);
+        } else if (node.querySelectorAll) {
+          disableInputSuggestions(node);
         }
+      }
     }
+  }
 });
 
 observer.observe(document.documentElement, { childList: true, subtree: true });
@@ -716,120 +790,151 @@ initInactivityTracker();
 initGlobalTooltips();
 
 function escapeHtml(str) {
-    if (!str) return '';
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+  if (!str) return "";
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
 }
 
-function parseUserDisplay(nameStr, unameStr = '') {
-    let title = String(nameStr || '').trim();
-    let sub = String(unameStr || '').trim();
+function parseUserDisplay(nameStr, unameStr = "") {
+  let title = String(nameStr || "").trim();
+  let sub = String(unameStr || "").trim();
 
-    if (sub && !sub.startsWith('@')) {
-        sub = `@${sub}`;
+  if (sub && !sub.startsWith("@")) {
+    sub = `@${sub}`;
+  }
+
+  const match = title.match(/^(.*?)\s*\(?@([a-zA-Z0-9._-]+)\)?$/);
+  if (match) {
+    title = match[1].trim();
+    if (!sub) {
+      sub = `@${match[2].trim()}`;
     }
+  }
 
-    const match = title.match(/^(.*?)\s*\(?@([a-zA-Z0-9._-]+)\)?$/);
-    if (match) {
-        title = match[1].trim();
-        if (!sub) {
-            sub = `@${match[2].trim()}`;
-        }
-    }
-
-    return { title, sub };
+  return { title, sub };
 }
 async function invokeFn(fnName, options) {
-    const { data, error } = await supabase.functions.invoke(fnName, options);
-    if (error) {
-        let msg = '';
-        if (error.context && typeof error.context.json === 'function') {
-            try {
-                const body = await error.context.json();
-                msg = body?.error || body?.message || '';
-            } catch (_) {}
-        }
-        if (!msg && error.context && typeof error.context.text === 'function') {
-            try {
-                const text = await error.context.text();
-                if (text) {
-                    try {
-                        const parsed = JSON.parse(text);
-                        msg = parsed?.error || parsed?.message || text;
-                    } catch (_) {
-                        msg = text;
-                    }
-                }
-            } catch (_) {}
-        }
-        if (!msg && data && typeof data === 'object' && data.error) {
-            msg = data.error;
-        }
-        if (!msg && error.message) {
-            msg = error.message;
-        }
-        const status = Number(error.context?.status || error.status || 0);
-        const errText = `${error.message || ''} ${msg || ''}`.toLowerCase();
-        if (status === 401 || errText.includes('401') || errText.includes('unauthorized') || errText.includes('jwt') || errText.includes('token') || errText.includes('session')) {
-            if (!isLoginPage()) {
-                logout();
-            }
-            throw new Error('Niet ingelogd of sessie verlopen');
-        }
-        if (!msg || msg.includes('non-2xx')) {
-            if (status === 403) {
-                msg = 'Geen toegang voor deze actie';
-            } else if (status === 404) {
-                msg = 'Functie of gegevens niet gevonden';
-            } else {
-                msg = 'Er is een fout opgetreden bij het uitvoeren';
-            }
-        }
-        throw new Error(msg);
+  const { data, error } = await supabase.functions.invoke(fnName, options);
+  if (error) {
+    let msg = "";
+    if (error.context && typeof error.context.json === "function") {
+      try {
+        const body = await error.context.json();
+        msg = body?.error || body?.message || "";
+      } catch (_) {}
     }
-    if (data && typeof data === 'object' && data.error) {
-        throw new Error(data.error);
+    if (!msg && error.context && typeof error.context.text === "function") {
+      try {
+        const text = await error.context.text();
+        if (text) {
+          try {
+            const parsed = JSON.parse(text);
+            msg = parsed?.error || parsed?.message || text;
+          } catch (_) {
+            msg = text;
+          }
+        }
+      } catch (_) {}
     }
-    return data;
+    if (!msg && data && typeof data === "object" && data.error) {
+      msg = data.error;
+    }
+    if (!msg && error.message) {
+      msg = error.message;
+    }
+    const status = Number(error.context?.status || error.status || 0);
+    const errText = `${error.message || ""} ${msg || ""}`.toLowerCase();
+    if (
+      status === 401 ||
+      errText.includes("401") ||
+      errText.includes("unauthorized") ||
+      errText.includes("jwt") ||
+      errText.includes("token") ||
+      errText.includes("session")
+    ) {
+      if (!isLoginPage()) {
+        logout();
+      }
+      throw new Error("Niet ingelogd of sessie verlopen");
+    }
+    if (!msg || msg.includes("non-2xx")) {
+      if (status === 403) {
+        msg = "Geen toegang voor deze actie";
+      } else if (status === 404) {
+        msg = "Functie of gegevens niet gevonden";
+      } else {
+        msg = "Er is een fout opgetreden bij het uitvoeren";
+      }
+    }
+    throw new Error(msg);
+  }
+  if (data && typeof data === "object" && data.error) {
+    throw new Error(data.error);
+  }
+  return data;
 }
 
-function renderTableSkeletons(tbody, cardsContainer, columnsCount = 7, rowsCount = 5) {
-    const elTbody = typeof tbody === 'string' ? document.getElementById(tbody) : tbody;
-    const elCards = typeof cardsContainer === 'string' ? document.getElementById(cardsContainer) : cardsContainer;
-    if (elTbody) {
-        let html = '';
-        const widths = [65, 80, 45, 70, 50, 60, 40, 75];
-        for (let r = 0; r < rowsCount; r++) {
-            html += '<tr>';
-            for (let c = 0; c < columnsCount; c++) {
-                const w = widths[(r + c) % widths.length];
-                html += `<td><div class="skeleton" style="height: 16px; width: ${w}%;"></div></td>`;
-            }
-            html += '</tr>';
-        }
-        elTbody.innerHTML = html;
+function renderTableSkeletons(
+  tbody,
+  cardsContainer,
+  columnsCount = 7,
+  rowsCount = 5,
+) {
+  const elTbody =
+    typeof tbody === "string" ? document.getElementById(tbody) : tbody;
+  const elCards =
+    typeof cardsContainer === "string"
+      ? document.getElementById(cardsContainer)
+      : cardsContainer;
+  if (elTbody) {
+    let html = "";
+    const widths = [65, 80, 45, 70, 50, 60, 40, 75];
+    for (let r = 0; r < rowsCount; r++) {
+      html += "<tr>";
+      for (let c = 0; c < columnsCount; c++) {
+        const w = widths[(r + c) % widths.length];
+        html += `<td><div class="skeleton" style="height: 16px; width: ${w}%;"></div></td>`;
+      }
+      html += "</tr>";
     }
-    if (elCards) {
-        let html = '';
-        for (let r = 0; r < 3; r++) {
-            html += `
+    elTbody.innerHTML = html;
+  }
+  if (elCards) {
+    let html = "";
+    for (let r = 0; r < 3; r++) {
+      html += `
                 <div style="padding: 16px; border-bottom: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 8px;">
                     <div class="skeleton" style="height: 16px; width: 65%;"></div>
                     <div class="skeleton" style="height: 14px; width: 40%;"></div>
                 </div>
             `;
-        }
-        elCards.innerHTML = html;
     }
+    elCards.innerHTML = html;
+  }
 }
 
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(() => {});
-    });
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
 }
 
-export { supabase, initModal, showModal, closeModal, showConfirmModal, showPromptModal, initToast, showToast, openChangePasswordModal, openPasskeyModal, isPermissionError, escapeHtml, initGlobalTooltips, parseUserDisplay, invokeFn, renderTableSkeletons };
-
-
+export {
+  supabase,
+  initModal,
+  showModal,
+  closeModal,
+  showConfirmModal,
+  showPromptModal,
+  initToast,
+  showToast,
+  openChangePasswordModal,
+  openPasskeyModal,
+  isPermissionError,
+  escapeHtml,
+  initGlobalTooltips,
+  parseUserDisplay,
+  invokeFn,
+  renderTableSkeletons,
+};
