@@ -34,9 +34,18 @@ function getMainModalButton(overlay) {
 
 function focusModalMainButton(overlay) {
     if (!overlay) return;
+    const isMobile = (typeof window !== 'undefined') && (
+        window.innerWidth <= 768 ||
+        (typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 768px)').matches)
+    );
+    if (isMobile) {
+        // Op mobiel / bottom sheet niet automatisch de footer button focussen
+        // zodat de modal/bottom sheet altijd netjes bovenaan begint.
+        return;
+    }
     const mainBtn = getMainModalButton(overlay);
     if (mainBtn) {
-        mainBtn.focus();
+        mainBtn.focus({ preventScroll: true });
     }
 }
 
@@ -68,6 +77,20 @@ export async function showModal(contentHtml, extraClass = '') {
     document.body.style.overflow = 'hidden';
 
     const container = overlay.querySelector('.modal-container');
+    const content = overlay.querySelector('.modal-content');
+
+    const resetModalScroll = () => {
+        if (overlay) overlay.scrollTop = 0;
+        if (container) container.scrollTop = 0;
+        if (content) content.scrollTop = 0;
+        const scrollables = overlay.querySelectorAll('.modal-content, .modal-body, .modal-form, .finalize-list, .helpers-list-container, .print-notes-list, .custom-select-dropdown');
+        scrollables.forEach(el => {
+            el.scrollTop = 0;
+        });
+    };
+
+    resetModalScroll();
+
     if (container) {
         void container.offsetHeight;
     }
@@ -76,6 +99,7 @@ export async function showModal(contentHtml, extraClass = '') {
     requestAnimationFrame(() => {
         overlay.classList.add('active');
         overlay.setAttribute('aria-hidden', 'false');
+        resetModalScroll();
         focusModalMainButton(overlay);
     });
 
@@ -83,7 +107,12 @@ export async function showModal(contentHtml, extraClass = '') {
         if (!overlay.contains(document.activeElement) || document.activeElement === overlay || document.activeElement === container) {
             focusModalMainButton(overlay);
         }
+        resetModalScroll();
     }, 50);
+
+    setTimeout(() => {
+        resetModalScroll();
+    }, 150);
 
     const closeBtn = overlay.querySelector('.modal-close-btn');
     if (closeBtn) {

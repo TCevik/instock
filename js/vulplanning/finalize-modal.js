@@ -334,7 +334,12 @@ export async function openFinalizeModal() {
 
     if (listContainer) {
         listContainer.innerHTML = renderWorkersList(fillersWithUser);
+        listContainer.scrollTop = 0;
         bindItemClicks();
+    }
+    const modalContentEl = overlay?.querySelector('.modal-content');
+    if (modalContentEl) {
+        modalContentEl.scrollTop = 0;
     }
     updateUiState();
 
