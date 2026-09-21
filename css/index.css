@@ -50,6 +50,13 @@
     margin: 0;
 }
 
+.hero-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+}
+
 .hero-action-btn {
     display: inline-flex;
     align-items: center;
@@ -239,6 +246,14 @@
 
     .hero-badge {
         display: none;
+    }
+
+    .hero-actions {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 8px;
+        width: 100%;
     }
 
     .hero-action-btn {

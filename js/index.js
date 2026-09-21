@@ -1,4 +1,4 @@
-import { getCurrentUser, getAvailableModules, openChangePasswordModal } from './main.js';
+import { getCurrentUser, getAvailableModules, openChangePasswordModal, openPasskeyModal } from './main.js';
 
 function escapeHtml(str) {
     if (!str) return '';
@@ -11,9 +11,14 @@ async function initDashboard() {
     const welcomeElement = document.getElementById('welcomeText');
     const gridElement = document.getElementById('dashboardGrid');
     const changePasswordBtn = document.getElementById('dashboardChangePasswordBtn');
+    const passkeyBtn = document.getElementById('dashboardPasskeyBtn');
 
     if (changePasswordBtn) {
         changePasswordBtn.addEventListener('click', openChangePasswordModal);
+    }
+
+    if (passkeyBtn) {
+        passkeyBtn.addEventListener('click', openPasskeyModal);
     }
 
     const user = await getCurrentUser();

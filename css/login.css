@@ -260,6 +260,30 @@ body {
     }
 }
 
+#loginForm .btn-secondary {
+    background-color: var(--input-background);
+    border: 1px solid var(--card-border);
+    color: var(--text-color);
+    border-radius: 12px;
+    padding: 15px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 54px;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    #loginForm .btn-secondary:hover {
+        background-color: var(--card-border);
+        border-color: var(--input-focus);
+    }
+}
+
 .btn-icon {
     font-size: 20px;
 }
@@ -361,7 +385,8 @@ body {
         line-height: 1.35;
     }
 
-    #loginForm button[type="submit"] {
+    #loginForm button[type="submit"],
+    #loginForm .btn-secondary {
         margin-top: 10px;
         padding: 15px;
         font-size: 15px;

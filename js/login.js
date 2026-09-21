@@ -6,6 +6,7 @@ const storecodeInput = document.getElementById('storecode');
 const usernameInput = document.getElementById('username');
 const passwordInput = document.getElementById('password');
 const rememberCheckbox = document.getElementById('remember');
+const passkeyBtn = document.getElementById('passkeyBtn');
 
 const savedStorecode = localStorage.getItem('saved_storecode');
 const savedUsername = localStorage.getItem('saved_username');
@@ -72,6 +73,44 @@ if (loginForm) {
                 submitBtn.classList.remove('btn-loading');
                 submitBtn.disabled = false;
             }
+        }
+    });
+}
+
+if (passkeyBtn) {
+    passkeyBtn.addEventListener('click', async () => {
+        passkeyBtn.classList.add('btn-loading');
+        passkeyBtn.disabled = true;
+
+        try {
+            const signInFn = typeof supabase.auth.signInWithPasskey === 'function'
+                ? supabase.auth.signInWithPasskey.bind(supabase.auth)
+                : supabase.auth.passkey?.signInWithPasskey?.bind(supabase.auth.passkey);
+
+            if (!signInFn) {
+                throw new Error('Passkey inloggen wordt niet ondersteund door deze client/browser.');
+            }
+
+            const { data, error } = await signInFn();
+
+            if (error) {
+                showToast('error', error.message || 'Inloggen met Passkey mislukt');
+                passkeyBtn.classList.remove('btn-loading');
+                passkeyBtn.disabled = false;
+                return;
+            }
+
+            if (data?.session) {
+                localStorage.setItem('instock_last_activity', Date.now().toString());
+                window.location.replace('index');
+            } else {
+                passkeyBtn.classList.remove('btn-loading');
+                passkeyBtn.disabled = false;
+            }
+        } catch (err) {
+            showToast('error', err.message || 'Er is een fout opgetreden bij het inloggen met Passkey');
+            passkeyBtn.classList.remove('btn-loading');
+            passkeyBtn.disabled = false;
         }
     });
 }

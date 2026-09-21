@@ -472,6 +472,200 @@ async function openChangePasswordModal() {
     }
 }
 
+async function openPasskeyModal() {
+    await showModal(`
+        <div class="modal-header">
+            <h2 class="modal-title">Passkeys beheren</h2>
+            <p class="modal-subtitle">Beheer je gekoppelde passkeys voor snel en veilig inloggen zonder wachtwoord</p>
+        </div>
+        <div class="modal-body" style="gap: 16px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--input-background); border: 1px solid var(--card-border); border-radius: 12px; padding: 14px 16px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span class="material-icons" style="font-size: 24px; color: var(--accent-color);">fingerprint</span>
+                    <div>
+                        <div style="font-size: 14px; font-weight: 600; color: var(--text-color);">Nieuwe passkey</div>
+                        <div style="font-size: 12px; color: var(--text-color-muted);">Koppel Touch ID, Face ID of beveiligingssleutel</div>
+                    </div>
+                </div>
+                <button type="button" class="btn" id="modalAddPasskeyBtn" style="padding: 8px 14px; font-size: 13px; border-radius: 8px;">
+                    <span class="material-icons btn-icon" style="font-size: 16px;">add</span>
+                    Toevoegen
+                </button>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <label style="font-size: 11px; font-weight: 600; letter-spacing: 0.8px; color: var(--text-color-muted); text-transform: uppercase;">
+                    Gekoppelde Passkeys
+                </label>
+                <div id="passkeyListContainer" style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="padding: 24px; text-align: center; color: var(--text-color-muted); font-size: 13px;">
+                        Passkeys laden...
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="modal-btn-secondary" id="closePasskeyModalBtn">Sluiten</button>
+        </div>
+    `);
+
+    const closeBtn = document.getElementById('closePasskeyModalBtn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeModal);
+    }
+
+    async function loadPasskeys() {
+        const container = document.getElementById('passkeyListContainer');
+        if (!container) return;
+
+        try {
+            const listFn = typeof supabase.auth.passkey?.list === 'function'
+                ? supabase.auth.passkey.list.bind(supabase.auth.passkey)
+                : null;
+
+            if (!listFn) {
+                container.innerHTML = `
+                    <div style="padding: 16px; text-align: center; color: var(--text-color-muted); font-size: 13px;">
+                        Geen passkey beheer ondersteuning beschikbaar.
+                    </div>
+                `;
+                return;
+            }
+
+            const { data, error } = await listFn();
+
+            if (error) {
+                container.innerHTML = `
+                    <div style="padding: 16px; text-align: center; color: var(--danger-color); font-size: 13px;">
+                        ${escapeHtml(error.message || 'Fout bij het ophalen van passkeys')}
+                    </div>
+                `;
+                return;
+            }
+
+            const passkeys = Array.isArray(data) ? data : (data?.passkeys || []);
+
+            if (passkeys.length === 0) {
+                container.innerHTML = `
+                    <div style="padding: 24px; text-align: center; background: var(--input-background); border: 1px dashed var(--card-border); border-radius: 12px; color: var(--text-color-muted); font-size: 13px;">
+                        <span class="material-icons" style="font-size: 28px; opacity: 0.5; margin-bottom: 6px; display: block;">fingerprint</span>
+                        Nog geen passkeys ingesteld voor dit account.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = passkeys.map((pk, idx) => {
+                const pkId = pk.id || pk.passkey_id || pk.credential_id || '';
+                const name = pk.friendly_name || pk.name || `Passkey ${idx + 1}`;
+                const createdDate = pk.created_at ? new Date(pk.created_at).toLocaleDateString('nl-NL', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+
+                return `
+                    <div class="passkey-item" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: var(--input-background); border: 1px solid var(--card-border); border-radius: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                            <div style="width: 36px; height: 36px; border-radius: 8px; background: var(--vullen-ghost-bg); border: 1px solid rgba(101, 141, 36, 0.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <span class="material-icons" style="font-size: 20px; color: var(--accent-color);">fingerprint</span>
+                            </div>
+                            <div style="min-width: 0;">
+                                <div style="font-size: 13.5px; font-weight: 600; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(name)}</div>
+                                ${createdDate ? `<div style="font-size: 11.5px; color: var(--text-color-muted);">Toegevoegd op ${escapeHtml(createdDate)}</div>` : ''}
+                            </div>
+                        </div>
+                        <button type="button" class="action-btn delete-passkey-btn" data-id="${escapeHtml(pkId)}" title="Passkey verwijderen" style="color: var(--danger-color); margin-left: 8px;">
+                            <span class="material-icons" style="font-size: 18px;">delete</span>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            container.querySelectorAll('.delete-passkey-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const passkeyId = btn.getAttribute('data-id');
+                    if (!passkeyId) return;
+
+                    const confirmed = await showConfirmModal({
+                        title: 'Passkey verwijderen',
+                        message: 'Weet je zeker dat je deze passkey wilt verwijderen? Je kunt hierna niet meer inloggen met dit apparaat.',
+                        confirmText: 'Verwijderen',
+                        cancelText: 'Annuleren',
+                        isDanger: true
+                    });
+
+                    if (!confirmed) return;
+
+                    btn.disabled = true;
+                    btn.innerHTML = `<span class="material-icons" style="font-size: 18px;">hourglass_empty</span>`;
+
+                    try {
+                        let delRes;
+                        if (typeof supabase.auth.passkey?.delete === 'function') {
+                            delRes = await supabase.auth.passkey.delete({ passkeyId: passkeyId, id: passkeyId });
+                        }
+
+                        if (delRes?.error) {
+                            throw delRes.error;
+                        }
+
+                        showToast('notification', 'Passkey succesvol verwijderd');
+                        loadPasskeys();
+                    } catch (delErr) {
+                        showToast('error', delErr.message || 'Fout bij het verwijderen van passkey');
+                        loadPasskeys();
+                    }
+                });
+            });
+        } catch (err) {
+            container.innerHTML = `
+                <div style="padding: 16px; text-align: center; color: var(--danger-color); font-size: 13px;">
+                    ${escapeHtml(err.message || 'Fout bij het ophalen van passkeys')}
+                </div>
+            `;
+        }
+    }
+
+    const addBtn = document.getElementById('modalAddPasskeyBtn');
+    if (addBtn) {
+        addBtn.addEventListener('click', async () => {
+            const originalContent = addBtn.innerHTML;
+            addBtn.disabled = true;
+            addBtn.innerHTML = `
+                <span class="material-icons btn-icon" style="font-size: 16px;">hourglass_empty</span>
+                Toevoegen...
+            `;
+
+            try {
+                const registerFn = typeof supabase.auth.registerPasskey === 'function'
+                    ? supabase.auth.registerPasskey.bind(supabase.auth)
+                    : supabase.auth.passkey?.register?.bind(supabase.auth.passkey);
+
+                if (!registerFn) {
+                    throw new Error('Passkey registratie wordt niet ondersteund door deze client/browser.');
+                }
+
+                const { data, error } = await registerFn();
+
+                if (error) {
+                    showToast('error', error.message || 'Fout bij het registreren van passkey');
+                    addBtn.disabled = false;
+                    addBtn.innerHTML = originalContent;
+                    return;
+                }
+
+                showToast('notification', 'Passkey succesvol geregistreerd');
+                addBtn.disabled = false;
+                addBtn.innerHTML = originalContent;
+                loadPasskeys();
+            } catch (err) {
+                showToast('error', err.message || 'Fout bij het registreren van passkey');
+                addBtn.disabled = false;
+                addBtn.innerHTML = originalContent;
+            }
+        });
+    }
+
+    loadPasskeys();
+}
+
 export async function logout() {
     window.isLoggingOut = true;
     currentUserData = null;
@@ -636,6 +830,6 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-export { supabase, initModal, showModal, closeModal, showConfirmModal, showPromptModal, initToast, showToast, openChangePasswordModal, isPermissionError, escapeHtml, initGlobalTooltips, parseUserDisplay, invokeFn, renderTableSkeletons };
+export { supabase, initModal, showModal, closeModal, showConfirmModal, showPromptModal, initToast, showToast, openChangePasswordModal, openPasskeyModal, isPermissionError, escapeHtml, initGlobalTooltips, parseUserDisplay, invokeFn, renderTableSkeletons };
 
 
