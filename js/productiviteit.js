@@ -4,8 +4,10 @@ import { createCustomSelect } from './select.js';
 import { createDatePicker, MONTH_NAMES, SHORT_MONTH_NAMES, parseDate } from './datepicker.js';
 import { createTimePicker } from './timepicker.js';
 import { showModal, closeModal, showConfirmModal } from './modal.js';
+import { exportTopFillersA4 } from './productiviteit-export.js';
 
 let cachedProductivityEntries = [];
+let cachedTopFillers = [];
 let currentChartMode = 'individual';
 let currentTimeframe = '1m';
 let currentShiftPage = 1;
@@ -15,6 +17,7 @@ let selectedDateFilter = '';
 let shiftsDatePicker = null;
 let selectedScoreboardDate = '';
 let topFillersDatePicker = null;
+let exportTopFillersBtnInitialized = false;
 let currentUserId = null;
 let currentUserRole = 1;
 let ownUserData = null;
@@ -138,6 +141,9 @@ async function loadTopFillers(userId, date = selectedScoreboardDate) {
         }
 
         const topFillers = data?.topFillers || [];
+        cachedTopFillers = topFillers;
+
+        initExportTopFillersBtn();
 
         if (topFillers.length === 0 && !date) {
             sectionEl.style.display = 'none';
@@ -214,7 +220,7 @@ async function loadTopFillers(userId, date = selectedScoreboardDate) {
             headerRow._hasToggleListener = true;
             headerRow.addEventListener('click', (e) => {
                 if (window.innerWidth <= 768) {
-                    if (e.target.closest('#topFillersDateFilterWrapper')) return;
+                    if (e.target.closest('#topFillersDateFilterWrapper') || e.target.closest('#exportTopFillersBtn')) return;
                     sectionEl._userToggledCollapsed = true;
                     sectionEl.classList.toggle('collapsed');
                 }
@@ -1330,6 +1336,34 @@ function initShiftsDatePicker() {
             renderPaginatedProductivityList();
         }
     );
+}
+
+function initExportTopFillersBtn() {
+    const exportBtn = document.getElementById('exportTopFillersBtn');
+    if (!exportBtn) return;
+
+    if (!exportTopFillersBtnInitialized) {
+        exportTopFillersBtnInitialized = true;
+        exportBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!cachedTopFillers || cachedTopFillers.length === 0) {
+                showToast('error', 'Er zijn geen productiviteitsgegevens om te exporteren.');
+                return;
+            }
+
+            const dateLabel = selectedScoreboardDate ? formatDate(selectedScoreboardDate) : 'Laatste 10 shifts per vuller';
+            try {
+                exportTopFillersA4(cachedTopFillers, {
+                    dateLabel,
+                    date: selectedScoreboardDate
+                });
+            } catch (err) {
+                showToast('error', err.message || 'Fout bij het exporteren van de top 10');
+            }
+        });
+    }
+
+    exportBtn.style.display = cachedTopFillers && cachedTopFillers.length > 0 ? 'inline-flex' : 'none';
 }
 
 function initTopFillersDatePicker() {
