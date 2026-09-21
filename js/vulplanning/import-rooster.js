@@ -106,7 +106,7 @@ export function parseShiftText(rawText, availableUsers = []) {
             continue;
         }
 
-        const timeMatches = [...line.matchAll(/(\b(?:[01]?[0-9]|2[0-3]):[0-5][0-9])\s*-\s*((?:[01]?[0-9]|2[0-3]):[0-5][0-9])/g)];
+        const timeMatches = [...line.matchAll(/(\b(?:[01]?[0-9]|2[0-3]):[0-5][0-9])\s*-\s*((?:[01]?[0-9]|2[0-3]):[0-5][0-9]|(?:[01]?[0-9]|2[0-3])(?::(?:\.\.\.|\u2026)?|(?:\.\.\.|\u2026))?(?=\s|[|]|$))/g)];
         if (timeMatches.length === 0) continue;
 
         const firstMatchIndex = timeMatches[0].index;
@@ -120,8 +120,14 @@ export function parseShiftText(rawText, availableUsers = []) {
         const endTimes = timeMatches.map(m => m[2]);
 
         const formatHHMM = (t) => {
-            const [h, m] = t.split(':');
-            return `${h.padStart(2, '0')}:${m.padStart(2, '0')}`;
+            if (!t) return '';
+            let clean = t.replace(/[\u2026.]+/g, '').trim();
+            if (clean.endsWith(':')) clean = clean.slice(0, -1).trim();
+            if (clean.includes(':')) {
+                const [h, m] = clean.split(':');
+                return `${h.padStart(2, '0')}:${(m || '00').padEnd(2, '0').slice(0, 2)}`;
+            }
+            return `${clean.padStart(2, '0')}:00`;
         };
 
         const earliestStart = formatHHMM(startTimes[0]);
