@@ -49,6 +49,120 @@ function focusModalMainButton(overlay) {
     }
 }
 
+function isAtScrollTop(target, container) {
+    let el = target;
+    while (el && el !== container && el !== document.body) {
+        if (el.scrollHeight > el.clientHeight) {
+            const overflowY = window.getComputedStyle(el).overflowY;
+            if (overflowY === 'auto' || overflowY === 'scroll') {
+                if (el.scrollTop > 2) {
+                    return false;
+                }
+            }
+        }
+        el = el.parentElement;
+    }
+    return true;
+}
+
+function attachBottomSheetSwipe(overlay, container) {
+    if (!container) return;
+    const handle = container.querySelector('.modal-bottom-sheet-handle');
+    let startY = 0;
+    let startX = 0;
+    let currentY = 0;
+    let startTime = 0;
+    let isDragging = false;
+    let isDecided = false;
+    let canDrag = false;
+    let isClosing = false;
+
+    const onTouchStart = (e) => {
+        if (isClosing || e.touches.length !== 1) return;
+        const touch = e.touches[0];
+        startY = touch.clientY;
+        startX = touch.clientX;
+        currentY = startY;
+        startTime = Date.now();
+        isDragging = false;
+        isDecided = false;
+
+        const isHandleTouch = handle && (e.target === handle || handle.contains(e.target));
+        const isHeaderTouch = !!e.target.closest('.modal-header');
+
+        canDrag = isHandleTouch || isHeaderTouch || isAtScrollTop(e.target, container);
+    };
+
+    const onTouchMove = (e) => {
+        if (isClosing || e.touches.length !== 1) return;
+        const touch = e.touches[0];
+        currentY = touch.clientY;
+        const deltaY = currentY - startY;
+        const deltaX = touch.clientX - startX;
+
+        if (!isDecided) {
+            if (Math.abs(deltaY) > 6 || Math.abs(deltaX) > 6) {
+                isDecided = true;
+                if (deltaY > 0 && Math.abs(deltaY) > Math.abs(deltaX) * 1.1 && canDrag) {
+                    if (isAtScrollTop(e.target, container)) {
+                        isDragging = true;
+                    }
+                }
+            }
+        }
+
+        if (isDragging && deltaY > 0) {
+            if (e.cancelable) {
+                e.preventDefault();
+            }
+            container.style.transition = 'none';
+            container.style.transform = `translateY(${deltaY}px)`;
+            const containerH = container.offsetHeight || 400;
+            const progress = Math.min(1, deltaY / containerH);
+            overlay.style.backgroundColor = `rgba(0, 0, 0, ${Math.max(0.1, 0.7 * (1 - progress * 0.75))})`;
+        }
+    };
+
+    const onTouchEnd = () => {
+        if (isClosing || !isDragging) return;
+        isDragging = false;
+        isDecided = false;
+
+        const deltaY = currentY - startY;
+        const elapsed = Math.max(1, Date.now() - startTime);
+        const velocity = deltaY / elapsed;
+        const containerH = container.offsetHeight || 400;
+
+        const shouldClose = deltaY > Math.min(130, containerH * 0.3) || (velocity > 0.45 && deltaY > 30);
+
+        if (shouldClose) {
+            isClosing = true;
+            container.style.transition = 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)';
+            container.style.transform = 'translateY(100%)';
+            overlay.style.transition = 'opacity 0.2s ease';
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                closeModal(overlay);
+            }, 200);
+        } else {
+            container.style.transition = 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1)';
+            container.style.transform = '';
+            overlay.style.transition = 'background-color 0.24s ease';
+            overlay.style.backgroundColor = '';
+            setTimeout(() => {
+                container.style.transition = '';
+                overlay.style.transition = '';
+                overlay.style.backgroundColor = '';
+            }, 240);
+        }
+    };
+
+    container.addEventListener('touchstart', onTouchStart, { passive: true });
+    container.addEventListener('touchmove', onTouchMove, { passive: false });
+    container.addEventListener('touchend', onTouchEnd, { passive: true });
+    container.addEventListener('touchcancel', onTouchEnd, { passive: true });
+}
+
 export async function showModal(contentHtml, extraClass = '') {
     ensureStyles();
 
@@ -78,6 +192,8 @@ export async function showModal(contentHtml, extraClass = '') {
 
     const container = overlay.querySelector('.modal-container');
     const content = overlay.querySelector('.modal-content');
+
+    attachBottomSheetSwipe(overlay, container);
 
     const resetModalScroll = () => {
         if (overlay) overlay.scrollTop = 0;
