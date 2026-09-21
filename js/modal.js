@@ -55,6 +55,7 @@ export async function showModal(contentHtml, extraClass = '') {
 
     overlay.innerHTML = `
         <div class="modal-container" role="dialog" aria-modal="true">
+            <div class="modal-bottom-sheet-handle" aria-hidden="true"></div>
             <button type="button" class="modal-close-btn" aria-label="Sluiten">
                 <span class="material-icons">close</span>
             </button>

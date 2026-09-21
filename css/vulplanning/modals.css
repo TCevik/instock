@@ -1014,9 +1014,10 @@
 
 @media (max-width: 600px) {
     .finalize-modal-overlay .modal-container {
-        padding: 16px 12px;
+        padding: 12px 14px calc(18px + env(safe-area-inset-bottom, 0px)) 14px;
         max-width: 100%;
-        border-radius: 14px;
+        border-radius: 20px 20px 0 0;
+        border-bottom: none;
     }
 
     .finalize-modal-overlay .modal-content {
