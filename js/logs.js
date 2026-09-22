@@ -1,7 +1,6 @@
 import {
   supabase,
   showModal,
-  closeModal,
   parseUserDisplay,
   renderTableSkeletons,
 } from "./main.js";
@@ -1750,17 +1749,9 @@ function openDetailsModal(log) {
                 </div>
             </div>
         </div>
-        <div class="modal-footer">
-            <button type="button" class="modal-btn-secondary" id="closeDetailsModalBtn">Sluiten</button>
-        </div>
     `,
     "modal-wide",
   );
-
-  const closeBtn = document.getElementById("closeDetailsModalBtn");
-  if (closeBtn) {
-    closeBtn.addEventListener("click", closeModal);
-  }
 }
 
 async function fetchLogsPage() {

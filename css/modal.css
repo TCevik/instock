@@ -15,7 +15,7 @@
   transition:
     opacity 0.2s ease,
     visibility 0.2s ease;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .modal-overlay.active {
@@ -29,7 +29,11 @@
   border-radius: 16px;
   width: 100%;
   max-width: 520px;
-  overflow: visible;
+  max-height: calc(100vh - 40px);
+  max-height: calc(100dvh - 40px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   position: relative;
   box-sizing: border-box;
   padding: 32px 28px;
@@ -60,6 +64,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  z-index: 10;
   transition:
     color 0.2s,
     background-color 0.2s,
@@ -80,13 +85,17 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  overflow: hidden;
+  min-height: 0;
+  flex: 1;
 }
 
 .modal-header {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding-right: 24px;
+  padding-right: 44px;
+  flex-shrink: 0;
 }
 
 .modal-title {
@@ -106,14 +115,24 @@
   gap: 16px;
   min-width: 0;
   max-width: 100%;
-  overflow: visible;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
+  flex: 1;
+  padding-right: 4px;
 }
 
 .modal-form {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  overflow: visible;
+  min-width: 0;
+  max-width: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
+  flex: 1;
+  padding-right: 4px;
 }
 
 .modal-form-row {
@@ -599,6 +618,7 @@
   justify-content: flex-end;
   gap: 12px;
   margin-top: 8px;
+  flex-shrink: 0;
 }
 
 .modal-btn-secondary {
@@ -748,7 +768,7 @@
   }
 
   .modal-header {
-    padding-right: 36px;
+    padding-right: 40px;
     gap: 6px;
     flex-shrink: 0;
   }
@@ -766,19 +786,19 @@
     gap: 16px;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+    flex: 1;
+  }
+
+  .modal-body,
+  .modal-form {
+    gap: 14px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     min-height: 0;
     flex: 1;
     padding-right: 2px;
-  }
-
-  .modal-body {
-    gap: 14px;
-  }
-
-  .modal-form {
-    gap: 14px;
   }
 
   .modal-form-row {
