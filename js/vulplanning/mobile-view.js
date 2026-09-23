@@ -21,7 +21,6 @@ export function resetMobileExpandedFillers() {
 
 export function renderMobilePlanningView(container) {
   if (!container) return;
-  if (container.contains(document.activeElement)) return;
 
   if (!planningState.fillers || planningState.fillers.length === 0) {
     container.innerHTML = `
@@ -34,10 +33,16 @@ export function renderMobilePlanningView(container) {
     return;
   }
 
-  const sortedFillers = [...planningState.fillers].sort(sortFillersByNameAsc);
+  const emptyEl = container.querySelector('.mobile-planning-empty');
+  if (emptyEl) {
+    container.innerHTML = '';
+  }
 
-  container.innerHTML = sortedFillers
-    .map((filler) => {
+  const sortedFillers = [...planningState.fillers].sort(sortFillersByNameAsc);
+  const existingCards = Array.from(container.querySelectorAll('.mobile-worker-card'));
+  const existingCardMap = new Map(existingCards.map(c => [c.getAttribute('data-filler-id'), c]));
+
+  sortedFillers.forEach((filler) => {
       const shiftStart = timeToMinutes(filler.from);
       let shiftEnd = timeToMinutes(filler.to);
       if (shiftEnd > 0 && shiftEnd <= shiftStart) {
@@ -65,7 +70,7 @@ export function renderMobilePlanningView(container) {
         assigned.length === 0
           ? `<div class="mobile-worker-no-tasks">Geen taken toegewezen</div>`
           : assigned
-              .map((t, taskIdx) => {
+              .map((t) => {
                 const isHelper = !!t.isHelper;
                 const typeClass = isHelper
                   ? "is-helper"
@@ -92,70 +97,84 @@ export function renderMobilePlanningView(container) {
                         </div>
                     </div>
                 `;
-              })
-              .join("");
+              }).join("");
 
-      return `
-            <div class="mobile-worker-card ${collapseClass}" data-filler-id="${filler.id}">
-                <div class="mobile-worker-card-header" role="button" tabindex="0" aria-expanded="${isExpanded}">
-                    <div class="mobile-worker-identity">
-                        <div class="mobile-worker-name">${escapeHtml(filler.name || "Medewerker")}</div>
-                        <div class="mobile-worker-shift">
-                            <span class="material-icons mobile-icon-small">schedule</span>
-                            <span>${filler.from || "00:00"} - ${filler.to || "00:00"}</span>
-                            <span class="mobile-dot">&bull;</span>
-                            <span>Pauze: ${formatDuration(assignedPauzeMins)} / ${presetPauseStr}</span>
-                            <span class="mobile-dot">&bull;</span>
-                            <span>Totaal: ${formatDuration(totalAssignedMins)} / ${formatDuration(targetShiftDuration)}</span>
-                        </div>
-                    </div>
-                    <span class="material-icons mobile-worker-chevron">expand_more</span>
-                </div>
+      let card = existingCardMap.get(String(filler.id));
+      if (!card) {
+          card = document.createElement("div");
+          card.className = `mobile-worker-card ${collapseClass}`;
+          card.setAttribute("data-filler-id", filler.id);
+          card.innerHTML = `
+              <div class="mobile-worker-card-header" role="button" tabindex="0" aria-expanded="${isExpanded}">
+                  <div class="mobile-worker-identity">
+                      <div class="mobile-worker-name">${escapeHtml(filler.name || "Medewerker")}</div>
+                      <div class="mobile-worker-shift">
+                          <span class="material-icons mobile-icon-small">schedule</span>
+                          <span>${filler.from || "00:00"} - ${filler.to || "00:00"}</span>
+                          <span class="mobile-dot">&bull;</span>
+                          <span>Pauze: ${formatDuration(assignedPauzeMins)} / ${presetPauseStr}</span>
+                          <span class="mobile-dot">&bull;</span>
+                          <span>Totaal: ${formatDuration(totalAssignedMins)} / ${formatDuration(targetShiftDuration)}</span>
+                      </div>
+                  </div>
+                  <span class="material-icons mobile-worker-chevron">expand_more</span>
+              </div>
+              <div class="mobile-prod-box">
+                  <div class="mobile-prod-field">
+                      <label class="mobile-prod-label" for="prod-input-${filler.id}">Eindtijd</label>
+                      <div class="mobile-prod-input-wrap">
+                          <span class="mobile-prod-badge ${prodClass}" id="prod-badge-${filler.id}">${prodText}</span>
+                          <input type="text" inputmode="numeric" id="prod-input-${filler.id}" class="input-field mobile-prod-input" placeholder="00:00" maxlength="5" value="${filler.actualEndTime || ""}" data-filler-id="${filler.id}"/>
+                      </div>
+                  </div>
+              </div>
+              <div class="mobile-worker-tasks-body">
+                  <div class="mobile-worker-tasks-body-inner">
+                      <div class="mobile-worker-tasks-section">
+                          <div class="mobile-tasks-heading">
+                              <span class="mobile-tasks-count-label">Taken (${assigned.length})</span>
+                              <span class="mobile-tasks-total-work">${formatDuration(workAssignedMins)} werk</span>
+                          </div>
+                          <div class="mobile-worker-tasks-list">${tasksHtml}</div>
+                      </div>
+                  </div>
+              </div>
+          `;
+          setupMobileCardListeners(card, filler.id);
+      } else {
+          existingCardMap.delete(String(filler.id));
+          card.className = `mobile-worker-card ${collapseClass}`;
+          card.querySelector('.mobile-worker-card-header').setAttribute("aria-expanded", String(isExpanded));
+          card.querySelector('.mobile-worker-name').innerHTML = escapeHtml(filler.name || "Medewerker");
+          card.querySelector('.mobile-worker-shift').innerHTML = `
+              <span class="material-icons mobile-icon-small">schedule</span>
+              <span>${filler.from || "00:00"} - ${filler.to || "00:00"}</span>
+              <span class="mobile-dot">&bull;</span>
+              <span>Pauze: ${formatDuration(assignedPauzeMins)} / ${presetPauseStr}</span>
+              <span class="mobile-dot">&bull;</span>
+              <span>Totaal: ${formatDuration(totalAssignedMins)} / ${formatDuration(targetShiftDuration)}</span>
+          `;
+          const badge = card.querySelector('.mobile-prod-badge');
+          badge.className = `mobile-prod-badge ${prodClass}`;
+          badge.textContent = prodText;
+          
+          const timeInput = card.querySelector('.mobile-prod-input');
+          if (document.activeElement !== timeInput) {
+              timeInput.value = filler.actualEndTime || "";
+          }
 
-                <div class="mobile-prod-box">
-                    <div class="mobile-prod-field">
-                        <label class="mobile-prod-label" for="prod-input-${filler.id}">Eindtijd</label>
-                        <div class="mobile-prod-input-wrap">
-                            <span class="mobile-prod-badge ${prodClass}" id="prod-badge-${filler.id}">${prodText}</span>
-                            <input 
-                                type="text" 
-                                inputmode="numeric" 
-                                id="prod-input-${filler.id}" 
-                                class="input-field mobile-prod-input" 
-                                placeholder="00:00" 
-                                maxlength="5" 
-                                value="${filler.actualEndTime || ""}"
-                                data-filler-id="${filler.id}"
-                            />
-                        </div>
-                    </div>
-                </div>
+          card.querySelector('.mobile-tasks-count-label').textContent = `Taken (${assigned.length})`;
+          card.querySelector('.mobile-tasks-total-work').textContent = `${formatDuration(workAssignedMins)} werk`;
+          card.querySelector('.mobile-worker-tasks-list').innerHTML = tasksHtml;
+      }
+      container.appendChild(card);
+  });
 
-                <div class="mobile-worker-tasks-body">
-                    <div class="mobile-worker-tasks-body-inner">
-                        <div class="mobile-worker-tasks-section">
-                            <div class="mobile-tasks-heading">
-                                <span>Taken (${assigned.length})</span>
-                                <span class="mobile-tasks-total-work">${formatDuration(workAssignedMins)} werk</span>
-                            </div>
-                            <div class="mobile-worker-tasks-list">
-                                ${tasksHtml}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    })
-    .join("");
+  existingCardMap.forEach(card => card.remove());
+}
 
-  container.querySelectorAll(".mobile-worker-card").forEach((card) => {
-    const fillerId = card.getAttribute("data-filler-id");
-    const filler = planningState.fillers.find(
-      (f) => String(f.id) === String(fillerId),
-    );
-    if (!filler) return;
-
+function setupMobileCardListeners(card, rawFillerId) {
+    const fillerId = String(rawFillerId);
     const header = card.querySelector(".mobile-worker-card-header");
     if (header) {
       const toggleCard = (e) => {
@@ -163,15 +182,14 @@ export function renderMobilePlanningView(container) {
         const isCurrentlyCollapsed = card.classList.contains("collapsed");
         if (isCurrentlyCollapsed) {
           card.classList.remove("collapsed");
-          expandedFillerIds.add(String(filler.id));
+          expandedFillerIds.add(fillerId);
           header.setAttribute("aria-expanded", "true");
         } else {
           card.classList.add("collapsed");
-          expandedFillerIds.delete(String(filler.id));
+          expandedFillerIds.delete(fillerId);
           header.setAttribute("aria-expanded", "false");
         }
       };
-
       header.addEventListener("click", toggleCard);
       header.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -181,17 +199,15 @@ export function renderMobilePlanningView(container) {
       });
     }
 
-    const assigned = planningState.assignedTasks[filler.id] || [];
     const timeInput = card.querySelector(".mobile-prod-input");
     const badge = card.querySelector(".mobile-prod-badge");
 
     const updateProd = () => {
-      filler.actualEndTime = timeInput.value;
-      const currentFiller = planningState.fillers.find(f => String(f.id) === String(filler.id));
-      if (currentFiller) {
-        currentFiller.actualEndTime = timeInput.value;
-      }
-      const res = getFillerStats(filler, assigned).prodResult;
+      const currentFiller = planningState.fillers.find(f => String(f.id) === fillerId);
+      if (!currentFiller) return;
+      currentFiller.actualEndTime = timeInput.value;
+      const currentAssigned = planningState.assignedTasks[currentFiller.id] || [];
+      const res = getFillerStats(currentFiller, currentAssigned).prodResult;
       if (!res) {
         badge.textContent = "";
         badge.className = "mobile-prod-badge";
@@ -203,11 +219,8 @@ export function renderMobilePlanningView(container) {
 
     if (timeInput) {
       let lastVal = timeInput.value;
-
       timeInput.addEventListener("input", (e) => {
-        const isDeleting =
-          (e && e.inputType && e.inputType.startsWith("delete")) ||
-          timeInput.value.length < lastVal.length;
+        const isDeleting = (e && e.inputType && e.inputType.startsWith("delete")) || timeInput.value.length < lastVal.length;
         timeInput.value = formatTimeInput(timeInput.value, isDeleting);
         lastVal = timeInput.value;
         updateProd();
@@ -217,7 +230,6 @@ export function renderMobilePlanningView(container) {
           triggerAutoSave(false);
         }
       });
-
       timeInput.addEventListener("change", () => {
         if (timeInput.value) {
           timeInput.value = normalizeTimeOnBlur(timeInput.value);
@@ -226,7 +238,6 @@ export function renderMobilePlanningView(container) {
         updateProd();
         triggerAutoSave(true);
       });
-
       timeInput.addEventListener("blur", () => {
         if (timeInput.value) {
           timeInput.value = normalizeTimeOnBlur(timeInput.value);
@@ -235,12 +246,10 @@ export function renderMobilePlanningView(container) {
         updateProd();
         triggerAutoSave(true);
       });
-
       timeInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
           timeInput.blur();
         }
       });
     }
-  });
 }
