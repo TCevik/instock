@@ -11,19 +11,20 @@ import { recordSnapshot } from "./history.js";
 let autoSaveTimeout = null;
 let isLocalSave = false;
 
+let localSaveTimeout = null;
+
 export function setLocalSaveFlag() {
   isLocalSave = true;
-  setTimeout(() => {
+  if (localSaveTimeout) {
+    clearTimeout(localSaveTimeout);
+  }
+  localSaveTimeout = setTimeout(() => {
     isLocalSave = false;
   }, 2000);
 }
 
 export function consumeLocalSaveFlag() {
-  if (isLocalSave) {
-    isLocalSave = false;
-    return true;
-  }
-  return false;
+  return isLocalSave;
 }
 
 function handleSaveError(err) {
@@ -161,6 +162,8 @@ export function triggerAutoSave(immediate = false) {
           onConflict: "store_id",
         },
       );
+
+      setLocalSaveFlag();
 
       if (error) {
         handleSaveError(error);
