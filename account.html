@@ -213,6 +213,35 @@
             </form>
           </div>
         </div>
+
+        <!-- 1-Column Grid: Sessions -->
+        <div class="account-grid" style="margin-top: 24px;">
+          <!-- Sessions Card -->
+          <div class="account-card" style="grid-column: 1 / -1;">
+            <div class="account-card-header">
+              <div class="account-card-header-left">
+                <div class="account-card-icon green" style="background-color: var(--vullen-ghost-bg); border-color: rgba(101, 141, 36, 0.3); color: var(--accent-color);">
+                  <span class="material-icons">devices</span>
+                </div>
+                <div class="account-card-titles">
+                  <h2 class="account-card-title">Actieve Sessies</h2>
+                  <p class="account-card-subtitle">Beheer de apparaten waarop je bent ingelogd</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="passkeys-container">
+              <div class="passkeys-list-wrapper">
+                <div id="sessionListGroup" class="passkeys-list-group" style="max-height: 400px;">
+                  <div class="empty-passkeys-state">
+                    <span class="material-icons">hourglass_empty</span>
+                    <div class="empty-passkeys-title">Sessies laden...</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </main>
   </body>

@@ -26,6 +26,7 @@ async function initAccountPage() {
   initPasskeyActions();
   await loadUserData();
   await loadPasskeys();
+  await loadSessions();
 }
 
 function initNav() {
@@ -529,4 +530,156 @@ function initPasskeyActions() {
       addBtn.innerHTML = originalContent;
     }
   });
+}
+
+async function loadSessions() {
+  const container = document.getElementById("sessionListGroup");
+  if (!container) return;
+
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const currentToken = sessionData?.session?.access_token;
+    
+    // Attempt to extract current session ID from JWT to highlight it
+    let currentSessionId = null;
+    if (currentToken) {
+      try {
+        const payloadStr = currentToken.split(".")[1];
+        if (payloadStr) {
+          const payload = JSON.parse(atob(payloadStr));
+          currentSessionId = payload.session_id;
+        }
+      } catch (e) {}
+    }
+
+    const { data, error } = await supabase.functions.invoke("manage-sessions", {
+      body: { action: "list", current_session_id: currentSessionId }
+    });
+
+    if (error) {
+      throw new Error(error.message || "Fout bij ophalen van sessies");
+    }
+
+    const sessions = data.sessions || [];
+    
+    if (sessions.length === 0) {
+      container.innerHTML = `
+        <div class="empty-passkeys-state">
+          <span class="material-icons">devices</span>
+          <div class="empty-passkeys-title">Geen sessies gevonden</div>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = sessions
+      .map((sess, idx) => {
+        const sId = sess.id;
+        const isCurrent = sId === currentSessionId || sId === data.currentSessionId;
+        
+        const createdDate = sess.created_at
+          ? new Date(sess.created_at).toLocaleDateString("nl-NL", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit"
+            })
+          : "";
+
+        const userAgent = sess.user_agent || "Onbekend apparaat";
+        let deviceIcon = "device_unknown";
+        if (userAgent.toLowerCase().includes("mobile") || userAgent.toLowerCase().includes("android") || userAgent.toLowerCase().includes("iphone")) {
+           deviceIcon = "smartphone";
+        } else if (userAgent.toLowerCase().includes("mac") || userAgent.toLowerCase().includes("windows") || userAgent.toLowerCase().includes("linux")) {
+           deviceIcon = "computer";
+        }
+
+        return `
+          <div class="passkey-item-row" style="${isCurrent ? 'border-color: var(--accent-color); background-color: var(--vullen-ghost-bg);' : ''}">
+            <div class="passkey-item-left">
+              <div class="passkey-item-icon" style="${isCurrent ? 'background-color: var(--accent-color); color: white;' : ''}">
+                <span class="material-icons">${deviceIcon}</span>
+              </div>
+              <div style="min-width: 0;">
+                <div class="passkey-item-title" title="${escapeHtml(userAgent)}">
+                  ${escapeHtml(userAgent.length > 30 ? userAgent.substring(0, 30) + "..." : userAgent)}
+                  ${isCurrent ? '<span style="font-size: 10px; background-color: var(--accent-color); color: white; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">Huidig</span>' : ''}
+                </div>
+                ${createdDate ? `<div class="passkey-item-date">Ingelogd op ${escapeHtml(createdDate)}</div>` : ""}
+                ${sess.ip ? `<div class="passkey-item-date">IP: ${escapeHtml(sess.ip)}</div>` : ""}
+              </div>
+            </div>
+            ${!isCurrent ? `
+            <button
+              type="button"
+              class="action-btn delete-session-item-btn"
+              data-id="${escapeHtml(sId)}"
+              title="Sessie uitloggen"
+              style="color: var(--danger-color);"
+            >
+              <span class="material-icons">logout</span>
+            </button>` : ''}
+          </div>
+        `;
+      })
+      .join("");
+
+    container.querySelectorAll(".delete-session-item-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const sessId = btn.getAttribute("data-id");
+        if (!sessId) return;
+
+        const verified = await showPasswordPromptModal({
+          title: "Sessie uitloggen",
+          subtitle:
+            "Voer je wachtwoord in om deze sessie veilig uit te loggen.",
+          confirmText: "Uitloggen",
+          cancelText: "Annuleren",
+          isDanger: true,
+        });
+
+        if (!verified) return;
+
+        btn.disabled = true;
+        btn.innerHTML = `<span class="material-icons" style="font-size: 18px;">hourglass_empty</span>`;
+
+        try {
+          const { error: delErr } = await supabase.functions.invoke("manage-sessions", {
+            body: { action: "delete", session_id: sessId }
+          });
+
+          if (delErr) {
+             let msg = delErr.message;
+             try {
+                const text = await delErr.context?.text();
+                const json = JSON.parse(text);
+                if (json.error) msg = json.error;
+             } catch(e) {}
+             throw new Error(msg || "Fout bij uitloggen van sessie");
+          }
+
+          showToast("notification", "Sessie succesvol uitgelogd");
+          await loadSessions();
+        } catch (err) {
+          showToast(
+            "error",
+            err.message || "Fout bij het uitloggen van sessie",
+          );
+          await loadSessions();
+        }
+      });
+    });
+
+  } catch (err) {
+    container.innerHTML = `
+      <div class="empty-passkeys-state">
+        <span class="material-icons" style="color: var(--danger-color);">error_outline</span>
+        <div class="empty-passkeys-title" style="color: var(--danger-color);">Fout bij ophalen</div>
+        <div class="empty-passkeys-desc">
+          ${escapeHtml(err.message || "Kan sessies niet laden")}
+        </div>
+      </div>
+    `;
+  }
 }
