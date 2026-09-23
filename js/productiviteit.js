@@ -140,6 +140,7 @@ let currentUserRole = 1;
 let ownUserData = null;
 let selectedFillerUserId = null;
 let selectedFillerUserData = null;
+let isProductivityLoading = false;
 
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initProductivityPage);
@@ -510,6 +511,7 @@ async function handleFillerClick(filler) {
   ) {
     selectedFillerUserId = null;
     selectedFillerUserData = null;
+    isProductivityLoading = false;
     applyUserProductivity(ownUserData, true);
     updateTopFillerCardSelection();
     return;
@@ -533,11 +535,27 @@ async function handleFillerClick(filler) {
       applyUserProductivity(data.user, false);
     }
   } catch (err) {
+    if (selectedFillerUserId === filler.user_id) {
+      isProductivityLoading = false;
+      selectedFillerUserId = null;
+      selectedFillerUserData = null;
+      applyUserProductivity(ownUserData, true);
+      updateTopFillerCardSelection();
+    }
     showToast("error", err.message || "Kon productiviteit niet ophalen");
   }
 }
 
 function showProductivityUserSkeleton(user) {
+  isProductivityLoading = true;
+  cachedProductivityEntries = [];
+
+  const containerEl =
+    document.querySelector(".page-container") || document.body;
+  if (containerEl) {
+    containerEl.classList.remove("page-has-no-shifts");
+  }
+
   const rawName = user?.full_name || user?.username || "Medewerker";
   const name = escapeHtml(rawName);
 
@@ -552,6 +570,7 @@ function showProductivityUserSkeleton(user) {
   const myShiftsSection = document.getElementById("myShiftsSection");
   const chartContainer = document.getElementById("productivityChartContainer");
   const listEl = document.getElementById("productivityList");
+  const paginationEl = document.getElementById("productivityPagination");
   const colliEl = document.getElementById("statTotalColli");
   const daysEl = document.getElementById("statTotalDays");
   const statsEl = document.getElementById("productivitySummaryStats");
@@ -576,6 +595,7 @@ function showProductivityUserSkeleton(user) {
   if (statsEl) statsEl.style.display = "flex";
   if (sectionDivider) sectionDivider.style.display = "block";
   if (overviewRow) overviewRow.classList.remove("only-top-fillers");
+  if (paginationEl) paginationEl.style.display = "none";
 
   if (colliEl)
     colliEl.innerHTML =
@@ -586,7 +606,7 @@ function showProductivityUserSkeleton(user) {
 
   if (chartContainer) {
     chartContainer.innerHTML =
-      '<div class="skeleton" style="width:100%; height:240px; border-radius:10px;"></div>';
+      '<div class="skeleton chart-skeleton-placeholder"></div>';
   }
 
   if (listEl) {
@@ -601,6 +621,7 @@ function showProductivityUserSkeleton(user) {
 }
 
 function applyUserProductivity(user, isSelf) {
+  isProductivityLoading = false;
   const rawName = user?.full_name || user?.username || "Medewerker";
   const name = escapeHtml(rawName);
 
@@ -854,8 +875,10 @@ let chartResizeBound = false;
 let chartResizeTimer = null;
 
 function handleChartResize() {
+  if (isProductivityLoading) return;
   clearTimeout(chartResizeTimer);
   chartResizeTimer = setTimeout(() => {
+    if (isProductivityLoading) return;
     renderProductivityChart(cachedProductivityEntries);
   }, 100);
 }
@@ -895,6 +918,7 @@ function initChartControls() {
   if (btnIndividual && btnAverage && !btnIndividual.dataset.bound) {
     btnIndividual.dataset.bound = "true";
     btnIndividual.addEventListener("click", () => {
+      if (isProductivityLoading) return;
       if (!isIndividualModeAllowed(currentTimeframe)) return;
       if (currentChartMode === "individual") return;
       currentChartMode = "individual";
@@ -904,6 +928,7 @@ function initChartControls() {
     });
 
     btnAverage.addEventListener("click", () => {
+      if (isProductivityLoading) return;
       if (currentChartMode === "average") return;
       currentChartMode = "average";
       btnAverage.classList.add("active");
@@ -936,7 +961,9 @@ function initChartControls() {
         if (newVal === currentTimeframe) return;
         currentTimeframe = newVal;
         updateChartModeControls();
-        renderProductivityChart(cachedProductivityEntries);
+        if (!isProductivityLoading) {
+          renderProductivityChart(cachedProductivityEntries);
+        }
       },
     );
   }
@@ -944,7 +971,7 @@ function initChartControls() {
 
 function renderProductivityChart(entries) {
   const container = document.getElementById("productivityChartContainer");
-  if (!container) return;
+  if (!container || isProductivityLoading) return;
 
   updateChartModeControls();
 

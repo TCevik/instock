@@ -16,6 +16,10 @@ const LAST_ACTIVITY_KEY = "instock_last_activity";
 let inactivityWarningShown = false;
 let inactivityModalOverlay = null;
 
+function isSharedDevice() {
+  return localStorage.getItem("sharedDevice") === "true";
+}
+
 function dismissInactivityWarning() {
   if (inactivityWarningShown && inactivityModalOverlay) {
     closeModal(inactivityModalOverlay);
@@ -35,7 +39,7 @@ function isLoginPage() {
 }
 
 function checkInactivity() {
-  if (isLoginPage()) return;
+  if (isLoginPage() || !isSharedDevice()) return;
 
   const last = localStorage.getItem(LAST_ACTIVITY_KEY);
   if (last) {
@@ -75,10 +79,13 @@ function checkInactivity() {
 function initInactivityTracker() {
   if (isLoginPage()) return;
 
-  recordActivity();
+  if (isSharedDevice()) {
+    recordActivity();
+  }
 
   let lastRecorded = 0;
   const updateThrottled = () => {
+    if (!isSharedDevice()) return;
     const now = Date.now();
     if (now - lastRecorded > 2000 || inactivityWarningShown) {
       lastRecorded = now;
@@ -126,7 +133,7 @@ async function checkAuth() {
     return;
   }
 
-  if (!isLogin) {
+  if (!isLogin && isSharedDevice()) {
     const last = localStorage.getItem(LAST_ACTIVITY_KEY);
     if (last && Date.now() - Number(last) > INACTIVITY_TIMEOUT_MS) {
       await logout();
@@ -845,6 +852,15 @@ const observer = new MutationObserver((mutations) => {
 });
 
 observer.observe(document.documentElement, { childList: true, subtree: true });
+
+// Global network status tracking
+window.addEventListener("offline", () => {
+  showToast("error", "Netwerkverbinding verbroken. Opnieuw verbinden...");
+});
+
+window.addEventListener("online", () => {
+  showToast("notification", "Opnieuw verbonden met het netwerk");
+});
 
 checkAuth();
 loadOverlay();

@@ -238,6 +238,7 @@ export async function loadSavedPlanning(options = {}) {
 }
 
 let realtimeChannel = null;
+let realtimeListenersAdded = false;
 
 export async function setupRealtimeSubscription(options = {}) {
   try {
@@ -266,6 +267,24 @@ export async function setupRealtimeSubscription(options = {}) {
           loadSavedPlanning(options);
         },
       )
-      .subscribe();
+      .subscribe(async (status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+           setTimeout(() => setupRealtimeSubscription(options), 5000);
+        }
+      });
+
+    if (!realtimeListenersAdded) {
+      realtimeListenersAdded = true;
+      document.addEventListener("visibilitychange", async () => {
+        if (document.visibilityState === "visible" && navigator.onLine) {
+          loadSavedPlanning(options);
+        }
+      });
+      window.addEventListener("online", async () => {
+        loadSavedPlanning(options);
+        setupRealtimeSubscription(options);
+      });
+    }
+
   } catch (_) {}
 }
