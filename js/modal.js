@@ -490,23 +490,11 @@ export function showPasswordPromptModal({
         }
 
         try {
-          const { data: sessionData } = await supabase.auth.getSession();
-          let email = sessionData?.session?.user?.email;
-          if (!email) {
-            const { data: userData } = await supabase.auth.getUser();
-            email = userData?.user?.email;
-          }
-
-          if (!email) {
-            throw new Error("Geen actieve sessie gevonden. Log opnieuw in.");
-          }
-
-          const { error: authError } = await supabase.auth.signInWithPassword({
-            email,
-            password,
+          const { data: isValid, error: authError } = await supabase.rpc("verify_user_password", {
+            p_password: password
           });
 
-          if (authError) {
+          if (authError || !isValid) {
             throw new Error("Onjuist wachtwoord. Probeer het opnieuw.");
           }
 

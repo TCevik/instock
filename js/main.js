@@ -16,6 +16,17 @@ const LAST_ACTIVITY_KEY = "instock_last_activity";
 let inactivityWarningShown = false;
 let inactivityModalOverlay = null;
 
+// Global interceptor for 401 Unauthorized responses
+const originalFetch = window.fetch;
+window.fetch = async (...args) => {
+  const response = await originalFetch(...args);
+  if (response.status === 401 && !window.isLoggingOut && !isLoginPage()) {
+    // Treat any 401 (Unauthorized / invalid token) outside the login page as a session expiration
+    logout();
+  }
+  return response;
+};
+
 function isSharedDevice() {
   return localStorage.getItem("sharedDevice") === "true";
 }
@@ -117,6 +128,27 @@ function initInactivityTracker() {
   });
 
   setInterval(checkInactivity, 5000);
+
+  // Active session heartbeat: Check every 5 seconds if the session was revoked
+  setInterval(async () => {
+    if (isLoginPage() || window.isLoggingOut) return;
+    
+    try {
+      // getSession only checks local storage
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // Ask the database if this session still actually exists in auth.sessions
+      const { data: isSessionValid, error } = await supabase.rpc("check_session_status");
+      
+      // If error (like 401) or it explicitly returns false, log out instantly
+      if (error || isSessionValid === false) {
+        if (!window.isLoggingOut) {
+          logout();
+        }
+      }
+    } catch (err) {}
+  }, 5000);
 }
 
 async function checkAuth() {
