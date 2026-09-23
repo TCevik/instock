@@ -159,6 +159,10 @@ export function renderTimelineRows(options) {
 
     function calcProd() {
       filler.actualEndTime = timeInput.value;
+      const currentFiller = planningState.fillers.find(f => String(f.id) === String(filler.id));
+      if (currentFiller) {
+        currentFiller.actualEndTime = timeInput.value;
+      }
       const res = getFillerStats(filler, assigned).prodResult;
       if (!res) {
         prodLabel.textContent = "";
