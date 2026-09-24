@@ -219,23 +219,23 @@ export function openColliImportModal(onImport) {
             <p class="modal-subtitle">Upload hier het overzicht colli aantallen per groep PDF-bestand.</p>
         </div>
         <div class="modal-body">
-            <div class="pdf-dropzone" id="colli-pdf-dropzone">
+            <div class="pdf-dropzone" id="colliPdfDropzone">
                 <span class="material-icons pdf-dropzone-icon">cloud_upload</span>
-                <span class="pdf-dropzone-text" id="colli-dropzone-text">Sleep je colli PDF hierheen of klik om te kiezen</span>
+                <span class="pdf-dropzone-text" id="colliDropzoneText">Sleep je colli PDF hierheen of klik om te kiezen</span>
                 <span class="pdf-dropzone-subtext">Ondersteunt .pdf bestanden</span>
-                <input type="file" id="colli-pdf-file-input" accept="application/pdf" style="display: none;">
+                <input type="file" id="colliPdfFileInput" accept="application/pdf" style="display: none;">
             </div>
             <div class="modal-footer">
-                <button type="button" class="modal-btn-secondary" id="btn-cancel-colli-import">Annuleren</button>
+                <button type="button" class="modal-btn-secondary" id="btnCancelColliImport">Annuleren</button>
             </div>
         </div>
     `;
 
   showModal(modalContent).then((overlay) => {
-    const dropzone = overlay.querySelector("#colli-pdf-dropzone");
-    const fileInput = overlay.querySelector("#colli-pdf-file-input");
-    const dropzoneText = overlay.querySelector("#colli-dropzone-text");
-    const cancelBtn = overlay.querySelector("#btn-cancel-colli-import");
+    const dropzone = overlay.querySelector("#colliPdfDropzone");
+    const fileInput = overlay.querySelector("#colliPdfFileInput");
+    const dropzoneText = overlay.querySelector("#colliDropzoneText");
+    const cancelBtn = overlay.querySelector("#btnCancelColliImport");
 
     cancelBtn.addEventListener("click", () => {
       closeModal(overlay);

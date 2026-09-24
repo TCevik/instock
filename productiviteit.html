@@ -18,7 +18,7 @@
   </head>
 
   <body>
-    <div class="page-container">
+    <main class="page-container">
       <div class="page-header-row">
         <div class="page-header-title-group">
           <h1 class="page-title" id="pageMainTitle">Mijn Productiviteit</h1>
@@ -497,6 +497,14 @@
                 <span class="chart-target-line-sample"></span>
                 <span>Norm: 100%</span>
               </div>
+              <div class="chart-avg-badge" id="chartAvgBadge" style="display: none;">
+                <span class="chart-avg-line-sample"></span>
+                <span id="chartAvgBadgeText">Gemiddelde: --%</span>
+              </div>
+              <div class="chart-trend-pill" id="chartTrendPill" style="display: none;">
+                <span class="material-icons" id="chartTrendPillIcon">trending_up</span>
+                <span id="chartTrendPillText">Vooruitgang</span>
+              </div>
             </div>
           </div>
           <div class="chart-container" id="productivityChartContainer"></div>
@@ -590,6 +598,6 @@
           </div>
         </div>
       </div>
-    </div>
+    </main>
   </body>
 </html>

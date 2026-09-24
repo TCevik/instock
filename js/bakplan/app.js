@@ -40,7 +40,7 @@ import { openPrintableBakplan } from "./printable-overview.js";
 import { openCartsModal } from "./carts-modal.js";
 
 export async function saveBakplan() {
-  const btnSave = document.getElementById("btn-save-bakplan");
+  const btnSave = document.getElementById("btnSaveBakplan");
   if (btnSave) btnSave.disabled = true;
   try {
     const bakplanData = getBakplanData();
@@ -81,20 +81,20 @@ export async function loadBakplan() {
 }
 
 function handleUndoRedoRender() {
-  const searchInput = document.getElementById("bakplan-search");
+  const searchInput = document.getElementById("bakplanSearch");
   renderCategories(searchInput ? searchInput.value : "");
 }
 
 export function initEvents() {
-  const container = document.getElementById("categories-container");
-  const searchInput = document.getElementById("bakplan-search");
-  const btnAddCat = document.getElementById("btn-add-category");
-  const btnToggleAll = document.getElementById("btn-toggle-all");
-  const btnSave = document.getElementById("btn-save-bakplan");
-  const btnUploadPdf = document.getElementById("btn-upload-pdf");
-  const pdfInput = document.getElementById("bakplan-pdf-input");
-  const btnGenerate = document.getElementById("btn-generate-bakplan");
-  const daysTabs = document.getElementById("bakplan-days-tabs");
+  const container = document.getElementById("categoriesContainer");
+  const searchInput = document.getElementById("bakplanSearch");
+  const btnAddCat = document.getElementById("btnAddCategory");
+  const btnToggleAll = document.getElementById("btnToggleAll");
+  const btnSave = document.getElementById("btnSaveBakplan");
+  const btnUploadPdf = document.getElementById("btnUploadPdf");
+  const pdfInput = document.getElementById("bakplanPdfInput");
+  const btnGenerate = document.getElementById("btnGenerateBakplan");
+  const daysTabs = document.getElementById("bakplanDaysTabs");
 
   if (window.pdfjsLib && !window.pdfjsLib.GlobalWorkerOptions.workerSrc) {
     window.pdfjsLib.GlobalWorkerOptions.workerSrc =

@@ -11,7 +11,7 @@ import { findHelpersForMainTask } from "./task-actions.js";
 export function renderUnassignedTasks(options) {
   const {
     unassignedTasksList,
-    assignedTasksList = document.getElementById("assigned-tasks-list"),
+    assignedTasksList = document.getElementById("assignedTasksList"),
     onRenderRows,
     onRenderUnassigned,
     onUnassignTask,
@@ -45,7 +45,8 @@ export function renderUnassignedTasks(options) {
   });
 
   ["vullen", "spiegelen", "restanten", "overige"].forEach((tabKey) => {
-    const counterEl = document.getElementById(`count-tab-${tabKey}`);
+    const capitalized = tabKey.charAt(0).toUpperCase() + tabKey.slice(1);
+    const counterEl = document.getElementById(`countTab${capitalized}`);
     if (counterEl) counterEl.textContent = counts[tabKey] || 0;
   });
 
@@ -70,7 +71,7 @@ export function renderUnassignedTasks(options) {
     }
   }
 
-  const unassignedBadge = document.getElementById("count-unassigned-badge");
+  const unassignedBadge = document.getElementById("countUnassignedBadge");
   if (unassignedBadge) {
     unassignedBadge.textContent = filteredUnassigned.filter(
       (t) => t.id !== "pauze_template",
@@ -217,7 +218,7 @@ export function renderUnassignedTasks(options) {
 
   const assignedCardsData = Array.from(mainTasksMap.values());
 
-  const assignedBadge = document.getElementById("count-assigned-badge");
+  const assignedBadge = document.getElementById("countAssignedBadge");
   if (assignedBadge) {
     assignedBadge.textContent = assignedCardsData.length;
   }

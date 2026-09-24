@@ -5,10 +5,10 @@ import {
 } from "./schedule-calculator.js";
 
 export function openPrintableBakplan(bakplanData, customCarts = null) {
-  let iframe = document.getElementById("print-bakplan-iframe");
+  let iframe = document.getElementById("printBakplanIframe");
   if (!iframe) {
     iframe = document.createElement("iframe");
-    iframe.id = "print-bakplan-iframe";
+    iframe.id = "printBakplanIframe";
     iframe.style.position = "fixed";
     iframe.style.right = "0";
     iframe.style.bottom = "0";

@@ -60,30 +60,30 @@ export async function openFinalizeModal() {
 
         <div class="finalize-info-banner">
             <span class="material-icons">info</span>
-            <span id="finalize-banner-text">Statussen ophalen...</span>
+            <span id="finalizeBannerText">Statussen ophalen...</span>
         </div>
 
         <div class="finalize-controls-row">
             <label class="finalize-select-all-label">
-                <input type="checkbox" id="finalize-select-all" disabled />
+                <input type="checkbox" id="finalizeSelectAll" disabled />
                 <span>Alles selecteren</span>
             </label>
             <div class="finalize-controls-right">
                 <label class="finalize-date-label">Datum:</label>
                 <div id="finalizeDatePickerContainer"></div>
-                <span class="finalize-count-indicator" id="finalize-selected-count">0 geselecteerd</span>
+                <span class="finalize-count-indicator" id="finalizeSelectedCount">0 geselecteerd</span>
             </div>
         </div>
 
-        <div class="finalize-list" id="finalize-list-container">
+        <div class="finalize-list" id="finalizeListContainer">
             ${renderSkeletonWorkers(Math.max(3, (planningState.fillers || []).length || 4))}
         </div>
 
         <div class="modal-footer" style="margin-top: 14px;">
-            <button type="button" class="modal-btn-secondary" id="btn-cancel-finalize">Annuleren</button>
-            <button type="button" class="btn" id="btn-submit-finalize" disabled style="opacity: 0.5; cursor: not-allowed;">
+            <button type="button" class="modal-btn-secondary" id="btnCancelFinalize">Annuleren</button>
+            <button type="button" class="btn" id="btnSubmitFinalize" disabled style="opacity: 0.5; cursor: not-allowed;">
                 <span class="material-icons btn-icon">check</span>
-                <span id="btn-finalize-text">Finaliseren</span>
+                <span id="btnFinalizeText">Finaliseren</span>
             </button>
         </div>
     `;
@@ -93,13 +93,13 @@ export async function openFinalizeModal() {
     overlay.classList.add("finalize-modal-overlay");
   }
 
-  const listContainer = document.getElementById("finalize-list-container");
-  const selectAllCheckbox = document.getElementById("finalize-select-all");
-  const selectedCountLabel = document.getElementById("finalize-selected-count");
-  const btnSubmit = document.getElementById("btn-submit-finalize");
-  const btnFinalizeText = document.getElementById("btn-finalize-text");
-  const btnCancel = document.getElementById("btn-cancel-finalize");
-  const bannerText = document.getElementById("finalize-banner-text");
+  const listContainer = document.getElementById("finalizeListContainer");
+  const selectAllCheckbox = document.getElementById("finalizeSelectAll");
+  const selectedCountLabel = document.getElementById("finalizeSelectedCount");
+  const btnSubmit = document.getElementById("btnSubmitFinalize");
+  const btnFinalizeText = document.getElementById("btnFinalizeText");
+  const btnCancel = document.getElementById("btnCancelFinalize");
+  const bannerText = document.getElementById("finalizeBannerText");
   const datePickerContainer = document.getElementById(
     "finalizeDatePickerContainer",
   );

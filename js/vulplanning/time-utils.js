@@ -135,10 +135,20 @@ export function getProductivityStatusClass(percent) {
   return "orange";
 }
 
-export function getProductivityStatusIcon(percent) {
+export function getProductivityStatusIcon(percent, average) {
+  if (average !== undefined && average !== null && !isNaN(Number(average))) {
+    const p = Number(percent);
+    const avg = Number(average);
+    if (!isNaN(p)) {
+      if (p > avg) return "trending_up";
+      if (p < avg) return "trending_down";
+      return "trending_flat";
+    }
+  }
   const p = Number(percent);
-  if (isNaN(p) || p < 100) return "trending_down";
-  return "check_circle";
+  if (isNaN(p)) return "trending_flat";
+  if (p >= 100) return "trending_up";
+  return "trending_down";
 }
 
 export function formatTimeInput(value, isDeleting = false) {

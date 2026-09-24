@@ -91,28 +91,28 @@ export function openCartsModal(bakplanData, onConfirm) {
                             <th style="width: 40px;"></th>
                         </tr>
                     </thead>
-                    <tbody id="carts-table-body">
+                    <tbody id="cartsTableBody">
                         ${renderRowsHtml()}
                     </tbody>
                 </table>
             </div>
             <div class="carts-actions-row">
-                <button type="button" class="btn-add-cart-row" id="btn-add-cart-row">
+                <button type="button" class="btn-add-cart-row" id="btnAddCartRow">
                     <span class="material-icons">add</span> Kar Toevoegen
                 </button>
             </div>
         </div>
         <div class="modal-footer">
-            <button type="button" class="modal-btn-secondary" id="btn-carts-cancel">Annuleren</button>
-            <button type="button" class="btn-primary btn-sm" id="btn-carts-save" style="padding: 10px 24px; font-size: 14px; font-weight: 600;">Opslaan</button>
+            <button type="button" class="modal-btn-secondary" id="btnCartsCancel">Annuleren</button>
+            <button type="button" class="btn-primary btn-sm" id="btnCartsSave" style="padding: 10px 24px; font-size: 14px; font-weight: 600;">Opslaan</button>
         </div>
     `;
 
   showModal(modalHtml, "modal-carts-wide").then((overlay) => {
-    const tableBody = overlay.querySelector("#carts-table-body");
-    const btnAddRow = overlay.querySelector("#btn-add-cart-row");
-    const btnCancel = overlay.querySelector("#btn-carts-cancel");
-    const btnSave = overlay.querySelector("#btn-carts-save");
+    const tableBody = overlay.querySelector("#cartsTableBody");
+    const btnAddRow = overlay.querySelector("#btnAddCartRow");
+    const btnCancel = overlay.querySelector("#btnCartsCancel");
+    const btnSave = overlay.querySelector("#btnCartsSave");
 
     const bindEvents = () => {
       tableBody.querySelectorAll("tr").forEach((row, idx) => {

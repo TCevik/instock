@@ -103,7 +103,7 @@ export function showContextMenu(
 
         if (remainingMins > 0 && !task.isHelper && task.type === "overige") {
           expandButtonHtml = `
-                        <button type="button" class="context-menu-item expand" id="ctx-expand-task">
+                        <button type="button" class="context-menu-item expand" id="ctxExpandTask">
                             <span class="material-icons">straighten</span>
                             <span>Uitvullen tot limiet (+${formatDuration(remainingMins)})</span>
                         </button>
@@ -116,11 +116,11 @@ export function showContextMenu(
   if (task.type === "overige" || task.type === "pauze") {
     menu.innerHTML = `
             ${expandButtonHtml}
-            <button type="button" class="context-menu-item" id="ctx-edit-task">
+            <button type="button" class="context-menu-item" id="ctxEditTask">
                 <span class="material-icons">edit</span>
                 <span>Bewerken</span>
             </button>
-            <button type="button" class="context-menu-item danger" id="ctx-delete-task">
+            <button type="button" class="context-menu-item danger" id="ctxDeleteTask">
                 <span class="material-icons">delete</span>
                 <span>Verwijderen</span>
             </button>
@@ -129,18 +129,18 @@ export function showContextMenu(
     if (!isAssigned) return;
     menu.innerHTML = `
             ${expandButtonHtml}
-            <button type="button" class="context-menu-item" id="ctx-edit-task">
+            <button type="button" class="context-menu-item" id="ctxEditTask">
                 <span class="material-icons">edit</span>
                 <span>Bewerken</span>
             </button>
-            <button type="button" class="context-menu-item danger" id="ctx-delete-task">
+            <button type="button" class="context-menu-item danger" id="ctxDeleteTask">
                 <span class="material-icons">delete</span>
                 <span>Verwijderen</span>
             </button>
         `;
   }
 
-  const expandBtn = menu.querySelector("#ctx-expand-task");
+  const expandBtn = menu.querySelector("#ctxExpandTask");
   if (expandBtn) {
     expandBtn.addEventListener("click", (ev) => {
       ev.stopPropagation();
@@ -173,7 +173,7 @@ export function showContextMenu(
     });
   }
 
-  const editBtn = menu.querySelector("#ctx-edit-task");
+  const editBtn = menu.querySelector("#ctxEditTask");
   if (editBtn) {
     editBtn.addEventListener("click", (ev) => {
       ev.stopPropagation();
@@ -205,7 +205,7 @@ export function showContextMenu(
     });
   }
 
-  const deleteBtn = menu.querySelector("#ctx-delete-task");
+  const deleteBtn = menu.querySelector("#ctxDeleteTask");
   if (deleteBtn) {
     deleteBtn.addEventListener("click", (ev) => {
       ev.stopPropagation();
@@ -600,7 +600,7 @@ export function showWorkerContextMenu(e, filler, callbacks = {}) {
   const menu = getOrCreateContextMenu();
 
   menu.innerHTML = `
-        <button type="button" class="context-menu-item" id="ctx-edit-worker">
+        <button type="button" class="context-menu-item" id="ctxEditWorker">
             <span class="material-icons">edit</span>
             <span>${filler?.name || "Medewerker"} bewerken</span>
         </button>
@@ -638,7 +638,7 @@ export function showWorkerContextMenu(e, filler, callbacks = {}) {
         </button>
     `;
 
-  const editBtn = menu.querySelector("#ctx-edit-worker");
+  const editBtn = menu.querySelector("#ctxEditWorker");
   if (editBtn) {
     editBtn.addEventListener("click", (ev) => {
       ev.stopPropagation();

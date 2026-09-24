@@ -82,7 +82,7 @@ function getComboTrioGradient(t1Duration, t2Duration, totalDuration) {
 }
 
 export function generatePrintDocument(options = printOptions) {
-  const container = document.getElementById("print-planning-container");
+  const container = document.getElementById("printPlanningContainer");
   if (!container) return;
 
   if (!planningState.fillers || planningState.fillers.length === 0) {

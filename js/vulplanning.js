@@ -47,34 +47,34 @@ window.__draggedTaskDataRef = getDraggedTaskData;
 
 export { triggerAutoSave };
 
-const stepInputView = document.getElementById("step-input-view");
-const stepTimelineView = document.getElementById("step-timeline-view");
-const btnBackToTimeline = document.getElementById("btn-back-to-timeline");
-const btnClearInput = document.getElementById("btn-clear-input");
-const btnUnifiedImport = document.getElementById("btn-unified-import");
-const btnContinue = document.getElementById("btn-continue");
-const btnBackToInput = document.getElementById("btn-back-to-input");
-const btnPrintPlanning = document.getElementById("btn-print-planning");
+const stepInputView = document.getElementById("stepInputView");
+const stepTimelineView = document.getElementById("stepTimelineView");
+const btnBackToTimeline = document.getElementById("btnBackToTimeline");
+const btnClearInput = document.getElementById("btnClearInput");
+const btnUnifiedImport = document.getElementById("btnUnifiedImport");
+const btnContinue = document.getElementById("btnContinue");
+const btnBackToInput = document.getElementById("btnBackToInput");
+const btnPrintPlanning = document.getElementById("btnPrintPlanning");
 const btnFinalizeProductivity = document.getElementById(
-  "btn-finalize-productivity",
+  "btnFinalizeProductivity",
 );
-const btnAddCustomTask = document.getElementById("btn-add-custom-task");
-const clearPlanningBtn = document.getElementById("clear-planning-btn");
-const btnComboSettings = document.getElementById("btn-combo-settings");
-const btnSettingsPlanning = document.getElementById("btn-settings-planning");
-const timelineWorkersList = document.getElementById("timeline-workers-list");
+const btnAddCustomTask = document.getElementById("btnAddCustomTask");
+const clearPlanningBtn = document.getElementById("clearPlanningBtn");
+const btnComboSettings = document.getElementById("btnComboSettings");
+const btnSettingsPlanning = document.getElementById("btnSettingsPlanning");
+const timelineWorkersList = document.getElementById("timelineWorkersList");
 const timelineTracksContainer = document.getElementById(
-  "timeline-tracks-container",
+  "timelineTracksContainer",
 );
-const timelineSchedulePane = document.getElementById("timeline-schedule-pane");
-const timelineHoursAxis = document.getElementById("timeline-hours-axis");
-const unassignedTasksList = document.getElementById("unassigned-tasks-list");
-const assignedTasksList = document.getElementById("assigned-tasks-list");
+const timelineSchedulePane = document.getElementById("timelineSchedulePane");
+const timelineHoursAxis = document.getElementById("timelineHoursAxis");
+const unassignedTasksList = document.getElementById("unassignedTasksList");
+const assignedTasksList = document.getElementById("assignedTasksList");
 const unassignedTasksSidebar = document.querySelector(
   ".unassigned-tasks-sidebar",
 );
-const zoomLevelIndicator = document.getElementById("zoom-level-indicator");
-const mobilePlanningView = document.getElementById("mobile-planning-view");
+const zoomLevelIndicator = document.getElementById("zoomLevelIndicator");
+const mobilePlanningView = document.getElementById("mobilePlanningView");
 
 const initialSavedZoom = localStorage.getItem("instock_planner_zoom");
 if (initialSavedZoom !== null) {
@@ -453,9 +453,9 @@ const timelineBoardContainer = document.querySelector(
   ".timeline-board-container",
 );
 
-const btnZoomIn = document.getElementById("btn-zoom-in");
-const btnZoomOut = document.getElementById("btn-zoom-out");
-const btnZoomReset = document.getElementById("btn-zoom-reset");
+const btnZoomIn = document.getElementById("btnZoomIn");
+const btnZoomOut = document.getElementById("btnZoomOut");
+const btnZoomReset = document.getElementById("btnZoomReset");
 
 function applyZoom(nextZoom) {
   nextZoom = Math.max(0.5, Math.min(2.5, Math.round(nextZoom * 100) / 100));
@@ -766,7 +766,7 @@ setupHistoryShortcuts({
 });
 
 function hideLoadingScreen() {
-  const screen = document.getElementById("vulplanning-loading-screen");
+  const screen = document.getElementById("vulplanningLoadingScreen");
   if (!screen) return;
   screen.classList.add("fade-out");
   setTimeout(() => {

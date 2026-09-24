@@ -18,8 +18,8 @@ function serializeState() {
 }
 
 export function updateHistoryButtons() {
-  const btnUndo = document.getElementById("btn-history-undo");
-  const btnRedo = document.getElementById("btn-history-redo");
+  const btnUndo = document.getElementById("btnHistoryUndo");
+  const btnRedo = document.getElementById("btnHistoryRedo");
   if (btnUndo) {
     btnUndo.disabled = historyIndex <= 0;
   }
@@ -97,8 +97,8 @@ export function setupHistoryShortcuts(options = {}) {
     callbacks = { ...callbacks, ...options };
   }
 
-  const btnUndo = document.getElementById("btn-history-undo");
-  const btnRedo = document.getElementById("btn-history-redo");
+  const btnUndo = document.getElementById("btnHistoryUndo");
+  const btnRedo = document.getElementById("btnHistoryRedo");
 
   if (btnUndo) {
     btnUndo.addEventListener("click", undo);
@@ -108,7 +108,7 @@ export function setupHistoryShortcuts(options = {}) {
   }
 
   window.addEventListener("keydown", (e) => {
-    const stepTimelineView = document.getElementById("step-timeline-view");
+    const stepTimelineView = document.getElementById("stepTimelineView");
     if (!stepTimelineView || stepTimelineView.style.display === "none") {
       return;
     }

@@ -20,7 +20,7 @@
   </head>
 
   <body>
-    <div class="page-container">
+    <main class="page-container">
       <div class="page-container-inner">
         <div class="mobile-warning-container">
           <div class="mobile-warning-card">
@@ -46,13 +46,13 @@
           <div class="header-actions">
             <input
               type="file"
-              id="bakplan-pdf-input"
+              id="bakplanPdfInput"
               accept="application/pdf"
               style="display: none"
             />
             <button
               type="button"
-              id="btn-upload-pdf"
+              id="btnUploadPdf"
               class="btn-secondary btn-sm"
             >
               <span class="material-icons btn-icon">picture_as_pdf</span> PDF
@@ -60,7 +60,7 @@
             </button>
             <button
               type="button"
-              id="btn-generate-bakplan"
+              id="btnGenerateBakplan"
               class="btn-secondary btn-sm"
             >
               <span class="material-icons btn-icon">print</span> Bakplan
@@ -68,7 +68,7 @@
             </button>
             <button
               type="button"
-              id="btn-save-bakplan"
+              id="btnSaveBakplan"
               class="btn-primary btn-sm"
             >
               <span class="material-icons btn-icon">save</span> Bakplan Opslaan
@@ -76,7 +76,7 @@
           </div>
         </div>
 
-        <div class="bakplan-days-tabs" id="bakplan-days-tabs">
+        <div class="bakplan-days-tabs" id="bakplanDaysTabs">
           <button type="button" class="day-tab active" data-day="maandag">
             Maandag
           </button>
@@ -106,7 +106,7 @@
               <span class="material-icons">inventory_2</span>
             </div>
             <div class="stat-card-content">
-              <span class="stat-value" id="stat-total-items">0</span>
+              <span class="stat-value" id="statTotalItems">0</span>
               <span class="stat-label">Totaal Artikelen</span>
             </div>
           </div>
@@ -115,7 +115,7 @@
               <span class="material-icons">cookie</span>
             </div>
             <div class="stat-card-content">
-              <span class="stat-value" id="stat-total-opleggen">0</span>
+              <span class="stat-value" id="statTotalOpleggen">0</span>
               <span class="stat-label">Totaal Opleggen</span>
             </div>
           </div>
@@ -124,7 +124,7 @@
               <span class="material-icons">grid_view</span>
             </div>
             <div class="stat-card-content">
-              <span class="stat-value accent" id="stat-total-platen">0</span>
+              <span class="stat-value accent" id="statTotalPlaten">0</span>
               <span class="stat-label">Benodigde Platen</span>
             </div>
           </div>
@@ -133,7 +133,7 @@
               <span class="material-icons">delete_sweep</span>
             </div>
             <div class="stat-card-content">
-              <span class="stat-value" id="stat-total-derving">0</span>
+              <span class="stat-value" id="statTotalDerving">0</span>
               <span class="stat-label">Verwachte Derving</span>
             </div>
           </div>
@@ -145,7 +145,7 @@
               <span class="material-icons search-icon">search</span>
               <input
                 type="text"
-                id="bakplan-search"
+                id="bakplanSearch"
                 class="bakplan-search-input"
                 placeholder="Zoek op omschrijving..."
               />
@@ -153,17 +153,17 @@
             <div class="toolbar-actions">
               <button
                 type="button"
-                id="btn-toggle-all"
+                id="btnToggleAll"
                 class="btn-secondary btn-sm"
               >
-                <span class="material-icons btn-icon" id="icon-toggle-all"
+                <span class="material-icons btn-icon" id="iconToggleAll"
                   >unfold_less</span
                 >
-                <span id="text-toggle-all">Alles inklappen</span>
+                <span id="textToggleAll">Alles inklappen</span>
               </button>
               <button
                 type="button"
-                id="btn-add-category"
+                id="btnAddCategory"
                 class="btn-primary btn-sm"
               >
                 <span class="material-icons btn-icon">add</span> Categorie
@@ -173,8 +173,8 @@
           </div>
         </div>
 
-        <div id="categories-container" class="categories-container"></div>
+        <div id="categoriesContainer" class="categories-container"></div>
       </div>
-    </div>
+    </main>
   </body>
 </html>

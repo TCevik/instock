@@ -20,12 +20,12 @@ export function deleteCategory(catId) {
     cardEl.classList.add("category-card-exit");
     setTimeout(() => {
       setBakplanData(getBakplanData().filter((c) => c.id !== catId));
-      const searchInput = document.getElementById("bakplan-search");
+      const searchInput = document.getElementById("bakplanSearch");
       renderCategories(searchInput ? searchInput.value : "");
     }, 240);
   } else {
     setBakplanData(getBakplanData().filter((c) => c.id !== catId));
-    const searchInput = document.getElementById("bakplan-search");
+    const searchInput = document.getElementById("bakplanSearch");
     renderCategories(searchInput ? searchInput.value : "");
   }
 }
@@ -40,7 +40,7 @@ export function deleteRow(itemId) {
   }
 
   saveState();
-  const searchInput = document.getElementById("bakplan-search");
+  const searchInput = document.getElementById("bakplanSearch");
   const bakplanData = getBakplanData();
   for (const cat of bakplanData) {
     const idx = cat.items.findIndex((i) => i.id === itemId);
@@ -67,7 +67,7 @@ export async function addCategory() {
   }
 
   saveState();
-  const searchInput = document.getElementById("bakplan-search");
+  const searchInput = document.getElementById("bakplanSearch");
   const newId = "cat-" + Date.now();
   const newCat = {
     id: newId,
@@ -114,7 +114,7 @@ export function addRowToCategory(catId) {
   if (!targetCat) return;
 
   saveState();
-  const searchInput = document.getElementById("bakplan-search");
+  const searchInput = document.getElementById("bakplanSearch");
   const newId = "item-" + Date.now();
   targetCat.items.push({
     id: newId,
@@ -157,7 +157,7 @@ export function toggleCartType(catId) {
   if (!cat) return;
   saveState();
   cat.cartType = cat.cartType === "ontdooi" ? "normaal" : "ontdooi";
-  const searchInput = document.getElementById("bakplan-search");
+  const searchInput = document.getElementById("bakplanSearch");
   renderCategories(searchInput ? searchInput.value : "");
 }
 

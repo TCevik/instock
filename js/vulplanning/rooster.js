@@ -13,9 +13,9 @@ import {
   bindViewportCheck,
 } from "../dropdown-utils.js";
 
-const vullersContainer = document.getElementById("vullers-container");
-const btnAddVuller = document.getElementById("btn-add-vuller");
-const btnImportRooster = document.getElementById("btn-import-rooster");
+const vullersContainer = document.getElementById("vullersContainer");
+const btnAddVuller = document.getElementById("btnAddVuller");
+const btnImportRooster = document.getElementById("btnImportRooster");
 
 let availableUsers = [];
 let storeUsersPromise = null;

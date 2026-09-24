@@ -34,10 +34,10 @@ export function exportTopFillersA4(topFillers, options = {}) {
   const fifth = fillers[4] || null;
   const remainingOthers = fillers.slice(5); // 6 t/m 10
 
-  let iframe = document.getElementById("print-top-fillers-iframe");
+  let iframe = document.getElementById("printTopFillersIframe");
   if (!iframe) {
     iframe = document.createElement("iframe");
-    iframe.id = "print-top-fillers-iframe";
+    iframe.id = "printTopFillersIframe";
     iframe.style.position = "fixed";
     iframe.style.right = "0";
     iframe.style.bottom = "0";

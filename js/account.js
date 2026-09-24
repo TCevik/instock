@@ -9,8 +9,8 @@ import {
 } from "./main.js";
 
 const ROLE_MAP = {
-  1: "Vuller",
-  2: "Shiftleider",
+  1: "Medewerker",
+  2: "Teamleider",
   3: "Beheerder",
 };
 

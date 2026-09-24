@@ -33,10 +33,10 @@ export function updateSummaryStats() {
     }
   });
 
-  const elItems = document.getElementById("stat-total-items");
-  const elOpleggen = document.getElementById("stat-total-opleggen");
-  const elPlaten = document.getElementById("stat-total-platen");
-  const elDerving = document.getElementById("stat-total-derving");
+  const elItems = document.getElementById("statTotalItems");
+  const elOpleggen = document.getElementById("statTotalOpleggen");
+  const elPlaten = document.getElementById("statTotalPlaten");
+  const elDerving = document.getElementById("statTotalDerving");
 
   if (elItems) elItems.textContent = totalItems;
   if (elOpleggen) elOpleggen.textContent = totalOpleggen;
@@ -45,8 +45,8 @@ export function updateSummaryStats() {
 }
 
 export function updateToggleAllButton() {
-  const iconToggle = document.getElementById("icon-toggle-all");
-  const textToggle = document.getElementById("text-toggle-all");
+  const iconToggle = document.getElementById("iconToggleAll");
+  const textToggle = document.getElementById("textToggleAll");
   if (!iconToggle || !textToggle) return;
 
   const bakplanData = getBakplanData();
@@ -61,7 +61,7 @@ export function updateToggleAllButton() {
 }
 
 export function renderCategories(filterText = "") {
-  const container = document.getElementById("categories-container");
+  const container = document.getElementById("categoriesContainer");
   if (!container) return;
 
   const bakplanData = getBakplanData();

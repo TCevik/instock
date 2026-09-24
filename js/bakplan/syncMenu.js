@@ -85,7 +85,7 @@ export function showBakplanSyncMenu(x, y, item, field, value) {
     }
 
     removeBakplanSyncMenu();
-    const searchInput = document.getElementById("bakplan-search");
+    const searchInput = document.getElementById("bakplanSearch");
     renderCategories(searchInput ? searchInput.value : "");
   });
 

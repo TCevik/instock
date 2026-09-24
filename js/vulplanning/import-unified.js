@@ -62,23 +62,23 @@ export function openUnifiedImportModal({
             <p class="modal-subtitle">Upload hier je dagrooster of colli-overzicht PDF. Je kunt beide bestanden tegelijk of los selecteren.</p>
         </div>
         <div class="modal-body">
-            <div class="pdf-dropzone" id="unified-pdf-dropzone">
+            <div class="pdf-dropzone" id="unifiedPdfDropzone">
                 <span class="material-icons pdf-dropzone-icon">cloud_upload</span>
-                <span class="pdf-dropzone-text" id="unified-dropzone-text">Sleep één of beide PDF's hierheen of klik om te kiezen</span>
+                <span class="pdf-dropzone-text" id="unifiedDropzoneText">Sleep één of beide PDF's hierheen of klik om te kiezen</span>
                 <span class="pdf-dropzone-subtext">Ondersteunt Dagrooster & Colli overzichten (.pdf)</span>
-                <input type="file" id="unified-pdf-file-input" accept="application/pdf" multiple style="display: none;">
+                <input type="file" id="unifiedPdfFileInput" accept="application/pdf" multiple style="display: none;">
             </div>
             <div class="modal-footer">
-                <button type="button" class="modal-btn-secondary" id="btn-cancel-unified-import">Annuleren</button>
+                <button type="button" class="modal-btn-secondary" id="btnCancelUnifiedImport">Annuleren</button>
             </div>
         </div>
     `;
 
   showModal(modalContent).then((overlay) => {
-    const dropzone = overlay.querySelector("#unified-pdf-dropzone");
-    const fileInput = overlay.querySelector("#unified-pdf-file-input");
-    const dropzoneText = overlay.querySelector("#unified-dropzone-text");
-    const cancelBtn = overlay.querySelector("#btn-cancel-unified-import");
+    const dropzone = overlay.querySelector("#unifiedPdfDropzone");
+    const fileInput = overlay.querySelector("#unifiedPdfFileInput");
+    const dropzoneText = overlay.querySelector("#unifiedDropzoneText");
+    const cancelBtn = overlay.querySelector("#btnCancelUnifiedImport");
 
     cancelBtn.addEventListener("click", () => {
       closeModal(overlay);

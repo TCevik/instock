@@ -215,23 +215,23 @@ export function openImportModal(onImport, availableUsers = []) {
             <p class="modal-subtitle">Upload hier het dagrooster PDF-bestand.</p>
         </div>
         <div class="modal-body">
-            <div class="pdf-dropzone" id="pdf-dropzone">
+            <div class="pdf-dropzone" id="pdfDropzone">
                 <span class="material-icons pdf-dropzone-icon">cloud_upload</span>
-                <span class="pdf-dropzone-text" id="dropzone-text">Sleep je dagrooster PDF hierheen of klik om te kiezen</span>
+                <span class="pdf-dropzone-text" id="dropzoneText">Sleep je dagrooster PDF hierheen of klik om te kiezen</span>
                 <span class="pdf-dropzone-subtext">Ondersteunt .pdf bestanden</span>
-                <input type="file" id="pdf-file-input" accept="application/pdf" style="display: none;">
+                <input type="file" id="pdfFileInput" accept="application/pdf" style="display: none;">
             </div>
             <div class="modal-footer">
-                <button type="button" class="modal-btn-secondary" id="btn-cancel-import">Annuleren</button>
+                <button type="button" class="modal-btn-secondary" id="btnCancelImport">Annuleren</button>
             </div>
         </div>
     `;
 
   showModal(modalContent).then((overlay) => {
-    const dropzone = overlay.querySelector("#pdf-dropzone");
-    const fileInput = overlay.querySelector("#pdf-file-input");
-    const dropzoneText = overlay.querySelector("#dropzone-text");
-    const cancelBtn = overlay.querySelector("#btn-cancel-import");
+    const dropzone = overlay.querySelector("#pdfDropzone");
+    const fileInput = overlay.querySelector("#pdfFileInput");
+    const dropzoneText = overlay.querySelector("#dropzoneText");
+    const cancelBtn = overlay.querySelector("#btnCancelImport");
 
     cancelBtn.addEventListener("click", () => {
       closeModal(overlay);

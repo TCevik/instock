@@ -14,9 +14,9 @@ import {
 
 let loadedPaths = [];
 const colliCategoriesContainer = document.getElementById(
-  "colli-categories-container",
+  "colliCategoriesContainer",
 );
-const btnImportColli = document.getElementById("btn-import-colli");
+const btnImportColli = document.getElementById("btnImportColli");
 
 let pendingColliMap = {};
 let loadPathsPromise = null;
@@ -222,15 +222,15 @@ function promptPathMismatch(colliMap) {
                 Wil je de huidige winkelpaden en categorieën overschrijven met de standaard paden en normen uit de PDF layout en de colli invullen?
             </p>
             <div class="modal-footer" style="margin-top: 10px;">
-                <button type="button" class="modal-btn-secondary" id="btn-cancel-overwrite">Niet invullen</button>
-                <button type="button" class="btn" id="btn-confirm-overwrite">Aanpassen en invullen</button>
+                <button type="button" class="modal-btn-secondary" id="btnCancelOverwrite">Niet invullen</button>
+                <button type="button" class="btn" id="btnConfirmOverwrite">Aanpassen en invullen</button>
             </div>
         </div>
     `;
 
   showModal(modalContent).then((overlay) => {
-    const cancelBtn = overlay.querySelector("#btn-cancel-overwrite");
-    const confirmBtn = overlay.querySelector("#btn-confirm-overwrite");
+    const cancelBtn = overlay.querySelector("#btnCancelOverwrite");
+    const confirmBtn = overlay.querySelector("#btnConfirmOverwrite");
 
     cancelBtn.addEventListener("click", () => {
       closeModal(overlay);

@@ -97,8 +97,8 @@ export function ensureCustomOrder() {
 }
 
 export function updateSortUI() {
-  const btn = document.getElementById("btn-sort-fillers");
-  const menu = document.getElementById("timeline-sort-menu");
+  const btn = document.getElementById("btnSortFillers");
+  const menu = document.getElementById("timelineSortMenu");
   const labelSpan = btn ? btn.querySelector(".sort-btn-text") : null;
   if (!btn || !menu) return;
 
@@ -229,8 +229,8 @@ export function applyStoredFillerSort(callbacks = {}) {
 }
 
 export function closeFillerSortMenu() {
-  const btn = document.getElementById("btn-sort-fillers");
-  const menu = document.getElementById("timeline-sort-menu");
+  const btn = document.getElementById("btnSortFillers");
+  const menu = document.getElementById("timelineSortMenu");
   if (btn) btn.classList.remove("open");
   if (menu) {
     menu.classList.remove("active");
@@ -239,8 +239,8 @@ export function closeFillerSortMenu() {
 }
 
 export function toggleFillerSortMenu() {
-  const btn = document.getElementById("btn-sort-fillers");
-  const menu = document.getElementById("timeline-sort-menu");
+  const btn = document.getElementById("btnSortFillers");
+  const menu = document.getElementById("timelineSortMenu");
   if (!btn || !menu) return;
 
   const isOpen = menu.classList.contains("active");
@@ -258,10 +258,10 @@ export function toggleFillerSortMenu() {
 export function initFillerSort(callbacks = {}) {
   boundCallbacks = { ...callbacks };
 
-  const btn = document.getElementById("btn-sort-fillers");
-  const menu = document.getElementById("timeline-sort-menu");
-  const headerName = document.getElementById("header-sort-name");
-  const headerEnd = document.getElementById("header-sort-end");
+  const btn = document.getElementById("btnSortFillers");
+  const menu = document.getElementById("timelineSortMenu");
+  const headerName = document.getElementById("headerSortName");
+  const headerEnd = document.getElementById("headerSortEnd");
 
   if (btn && !btn.__sortBound) {
     btn.__sortBound = true;

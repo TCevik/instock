@@ -260,8 +260,8 @@ async function loadTopFillers(userId, date = selectedScoreboardDate) {
     const isManager = data?.isManager ?? [2, 3].includes(currentUserRole);
 
     if (filterWrapper) {
-      filterWrapper.style.display = "flex";
-      if (!topFillersDatePicker) {
+      filterWrapper.style.display = isManager ? "flex" : "none";
+      if (isManager && !topFillersDatePicker) {
         initTopFillersDatePicker();
       }
     }
@@ -276,7 +276,10 @@ async function loadTopFillers(userId, date = selectedScoreboardDate) {
       }
     }
 
-    const topFillers = data?.topFillers || [];
+    let topFillers = data?.topFillers || [];
+    if (!isManager) {
+      topFillers = topFillers.slice(0, 10);
+    }
     cachedTopFillers = topFillers;
 
     initExportTopFillersBtn();
@@ -293,10 +296,10 @@ async function loadTopFillers(userId, date = selectedScoreboardDate) {
 
     if (headingEl) {
       if (date) {
-        headingEl.textContent = "Ranglijst";
+        headingEl.textContent = isManager && topFillers.length > 10 ? "Ranglijst" : "Top Vullers";
       } else {
         headingEl.textContent =
-          topFillers.length > 10 ? "Ranglijst Vullers" : "Top 10 Vullers";
+          isManager && topFillers.length > 10 ? "Ranglijst Vullers" : "Top 10 Vullers";
       }
     }
 
@@ -427,9 +430,28 @@ function createTopFillerCard(filler, rank, isCurrentUser, canClick) {
   const cleanUsername = username ? `@${username.replace(/^@/, "")}` : "";
 
   const avgProd = Math.round(Number(filler.average_productivity) || 0);
+  const achievedProd =
+    filler.achieved_productivity !== undefined &&
+    !isNaN(Number(filler.achieved_productivity))
+      ? Math.round(Number(filler.achieved_productivity))
+      : avgProd;
   const shiftCount = Number(filler.shifts_count) || 0;
+
+  const diff =
+    filler.trend_diff !== undefined
+      ? Number(filler.trend_diff)
+      : achievedProd - avgProd;
+  const trend =
+    filler.trend || (diff > 0 ? "up" : diff < 0 ? "down" : "neutral");
+  const statusIcon =
+    trend === "up"
+      ? "trending_up"
+      : trend === "down"
+        ? "trending_down"
+        : "trending_flat";
   const statusClass = getProductivityStatusClass(avgProd);
-  const statusIcon = getProductivityStatusIcon(avgProd);
+  const shiftLabel = selectedScoreboardDate ? "Shift" : "Laatste";
+  const badgeTooltip = `Gemiddelde: ${avgProd}% · ${shiftLabel} shift: ${achievedProd}% (${diff > 0 ? `+${diff}% vooruitgang` : diff < 0 ? `${diff}% achteruitgang` : "gelijk aan gemiddelde"})`;
   const initials =
     (parsed.title || rawFullName || "M")
       .split(" ")
@@ -464,6 +486,28 @@ function createTopFillerCard(filler, rank, isCurrentUser, canClick) {
     );
   }
 
+  const isManager = [2, 3].includes(currentUserRole);
+
+  const prodBadgeHtml = isManager
+    ? `
+        <div class="top-filler-prod-wrapper">
+            <span class="prod-badge ${statusClass} trend-${trend}" data-tooltip="${badgeTooltip}">
+                <span class="material-icons prod-trend-icon">${statusIcon}</span>
+                <span>${avgProd}%</span>
+            </span>
+            <span class="top-filler-avg-meta" data-tooltip="${shiftLabel} shift: ${achievedProd}% (${diff > 0 ? `+${diff}% vooruitgang` : diff < 0 ? `${diff}% achteruitgang` : "gelijk aan gemiddelde"})">
+                <span class="top-filler-avg-label">${shiftLabel}</span>
+                <span class="top-filler-avg-val">${achievedProd}%</span>
+                ${diff !== 0 ? `<span class="top-filler-diff ${diff > 0 ? "positive" : "negative"}">${diff > 0 ? `+${diff}%` : `${diff}%`}</span>` : ""}
+            </span>
+        </div>
+      `
+    : `
+        <span class="prod-badge ${statusClass}" data-tooltip="Gemiddelde: ${avgProd}%">
+            <span>${avgProd}%</span>
+        </span>
+      `;
+
   card.innerHTML = `
         <div class="top-filler-left">
             <div class="rank-badge${rank <= 3 ? ` rank-${rank}` : ""}">
@@ -480,10 +524,7 @@ function createTopFillerCard(filler, rank, isCurrentUser, canClick) {
                 <span class="top-filler-shifts">${shiftCount} ${shiftCount === 1 ? "shift" : "shifts"} opgeslagen</span>
             </div>
         </div>
-        <span class="prod-badge ${statusClass}">
-            <span class="material-icons">${statusIcon}</span>
-            <span>${avgProd}%</span>
-        </span>
+        ${prodBadgeHtml}
     `;
 
   if (canClick) {
@@ -1229,6 +1270,75 @@ function renderProductivityChart(entries) {
     }
   }
 
+  const activeUserId = selectedFillerUserId || currentUserId;
+  const scoreboardFiller = (cachedTopFillers || []).find(
+    (f) => f.user_id === activeUserId,
+  );
+
+  let userAverage = null;
+  let averageShiftsCount = 0;
+
+  if (scoreboardFiller && scoreboardFiller.average_productivity !== undefined) {
+    userAverage = Math.round(Number(scoreboardFiller.average_productivity));
+    averageShiftsCount =
+      Number(scoreboardFiller.recent_shifts_count) ||
+      Math.min(Number(scoreboardFiller.shifts_count) || 10, 10);
+  } else {
+    const validDesc = chronological
+      .filter((e) => e.productivity !== undefined && !isNaN(Number(e.productivity)))
+      .sort((a, b) => {
+        const timeA = (parseDate(a.date || a.finalized_at) || new Date(0)).getTime();
+        const timeB = (parseDate(b.date || b.finalized_at) || new Date(0)).getTime();
+        return timeB - timeA;
+      });
+
+    const relevantShifts = selectedScoreboardDate
+      ? validDesc.filter((e) => {
+          const dStr = (e.date || e.finalized_at || "").split("T")[0];
+          return dStr === selectedScoreboardDate;
+        })
+      : validDesc.slice(0, 10);
+
+    if (relevantShifts.length > 0) {
+      userAverage = Math.round(
+        relevantShifts.reduce((sum, e) => sum + Number(e.productivity), 0) /
+          relevantShifts.length,
+      );
+      averageShiftsCount = relevantShifts.length;
+    }
+  }
+
+  const avgBadgeEl = document.getElementById("chartAvgBadge");
+  const avgBadgeTextEl = document.getElementById("chartAvgBadgeText");
+  const trendPillEl = document.getElementById("chartTrendPill");
+  const trendPillIconEl = document.getElementById("chartTrendPillIcon");
+  const trendPillTextEl = document.getElementById("chartTrendPillText");
+
+  if (userAverage !== null) {
+    if (avgBadgeEl && avgBadgeTextEl) {
+      avgBadgeTextEl.textContent = `Gemiddelde: ${userAverage}%${averageShiftsCount > 0 ? ` (${averageShiftsCount} ${averageShiftsCount === 1 ? "shift" : "shifts"})` : ""}`;
+      avgBadgeEl.style.display = "inline-flex";
+    }
+
+    if (trendPillEl && trendPillIconEl && trendPillTextEl && dataPoints.length > 0) {
+      const latestPoint = dataPoints[dataPoints.length - 1];
+      const diff = latestPoint.percent - userAverage;
+      const isUp = diff > 0;
+      const isDown = diff < 0;
+      trendPillEl.className = `chart-trend-pill ${isUp ? "positive" : isDown ? "negative" : "neutral"}`;
+      trendPillIconEl.textContent = isUp ? "trending_up" : isDown ? "trending_down" : "trending_flat";
+      trendPillTextEl.textContent = isUp
+        ? `+${diff}% Vooruitgang`
+        : isDown
+          ? `${diff}% Achteruitgang`
+          : "Gelijk aan gemiddelde";
+      trendPillEl.style.display = "inline-flex";
+    }
+  } else {
+    if (avgBadgeEl) avgBadgeEl.style.display = "none";
+    if (trendPillEl) trendPillEl.style.display = "none";
+  }
+
   const width = Math.max(300, Math.floor(container.clientWidth || 600));
   const height = 240;
   const isMobile = width < 480;
@@ -1239,8 +1349,10 @@ function renderProductivityChart(entries) {
   const chartW = width - padLeft - padRight;
   const chartH = height - padTop - padBottom;
 
-  const rawMin = Math.min(...dataPoints.map((d) => d.percent), 100);
-  const rawMax = Math.max(...dataPoints.map((d) => d.percent), 100);
+  const allValues = dataPoints.map((d) => d.percent);
+  if (userAverage !== null) allValues.push(userAverage);
+  const rawMin = Math.min(...allValues, 100);
+  const rawMax = Math.max(...allValues, 100);
   const spread = Math.max(15, rawMax - rawMin);
   const margin = Math.ceil(spread * 0.15);
 
@@ -1255,6 +1367,7 @@ function renderProductivityChart(entries) {
   };
 
   const targetY = getY(100);
+  const avgY = userAverage !== null ? getY(userAverage) : null;
   const bottomY = getY(minVal);
 
   const coords = dataPoints.map((d, i) => ({
@@ -1284,13 +1397,22 @@ function renderProductivityChart(entries) {
     .map((c, i) => {
       const dotColor = statusColors[c.statusClass] || "var(--accent-color)";
       const labelText = c.fullDateLabel || c.dateLabel;
-      const titleText = isMonthView
+      const pointDiff = userAverage !== null ? c.percent - userAverage : null;
+      const trendText = pointDiff !== null
+        ? pointDiff > 0
+          ? ` · +${pointDiff}% vooruitgang t.o.v. gem. (${userAverage}%)`
+          : pointDiff < 0
+            ? ` · ${pointDiff}% achteruitgang t.o.v. gem. (${userAverage}%)`
+            : ` · gelijk aan gem. (${userAverage}%)`
+        : "";
+      const baseText = isMonthView
         ? `${escapeHtml(labelText)}: ${c.percent}% (${c.windowSize} ${c.windowSize === 1 ? "shift" : "shifts"}${c.colli > 0 ? `, ${c.colli.toLocaleString("nl-NL")} colli` : ""})`
         : c.windowSize > 1
           ? `${escapeHtml(c.dateLabel)}: ${c.percent}% (gemiddeld over ${c.windowSize} shifts)`
           : currentChartMode === "average"
             ? `${escapeHtml(c.dateLabel)}: ${c.percent}% (gemiddelde over ${c.windowSize} ${c.windowSize === 1 ? "shift" : "shifts"})`
             : `${escapeHtml(c.dateLabel)}: ${c.percent}%${c.colli > 0 ? ` (${c.colli.toLocaleString("nl-NL")} colli)` : ""}`;
+      const titleText = `${baseText}${trendText}`;
 
       const showDate = i % dateStep === 0 || i === coords.length - 1;
 
@@ -1330,6 +1452,15 @@ function renderProductivityChart(entries) {
                 ? `
             <line x1="${padLeft}" y1="${targetY.toFixed(1)}" x2="${width - padRight}" y2="${targetY.toFixed(1)}" stroke="var(--chart-target-line)" stroke-width="1.5" stroke-dasharray="5,4"/>
             <text x="${padLeft - 6}" y="${(targetY + 4).toFixed(1)}" text-anchor="end" fill="var(--accent-color)" font-size="10.5" font-weight="700">100%</text>
+            `
+                : ""
+            }
+
+            ${
+              userAverage !== null && minVal <= userAverage && maxVal >= userAverage && Math.abs(userAverage - 100) > 3
+                ? `
+            <line x1="${padLeft}" y1="${avgY.toFixed(1)}" x2="${width - padRight}" y2="${avgY.toFixed(1)}" stroke="var(--yellow-color)" stroke-width="1.5" stroke-dasharray="4,4" opacity="0.85"/>
+            <text x="${width - padRight}" y="${(avgY - 4).toFixed(1)}" text-anchor="end" fill="var(--yellow-color)" font-size="10" font-weight="700">Gem: ${userAverage}%</text>
             `
                 : ""
             }
@@ -1450,6 +1581,38 @@ function renderProductivityList(entries, container) {
     return;
   }
 
+  const activeUserId = selectedFillerUserId || currentUserId;
+  const scoreboardFiller = (cachedTopFillers || []).find(
+    (f) => f.user_id === activeUserId,
+  );
+
+  let userAverage = null;
+  if (scoreboardFiller && scoreboardFiller.average_productivity !== undefined) {
+    userAverage = Math.round(Number(scoreboardFiller.average_productivity));
+  } else {
+    const validDesc = (cachedProductivityEntries || [])
+      .filter((e) => e.productivity !== undefined && !isNaN(Number(e.productivity)))
+      .sort((a, b) => {
+        const timeA = (parseDate(a.date || a.finalized_at) || new Date(0)).getTime();
+        const timeB = (parseDate(b.date || b.finalized_at) || new Date(0)).getTime();
+        return timeB - timeA;
+      });
+
+    const relevant = selectedScoreboardDate
+      ? validDesc.filter((e) => {
+          const dStr = (e.date || e.finalized_at || "").split("T")[0];
+          return dStr === selectedScoreboardDate;
+        })
+      : validDesc.slice(0, 10);
+
+    if (relevant.length > 0) {
+      userAverage = Math.round(
+        relevant.reduce((sum, e) => sum + Number(e.productivity), 0) /
+          relevant.length,
+      );
+    }
+  }
+
   entries.forEach((entry, index) => {
     const card = document.createElement("div");
     card.className = "productivity-day-card";
@@ -1464,10 +1627,21 @@ function renderProductivityList(entries, container) {
       entry.productivity !== undefined
         ? Math.round(Number(entry.productivity))
         : null;
+    const diff =
+      userAverage !== null && percent !== null ? percent - userAverage : 0;
+    const trend = diff > 0 ? "up" : diff < 0 ? "down" : "neutral";
     const statusClass =
       percent !== null ? getProductivityStatusClass(percent) : "danger";
     const statusIcon =
-      percent !== null ? getProductivityStatusIcon(percent) : "trending_down";
+      percent !== null
+        ? getProductivityStatusIcon(percent, userAverage)
+        : "trending_flat";
+    const badgeTooltip =
+      percent !== null && userAverage !== null
+        ? `Behaald: ${percent}% · Gemiddelde: ${userAverage}% (${diff > 0 ? `+${diff}% vooruitgang` : diff < 0 ? `${diff}% achteruitgang` : "gelijk aan gemiddelde"})`
+        : percent !== null
+          ? `Behaald: ${percent}%`
+          : "";
 
     const shift = entry.shift || {};
     const startTime = shift.start || "";
@@ -1529,8 +1703,8 @@ function renderProductivityList(entries, container) {
                     ${
                       percent !== null
                         ? `
-                        <span class="prod-badge ${statusClass}">
-                            <span class="material-icons">${statusIcon}</span>
+                        <span class="prod-badge ${statusClass} trend-${trend}" ${badgeTooltip ? `data-tooltip="${badgeTooltip}"` : ""}>
+                            <span class="material-icons prod-trend-icon">${statusIcon}</span>
                             <span>${percent}%</span>
                         </span>
                     `
@@ -1753,8 +1927,11 @@ function initExportTopFillersBtn() {
     });
   }
 
+  const isManager = [2, 3].includes(currentUserRole);
   exportBtn.style.display =
-    cachedTopFillers && cachedTopFillers.length > 0 ? "inline-flex" : "none";
+    isManager && cachedTopFillers && cachedTopFillers.length > 0
+      ? "inline-flex"
+      : "none";
 }
 
 function initTopFillersDatePicker() {

@@ -221,7 +221,7 @@ export async function loadSavedPlanning(options = {}) {
       const parsedZoom = parseFloat(savedZoom);
       if (!isNaN(parsedZoom)) {
         planningState.zoom = parsedZoom;
-        const zoomIndicator = document.getElementById("zoom-level-indicator");
+        const zoomIndicator = document.getElementById("zoomLevelIndicator");
         if (zoomIndicator) {
           zoomIndicator.textContent = `${Math.round(planningState.zoom * 100)}%`;
         }
