@@ -491,16 +491,9 @@ async function openEditModal(userId) {
 }
 
 function updateSortIcons() {
-  const sortKeys = [
-    "name",
-    "username",
-    "role",
-    "departments",
-    "birthday",
-    "last_sign_in_at",
-  ];
-  sortKeys.forEach((key) => {
-    const icon = document.getElementById(`sortIcon_${key}`);
+  document.querySelectorAll(".th-sortable[data-sort-key]").forEach((th) => {
+    const key = th.getAttribute("data-sort-key");
+    const icon = th.querySelector(".sort-icon") || document.getElementById(`sortIcon_${key}`);
     if (!icon) return;
 
     if (currentSortKey === key) {

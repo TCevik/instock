@@ -125,16 +125,9 @@ async function fetchProductsPage() {
 }
 
 function updateSortIcons() {
-  const sortKeys = [
-    "name",
-    "ean",
-    "brand",
-    "department",
-    "price",
-    "stock_quantity",
-  ];
-  sortKeys.forEach((key) => {
-    const icon = document.getElementById(`sortIcon_${key}`);
+  document.querySelectorAll(".th-sortable[data-sort-key]").forEach((th) => {
+    const key = th.getAttribute("data-sort-key");
+    const icon = th.querySelector(".sort-icon") || document.getElementById(`sortIcon_${key}`);
     if (!icon) return;
 
     if (currentSortKey === key) {
