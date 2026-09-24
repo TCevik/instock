@@ -1325,6 +1325,7 @@ function openDetailsModal(log) {
       prodItems = newVal.items;
       prodBatchDate = newVal.date || "";
     } else if (
+      newVal.type === "add_shift" ||
       newVal.type === "update_shift" ||
       newVal.type === "delete_shift"
     ) {

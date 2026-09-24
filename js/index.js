@@ -4,6 +4,19 @@ import {
   openAccountModal,
 } from "./main.js";
 
+const dashShapes = document.querySelector(".dashboard-shapes");
+if (dashShapes) {
+  const shapes = [
+    '<rect x="3" y="3" width="18" height="18" rx="2" />',
+    '<circle cx="12" cy="12" r="9" />',
+    '<line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />',
+    '<polygon points="12 3 22 21 2 21" />'
+  ];
+  for (let i = 1; i <= 10; i++) {
+    dashShapes.insertAdjacentHTML("beforeend", `<svg class="dash-shape dash-shape-${i}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">${shapes[(i - 1) % 4]}</svg>`);
+  }
+}
+
 function escapeHtml(str) {
   if (!str) return "";
   const div = document.createElement("div");
