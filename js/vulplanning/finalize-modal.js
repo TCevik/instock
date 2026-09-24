@@ -5,6 +5,7 @@ import {
   showConfirmModal,
   escapeHtml,
   supabase,
+  invokeFn,
 } from "../main.js";
 import { planningState } from "./state.js";
 import {
@@ -194,13 +195,10 @@ export async function openFinalizeModal() {
   async function recalculateStatusesForDate(selectedDateStr) {
     let userStatuses = {};
     try {
-      const { data, error } = await supabase.functions.invoke(
-        "manage-productivity",
-        {
-          body: { action: "get_date_status", date: selectedDateStr },
-        },
-      );
-      if (!error && data?.userStatuses) {
+      const data = await invokeFn("manage-productivity", {
+        body: { action: "get_date_status", date: selectedDateStr },
+      });
+      if (data?.userStatuses) {
         userStatuses = data.userStatuses;
       }
     } catch (_) {}
@@ -536,31 +534,12 @@ export async function openFinalizeModal() {
           };
         });
 
-        const { data, error } = await supabase.functions.invoke(
-          "manage-productivity",
-          {
-            body: {
-              action: "finalize_productivity",
-              records,
-            },
+        const data = await invokeFn("manage-productivity", {
+          body: {
+            action: "finalize_productivity",
+            records,
           },
-        );
-
-        if (error) {
-          let errMsg =
-            error.message || "Fout bij finaliseren van productiviteiten";
-          if (error.context && typeof error.context.json === "function") {
-            try {
-              const errBody = await error.context.json();
-              if (errBody && errBody.error) errMsg = errBody.error;
-            } catch (_) {}
-          }
-          throw new Error(errMsg);
-        }
-
-        if (data && data.error) {
-          throw new Error(data.error);
-        }
+        });
 
         const finalizedCount = data?.finalizedCount || records.length;
         showToast(

@@ -10,6 +10,10 @@ import {
   calculateTaskDuration,
   calculateShiftTotalColli,
 } from "./vulplanning/time-utils.js";
+import {
+  calculatePagination,
+  updatePaginationControls,
+} from "./pagination-utils.js";
 
 function escapeHtml(str) {
   if (!str) return "";
@@ -1184,13 +1188,14 @@ function renderTable() {
 
   if (!tbody) return;
 
-  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
-
-  if (currentPage > totalPages) currentPage = totalPages;
-  if (currentPage < 1) currentPage = 1;
-
-  const startIndex = (currentPage - 1) * PAGE_SIZE;
-  const endIndex = Math.min(startIndex + currentLogs.length, totalCount);
+  const pagination = calculatePagination(
+    totalCount,
+    PAGE_SIZE,
+    currentPage,
+    currentLogs.length
+  );
+  currentPage = pagination.currentPage;
+  const { totalPages, startIndex, endIndex } = pagination;
 
   if (currentLogs.length === 0) {
     tbody.innerHTML = `
@@ -1304,20 +1309,18 @@ function renderTable() {
     }
   }
 
-  if (paginationInfo) {
-    if (totalCount === 0) {
-      paginationInfo.textContent = "0 logs";
-    } else {
-      paginationInfo.textContent = `${startIndex + 1}-${endIndex} van ${totalCount} logs`;
-    }
-  }
-
-  if (paginationCurrent) {
-    paginationCurrent.textContent = `Pagina ${currentPage} van ${totalPages}`;
-  }
-
-  if (prevBtn) prevBtn.disabled = currentPage <= 1;
-  if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+  updatePaginationControls({
+    prevBtn,
+    nextBtn,
+    currentPage,
+    totalPages,
+    currentEl: paginationCurrent,
+    infoEl: paginationInfo,
+    totalItems: totalCount,
+    startIndex,
+    endIndex,
+    itemLabel: "logs",
+  });
 }
 
 function openDetailsModal(log) {
@@ -1886,8 +1889,8 @@ if (prevPageBtn) {
 const nextPageBtn = document.getElementById("nextPageBtn");
 if (nextPageBtn) {
   nextPageBtn.addEventListener("click", () => {
-    const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-    if (currentPage < totalPages) {
+    const { hasNextPage } = calculatePagination(totalCount, PAGE_SIZE, currentPage);
+    if (hasNextPage) {
       currentPage++;
       fetchLogsPage();
     }

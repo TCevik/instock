@@ -5,9 +5,14 @@ import {
   showConfirmModal,
   showToast,
   renderTableSkeletons,
+  invokeFn,
 } from "./main.js";
 import { createDatePicker } from "./datepicker.js";
 import { createCustomSelect } from "./select.js";
+import {
+  calculatePagination,
+  updatePaginationControls,
+} from "./pagination-utils.js";
 
 function escapeHtml(str) {
   if (!str) return "";
@@ -75,32 +80,9 @@ async function initDepartmentFilter() {
 }
 
 async function invokeProductManagement(action, payload) {
-  const { data, error } = await supabase.functions.invoke("manage-product", {
+  return await invokeFn("manage-product", {
     body: { action, ...payload },
   });
-
-  if (error) {
-    let msg = error.message || "Er is een fout opgetreden";
-    if (error.context && typeof error.context.json === "function") {
-      try {
-        const body = await error.context.json();
-        if (body && body.error) msg = body.error;
-      } catch (_) {}
-    } else if (error.context && typeof error.context.text === "function") {
-      try {
-        const text = await error.context.text();
-        const parsed = JSON.parse(text);
-        if (parsed && parsed.error) msg = parsed.error;
-      } catch (_) {}
-    }
-    throw new Error(msg);
-  }
-
-  if (data && data.error) {
-    throw new Error(data.error);
-  }
-
-  return data;
 }
 
 async function fetchProductsPage() {
@@ -175,13 +157,14 @@ function renderTable() {
 
   if (!tbody) return;
 
-  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
-
-  if (currentPage > totalPages) currentPage = totalPages;
-  if (currentPage < 1) currentPage = 1;
-
-  const startIndex = (currentPage - 1) * PAGE_SIZE;
-  const endIndex = Math.min(startIndex + currentProducts.length, totalCount);
+  const pagination = calculatePagination(
+    totalCount,
+    PAGE_SIZE,
+    currentPage,
+    currentProducts.length
+  );
+  currentPage = pagination.currentPage;
+  const { totalPages, startIndex, endIndex } = pagination;
 
   if (currentProducts.length === 0) {
     tbody.innerHTML = `
@@ -279,20 +262,18 @@ function renderTable() {
     }
   }
 
-  if (paginationInfo) {
-    if (totalCount === 0) {
-      paginationInfo.textContent = "0 producten";
-    } else {
-      paginationInfo.textContent = `${startIndex + 1}-${endIndex} van ${totalCount} producten`;
-    }
-  }
-
-  if (paginationCurrent) {
-    paginationCurrent.textContent = `Pagina ${currentPage} van ${totalPages}`;
-  }
-
-  if (prevBtn) prevBtn.disabled = currentPage <= 1;
-  if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+  updatePaginationControls({
+    prevBtn,
+    nextBtn,
+    currentPage,
+    totalPages,
+    currentEl: paginationCurrent,
+    infoEl: paginationInfo,
+    totalItems: totalCount,
+    startIndex,
+    endIndex,
+    itemLabel: "producten",
+  });
 }
 
 async function openCreateModal() {
@@ -815,8 +796,8 @@ if (prevPageBtn) {
 const nextPageBtn = document.getElementById("nextPageBtn");
 if (nextPageBtn) {
   nextPageBtn.addEventListener("click", () => {
-    const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-    if (currentPage < totalPages) {
+    const { hasNextPage } = calculatePagination(totalCount, PAGE_SIZE, currentPage);
+    if (hasNextPage) {
       currentPage++;
       fetchProductsPage();
     }

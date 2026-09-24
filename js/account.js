@@ -6,6 +6,7 @@ import {
   showPasswordPromptModal,
   escapeHtml,
   logout,
+  invokeFn,
 } from "./main.js";
 
 const ROLE_MAP = {
@@ -82,15 +83,12 @@ function initPasswordValidation() {
     const valConf = confPass?.value || "";
     const valOld = oldPass?.value || "";
 
-    // 1. Min length 8
     const isMinLength = valNew.length >= 8;
     setReqState(reqMinLength, isMinLength);
 
-    // 2. Passwords match
     const isMatch = valNew.length > 0 && valNew === valConf;
     setReqState(reqMatch, isMatch);
 
-    // 3. Different from old
     const isDiff = valNew.length > 0 && valOld.length > 0 && valNew !== valOld;
     setReqState(reqDiff, isDiff);
   }
@@ -154,36 +152,9 @@ function initPasswordForm() {
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke(
-        "update-password",
-        {
-          body: { oldPassword, newPassword },
-        },
-      );
-
-      if (error) {
-        let msg = error.message || "Fout bij wijzigen van wachtwoord";
-        if (error.context && typeof error.context.json === "function") {
-          try {
-            const body = await error.context.json();
-            if (body && body.error) msg = body.error;
-          } catch (_) {}
-        } else if (
-          error.context &&
-          typeof error.context.text === "function"
-        ) {
-          try {
-            const text = await error.context.text();
-            const parsed = JSON.parse(text);
-            if (parsed && parsed.error) msg = parsed.error;
-          } catch (_) {}
-        }
-        throw new Error(msg);
-      }
-
-      if (data && data.error) {
-        throw new Error(data.error);
-      }
+      const data = await invokeFn("update-password", {
+        body: { oldPassword, newPassword },
+      });
 
       const { data: sessionData } = await supabase.auth.getSession();
       if (sessionData?.session?.user?.email) {
@@ -228,7 +199,6 @@ async function loadUserData() {
   const displayName = fullName || username || "Gebruiker";
   const roleName = ROLE_MAP[user.role] || `Rol ${user.role || 1}`;
 
-  // Fetch store_data details (name, store_code, store_id)
   let storeName = "-";
   let storeCode = "-";
   let storeId = user.store_id || "-";
@@ -249,7 +219,6 @@ async function loadUserData() {
     } catch (_) {}
   }
 
-  // Header & Avatar
   const nameEl = document.getElementById("userProfileName");
   const handleEl = document.getElementById("userProfileHandle");
   const roleTextEl = document.getElementById("userRoleText");
@@ -540,7 +509,6 @@ async function loadSessions() {
     const { data: sessionData } = await supabase.auth.getSession();
     const currentToken = sessionData?.session?.access_token;
     
-    // Attempt to extract current session ID from JWT to highlight it
     let currentSessionId = null;
     if (currentToken) {
       try {
@@ -552,13 +520,9 @@ async function loadSessions() {
       } catch (e) {}
     }
 
-    const { data, error } = await supabase.functions.invoke("manage-sessions", {
+    const data = await invokeFn("manage-sessions", {
       body: { action: "list", current_session_id: currentSessionId }
     });
-
-    if (error) {
-      throw new Error(error.message || "Fout bij ophalen van sessies");
-    }
 
     const sessions = data.sessions || [];
     
@@ -645,19 +609,9 @@ async function loadSessions() {
         btn.innerHTML = `<span class="material-icons" style="font-size: 18px;">hourglass_empty</span>`;
 
         try {
-          const { error: delErr } = await supabase.functions.invoke("manage-sessions", {
+          await invokeFn("manage-sessions", {
             body: { action: "delete", session_id: sessId }
           });
-
-          if (delErr) {
-             let msg = delErr.message;
-             try {
-                const text = await delErr.context?.text();
-                const json = JSON.parse(text);
-                if (json.error) msg = json.error;
-             } catch(e) {}
-             throw new Error(msg || "Fout bij uitloggen van sessie");
-          }
 
           showToast("notification", "Sessie succesvol uitgelogd");
           await loadSessions();

@@ -1,7 +1,3 @@
-/* ==========================================================================
-   Accountbeheer Styles - Matching InStock Site Design
-   ========================================================================== */
-
 .account-dashboard {
   display: flex;
   flex-direction: column;
@@ -10,9 +6,6 @@
   margin: 0 auto;
 }
 
-/* --------------------------------------------------------------------------
-   Profile Hero Banner (Top Section)
-   -------------------------------------------------------------------------- */
 .dashboard-hero.profile-hero {
   background-color: var(--card-background);
   border: 1px solid var(--card-border);
@@ -202,9 +195,6 @@
   }
 }
 
-/* --------------------------------------------------------------------------
-   Account Grid Layout (2 Equal Symmetrical Columns)
-   -------------------------------------------------------------------------- */
 .account-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -212,9 +202,6 @@
   align-items: stretch;
 }
 
-/* --------------------------------------------------------------------------
-   InStock Account Cards
-   -------------------------------------------------------------------------- */
 .account-card {
   background-color: var(--card-background);
   border: 1px solid var(--card-border);
@@ -287,9 +274,6 @@
   margin: 0;
 }
 
-/* --------------------------------------------------------------------------
-   Passkeys List & Item Styles (Matching InStock Passkeys)
-   -------------------------------------------------------------------------- */
 .passkeys-container {
   display: flex;
   flex-direction: column;
@@ -360,7 +344,6 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* Scrollbar styling */
 .passkeys-list-group::-webkit-scrollbar {
   width: 6px;
 }
@@ -468,9 +451,6 @@
   font-size: 18px;
 }
 
-/* --------------------------------------------------------------------------
-   Password Change Form & Requirements
-   -------------------------------------------------------------------------- */
 .account-form {
   display: flex;
   flex-direction: column;
@@ -561,9 +541,6 @@
   padding-top: 8px;
 }
 
-/* --------------------------------------------------------------------------
-   Empty State (Matching InStock Empty States)
-   -------------------------------------------------------------------------- */
 .empty-passkeys-state {
   padding: 28px 20px;
   text-align: center;
@@ -594,9 +571,6 @@
   color: var(--text-color-muted);
 }
 
-/* --------------------------------------------------------------------------
-   Responsive Mobile Adjustments
-   -------------------------------------------------------------------------- */
 @media (max-width: 900px) {
   .account-grid {
     grid-template-columns: 1fr;

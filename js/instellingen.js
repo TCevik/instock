@@ -5,6 +5,7 @@ import {
   closeModal,
   showConfirmModal,
   getStorePaths,
+  invokeFn,
 } from "./main.js";
 
 function escapeHtml(str) {
@@ -544,30 +545,12 @@ async function saveStorePaths() {
   const collected = collectCleanPaths();
 
   try {
-    const { data, error } = await supabase.functions.invoke(
-      "manage-store-settings",
-      {
-        body: {
-          action: "update_paths",
-          default_paths: collected,
-        },
+    const data = await invokeFn("manage-store-settings", {
+      body: {
+        action: "update_paths",
+        default_paths: collected,
       },
-    );
-
-    if (error) {
-      let msg = error.message || "Fout bij opslaan van instellingen";
-      if (error.context && typeof error.context.json === "function") {
-        try {
-          const b = await error.context.json();
-          if (b && b.error) msg = b.error;
-        } catch (_) {}
-      }
-      throw new Error(msg);
-    }
-
-    if (data && data.error) {
-      throw new Error(data.error);
-    }
+    });
 
     showToast(
       "notification",

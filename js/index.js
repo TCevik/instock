@@ -17,10 +17,7 @@ async function initDashboard() {
   const accountBtn = document.getElementById("dashboardAccountBtn");
 
   if (accountBtn && window.innerWidth > 768) {
-    accountBtn.addEventListener("click", (e) => {
-      // Optional: on desktop, user can also open modal directly if preferred or navigate
-      // but standard link navigation to account.html works seamlessly.
-    });
+    accountBtn.addEventListener("click", (e) => {});
   }
 
   const user = await getCurrentUser();

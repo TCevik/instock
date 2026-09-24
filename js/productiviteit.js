@@ -25,6 +25,10 @@ import {
 import { createTimePicker } from "./timepicker.js";
 import { showModal, closeModal, showConfirmModal } from "./modal.js";
 import { exportTopFillersA4 } from "./productiviteit-export.js";
+import {
+  calculatePagination,
+  updatePaginationControls,
+} from "./pagination-utils.js";
 
 let availableUsers = [];
 let storeUsersPromise = null;
@@ -1847,13 +1851,13 @@ function renderPaginatedProductivityList() {
 
   const filteredEntries = getFilteredShiftEntries();
   const totalCount = filteredEntries.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / SHIFTS_PER_PAGE));
-
-  if (currentShiftPage > totalPages) currentShiftPage = totalPages;
-  if (currentShiftPage < 1) currentShiftPage = 1;
-
-  const startIndex = (currentShiftPage - 1) * SHIFTS_PER_PAGE;
-  const endIndex = Math.min(startIndex + SHIFTS_PER_PAGE, totalCount);
+  const pagination = calculatePagination(
+    totalCount,
+    SHIFTS_PER_PAGE,
+    currentShiftPage
+  );
+  currentShiftPage = pagination.currentPage;
+  const { totalPages, startIndex, endIndex } = pagination;
   const pageEntries = filteredEntries.slice(startIndex, endIndex);
 
   renderProductivityList(pageEntries, listEl);
@@ -1862,20 +1866,18 @@ function renderPaginatedProductivityList() {
     paginationEl.style.display = totalCount > SHIFTS_PER_PAGE ? "flex" : "none";
   }
 
-  if (infoEl) {
-    if (totalCount === 0) {
-      infoEl.textContent = "0 shifts";
-    } else {
-      infoEl.textContent = `${startIndex + 1}-${endIndex} van ${totalCount} shifts`;
-    }
-  }
-
-  if (currentEl) {
-    currentEl.textContent = `Pagina ${currentShiftPage} van ${totalPages}`;
-  }
-
-  if (prevBtn) prevBtn.disabled = currentShiftPage <= 1;
-  if (nextBtn) nextBtn.disabled = currentShiftPage >= totalPages;
+  updatePaginationControls({
+    prevBtn,
+    nextBtn,
+    currentPage: currentShiftPage,
+    totalPages,
+    currentEl,
+    infoEl,
+    totalItems: totalCount,
+    startIndex,
+    endIndex,
+    itemLabel: "shifts",
+  });
 }
 
 function bindDateFilter(containerId, clearBtnId, onSelect, onClear) {
@@ -1997,8 +1999,12 @@ function initPaginationControls() {
   if (nextBtn) {
     nextBtn.addEventListener("click", () => {
       const filteredEntries = getFilteredShiftEntries();
-      const totalPages = Math.ceil(filteredEntries.length / SHIFTS_PER_PAGE);
-      if (currentShiftPage < totalPages) {
+      const { hasNextPage } = calculatePagination(
+        filteredEntries.length,
+        SHIFTS_PER_PAGE,
+        currentShiftPage
+      );
+      if (hasNextPage) {
         currentShiftPage++;
         renderPaginatedProductivityList();
         document

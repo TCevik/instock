@@ -1,14 +1,5 @@
 import { escapeHtml } from "./main.js";
 
-/**
- * Exporteert de Top 10 productiviteit naar een feestelijk gedecoreerd A4-document (print & PDF).
- * - Plek 1, 2 en 3 krijgen vol podium met trofeeën, medailles en voetstukken.
- * - Plek 4 en 5 krijgen speciale ererol-kaarten met lintjes en sterren.
- * - Plek 6 t/m 10 staan netjes onder elkaar in een compacte lijst.
- * - Past precies op 1 A4 portrait.
- * @param {Array} topFillers - Lijst met vullers
- * @param {Object} options - Optionele configuratie (bijv. date, title, subtitle)
- */
 export function exportTopFillersA4(topFillers, options = {}) {
   if (!Array.isArray(topFillers) || topFillers.length === 0) {
     throw new Error(
@@ -26,13 +17,12 @@ export function exportTopFillersA4(topFillers, options = {}) {
     year: "numeric",
   }).format(new Date());
 
-  // Verdeel over categorieën
   const first = fillers[0] || null;
   const second = fillers[1] || null;
   const third = fillers[2] || null;
   const fourth = fillers[3] || null;
   const fifth = fillers[4] || null;
-  const remainingOthers = fillers.slice(5); // 6 t/m 10
+  const remainingOthers = fillers.slice(5);
 
   let iframe = document.getElementById("printTopFillersIframe");
   if (!iframe) {
@@ -208,7 +198,6 @@ export function exportTopFillersA4(topFillers, options = {}) {
             overflow: hidden;
         }
 
-        /* Feestelijke achtergrondaccenten */
         .page-bg-accent {
             position: absolute;
             inset: 0;
@@ -239,7 +228,6 @@ export function exportTopFillersA4(topFillers, options = {}) {
             z-index: 10;
         }
 
-        /* HEADER */
         .poster-header {
             position: relative;
             z-index: 1;
@@ -295,7 +283,6 @@ export function exportTopFillersA4(topFillers, options = {}) {
             margin-top: 1px;
         }
 
-        /* PODIUM (TOP 3) */
         .podium-section {
             position: relative;
             z-index: 1;
@@ -577,7 +564,6 @@ export function exportTopFillersA4(topFillers, options = {}) {
             border-top: 2px solid #fdba74;
         }
 
-        /* PLEK 4 EN 5 (EXTRA ROEM) */
         .honorable-section {
             position: relative;
             z-index: 1;
@@ -738,7 +724,6 @@ export function exportTopFillersA4(topFillers, options = {}) {
             opacity: 0.9;
         }
 
-        /* PLEK 6 T/M 10 (GEWOON ONDER ELKAAR) */
         .remaining-section {
             position: relative;
             z-index: 1;
@@ -831,7 +816,6 @@ export function exportTopFillersA4(topFillers, options = {}) {
             flex-shrink: 0;
         }
 
-        /* FOOTER */
         .poster-footer {
             position: relative;
             z-index: 1;
@@ -881,7 +865,6 @@ export function exportTopFillersA4(topFillers, options = {}) {
         <div class="page-bg-accent"></div>
         <div class="corner-ribbon">⭐ TOP 10 ⭐</div>
 
-        <!-- HEADER -->
         <header class="poster-header">
             <div class="instock-badge">⚡ InStock Productiviteit</div>
             <h1 class="poster-title">
@@ -893,7 +876,6 @@ export function exportTopFillersA4(topFillers, options = {}) {
             <p class="poster-meta">Geëxporteerd op ${generationDate}</p>
         </header>
 
-        <!-- PODIUM TOP 3 -->
         <section class="podium-section">
             <div class="section-label">🌟 Het Ere-Podium 🌟</div>
             <div class="podium-container">
@@ -903,7 +885,6 @@ export function exportTopFillersA4(topFillers, options = {}) {
             </div>
         </section>
 
-        <!-- PLEK 4 EN 5 MET EXTRA ROEM -->
         ${
           fourth || fifth
             ? `
@@ -918,7 +899,6 @@ export function exportTopFillersA4(topFillers, options = {}) {
             : ""
         }
 
-        <!-- PLEK 6 T/M 10 GEWOON ONDER ELKAAR -->
         <section class="remaining-section">
             <div class="section-label">
                 <span>Ranglijst Plek 6 t/m 10</span>
@@ -937,7 +917,6 @@ export function exportTopFillersA4(topFillers, options = {}) {
             </div>
         </section>
 
-        <!-- FOOTER -->
         <footer class="poster-footer">
             <div class="footer-quote">
                 <span>🚀</span>

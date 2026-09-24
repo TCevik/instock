@@ -5,6 +5,7 @@ import {
   closeModal,
   getStorePaths,
   escapeHtml,
+  invokeFn,
 } from "../main.js";
 import {
   openColliImportModal,
@@ -182,30 +183,12 @@ export function fillColliValues(colliMap) {
 
 async function saveHardcodedPathsToStore() {
   const defaultStructure = getHardcodedPathsStructure();
-  const { data, error } = await supabase.functions.invoke(
-    "manage-store-settings",
-    {
-      body: {
-        action: "update_paths",
-        default_paths: defaultStructure,
-      },
+  await invokeFn("manage-store-settings", {
+    body: {
+      action: "update_paths",
+      default_paths: defaultStructure,
     },
-  );
-
-  if (error) {
-    let msg = error.message || "Fout bij opslaan van instellingen";
-    if (error.context && typeof error.context.json === "function") {
-      try {
-        const b = await error.context.json();
-        if (b && b.error) msg = b.error;
-      } catch (_) {}
-    }
-    throw new Error(msg);
-  }
-
-  if (data && data.error) {
-    throw new Error(data.error);
-  }
+  });
 
   loadedPaths = defaultStructure;
   renderColliTable(loadedPaths);

@@ -60,8 +60,6 @@ function focusModalMainButton(overlay) {
       (typeof window.matchMedia === "function" &&
         window.matchMedia("(max-width: 768px)").matches));
   if (isMobile) {
-    // Op mobiel / bottom sheet niet automatisch de footer button focussen
-    // zodat de modal/bottom sheet altijd netjes bovenaan begint.
     return;
   }
   const mainBtn = getMainModalButton(overlay);

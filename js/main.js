@@ -16,12 +16,10 @@ const LAST_ACTIVITY_KEY = "instock_last_activity";
 let inactivityWarningShown = false;
 let inactivityModalOverlay = null;
 
-// Global interceptor for 401 Unauthorized responses
 const originalFetch = window.fetch;
 window.fetch = async (...args) => {
   const response = await originalFetch(...args);
   if (response.status === 401 && !window.isLoggingOut && !isLoginPage()) {
-    // Treat any 401 (Unauthorized / invalid token) outside the login page as a session expiration
     logout();
   }
   return response;
@@ -129,19 +127,15 @@ function initInactivityTracker() {
 
   setInterval(checkInactivity, 5000);
 
-  // Active session heartbeat: Check every 5 seconds if the session was revoked
   setInterval(async () => {
     if (isLoginPage() || window.isLoggingOut) return;
     
     try {
-      // getSession only checks local storage
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      // Ask the database if this session still actually exists in auth.sessions
       const { data: isSessionValid, error } = await supabase.rpc("check_session_status");
       
-      // If error (like 401) or it explicitly returns false, log out instantly
       if (error || isSessionValid === false) {
         if (!window.isLoggingOut) {
           logout();
@@ -460,7 +454,6 @@ async function openAccountModal(initialTab = "passkeys") {
             </button>
         </div>
 
-        <!-- TAB 1: PASSKEYS -->
         <div id="modalPanelPasskeys" style="display: ${initialTab === "passkeys" ? "flex" : "none"}; flex-direction: column; gap: 14px;">
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--input-background); border: 1px solid var(--card-border); border-radius: 12px; padding: 12px 14px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
@@ -488,7 +481,6 @@ async function openAccountModal(initialTab = "passkeys") {
             </div>
         </div>
 
-        <!-- TAB 2: WACHTWOORD -->
         <div id="modalPanelPassword" style="display: ${initialTab === "password" ? "flex" : "none"}; flex-direction: column; gap: 12px;">
             <form class="modal-form" id="modalChangePasswordForm">
                 <div class="form-group">
@@ -521,7 +513,6 @@ async function openAccountModal(initialTab = "passkeys") {
     closeBtn.addEventListener("click", closeModal);
   }
 
-  // Tab switching
   const tabBtnPasskeys = document.getElementById("modalTabBtnPasskeys");
   const tabBtnPassword = document.getElementById("modalTabBtnPassword");
   const panelPasskeys = document.getElementById("modalPanelPasskeys");
@@ -550,7 +541,6 @@ async function openAccountModal(initialTab = "passkeys") {
   if (tabBtnPasskeys) tabBtnPasskeys.addEventListener("click", () => switchTab("passkeys"));
   if (tabBtnPassword) tabBtnPassword.addEventListener("click", () => switchTab("password"));
 
-  // Passkey loading
   async function loadPasskeys() {
     const container = document.getElementById("passkeyListContainer");
     if (!container) return;
@@ -676,7 +666,6 @@ async function openAccountModal(initialTab = "passkeys") {
     }
   }
 
-  // Passkey Add
   const addBtn = document.getElementById("modalAddPasskeyBtn");
   if (addBtn) {
     addBtn.addEventListener("click", async () => {
@@ -736,7 +725,6 @@ async function openAccountModal(initialTab = "passkeys") {
     });
   }
 
-  // Change Password Form in modal
   const form = document.getElementById("modalChangePasswordForm");
   if (form) {
     form.addEventListener("submit", async (e) => {
@@ -772,36 +760,9 @@ async function openAccountModal(initialTab = "passkeys") {
       }
 
       try {
-        const { data, error } = await supabase.functions.invoke(
-          "update-password",
-          {
-            body: { oldPassword, newPassword },
-          },
-        );
-
-        if (error) {
-          let msg = error.message || "Fout bij wijzigen van wachtwoord";
-          if (error.context && typeof error.context.json === "function") {
-            try {
-              const body = await error.context.json();
-              if (body && body.error) msg = body.error;
-            } catch (_) {}
-          } else if (
-            error.context &&
-            typeof error.context.text === "function"
-          ) {
-            try {
-              const text = await error.context.text();
-              const parsed = JSON.parse(text);
-              if (parsed && parsed.error) msg = parsed.error;
-            } catch (_) {}
-          }
-          throw new Error(msg);
-        }
-
-        if (data && data.error) {
-          throw new Error(data.error);
-        }
+        const data = await invokeFn("update-password", {
+          body: { oldPassword, newPassword },
+        });
 
         const { data: sessionData } = await supabase.auth.getSession();
         if (sessionData?.session?.user?.email) {
@@ -885,7 +846,6 @@ const observer = new MutationObserver((mutations) => {
 
 observer.observe(document.documentElement, { childList: true, subtree: true });
 
-// Global network status tracking
 window.addEventListener("offline", () => {
   showToast("error", "Netwerkverbinding verbroken. Opnieuw verbinden...");
 });
