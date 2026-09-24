@@ -1278,20 +1278,20 @@ function renderProductivityChart(entries) {
   let userAverage = null;
   let averageShiftsCount = 0;
 
+  const validDesc = chronological
+    .filter((e) => e.productivity !== undefined && !isNaN(Number(e.productivity)))
+    .sort((a, b) => {
+      const timeA = (parseDate(a.date || a.finalized_at) || new Date(0)).getTime();
+      const timeB = (parseDate(b.date || b.finalized_at) || new Date(0)).getTime();
+      return timeB - timeA;
+    });
+
   if (scoreboardFiller && scoreboardFiller.average_productivity !== undefined) {
     userAverage = Math.round(Number(scoreboardFiller.average_productivity));
     averageShiftsCount =
       Number(scoreboardFiller.recent_shifts_count) ||
       Math.min(Number(scoreboardFiller.shifts_count) || 10, 10);
   } else {
-    const validDesc = chronological
-      .filter((e) => e.productivity !== undefined && !isNaN(Number(e.productivity)))
-      .sort((a, b) => {
-        const timeA = (parseDate(a.date || a.finalized_at) || new Date(0)).getTime();
-        const timeB = (parseDate(b.date || b.finalized_at) || new Date(0)).getTime();
-        return timeB - timeA;
-      });
-
     const relevantShifts = selectedScoreboardDate
       ? validDesc.filter((e) => {
           const dStr = (e.date || e.finalized_at || "").split("T")[0];
@@ -1308,6 +1308,18 @@ function renderProductivityChart(entries) {
     }
   }
 
+  const latestIndividualShift = validDesc.length > 0 ? validDesc[0] : null;
+  const latestIndividualProd =
+    scoreboardFiller &&
+    scoreboardFiller.achieved_productivity !== undefined &&
+    !isNaN(Number(scoreboardFiller.achieved_productivity))
+      ? Math.round(Number(scoreboardFiller.achieved_productivity))
+      : latestIndividualShift !== null
+        ? Math.round(Number(latestIndividualShift.productivity))
+        : dataPoints.length > 0 && dataPoints[dataPoints.length - 1].rawPercent !== undefined
+          ? dataPoints[dataPoints.length - 1].rawPercent
+          : null;
+
   const avgBadgeEl = document.getElementById("chartAvgBadge");
   const avgBadgeTextEl = document.getElementById("chartAvgBadgeText");
   const trendPillEl = document.getElementById("chartTrendPill");
@@ -1320,9 +1332,15 @@ function renderProductivityChart(entries) {
       avgBadgeEl.style.display = "inline-flex";
     }
 
-    if (trendPillEl && trendPillIconEl && trendPillTextEl && dataPoints.length > 0) {
-      const latestPoint = dataPoints[dataPoints.length - 1];
-      const diff = latestPoint.percent - userAverage;
+    if (trendPillEl && trendPillIconEl && trendPillTextEl && (latestIndividualProd !== null || dataPoints.length > 0)) {
+      const diff =
+        scoreboardFiller &&
+        scoreboardFiller.trend_diff !== undefined &&
+        !isNaN(Number(scoreboardFiller.trend_diff))
+          ? Number(scoreboardFiller.trend_diff)
+          : latestIndividualProd !== null
+            ? latestIndividualProd - userAverage
+            : (dataPoints[dataPoints.length - 1].rawPercent ?? dataPoints[dataPoints.length - 1].percent) - userAverage;
       const isUp = diff > 0;
       const isDown = diff < 0;
       trendPillEl.className = `chart-trend-pill ${isUp ? "positive" : isDown ? "negative" : "neutral"}`;
@@ -1332,6 +1350,14 @@ function renderProductivityChart(entries) {
         : isDown
           ? `${diff}% Achteruitgang`
           : "Gelijk aan gemiddelde";
+      if (latestIndividualProd !== null) {
+        trendPillEl.setAttribute(
+          "data-tooltip",
+          `Laatste shift: ${latestIndividualProd}% · Gemiddelde: ${userAverage}% (${diff > 0 ? `+${diff}% vooruitgang` : diff < 0 ? `${diff}% achteruitgang` : "gelijk aan gemiddelde"})`,
+        );
+      } else {
+        trendPillEl.removeAttribute("data-tooltip");
+      }
       trendPillEl.style.display = "inline-flex";
     }
   } else {
