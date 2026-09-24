@@ -1,5 +1,6 @@
 import {
   supabase,
+  getCurrentUser,
   showModal,
   closeModal,
   showConfirmModal,
@@ -440,18 +441,9 @@ let currentUserRole = 1;
 
 async function checkUserRole() {
   try {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (session?.user) {
-      const { data } = await supabase
-        .from("user_data")
-        .select("role")
-        .eq("user_id", session.user.id)
-        .maybeSingle();
-      if (data?.role) {
-        currentUserRole = Number(data.role) || 1;
-      }
+    const user = await getCurrentUser();
+    if (user?.role) {
+      currentUserRole = Number(user.role) || 1;
     }
   } catch (_) {}
 

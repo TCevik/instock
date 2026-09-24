@@ -210,7 +210,7 @@ async function getCurrentUser() {
 
   const { data, error } = await supabase
     .from("user_data")
-    .select("full_name, username, store_id, role, birthday")
+    .select("user_id, full_name, username, store_id, role, birthday")
     .eq("user_id", session.user.id)
     .maybeSingle();
 

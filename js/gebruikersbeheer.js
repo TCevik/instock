@@ -1,5 +1,6 @@
 import {
   supabase,
+  getCurrentUser,
   showModal,
   closeModal,
   showConfirmModal,
@@ -520,18 +521,9 @@ function getDbSortColumn(sortKey) {
 
 async function loadUsers() {
   try {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (session?.user) {
-      const { data: ownData } = await supabase
-        .from("user_data")
-        .select("role")
-        .eq("user_id", session.user.id)
-        .maybeSingle();
-      if (ownData?.role) {
-        currentUserRole = Number(ownData.role) || 1;
-      }
+    const user = await getCurrentUser();
+    if (user?.role) {
+      currentUserRole = Number(user.role) || 1;
     }
   } catch (_) {}
 

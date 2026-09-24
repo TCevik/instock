@@ -1,5 +1,6 @@
 import {
   supabase,
+  getCurrentUser,
   showToast,
   escapeHtml,
   invokeFn,
@@ -161,41 +162,18 @@ async function initProductivityPage() {
   const overviewRow = document.getElementById("productivityOverviewRow");
 
   try {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session?.user) {
+    const userData = await getCurrentUser();
+    if (!userData) {
       logout();
       return;
     }
 
-    currentUserId = session.user.id;
-
-    const { data: userData, error } = await supabase
-      .from("user_data")
-      .select("user_id, username, full_name, role")
-      .eq("user_id", session.user.id)
-      .maybeSingle();
-
-    if (error) {
-      const errStr = String(error?.message || "").toLowerCase();
-      if (
-        error.status === 401 ||
-        errStr.includes("401") ||
-        errStr.includes("unauthorized") ||
-        errStr.includes("jwt")
-      ) {
-        logout();
-        return;
-      }
-      throw error;
-    }
-
-    currentUserRole = Number(userData?.role) || 1;
+    currentUserId = userData.user_id;
+    currentUserRole = Number(userData.role) || 1;
     ownUserData = userData;
     updateAddShiftBtnVisibility();
 
-    const topData = await loadTopFillers(session.user.id);
+    const topData = await loadTopFillers(userData.user_id);
     if (topData?.currentUserProductivity) {
       ownUserData = topData.currentUserProductivity;
     }
