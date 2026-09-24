@@ -25,8 +25,6 @@ export function keepInViewport(dropdown, anchor = null) {
   dropdown.style.right = "auto";
   dropdown.style.bottom = "auto";
   dropdown.style.transform = "none";
-  dropdown.style.maxHeight = "none";
-  dropdown.style.maxWidth = "none";
 
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
@@ -34,14 +32,10 @@ export function keepInViewport(dropdown, anchor = null) {
 
   const anchorRect = anchorEl.getBoundingClientRect();
   
-  const originalDisplay = dropdown.style.display;
-  dropdown.style.display = 'flex';
-  
   // Ensure dropdown is at least as wide as the anchor
   dropdown.style.minWidth = `${anchorRect.width}px`;
   
   const rect = dropdown.getBoundingClientRect();
-  dropdown.style.display = originalDisplay;
 
   const dropdownHeight = rect.height || 200;
   const dropdownWidth = Math.max(rect.width || 280, anchorRect.width);

@@ -79,7 +79,6 @@
   border: 1px solid var(--card-border);
   border-radius: 6px;
   max-height: 160px;
-  width: 100%;
   min-width: 80px;
   overflow-y: auto;
   z-index: 100;
