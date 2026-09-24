@@ -11,63 +11,24 @@ if (!document.querySelector('link[href*="modal.css"]')) {
   document.head.appendChild(link);
 }
 
-export const MONTH_NAMES = [
-  "Januari",
-  "Februari",
-  "Maart",
-  "April",
-  "Mei",
-  "Juni",
-  "Juli",
-  "Augustus",
-  "September",
-  "Oktober",
-  "November",
-  "December",
-];
+import {
+  MONTH_NAMES_NL as MONTH_NAMES,
+  SHORT_MONTH_NAMES_NL as SHORT_MONTH_NAMES,
+  parseDate,
+  formatDateToISO,
+  formatDisplayDate,
+} from "./date-utils.js";
 
-export const SHORT_MONTH_NAMES = [
-  "Jan",
-  "Feb",
-  "Mrt",
-  "Apr",
-  "Mei",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Okt",
-  "Nov",
-  "Dec",
-];
+export {
+  MONTH_NAMES,
+  SHORT_MONTH_NAMES,
+  parseDate,
+  formatDateToISO,
+  formatDisplayDate,
+};
 
-export function parseDate(str) {
-  if (!str) return null;
-  if (str instanceof Date) return isNaN(str.getTime()) ? null : str;
-  const clean = String(str).trim();
-  if (clean.includes("-")) {
-    const parts = clean.split("T")[0].split("-");
-    if (parts.length === 3) {
-      if (parts[0].length === 4) {
-        const d = new Date(
-          parseInt(parts[0], 10),
-          parseInt(parts[1], 10) - 1,
-          parseInt(parts[2], 10),
-        );
-        return isNaN(d.getTime()) ? null : d;
-      } else if (parts[2].length === 4) {
-        const d = new Date(
-          parseInt(parts[2], 10),
-          parseInt(parts[1], 10) - 1,
-          parseInt(parts[0], 10),
-        );
-        return isNaN(d.getTime()) ? null : d;
-      }
-    }
-  }
-  const d = new Date(clean);
-  return isNaN(d.getTime()) ? null : d;
-}
+
+
 
 export function createDatePicker(
   containerElement,
@@ -79,25 +40,11 @@ export function createDatePicker(
   let viewDate = selectedDate ? new Date(selectedDate) : new Date();
   let viewMode = "days";
 
-  function formatDate(d) {
-    if (!d) return "";
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${day}`;
-  }
 
-  function formatDisplayDate(d) {
-    if (!d) return "";
-    const day = String(d.getDate()).padStart(2, "0");
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const y = d.getFullYear();
-    return `${day}-${m}-${y}`;
-  }
 
   containerElement.innerHTML = `
         <div class="custom-datepicker">
-            <input type="hidden" class="datepicker-value" value="${formatDate(selectedDate)}">
+            <input type="hidden" class="datepicker-value" value="${formatDateToISO(selectedDate)}">
             <div class="datepicker-trigger">
                 <input type="text" class="datepicker-input" placeholder="DD-MM-JJJJ" value="${selectedDate ? formatDisplayDate(selectedDate) : ""}" maxlength="10">
                 <button type="button" class="datepicker-icon-btn" aria-label="Kies datum">
@@ -117,7 +64,7 @@ export function createDatePicker(
   function applyDate(newDate, updateInput = true) {
     selectedDate = newDate;
     tempDate = newDate ? new Date(newDate) : null;
-    hiddenVal.value = formatDate(selectedDate);
+    hiddenVal.value = formatDateToISO(selectedDate);
     if (updateInput) {
       input.value = selectedDate ? formatDisplayDate(selectedDate) : "";
     }
@@ -146,7 +93,7 @@ export function createDatePicker(
         selectedDate = parsed;
         tempDate = new Date(parsed);
         viewDate = new Date(parsed);
-        hiddenVal.value = formatDate(parsed);
+        hiddenVal.value = formatDateToISO(parsed);
         if (onSelect) onSelect(hiddenVal.value);
       }
     } else if (formatted.length === 0) {

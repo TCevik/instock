@@ -16,6 +16,8 @@ import {
   calculatePagination,
   updatePaginationControls,
 } from "./pagination-utils.js";
+import { formatDutchDate, formatDateTime } from "./date-utils.js";
+
 
 function escapeHtml(str) {
   if (!str) return "";
@@ -30,30 +32,7 @@ const ROLE_MAP = {
   3: "Beheerder",
 };
 
-function formatDutchDate(dateStr) {
-  if (!dateStr) return "-";
-  const parts = dateStr.split("-");
-  if (parts.length === 3) {
-    const [year, month, day] = parts;
-    return `${day}-${month}-${year}`;
-  }
-  return dateStr;
-}
 
-function formatDateTime(isoString) {
-  if (!isoString) return "-";
-  const date = new Date(isoString);
-  if (isNaN(date.getTime())) return isoString;
-
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  const seconds = String(date.getSeconds()).padStart(2, "0");
-
-  return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
-}
 
 const PAGE_SIZE = 30;
 let currentUsers = [];

@@ -43,7 +43,7 @@
 }
 
 .modal-overlay.active .modal-container {
-  transform: scale(1);
+  transform: none;
 }
 
 .modal-bottom-sheet-handle {
@@ -742,7 +742,7 @@
   .modal-overlay.modal-wide.active .modal-container,
   .modal-overlay.modal-carts-wide.active .modal-container,
   .finalize-modal-overlay.active .modal-container {
-    transform: translateY(0);
+    transform: none;
   }
 
   .modal-bottom-sheet-handle {

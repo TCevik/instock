@@ -14,6 +14,8 @@ import {
   calculatePagination,
   updatePaginationControls,
 } from "./pagination-utils.js";
+import { formatDutchDate, formatDateTime } from "./date-utils.js";
+
 
 function escapeHtml(str) {
   if (!str) return "";
@@ -22,32 +24,7 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-function formatDateTime(isoString) {
-  if (!isoString) return "-";
-  const date = new Date(isoString);
-  if (isNaN(date.getTime())) return isoString;
 
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  const seconds = String(date.getSeconds()).padStart(2, "0");
-
-  return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
-}
-
-function formatDutchDate(dateStr) {
-  if (!dateStr) return "-";
-  const parts = String(dateStr).split("-");
-  if (parts.length === 3) {
-    if (parts[0].length === 4) {
-      return `${parts[2]}-${parts[1]}-${parts[0]}`;
-    }
-    return dateStr;
-  }
-  return dateStr;
-}
 
 function getLogFieldIcon(key) {
   const k = String(key).toLowerCase().trim();

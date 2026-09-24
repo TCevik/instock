@@ -8,6 +8,7 @@ import {
   logout,
   invokeFn,
 } from "./main.js";
+import { formatDutchBirthday } from "./date-utils.js";
 
 const ROLE_MAP = {
   1: "Medewerker",
@@ -269,33 +270,7 @@ async function loadUserData() {
   }
 }
 
-function formatDutchBirthday(dateStr) {
-  if (!dateStr) return null;
-  const parts = dateStr.split("-");
-  if (parts.length === 3) {
-    const [year, month, day] = parts;
-    const months = [
-      "januari",
-      "februari",
-      "maart",
-      "april",
-      "mei",
-      "juni",
-      "juli",
-      "augustus",
-      "september",
-      "oktober",
-      "november",
-      "december",
-    ];
-    const mIdx = parseInt(month, 10) - 1;
-    if (mIdx >= 0 && mIdx < 12) {
-      return `${parseInt(day, 10)} ${months[mIdx]} ${year}`;
-    }
-    return `${day}-${month}-${year}`;
-  }
-  return dateStr;
-}
+
 
 async function loadPasskeys() {
   const container = document.getElementById("passkeyListGroup");

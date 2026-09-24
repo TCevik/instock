@@ -23,6 +23,8 @@ import {
   SHORT_MONTH_NAMES,
   parseDate,
 } from "./datepicker.js";
+import { formatDutchFullDate as formatDate } from "./date-utils.js";
+
 import { createTimePicker } from "./timepicker.js";
 import { showModal, closeModal, showConfirmModal } from "./modal.js";
 import { exportTopFillersA4 } from "./productiviteit-export.js";
@@ -848,19 +850,7 @@ function extractProductivities(prodData) {
   });
 }
 
-function formatDate(dateStr) {
-  if (!dateStr) return "Onbekende datum";
-  const d = parseDate(dateStr);
-  if (d && !isNaN(d.getTime())) {
-    return d.toLocaleDateString("nl-NL", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  }
-  return dateStr;
-}
+
 
 function getTypeBadge(type) {
   const t = String(type || "overige").toLowerCase();
