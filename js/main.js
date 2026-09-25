@@ -10,9 +10,14 @@ import {
 import { initToast, showToast } from "./toast.js";
 import { initGlobalTooltips } from "./tooltip.js";
 
-const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000;
-const INACTIVITY_WARNING_MS = INACTIVITY_TIMEOUT_MS - 60 * 1000;
+const INACTIVITY_WARNING_TIME_MS = 29 * 60 * 1000;
+const INACTIVITY_LOGOUT_TIME_MS = 30 * 60 * 1000;
+const INACTIVITY_WARNING_MS = INACTIVITY_WARNING_TIME_MS;
+const INACTIVITY_TIMEOUT_MS = INACTIVITY_LOGOUT_TIME_MS;
 const LAST_ACTIVITY_KEY = "instock_last_activity";
+const TAB_CLOSED_KEY = "instock_tab_closed";
+const TAB_CLOSED_AT_KEY = "instock_tab_closed_at";
+const TAB_SESSION_KEY = "instock_tab_active";
 let inactivityWarningShown = false;
 let inactivityModalOverlay = null;
 
@@ -25,10 +30,6 @@ window.fetch = async (...args) => {
   return response;
 };
 
-function isSharedDevice() {
-  return localStorage.getItem("sharedDevice") === "true";
-}
-
 function dismissInactivityWarning() {
   if (inactivityWarningShown && inactivityModalOverlay) {
     closeModal(inactivityModalOverlay);
@@ -39,6 +40,9 @@ function dismissInactivityWarning() {
 
 function recordActivity() {
   localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+  localStorage.removeItem(TAB_CLOSED_KEY);
+  localStorage.removeItem(TAB_CLOSED_AT_KEY);
+  sessionStorage.setItem(TAB_SESSION_KEY, "true");
   dismissInactivityWarning();
 }
 
@@ -48,21 +52,36 @@ function isLoginPage() {
 }
 
 function checkInactivity() {
-  if (isLoginPage() || !isSharedDevice()) return;
+  if (isLoginPage()) return;
+
+  const wasTabClosed =
+    localStorage.getItem(TAB_CLOSED_KEY) === "true" ||
+    !sessionStorage.getItem(TAB_SESSION_KEY);
 
   const last = localStorage.getItem(LAST_ACTIVITY_KEY);
-  if (last) {
-    const elapsed = Date.now() - Number(last);
+  const closedAt = localStorage.getItem(TAB_CLOSED_AT_KEY);
+  const referenceTime = Math.max(Number(last) || 0, Number(closedAt) || 0);
+
+  if (referenceTime) {
+    const elapsed = Date.now() - referenceTime;
     if (elapsed > INACTIVITY_TIMEOUT_MS) {
       logout();
       return;
     }
+    if (wasTabClosed) {
+      localStorage.removeItem(TAB_CLOSED_KEY);
+      localStorage.removeItem(TAB_CLOSED_AT_KEY);
+      sessionStorage.setItem(TAB_SESSION_KEY, "true");
+    }
     if (elapsed > INACTIVITY_WARNING_MS && !inactivityWarningShown) {
       inactivityWarningShown = true;
+      const remainingSeconds = Math.max(
+        1,
+        Math.round((INACTIVITY_TIMEOUT_MS - INACTIVITY_WARNING_MS) / 1000),
+      );
       showConfirmModal({
         title: "Ben je er nog?",
-        message:
-          "Je wordt over 60 seconden automatisch uitgelogd wegens inactiviteit.",
+        message: `Je wordt over ${remainingSeconds} seconden automatisch uitgelogd wegens inactiviteit.`,
         confirmText: "Ja, ik ben er nog",
         cancelText: "Uitloggen",
         isDanger: false,
@@ -82,19 +101,22 @@ function checkInactivity() {
           ) || document.querySelector(".modal-overlay.active");
       }, 10);
     }
+  } else if (wasTabClosed) {
+    recordActivity();
   }
 }
 
 function initInactivityTracker() {
   if (isLoginPage()) return;
 
-  if (isSharedDevice()) {
+  checkInactivity();
+
+  if (!localStorage.getItem(LAST_ACTIVITY_KEY)) {
     recordActivity();
   }
 
   let lastRecorded = 0;
   const updateThrottled = () => {
-    if (!isSharedDevice()) return;
     const now = Date.now();
     if (now - lastRecorded > 2000 || inactivityWarningShown) {
       lastRecorded = now;
@@ -112,6 +134,16 @@ function initInactivityTracker() {
   ].forEach((event) => {
     window.addEventListener(event, updateThrottled, { passive: true });
   });
+
+  const markTabClosed = () => {
+    if (!isLoginPage() && !window.isLoggingOut) {
+      localStorage.setItem(TAB_CLOSED_KEY, "true");
+      localStorage.setItem(TAB_CLOSED_AT_KEY, Date.now().toString());
+    }
+  };
+
+  window.addEventListener("pagehide", markTabClosed);
+  window.addEventListener("beforeunload", markTabClosed);
 
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
@@ -159,13 +191,14 @@ async function checkAuth() {
     return;
   }
 
-  if (!isLogin && isSharedDevice()) {
+  if (!isLogin) {
     const last = localStorage.getItem(LAST_ACTIVITY_KEY);
-    if (last && Date.now() - Number(last) > INACTIVITY_TIMEOUT_MS) {
+    const closedAt = localStorage.getItem(TAB_CLOSED_AT_KEY);
+    const referenceTime = Math.max(Number(last) || 0, Number(closedAt) || 0);
+    if (referenceTime && Date.now() - referenceTime > INACTIVITY_TIMEOUT_MS) {
       await logout();
       return;
     }
-    recordActivity();
   }
 
   supabase.auth.onAuthStateChange((_event, newSession) => {
@@ -802,6 +835,9 @@ async function logout() {
   window.isLoggingOut = true;
   currentUserData = null;
   localStorage.removeItem(LAST_ACTIVITY_KEY);
+  localStorage.removeItem(TAB_CLOSED_KEY);
+  localStorage.removeItem(TAB_CLOSED_AT_KEY);
+  sessionStorage.removeItem(TAB_SESSION_KEY);
   window.onbeforeunload = null;
   window.addEventListener(
     "beforeunload",

@@ -78,6 +78,9 @@ if (loginForm) {
 
       if (data.session) {
         localStorage.setItem("instock_last_activity", Date.now().toString());
+        localStorage.removeItem("instock_tab_closed");
+        localStorage.removeItem("instock_tab_closed_at");
+        sessionStorage.setItem("instock_tab_active", "true");
         window.location.replace("index");
       }
     } catch (err) {
@@ -120,6 +123,9 @@ if (passkeyBtn) {
 
       if (data?.session) {
         localStorage.setItem("instock_last_activity", Date.now().toString());
+        localStorage.removeItem("instock_tab_closed");
+        localStorage.removeItem("instock_tab_closed_at");
+        sessionStorage.setItem("instock_tab_active", "true");
         window.location.replace("index");
       } else {
         passkeyBtn.classList.remove("btn-loading");
