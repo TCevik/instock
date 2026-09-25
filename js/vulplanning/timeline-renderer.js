@@ -35,7 +35,7 @@ import {
   findMainTaskForHelper,
   findHelpersForMainTask,
 } from "./task-actions.js";
-import { triggerAutoSave } from "./storage.js";
+import { triggerAutoSave, saveFillerEndTime } from "./storage.js";
 import { recordSnapshot } from "./history.js";
 import { clearFillerSortState } from "./filler-sort.js";
 
@@ -199,9 +199,7 @@ export function renderTimelineRows(options) {
         lastVal = timeInput.value;
         calcProd();
         if (timeInput.value.length === 5 || timeInput.value === "") {
-          triggerAutoSave(true);
-        } else {
-          triggerAutoSave(false);
+          saveFillerEndTime(filler.id, timeInput.value);
         }
       });
 
@@ -211,7 +209,7 @@ export function renderTimelineRows(options) {
           lastVal = timeInput.value;
         }
         calcProd();
-        triggerAutoSave(true);
+        saveFillerEndTime(filler.id, timeInput.value);
       });
 
       timeInput.addEventListener("blur", () => {
@@ -220,7 +218,7 @@ export function renderTimelineRows(options) {
           lastVal = timeInput.value;
         }
         calcProd();
-        triggerAutoSave(true);
+        saveFillerEndTime(filler.id, timeInput.value);
       });
 
       timeInput.addEventListener("keydown", (e) => {

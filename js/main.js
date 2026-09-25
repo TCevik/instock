@@ -69,9 +69,8 @@ function checkInactivity() {
       return;
     }
     if (wasTabClosed) {
-      localStorage.removeItem(TAB_CLOSED_KEY);
-      localStorage.removeItem(TAB_CLOSED_AT_KEY);
-      sessionStorage.setItem(TAB_SESSION_KEY, "true");
+      recordActivity();
+      return;
     }
     if (elapsed > INACTIVITY_WARNING_MS && !inactivityWarningShown) {
       inactivityWarningShown = true;
@@ -164,7 +163,20 @@ function initInactivityTracker() {
     
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      const token = session?.access_token;
+      if (!session || !token) {
+        if (!window.isLoggingOut) {
+          logout();
+        }
+        return;
+      }
+
+      if (session.expires_at && session.expires_at * 1000 <= Date.now()) {
+        if (!window.isLoggingOut) {
+          logout();
+        }
+        return;
+      }
 
       const { data: isSessionValid, error } = await supabase.rpc("check_session_status");
       
@@ -198,6 +210,12 @@ async function checkAuth() {
     if (referenceTime && Date.now() - referenceTime > INACTIVITY_TIMEOUT_MS) {
       await logout();
       return;
+    }
+    const wasTabClosed =
+      localStorage.getItem(TAB_CLOSED_KEY) === "true" ||
+      !sessionStorage.getItem(TAB_SESSION_KEY);
+    if (wasTabClosed) {
+      recordActivity();
     }
   }
 
@@ -283,6 +301,14 @@ const APP_MODULES = [
     icon: "assignment",
     href: "vulplanning",
     minRole: 2,
+  },
+  {
+    id: "taken",
+    title: "Taken",
+    description: "Bekijk en beheer openstaande en toegewezen taken.",
+    icon: "task_alt",
+    href: "taken",
+    minRole: 1,
   },
   {
     id: "productiviteit",

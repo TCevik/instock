@@ -12,7 +12,11 @@ import {
 } from "./vulplanning/colli-invoer.js";
 import { planningState, getDraggedTaskData } from "./vulplanning/state.js";
 import { timeToMinutes, parsePauseMinutes } from "./vulplanning/time-utils.js";
-import { triggerAutoSave } from "./vulplanning/storage.js";
+import {
+  triggerAutoSave,
+  deleteAllPlanning,
+  savePlannerTasksBlueprint,
+} from "./vulplanning/storage.js";
 import {
   calculateTimelineBounds,
   renderTimelineAxis,
@@ -239,6 +243,21 @@ async function switchToTimelineView() {
     }
   });
 
+  const rawColli = getColliData();
+  const colliOnly = rawColli
+    .filter((c) => Number(c.colli) > 0)
+    .map((c) => ({
+      category: c.category,
+      colli: Number(c.colli),
+      path: c.path,
+    }));
+
+  await savePlannerTasksBlueprint({
+    colli: colliOnly,
+    tasks: newTasks,
+    other_tasks: existingOtherTasks,
+  });
+
   planningState.fillers = fillers;
   planningState.unassignedTasks = newTasks;
   planningState.assignedTasks = {};
@@ -319,15 +338,15 @@ if (btnClearInput) {
     );
 
     if (!hasRooster && !hasColli && !hasAssignments && !hasNames) {
-      showToast("notification", "Er is geen invoer om leeg te maken");
+      showToast("notification", "Er is geen planning om te verwijderen");
       return;
     }
 
     const confirmed = await showConfirmModal({
-      title: "Invoer leegmaken",
+      title: "Volledige planning verwijderen",
       message:
-        "Weet je zeker dat je alle ingevoerde gegevens (rooster en colli) wilt wissen?",
-      confirmText: "Maak leeg",
+        "Weet je zeker dat je alles wilt verwijderen? Dit wist de volledige planning, alle vullers, ingevoerde colli en het rooster definitief.",
+      confirmText: "Verwijder alles",
       cancelText: "Annuleren",
       isDanger: true,
     });
@@ -336,18 +355,14 @@ if (btnClearInput) {
 
     fillRoosterShifts([]);
     clearColliValues();
-    planningState.fillers = [];
-    planningState.unassignedTasks = [];
-    planningState.assignedTasks = {};
-    planningState.savedTasks = [];
-
     if (btnBackToTimeline) {
       btnBackToTimeline.style.display = "none";
     }
 
     localStorage.removeItem("instock_planner_step");
-    triggerAutoSave(true);
-    showToast("notification", "Invoer is leeggemaakt");
+    localStorage.removeItem("instock_planner_zoom");
+    await deleteAllPlanning();
+    showToast("notification", "Volledige planning is verwijderd");
   });
 }
 

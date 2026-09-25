@@ -5,12 +5,11 @@ import {
   isPermissionError,
 } from "../main.js";
 import { planningState } from "./state.js";
-import { getColliData } from "./colli-invoer.js";
 import { recordSnapshot } from "./history.js";
+import { parsePauseMinutes } from "./time-utils.js";
 
 let autoSaveTimeout = null;
 let isLocalSave = false;
-
 let localSaveTimeout = null;
 
 export function setLocalSaveFlag() {
@@ -28,10 +27,155 @@ export function consumeLocalSaveFlag() {
 }
 
 function handleSaveError(err) {
+  if (err) console.error(err);
   if (isPermissionError(err)) {
     showToast("error", "Opslaan mislukt: controleer rechten");
   } else {
     showToast("error", "Opslaan mislukt: controleer verbinding");
+  }
+}
+
+export async function savePlannerTasksBlueprint({ tasks }) {
+  try {
+    const user = await getCurrentUser();
+    if (!user || !user.store_id) return;
+
+    setLocalSaveFlag();
+
+    const todayStr = new Date().toISOString().split("T")[0];
+    const validCategories = ["vullen", "spiegelen", "restanten"];
+
+    await supabase
+      .from("planner_tasks")
+      .delete()
+      .eq("store_id", user.store_id)
+      .eq("date", todayStr);
+
+    const payload = (tasks || []).map((t) => ({
+      store_id: user.store_id,
+      title: t.title || "Taak",
+      task_type: validCategories.includes(t.type) ? t.type : "vullen",
+      colli: Number(t.colli) || 0,
+      duration_minutes: Number(t.duration) || 30,
+      date: todayStr,
+    }));
+
+    if (payload.length > 0) {
+      const { data: inserted, error } = await supabase
+        .from("planner_tasks")
+        .insert(payload)
+        .select();
+
+      if (error) {
+        handleSaveError(error);
+        return;
+      }
+
+      if (Array.isArray(inserted)) {
+        inserted.forEach((row, idx) => {
+          if (tasks[idx]) {
+            tasks[idx].id = row.id;
+          }
+        });
+      }
+    }
+
+    setLocalSaveFlag();
+  } catch (err) {
+    handleSaveError(err);
+  }
+}
+
+export async function saveOtherTasksBlueprint(otherTasks) {
+  try {
+    const user = await getCurrentUser();
+    if (!user || !user.store_id) return;
+
+    setLocalSaveFlag();
+    const todayStr = new Date().toISOString().split("T")[0];
+
+    const payload = (otherTasks || []).map((t) => ({
+      store_id: user.store_id,
+      title: t.title || "Overige taak",
+      task_type: "vullen",
+      colli: 0,
+      duration_minutes: Number(t.duration) || 30,
+      date: todayStr,
+    }));
+
+    if (payload.length > 0) {
+      await supabase.from("planner_tasks").insert(payload);
+    }
+
+    setLocalSaveFlag();
+  } catch (err) {
+    handleSaveError(err);
+  }
+}
+
+export async function saveFillerEndTime(rawFillerId, actualEndTime) {
+  try {
+    const user = await getCurrentUser();
+    if (!user || !user.store_id) return;
+
+    setLocalSaveFlag();
+    const fillerId = String(rawFillerId);
+    const target = (planningState.fillers || []).find(
+      (f) => String(f.id) === fillerId,
+    );
+    if (target) {
+      target.actualEndTime = actualEndTime;
+    }
+
+    if (fillerId.length === 36) {
+      const cleanTime =
+        actualEndTime && actualEndTime.trim().length >= 4
+          ? actualEndTime.trim()
+          : null;
+
+      await supabase
+        .from("planner_shifts")
+        .update({ actual_end_time: cleanTime })
+        .eq("id", fillerId);
+    }
+
+    setLocalSaveFlag();
+  } catch (err) {
+    handleSaveError(err);
+  }
+}
+
+export async function deleteAllPlanning() {
+  try {
+    const user = await getCurrentUser();
+    if (!user || !user.store_id) return;
+
+    setLocalSaveFlag();
+
+    planningState.fillers = [];
+    planningState.unassignedTasks = [];
+    planningState.assignedTasks = {};
+    planningState.savedTasks = [];
+    planningState.settings = {};
+
+    const todayStr = new Date().toISOString().split("T")[0];
+
+    await Promise.all([
+      supabase
+        .from("planner_tasks")
+        .delete()
+        .eq("store_id", user.store_id)
+        .eq("date", todayStr),
+      supabase
+        .from("planner_shifts")
+        .delete()
+        .eq("store_id", user.store_id)
+        .eq("shift_date", todayStr),
+    ]);
+
+    setLocalSaveFlag();
+  } catch (err) {
+    handleSaveError(err);
   }
 }
 
@@ -48,126 +192,89 @@ export function triggerAutoSave(immediate = false) {
       if (!user || !user.store_id) return;
 
       setLocalSaveFlag();
+      const todayStr = new Date().toISOString().split("T")[0];
+      const fillers = Array.isArray(planningState.fillers)
+        ? planningState.fillers
+        : [];
 
-      const compactSchedule = {};
-      const processedFillerIds = new Set();
+      const shiftsPayload = fillers.map((filler) => {
+        const cleanActual =
+          filler.actualEndTime && filler.actualEndTime.trim().length >= 4
+            ? filler.actualEndTime.trim()
+            : null;
 
-      if (Array.isArray(planningState.fillers)) {
-        planningState.fillers.forEach((filler) => {
-          processedFillerIds.add(String(filler.id));
-          const tasks = planningState.assignedTasks[filler.id] || [];
-          compactSchedule[filler.id] = tasks.map((t) => {
-            if (t.type === "overige" || t.type === "pauze") {
-              return {
-                id: t.id,
-                templateId: t.templateId || t.id,
-                type: t.type,
-                title: t.title,
-                duration: t.duration,
-                origDuration: t.origDuration,
-                isHelper: !!t.isHelper,
-                parentTaskId: t.parentTaskId,
-                helperOfFillerId: t.helperOfFillerId,
-              };
-            }
-            return {
-              id: t.id,
-              type: t.type,
-              title: t.title,
-              duration: t.duration,
-              origDuration: t.origDuration,
-              colli: t.colli,
-              isHelper: !!t.isHelper,
-              parentTaskId: t.parentTaskId,
-              helperOfFillerId: t.helperOfFillerId,
-            };
-          });
-        });
-      }
-
-      Object.entries(planningState.assignedTasks || {}).forEach(
-        ([fillerId, tasks]) => {
-          if (!processedFillerIds.has(String(fillerId))) {
-            compactSchedule[fillerId] = (Array.isArray(tasks) ? tasks : []).map(
-              (t) => {
-                if (t.type === "overige" || t.type === "pauze") {
-                  return {
-                    id: t.id,
-                    templateId: t.templateId || t.id,
-                    type: t.type,
-                    title: t.title,
-                    duration: t.duration,
-                    origDuration: t.origDuration,
-                    isHelper: !!t.isHelper,
-                    parentTaskId: t.parentTaskId,
-                    helperOfFillerId: t.helperOfFillerId,
-                  };
-                }
-                return {
-                  id: t.id,
-                  type: t.type,
-                  title: t.title,
-                  duration: t.duration,
-                  origDuration: t.origDuration,
-                  colli: t.colli,
-                  isHelper: !!t.isHelper,
-                  parentTaskId: t.parentTaskId,
-                  helperOfFillerId: t.helperOfFillerId,
-                };
-              },
-            );
-          }
-        },
-      );
-
-      const otherTasksMap = new Map();
-      planningState.unassignedTasks.forEach((t) => {
-        if (
-          t.type === "overige" &&
-          !t.isHelper &&
-          !t.title.includes("(Helper)")
-        ) {
-          const key = t.title.toLowerCase().trim();
-          if (!otherTasksMap.has(key)) {
-            otherTasksMap.set(key, {
-              id: t.id,
-              type: "overige",
-              title: t.title,
-              duration: t.origDuration || t.duration || 30,
-              colli: t.colli || 0,
-            });
-          }
+        const payload = {
+          store_id: user.store_id,
+          user_id: filler.user_id || user.user_id,
+          shift_date: todayStr,
+          start_time: filler.from || "08:00",
+          end_time: filler.to || "17:00",
+          actual_end_time: cleanActual,
+          pause_minutes: parsePauseMinutes(filler.pause),
+        };
+        if (filler.id && String(filler.id).length === 36) {
+          payload.id = filler.id;
         }
+        return payload;
       });
 
-      const currentColli = getColliData();
-      const tasksToSave =
-        currentColli && currentColli.length > 0
-          ? currentColli
-          : planningState.savedTasks || [];
-      if (currentColli && currentColli.length > 0) {
-        planningState.savedTasks = currentColli;
-      }
+      if (shiftsPayload.length > 0) {
+        const { data: savedShifts, error: shiftsError } = await supabase
+          .from("planner_shifts")
+          .upsert(shiftsPayload)
+          .select("id, user_id, start_time, end_time, actual_end_time");
 
-      const { error } = await supabase.from("planner").upsert(
-        {
-          store_id: user.store_id,
-          fillers: planningState.fillers,
-          tasks: tasksToSave,
-          schedule: compactSchedule,
-          other_tasks: Array.from(otherTasksMap.values()),
-          settings: planningState.settings || {},
-        },
-        {
-          onConflict: "store_id",
-        },
-      );
+        if (shiftsError) {
+          handleSaveError(shiftsError);
+          return;
+        }
+
+        if (Array.isArray(savedShifts)) {
+          savedShifts.forEach((s, idx) => {
+            if (fillers[idx]) {
+              fillers[idx].id = s.id;
+            }
+          });
+
+          const shiftIds = savedShifts.map((s) => s.id);
+          await supabase
+            .from("planner_shift_tasks")
+            .delete()
+            .in("shift_id", shiftIds);
+
+          const junctionPayload = [];
+          fillers.forEach((f) => {
+            const assigned = planningState.assignedTasks[f.id] || [];
+            assigned.forEach((t, sortIdx) => {
+              if (t && t.id && String(t.id).length === 36) {
+                const isCustom =
+                  typeof t.duration === "number" &&
+                  typeof t.origDuration === "number" &&
+                  t.duration !== t.origDuration;
+
+                junctionPayload.push({
+                  shift_id: f.id,
+                  task_id: t.id,
+                  sort_order: sortIdx,
+                  custom_duration_minutes: isCustom ? t.duration : null,
+                });
+              }
+            });
+          });
+
+          if (junctionPayload.length > 0) {
+            const { error: junctionError } = await supabase
+              .from("planner_shift_tasks")
+              .insert(junctionPayload);
+
+            if (junctionError) {
+              handleSaveError(junctionError);
+            }
+          }
+        }
+      }
 
       setLocalSaveFlag();
-
-      if (error) {
-        handleSaveError(error);
-      }
     } catch (err) {
       handleSaveError(err);
     }

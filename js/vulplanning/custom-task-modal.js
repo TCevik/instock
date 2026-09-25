@@ -1,6 +1,6 @@
 import { showModal, closeModal, showToast } from "../main.js";
 import { planningState } from "./state.js";
-import { triggerAutoSave } from "./storage.js";
+import { triggerAutoSave, saveOtherTasksBlueprint } from "./storage.js";
 
 export function setupCustomTaskModal(btnAddCustomTask, callbacks = {}) {
   if (!btnAddCustomTask) return;
@@ -82,6 +82,10 @@ export function setupCustomTaskModal(btnAddCustomTask, callbacks = {}) {
         planningState.unassignedTasks.push(newTask);
         closeModal(overlay);
         if (callbacks.onRenderUnassigned) callbacks.onRenderUnassigned();
+        const otherTasks = (planningState.unassignedTasks || []).filter(
+          (t) => t.type === "overige",
+        );
+        saveOtherTasksBlueprint(otherTasks);
         triggerAutoSave();
         showToast("notification", "Taak toegevoegd aan Onverdeelde Taken");
       }

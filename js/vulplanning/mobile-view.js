@@ -9,7 +9,7 @@ import {
   normalizeTimeOnBlur,
   getFillerStats,
 } from "./time-utils.js";
-import { triggerAutoSave } from "./storage.js";
+import { triggerAutoSave, saveFillerEndTime } from "./storage.js";
 import { escapeHtml } from "../main.js";
 import { sortFillersByNameAsc } from "./filler-sort.js";
 
@@ -225,9 +225,7 @@ function setupMobileCardListeners(card, rawFillerId) {
         lastVal = timeInput.value;
         updateProd();
         if (timeInput.value.length === 5 || timeInput.value === "") {
-          triggerAutoSave(true);
-        } else {
-          triggerAutoSave(false);
+          saveFillerEndTime(fillerId, timeInput.value);
         }
       });
       timeInput.addEventListener("change", () => {
@@ -236,7 +234,7 @@ function setupMobileCardListeners(card, rawFillerId) {
           lastVal = timeInput.value;
         }
         updateProd();
-        triggerAutoSave(true);
+        saveFillerEndTime(fillerId, timeInput.value);
       });
       timeInput.addEventListener("blur", () => {
         if (timeInput.value) {
@@ -244,7 +242,7 @@ function setupMobileCardListeners(card, rawFillerId) {
           lastVal = timeInput.value;
         }
         updateProd();
-        triggerAutoSave(true);
+        saveFillerEndTime(fillerId, timeInput.value);
       });
       timeInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
