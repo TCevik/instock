@@ -113,7 +113,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-    padding: 12px 14px calc(40px + env(safe-area-inset-bottom, 0px));
+    padding: 12px 14px calc(96px + env(safe-area-inset-bottom, 24px));
     overflow: visible;
     box-sizing: border-box;
   }
