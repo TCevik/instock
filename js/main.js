@@ -303,14 +303,6 @@ const APP_MODULES = [
     minRole: 2,
   },
   {
-    id: "taken",
-    title: "Taken",
-    description: "Bekijk en beheer openstaande en toegewezen taken.",
-    icon: "task_alt",
-    href: "taken",
-    minRole: 1,
-  },
-  {
     id: "productiviteit",
     title: "Productiviteit",
     description: "Bekijk en analyseer vulprestaties en statistieken.",
